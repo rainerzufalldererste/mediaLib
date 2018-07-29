@@ -67,7 +67,18 @@
 #define mFAIL(text)
 #endif //_DEBUG
 
-template <typename... T> void mUnused(const T... unused) { (void)unused; }
+template <typename T>
+void mUnused(T unused) 
+{ 
+  (void)unused; 
+}
+
+template <typename T, typename ...Args>
+void mUnused(T unused, Args && ...args)
+{ 
+  (void)unused; 
+  mUnused(args...);
+}
 
 #endif // !_DEPENDENCIES_DEFINED
 

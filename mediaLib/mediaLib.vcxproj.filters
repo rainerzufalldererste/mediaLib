@@ -24,12 +24,18 @@
     <ClInclude Include="include\mSharedPointer.h">
       <Filter>include</Filter>
     </ClInclude>
+    <ClInclude Include="include\mVideoFileInputHandler.h">
+      <Filter>include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\mDefer.cpp">
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="src\mResult.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\mVideoFileInputHandler.cpp">
       <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>

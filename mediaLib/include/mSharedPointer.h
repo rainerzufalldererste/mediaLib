@@ -17,8 +17,7 @@
 enum mAllocationType
 {
   mAT_mAlloc,
-  mAT_malloc,
-  mAT_new,
+  mAT_crtmalloc,
 
   mAT_ForeignRessource,
 };
@@ -73,7 +72,7 @@ template <typename T> void mDeinit(mPtr<T> *pParam) { if (pParam != nullptr) { m
 template <typename T, typename ...Args> void mDeinit(mPtr<T> *pParam, Args... args) { if (pParam != nullptr) { mSharedPointer_Destroy(pParam); } mDeinit(std::forward<Args>(args)); };
 
 template <typename T>
-inline mFUNCTION(mSharedPointer_Create, OUT mSharedPointer<T> *pOutSharedPointer, IN T *pData, std::function<void(const T *pData)> cleanupFunction, const mAllocationType allocationType = mAT_ForeignRessource)
+inline mFUNCTION(mSharedPointer_Create, OUT mSharedPointer<T> *pOutSharedPointer, IN T *pData, std::function<void(T *pData)> cleanupFunction, const mAllocationType allocationType = mAT_ForeignRessource)
 {
   mFUNCTION_SETUP();
   mERROR_IF(pOutSharedPointer == nullptr, mR_ArgumentNull);
@@ -95,7 +94,7 @@ template <typename T>
 inline mFUNCTION(mSharedPointer_Create, OUT mSharedPointer<T> *pOutSharedPointer, IN T *pData, const mAllocationType allocationType)
 {
   mFUNCTION_SETUP();
-  mERROR_CHECK(mSharedPointer_Create(pOutSharedPointer, pData, std::function<void(const T *pData)>(), allocationType));
+  mERROR_CHECK(mSharedPointer_Create(pOutSharedPointer, pData, std::function<void(T *pData)>(nullptr), allocationType));
   mRETURN_SUCCESS();
 }
 
@@ -175,12 +174,8 @@ inline mSharedPointer<T>::~mSharedPointer()
       mFree(m_pData);
       break;
 
-    case mAT_malloc:
+    case mAT_crtmalloc:
       free(m_pData);
-      break;
-
-    case mAT_new:
-      delete(m_pData);
       break;
 
     case mAT_ForeignRessource:

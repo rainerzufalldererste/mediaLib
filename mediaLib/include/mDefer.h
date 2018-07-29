@@ -235,15 +235,15 @@ inline mDefer<T> mDefer_Create(typename mDefer<T>::OnExitFuncResultT *pOnExit, T
 #ifdef __COUNTER__
 #define mDEFER(...) const auto mCOMBINE_LITERALS_INDIRECTION(__defer__, __COUNTER__) = mDefer_Create([&](){ __VA_ARGS__; })
 #define mDEFER_IF(conditional, ...) const auto mCOMBINE_LITERALS_INDIRECTION(__defer__, __COUNTER__) = mDefer_Create([&](){ if (conditional) { __VA_ARGS__; } })
-#define mDEFER_ON_ERROR(...) const auto mCOMBINE_LITERALS_INDIRECTION(__defer__, __COUNTER__) = mDefer_Create([&](){ { __VA_ARGS__; } }, &mSTDRESULT)
-#define mDEFER_DESTRUCTION(Ressource, DestructionFunction) const auto mCOMBINE_LITERALS_INDIRECTION(__defer__, __COUNTER__) = mDefer_Create(&DestructionFunction, &Ressource)
-#define mDEFER_DESTRUCTION_ON_ERROR(Ressource, DestructionFunction) const auto mCOMBINE_LITERALS_INDIRECTION(__defer__, __COUNTER__) = mDefer_Create(&DestructionFunction, &Ressource, &mSTDRESULT)
+#define mDEFER_ON_ERROR(...) const auto mCOMBINE_LITERALS_INDIRECTION(__defer__, __COUNTER__) = mDefer_Create([&](){ { __VA_ARGS__; } }, &(mSTDRESULT))
+#define mDEFER_DESTRUCTION(Ressource, DestructionFunction) const auto mCOMBINE_LITERALS_INDIRECTION(__defer__, __COUNTER__) = mDefer_Create((DestructionFunction), (Ressource))
+#define mDEFER_DESTRUCTION_ON_ERROR(Ressource, DestructionFunction) const auto mCOMBINE_LITERALS_INDIRECTION(__defer__, __COUNTER__) = mDefer_Create((DestructionFunction), (Ressource), &(mSTDRESULT))
 #else
 #define mDEFER(...) const auto mCOMBINE_LITERALS_INDIRECTION(__defer__, __LINE__) = mDefer_Create([&](){ __VA_ARGS__; })
 #define mDEFER_IF(conditional, ...) const auto mCOMBINE_LITERALS_INDIRECTION(__defer__, __LINE__) = mDefer_Create([&](){ if (conditional) { __VA_ARGS__; } })
-#define mDEFER_ON_ERROR(...) const auto mCOMBINE_LITERALS_INDIRECTION(__defer__, __LINE__) = mDefer_Create([&](){ { __VA_ARGS__; } }, &mSTDRESULT)
-#define mDEFER_DESTRUCTION(Ressource, DestructionFunction) const auto mCOMBINE_LITERALS_INDIRECTION(__defer__, __LINE__) = mDefer_Create(&DestructionFunction, &Ressource)
-#define mDEFER_DESTRUCTION_ON_ERROR(Ressource, DestructionFunction) const auto mCOMBINE_LITERALS_INDIRECTION(__defer__, __LINE__) = mDefer_Create(&DestructionFunction, &Ressource, &mSTDRESULT)
+#define mDEFER_ON_ERROR(...) const auto mCOMBINE_LITERALS_INDIRECTION(__defer__, __LINE__) = mDefer_Create([&](){ { __VA_ARGS__; } }, &(mSTDRESULT))
+#define mDEFER_DESTRUCTION(Ressource, DestructionFunction) const auto mCOMBINE_LITERALS_INDIRECTION(__defer__, __LINE__) = mDefer_Create(&(DestructionFunction), &(Ressource))
+#define mDEFER_DESTRUCTION_ON_ERROR(Ressource, DestructionFunction) const auto mCOMBINE_LITERALS_INDIRECTION(__defer__, __LINE__) = mDefer_Create(&(DestructionFunction), &(Ressource), &(mSTDRESULT))
 #endif
 
 #endif // mDefer_h__
