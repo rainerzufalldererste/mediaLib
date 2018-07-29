@@ -21,3 +21,4 @@ struct mVideoFileInputHandler;
 
 mFUNCTION(mVideoFileInputHandler_Create, OUT mPtr<mVideoFileInputHandler> *pPtr, const std::wstring &fileName);
 mFUNCTION(mVideoFileInputHandler_Destroy, IN_OUT mPtr<mVideoFileInputHandler> *pPtr);
+mFUNCTION(mVideoFileInputHandler_RunSession, IN_OUT mPtr<mVideoFileInputHandler> ptr);

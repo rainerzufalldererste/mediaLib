@@ -7,21 +7,22 @@
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <mfapi.h>
-#include <mfplay.h>
+#include <mfidl.h>
+#include <Mferror.h>
+#include <mfreadwrite.h>
 #include "mVideoFileInputHandler.h"
 
 static volatile size_t _referenceCount = 0;
 
 struct mVideoFileInputHandler
 {
-  IMFMediaSink *pMediaSink;
-  IMFMediaSession *pMediaSession;
-  IMFMediaSource *pMediaSource;
-  IMFTopology *pTopology;
+  IMFSourceReader *pSourceReader;
+  DWORD streamIndex;
 };
 
-mFUNCTION(mVideoFileInputHandler_Create_Internal, mVideoFileInputHandler *pData, const std::wstring &fileName);
+mFUNCTION(mVideoFileInputHandler_Create_Internal, mVideoFileInputHandler *pData, const std::wstring &fileName, const bool runAsFastAsPossible);
 mFUNCTION(mVideoFileInputHandler_Destroy_Internal, mVideoFileInputHandler *pData);
+mFUNCTION(mVideoFileInputHandler_RunSession_Internal, mVideoFileInputHandler *pData);
 mFUNCTION(mVideoFileInputHandler_InitializeExtenalDependencies);
 mFUNCTION(mVideoFileInputHandler_CleanupExtenalDependencies);
 
@@ -29,7 +30,10 @@ template <typename T>
 static void _ReleaseReference(T **pData)
 {
   if (pData && *pData)
+  {
     (*pData)->Release();
+    *pData = nullptr;
+  }
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -54,7 +58,7 @@ mFUNCTION(mVideoFileInputHandler_Create, OUT mPtr<mVideoFileInputHandler> *pPtr,
   mERROR_CHECK(mSharedPointer_Create<mVideoFileInputHandler>(pPtr, pInputHandler, [](mVideoFileInputHandler *pData) {mVideoFileInputHandler_Destroy_Internal(pData); }, mAT_mAlloc));
   pInputHandler = nullptr; // to not be destroyed on error.
 
-  mERROR_CHECK(mVideoFileInputHandler_Create_Internal(pPtr->GetPointer(), fileName));
+  mERROR_CHECK(mVideoFileInputHandler_Create_Internal(pPtr->GetPointer(), fileName, false));
   mRETURN_SUCCESS();
 }
 
@@ -68,7 +72,17 @@ mFUNCTION(mVideoFileInputHandler_Destroy, IN_OUT mPtr<mVideoFileInputHandler> *p
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mVideoFileInputHandler_Create_Internal, mVideoFileInputHandler *pInputHandler, const std::wstring &fileName)
+mFUNCTION(mVideoFileInputHandler_RunSession, IN_OUT mPtr<mVideoFileInputHandler> ptr)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(ptr == nullptr, mR_ArgumentNull);
+  mERROR_CHECK(mVideoFileInputHandler_RunSession_Internal(ptr.GetPointer()));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mVideoFileInputHandler_Create_Internal, mVideoFileInputHandler *pInputHandler, const std::wstring &fileName, const bool runAsFastAsPossible)
 {
   mFUNCTION_SETUP();
   mERROR_IF(pInputHandler == nullptr, mR_ArgumentNull);
@@ -81,84 +95,60 @@ mFUNCTION(mVideoFileInputHandler_Create_Internal, mVideoFileInputHandler *pInput
   if (referenceCount == 1)
     mERROR_CHECK(mVideoFileInputHandler_InitializeExtenalDependencies());
 
-  IMFAttributes *pAttributes = nullptr;
-  mDEFER_DESTRUCTION(&pAttributes, _ReleaseReference);
-  mERROR_IF(FAILED(hr = MFCreateAttributes(&pAttributes, 1)), mR_InternalError);
+  mERROR_IF(FAILED(hr = MFCreateSourceReaderFromURL(fileName.c_str(), NULL, &pInputHandler->pSourceReader)), mR_InvalidParameter);
 
-  mERROR_IF(FAILED(hr = MFCreateMediaSession(pAttributes, &pInputHandler->pMediaSession)), mR_InternalError);
+  GUID majorType;
+  GUID minorType;
+  DWORD streamIndex = 0;
+  DWORD mediaTypeIndex = 0;
+  bool isValid = false;
 
-  IMFSourceResolver *pSourceResolver = nullptr;
-  mDEFER_DESTRUCTION(&pSourceResolver, _ReleaseReference);
-  mERROR_IF(FAILED(hr = MFCreateSourceResolver(&pSourceResolver)), mR_InternalError);
-
-  IUnknown *pSource = nullptr;
-  mDEFER_DESTRUCTION(&pSource, _ReleaseReference);
-
-  MF_OBJECT_TYPE objectType = MF_OBJECT_INVALID;
-  mERROR_IF(FAILED(hr = pSourceResolver->CreateObjectFromURL(fileName.c_str(), MF_RESOLUTION_MEDIASOURCE, nullptr, &objectType, &pSource)), mR_InternalError);
-  mERROR_IF(objectType == MF_OBJECT_INVALID, mR_InternalError);
-  mERROR_IF(FAILED(hr = pSource->QueryInterface(__uuidof(IMFMediaSource), (void **)&pInputHandler->pMediaSource)), mR_InternalError);
-
-  mERROR_IF(FAILED(MFCreateTopology(&pInputHandler->pTopology)), mR_InternalError);
-
-  IMFPresentationDescriptor *pPresentationDescriptor = nullptr;
-  mDEFER_DESTRUCTION(&pPresentationDescriptor, _ReleaseReference);
-  mERROR_IF(FAILED(hr = pInputHandler->pMediaSource->CreatePresentationDescriptor(&pPresentationDescriptor)), mR_InternalError);
-
-  DWORD sourceStreams = 0;
-  mERROR_IF(FAILED(hr = pPresentationDescriptor->GetStreamDescriptorCount(&sourceStreams)), mR_InternalError);
-
-  for (DWORD i = 0; i < sourceStreams; ++i)
+  while (true)
   {
-    IMFStreamDescriptor *pStreamDescriptor = nullptr;
-    mDEFER_DESTRUCTION(&pStreamDescriptor, _ReleaseReference);
+    mediaTypeIndex = 0;
 
-    BOOL isSelected = false;
-    mERROR_IF(FAILED(hr = pPresentationDescriptor->GetStreamDescriptorByIndex(i, &isSelected, &pStreamDescriptor)), mR_InternalError);
-
-    if (isSelected)
+    while (true)
     {
-      IMFTopologyNode *pSourceNode = nullptr;
-      mDEFER_DESTRUCTION(&pSourceNode, _ReleaseReference);
-      mERROR_IF(FAILED(hr = MFCreateTopologyNode(MF_TOPOLOGY_SOURCESTREAM_NODE, &pSourceNode)), mR_InternalError);
-      mERROR_IF(FAILED(hr = pSourceNode->SetUnknown(MF_TOPONODE_SOURCE, pInputHandler->pMediaSource)), mR_InternalError);
-      mERROR_IF(FAILED(hr = pSourceNode->SetUnknown(MF_TOPONODE_PRESENTATION_DESCRIPTOR, pPresentationDescriptor)), mR_InternalError);
-      mERROR_IF(FAILED(hr = pSourceNode->SetUnknown(MF_TOPONODE_STREAM_DESCRIPTOR, pStreamDescriptor)), mR_InternalError);
+      IMFMediaType *pType = nullptr;
+      mDEFER_DESTRUCTION(&pType, _ReleaseReference);
+      hr = pInputHandler->pSourceReader->GetNativeMediaType(streamIndex, mediaTypeIndex, &pType);
 
-      IMFMediaTypeHandler *pHandler = nullptr;
-      mDEFER_DESTRUCTION(&pHandler, _ReleaseReference);
-      mERROR_IF(FAILED(hr = pStreamDescriptor->GetMediaTypeHandler(&pHandler)), mR_InternalError);
-
-      GUID guidMajorType = GUID_NULL;
-      mERROR_IF(FAILED(hr = pHandler->GetMajorType(&guidMajorType)), mR_InternalError);
-
-      IMFTopologyNode *pOutputNode = nullptr;
-      mDEFER_DESTRUCTION(&pOutputNode, _ReleaseReference);
-      mERROR_IF(FAILED(hr = MFCreateTopologyNode(MF_TOPOLOGY_OUTPUT_NODE, &pOutputNode)), mR_InternalError);
-
-      if (MFMediaType_Audio == guidMajorType)
+      if (hr == MF_E_NO_MORE_TYPES)
       {
-        IMFAttributes *pAudioAttributes = nullptr;
-        mDEFER_DESTRUCTION(&pAudioAttributes, _ReleaseReference);
-
-        mERROR_IF(FAILED(hr = MFCreateAttributes(&pAudioAttributes, 1)), mR_InternalError);
-        mERROR_IF(FAILED(hr = MFCreateAudioRenderer(pAudioAttributes, &pInputHandler->pMediaSink)), mR_InternalError);
+        hr = S_OK;
+        break;
       }
-      else if (MFMediaType_Video == guidMajorType)
+      else if (hr == MF_E_INVALIDSTREAMNUMBER)
       {
-        mERROR_IF(FAILED(hr = MFCreateVideoRenderer(__uuidof(IMFMediaSink), (void **)&pInputHandler->pMediaSink)), mR_InternalError);
+        break;
       }
-      else
+      else if (SUCCEEDED(hr))
       {
-        mRETURN_RESULT(mR_InternalError);
+        pType->GetMajorType(&majorType);
+        pType->GetGUID(MF_MT_SUBTYPE, &minorType);
+        mUnused(minorType);
+
+        if (majorType == MFMediaType_Video)
+        {
+          mERROR_IF(FAILED(hr = pInputHandler->pSourceReader->SetStreamSelection(streamIndex, true)), mR_InternalError);
+          mERROR_IF(FAILED(hr = pInputHandler->pSourceReader->SetCurrentMediaType(streamIndex, nullptr, pType)), mR_InternalError);
+          isValid = true;
+          break;
+        }
       }
 
-      mERROR_IF(FAILED(hr = pOutputNode->SetObject(pInputHandler->pMediaSink)), mR_InternalError);
-      mERROR_IF(FAILED(hr = pInputHandler->pTopology->AddNode(pSourceNode)), mR_InternalError);
-      mERROR_IF(FAILED(hr = pInputHandler->pTopology->AddNode(pOutputNode)), mR_InternalError);
-      mERROR_IF(FAILED(hr = pSourceNode->ConnectOutput(0, pOutputNode, 0)), mR_InternalError);
+      ++mediaTypeIndex;
     }
+
+    if (hr == MF_E_INVALIDSTREAMNUMBER || isValid)
+      break;
+
+    ++streamIndex;
   }
+
+  mERROR_IF(!isValid, mR_InvalidParameter);
+
+  pInputHandler->streamIndex = streamIndex;
 
   mRETURN_SUCCESS();
 }
@@ -169,28 +159,10 @@ mFUNCTION(mVideoFileInputHandler_Destroy_Internal, mVideoFileInputHandler *pData
 
   mERROR_IF(pData == nullptr, mR_ArgumentNull);
 
-  if (pData->pMediaSession)
+  if (pData->pSourceReader)
   {
-    pData->pMediaSession->Release();
-    pData->pMediaSession = nullptr;
-  }
-
-  if (pData->pMediaSink)
-  {
-    pData->pMediaSink->Release();
-    pData->pMediaSink = nullptr;
-  }
-
-  if (pData->pMediaSource)
-  {
-    pData->pMediaSource->Release();
-    pData->pMediaSource = nullptr;
-  }
-
-  if (pData->pTopology)
-  {
-    pData->pTopology->Release();
-    pData->pTopology = nullptr;
+    pData->pSourceReader->Release();
+    pData->pSourceReader = nullptr;
   }
 
   const size_t referenceCount = --_referenceCount;
@@ -217,8 +189,63 @@ mFUNCTION(mVideoFileInputHandler_CleanupExtenalDependencies)
   mFUNCTION_SETUP();
 
   HRESULT hr = S_OK;
-  mUnused(hr, hr, hr);
+  mUnused(hr);
 
   mERROR_IF(FAILED(hr = MFShutdown()), mR_InternalError);
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mVideoFileInputHandler_RunSession_Internal, mVideoFileInputHandler *pData)
+{
+  mFUNCTION_SETUP();
+
+  size_t sampleCount = 0;
+  HRESULT hr = S_OK;
+  mUnused(hr);
+
+  IMFSample *pSample = nullptr;
+  mDEFER_DESTRUCTION(&pSample, _ReleaseReference);
+
+  bool quit = false;
+
+  while (!quit)
+  {
+    DWORD streamIndex, flags;
+    LONGLONG timeStamp;
+
+    mDEFER_DESTRUCTION(&pSample, _ReleaseReference);
+    mERROR_IF(FAILED(hr = pData->pSourceReader->ReadSample(pData->streamIndex, 0, &streamIndex, &flags, &timeStamp, &pSample)), mR_InternalError);
+
+    mPRINT("Stream %d (%I64d)\n", streamIndex, timeStamp);
+    
+    if (flags & MF_SOURCE_READERF_ENDOFSTREAM)
+    {
+      mPRINT("End of stream\n");
+      break;
+    }
+
+    mERROR_IF(flags & MF_SOURCE_READERF_NEWSTREAM, mR_InvalidParameter);
+    mERROR_IF(flags & MF_SOURCE_READERF_CURRENTMEDIATYPECHANGED, mR_InvalidParameter);
+    mERROR_IF(flags & MF_SOURCE_READERF_NATIVEMEDIATYPECHANGED, mR_InvalidParameter);
+
+    if (flags & MF_SOURCE_READERF_STREAMTICK)
+      mPRINT("Stream tick\n");
+
+    if (pSample)
+    {
+      ++sampleCount;
+
+      IMFMediaBuffer *pMediaBuffer = nullptr;
+      mDEFER_DESTRUCTION(&pMediaBuffer, _ReleaseReference);
+      mERROR_IF(FAILED(hr = pSample->ConvertToContiguousBuffer(&pMediaBuffer)), mR_InternalError);
+
+      IMF2DBuffer *p2DBuffer = nullptr;
+      mDEFER_DESTRUCTION(&p2DBuffer, _ReleaseReference);
+      mERROR_IF(FAILED(hr = pMediaBuffer->QueryInterface(IID_IMF2DBuffer, (void **)&p2DBuffer)), mR_InternalError);
+    }
+  }
+
+  mPRINT("Processed %" PRIu64 " samples\n", (uint64_t)sampleCount);
+
   mRETURN_SUCCESS();
 }

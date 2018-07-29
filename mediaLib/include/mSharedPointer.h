@@ -126,7 +126,7 @@ inline mSharedPointer<T>::mSharedPointer(const mSharedPointer<T> &copy)
   : m_pData(nullptr), m_pParams(nullptr)
 {
   if (copy == nullptr)
-    return *this;
+    return;
 
   m_pData = copy.m_pData;
   m_pParams = copy.m_pParams;
@@ -139,7 +139,7 @@ inline mSharedPointer<T>::mSharedPointer(mSharedPointer<T> &&move)
   : m_pData(nullptr), m_pParams(nullptr)
 {
   if (copy == nullptr)
-    return *this;
+    return;
 
   m_pData = copy.m_pData;
   m_pParams = copy.m_pParams;

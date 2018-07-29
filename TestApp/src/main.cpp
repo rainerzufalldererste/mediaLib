@@ -14,9 +14,11 @@ int main(int, char **)
   mDEFER_DESTRUCTION(pPtr, mFree);
   mERROR_CHECK(mAlloc(&pPtr, 1));
 
+  g_mResult_breakOnError = true;
   mPtr<mVideoFileInputHandler> videoInput;
   mDEFER_DESTRUCTION(&videoInput, mVideoFileInputHandler_Destroy);
   mERROR_CHECK(mVideoFileInputHandler_Create(&videoInput, L"N:\\Data\\video\\Babuji3.mp4"));
+  mERROR_CHECK(mVideoFileInputHandler_RunSession(videoInput));
 
   mRETURN_SUCCESS();
 }
