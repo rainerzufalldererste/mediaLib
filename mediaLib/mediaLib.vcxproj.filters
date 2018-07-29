@@ -1,0 +1,36 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="include">
+      <UniqueIdentifier>{85a6dcd1-3105-4445-a329-c949f4127e16}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src">
+      <UniqueIdentifier>{2182d96f-1ea2-48ef-a0e1-522f14d2f070}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="include\default.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\mDefer.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\mResult.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\mMemory.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\mSharedPointer.h">
+      <Filter>include</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\mDefer.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\mResult.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
