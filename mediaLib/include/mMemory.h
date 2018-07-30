@@ -163,7 +163,7 @@ template <typename T> mFUNCTION(mMemmove, T *pDst, T *pSrc, const size_t size)
   if (size == 0)
     mRETURN_SUCCESS();
 
-  memmove(pDst, pSrc, size);
+  memmove(pDst, pSrc, sizeof(T) * size);
 
   mRETURN_SUCCESS();
 }
@@ -176,7 +176,7 @@ template <typename T> mFUNCTION(mMemcpy, T *pDst, T *pSrc, const size_t size)
   if (size == 0)
     mRETURN_SUCCESS();
 
-  memcpy(pDst, pSrc, size);
+  memcpy(pDst, pSrc, sizeof(T) * size);
 
   mRETURN_SUCCESS();
 }
