@@ -18,11 +18,18 @@ struct mVideoFileInputHandler
 {
   IMFSourceReader *pSourceReader;
   DWORD streamIndex;
+  LONG stride;
+  uint32_t resolutionX;
+  uint32_t resolutionY;
+  uint8_t *pFrameData;
+  DWORD frameDataCurrentLength;
+  DWORD frameDataMaxLength;
+  ProcessBufferFunction *pProcessDataCallback;
 };
 
-mFUNCTION(mVideoFileInputHandler_Create_Internal, mVideoFileInputHandler *pData, const std::wstring &fileName, const bool runAsFastAsPossible);
-mFUNCTION(mVideoFileInputHandler_Destroy_Internal, mVideoFileInputHandler *pData);
-mFUNCTION(mVideoFileInputHandler_RunSession_Internal, mVideoFileInputHandler *pData);
+mFUNCTION(mVideoFileInputHandler_Create_Internal, IN mVideoFileInputHandler *pData, const std::wstring &fileName, const bool runAsFastAsPossible);
+mFUNCTION(mVideoFileInputHandler_Destroy_Internal, IN mVideoFileInputHandler *pData);
+mFUNCTION(mVideoFileInputHandler_RunSession_Internal, IN mVideoFileInputHandler *pData);
 mFUNCTION(mVideoFileInputHandler_InitializeExtenalDependencies);
 mFUNCTION(mVideoFileInputHandler_CleanupExtenalDependencies);
 
@@ -72,7 +79,7 @@ mFUNCTION(mVideoFileInputHandler_Destroy, IN_OUT mPtr<mVideoFileInputHandler> *p
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mVideoFileInputHandler_RunSession, IN_OUT mPtr<mVideoFileInputHandler> ptr)
+mFUNCTION(mVideoFileInputHandler_Play, mPtr<mVideoFileInputHandler> &ptr)
 {
   mFUNCTION_SETUP();
 
@@ -82,7 +89,32 @@ mFUNCTION(mVideoFileInputHandler_RunSession, IN_OUT mPtr<mVideoFileInputHandler>
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mVideoFileInputHandler_Create_Internal, mVideoFileInputHandler *pInputHandler, const std::wstring &fileName, const bool runAsFastAsPossible)
+mFUNCTION(mVideoFileInputHandler_GetSize, mPtr<mVideoFileInputHandler> &ptr, OUT size_t *pSizeX, OUT size_t *pSizeY)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(ptr == nullptr, mR_ArgumentNull);
+
+  if (pSizeX)
+    *pSizeX = (size_t)ptr->resolutionX;
+
+  if (pSizeY)
+    *pSizeY = (size_t)ptr->resolutionY;
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mVideoFileInputHandler_SetCallback, mPtr<mVideoFileInputHandler> &ptr, IN ProcessBufferFunction *pCallback)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(ptr == nullptr, mR_ArgumentNull);
+  ptr->pProcessDataCallback = pCallback;
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mVideoFileInputHandler_Create_Internal, IN mVideoFileInputHandler *pInputHandler, const std::wstring &fileName, const bool runAsFastAsPossible)
 {
   mFUNCTION_SETUP();
   mERROR_IF(pInputHandler == nullptr, mR_ArgumentNull);
@@ -95,7 +127,18 @@ mFUNCTION(mVideoFileInputHandler_Create_Internal, mVideoFileInputHandler *pInput
   if (referenceCount == 1)
     mERROR_CHECK(mVideoFileInputHandler_InitializeExtenalDependencies());
 
-  mERROR_IF(FAILED(hr = MFCreateSourceReaderFromURL(fileName.c_str(), NULL, &pInputHandler->pSourceReader)), mR_InvalidParameter);
+  IMFAttributes *pAttributes = nullptr;
+  mDEFER_DESTRUCTION(&pAttributes, _ReleaseReference);
+  mERROR_IF(FAILED(MFCreateAttributes(&pAttributes, 1)), mR_InternalError);
+  mERROR_IF(FAILED(pAttributes->SetUINT32(MF_SOURCE_READER_ENABLE_VIDEO_PROCESSING, TRUE)), mR_InternalError);
+
+  IMFMediaType *pVideoMediaType = nullptr;
+  mDEFER_DESTRUCTION(&pVideoMediaType, _ReleaseReference);
+  mERROR_IF(FAILED(MFCreateMediaType(&pVideoMediaType)), mR_InternalError);
+  mERROR_IF(FAILED(pVideoMediaType->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Video)), mR_InternalError);
+  mERROR_IF(FAILED(pVideoMediaType->SetGUID(MF_MT_SUBTYPE, MFVideoFormat_RGB32)), mR_InternalError);
+
+  mERROR_IF(FAILED(hr = MFCreateSourceReaderFromURL(fileName.c_str(), pAttributes, &pInputHandler->pSourceReader)), mR_InvalidParameter);
 
   GUID majorType;
   GUID minorType;
@@ -131,7 +174,9 @@ mFUNCTION(mVideoFileInputHandler_Create_Internal, mVideoFileInputHandler *pInput
         if (majorType == MFMediaType_Video)
         {
           mERROR_IF(FAILED(hr = pInputHandler->pSourceReader->SetStreamSelection(streamIndex, true)), mR_InternalError);
-          mERROR_IF(FAILED(hr = pInputHandler->pSourceReader->SetCurrentMediaType(streamIndex, nullptr, pType)), mR_InternalError);
+          mERROR_IF(FAILED(hr = pInputHandler->pSourceReader->GetCurrentMediaType(streamIndex, &pType)), mR_InternalError);
+          mERROR_IF(FAILED(hr = MFGetAttributeSize(pType, MF_MT_FRAME_SIZE, &pInputHandler->resolutionX, &pInputHandler->resolutionY)), mR_InternalError);
+          mERROR_IF(FAILED(hr = pInputHandler->pSourceReader->SetCurrentMediaType(streamIndex, nullptr, pVideoMediaType)), mR_InternalError);
           isValid = true;
           break;
         }
@@ -153,7 +198,7 @@ mFUNCTION(mVideoFileInputHandler_Create_Internal, mVideoFileInputHandler *pInput
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mVideoFileInputHandler_Destroy_Internal, mVideoFileInputHandler *pData)
+mFUNCTION(mVideoFileInputHandler_Destroy_Internal, IN mVideoFileInputHandler *pData)
 {
   mFUNCTION_SETUP();
 
@@ -163,6 +208,13 @@ mFUNCTION(mVideoFileInputHandler_Destroy_Internal, mVideoFileInputHandler *pData
   {
     pData->pSourceReader->Release();
     pData->pSourceReader = nullptr;
+  }
+
+  if (pData->pFrameData)
+  {
+    mERROR_CHECK(mFreePtr(&pData->pFrameData));
+    pData->frameDataCurrentLength = 0;
+    pData->frameDataMaxLength = 0;
   }
 
   const size_t referenceCount = --_referenceCount;
@@ -195,7 +247,7 @@ mFUNCTION(mVideoFileInputHandler_CleanupExtenalDependencies)
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mVideoFileInputHandler_RunSession_Internal, mVideoFileInputHandler *pData)
+mFUNCTION(mVideoFileInputHandler_RunSession_Internal, IN mVideoFileInputHandler *pData)
 {
   mFUNCTION_SETUP();
 
@@ -214,7 +266,10 @@ mFUNCTION(mVideoFileInputHandler_RunSession_Internal, mVideoFileInputHandler *pD
     LONGLONG timeStamp;
 
     mDEFER_DESTRUCTION(&pSample, _ReleaseReference);
-    mERROR_IF(FAILED(hr = pData->pSourceReader->ReadSample(pData->streamIndex, 0, &streamIndex, &flags, &timeStamp, &pSample)), mR_InternalError);
+    mERROR_IF(FAILED(hr = pData->pSourceReader->ReadSample(MF_SOURCE_READER_ANY_STREAM, 0, &streamIndex, &flags, &timeStamp, &pSample)), mR_InternalError);
+
+    if(streamIndex != pData->streamIndex)
+      continue;
 
     mPRINT("Stream %d (%I64d)\n", streamIndex, timeStamp);
     
@@ -239,9 +294,35 @@ mFUNCTION(mVideoFileInputHandler_RunSession_Internal, mVideoFileInputHandler *pD
       mDEFER_DESTRUCTION(&pMediaBuffer, _ReleaseReference);
       mERROR_IF(FAILED(hr = pSample->ConvertToContiguousBuffer(&pMediaBuffer)), mR_InternalError);
 
-      IMF2DBuffer *p2DBuffer = nullptr;
-      mDEFER_DESTRUCTION(&p2DBuffer, _ReleaseReference);
-      mERROR_IF(FAILED(hr = pMediaBuffer->QueryInterface(IID_IMF2DBuffer, (void **)&p2DBuffer)), mR_InternalError);
+      DWORD currentLength = 0;
+      mUnused(currentLength);
+      mERROR_IF(FAILED(hr = pMediaBuffer->GetCurrentLength(&currentLength)), mR_InternalError);
+
+      if (pData->pFrameData == nullptr)
+      {
+        mERROR_CHECK(mAlloc(&pData->pFrameData, (size_t)currentLength));
+        pData->frameDataCurrentLength = currentLength;
+        pData->frameDataMaxLength = currentLength;
+      }
+
+      if (pData->frameDataMaxLength < currentLength)
+      {
+        mERROR_CHECK(mRealloc(&pData->pFrameData, (size_t)currentLength));
+        pData->frameDataMaxLength = currentLength;
+      }
+
+      pData->frameDataCurrentLength = currentLength;
+
+      mERROR_IF(FAILED(hr = pMediaBuffer->Lock(&pData->pFrameData, &pData->frameDataCurrentLength, &pData->frameDataMaxLength)), mR_InternalError);
+      
+      if (pData->pProcessDataCallback)
+        mERROR_CHECK((*pData->pProcessDataCallback)(pData->pFrameData));
+
+      mDEFER(pMediaBuffer->Unlock());
+
+      //IMF2DBuffer2 *p2DBuffer = nullptr;
+      //mDEFER_DESTRUCTION(&p2DBuffer, _ReleaseReference);
+      //mERROR_IF(FAILED(hr = pMediaBuffer->QueryInterface(__uuidof(IMF2DBuffer2), (void **)&p2DBuffer)), mR_InternalError);
     }
   }
 

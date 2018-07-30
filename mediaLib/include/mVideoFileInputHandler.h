@@ -18,7 +18,10 @@
 #pragma comment(lib, "mfuuid.lib")
 
 struct mVideoFileInputHandler;
+typedef mFUNCTION(ProcessBufferFunction, IN uint8_t *pBuffer);
 
 mFUNCTION(mVideoFileInputHandler_Create, OUT mPtr<mVideoFileInputHandler> *pPtr, const std::wstring &fileName);
 mFUNCTION(mVideoFileInputHandler_Destroy, IN_OUT mPtr<mVideoFileInputHandler> *pPtr);
-mFUNCTION(mVideoFileInputHandler_RunSession, IN_OUT mPtr<mVideoFileInputHandler> ptr);
+mFUNCTION(mVideoFileInputHandler_Play, mPtr<mVideoFileInputHandler> &ptr);
+mFUNCTION(mVideoFileInputHandler_GetSize, mPtr<mVideoFileInputHandler> &ptr, OUT size_t *pSizeX, OUT size_t *pSizeY);
+mFUNCTION(mVideoFileInputHandler_SetCallback, mPtr<mVideoFileInputHandler> &ptr, IN ProcessBufferFunction *pCallback);

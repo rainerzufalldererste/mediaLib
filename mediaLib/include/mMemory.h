@@ -47,6 +47,28 @@ template <typename T> mFUNCTION(mAlloc, OUT T **ppData, const size_t count)
   mRETURN_SUCCESS();
 }
 
+template <typename T> mFUNCTION(mRealloc, OUT T **ppData, const size_t count)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(ppData == nullptr, mR_ArgumentNull);
+  mDEFER_DESTRUCTION_ON_ERROR(ppData, mSetToNullptr);
+
+  if (*ppData == nullptr)
+  {
+    mERROR_CHECK(mAlloc(ppData, count));
+  }
+  else
+  {
+    T *pData = (T *)realloc(*ppData, sizeof(T) * count);
+    mERROR_IF(pData == nullptr, mR_MemoryAllocationFailure);
+
+    *ppData = pData;
+  }
+
+  mRETURN_SUCCESS();
+}
+
 template <typename T> mFUNCTION(mAllocZero, OUT T **ppData, const size_t count)
 {
   mFUNCTION_SETUP();
