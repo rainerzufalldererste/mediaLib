@@ -1,12 +1,12 @@
 #include "default.h"
-#include "mVideoFileInputHandler.h"
+#include "mMediaFileInputHandler.h"
 #include "SDL.h"
 
-size_t sizeX = 0, sizeY = 0;
+mVec2s resulution;
 SDL_Window *pWindow = nullptr;
 uint32_t *pPixels = nullptr;
 
-mFUNCTION(ProcessBufferCallback, IN uint8_t *pBuffer);
+mFUNCTION(ProcessVideoBufferCallback, IN uint8_t *pBuffer, const mVideoStreamType &videoStreamType);
 
 int main(int, char **)
 {
@@ -22,32 +22,32 @@ int main(int, char **)
   mERROR_CHECK(mAlloc(&pPtr, 1));
 
   g_mResult_breakOnError = true;
-  mPtr<mVideoFileInputHandler> videoInput;
-  mDEFER_DESTRUCTION(&videoInput, mVideoFileInputHandler_Destroy);
-  mERROR_CHECK(mVideoFileInputHandler_Create(&videoInput, L"C:\\Users\\cstiller\\Videos\\Original.MP4"));
-  
-  mERROR_CHECK(mVideoFileInputHandler_GetSize(videoInput, &sizeX, &sizeY));
+  mPtr<mMediaFileInputHandler> videoInput;
+  mDEFER_DESTRUCTION(&videoInput, mMediaFileInputHandler_Destroy);
+  mERROR_CHECK(mMediaFileInputHandler_Create(&videoInput, L"C:\\Users\\cstiller\\Videos\\Original.MP4", mMediaFileInputHandler_CreateFlags::mMMFIH_CF_AllMediaTypesEnabled));
+
+  mERROR_CHECK(mMediaFileInputHandler_GetVideoStreamResolution(videoInput, &resulution));
 
   SDL_Init(SDL_INIT_EVERYTHING);
 
-  pWindow = SDL_CreateWindow("VideoFrames", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, (int)sizeX, (int)sizeY, 0);
+  pWindow = SDL_CreateWindow("VideoFrames", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, (int)resulution.x, (int)resulution.y, 0);
   mDEFER_DESTRUCTION(pWindow, SDL_DestroyWindow);
   SDL_Surface *pSurface = SDL_GetWindowSurface(pWindow);
   pPixels = (uint32_t *)pSurface->pixels;
 
-  mERROR_CHECK(mVideoFileInputHandler_SetCallback(videoInput, ProcessBufferCallback));
-  mERROR_CHECK(mVideoFileInputHandler_Play(videoInput));
+  mERROR_CHECK(mMediaFileInputHandler_SetVideoCallback(videoInput, &ProcessVideoBufferCallback));
+  mERROR_CHECK(mMediaFileInputHandler_Play(videoInput));
 
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(ProcessBufferCallback, IN uint8_t *pBuffer)
+mFUNCTION(ProcessVideoBufferCallback, IN uint8_t *pBuffer, const mVideoStreamType &videoStreamType)
 {
   mFUNCTION_SETUP();
 
-  if (pBuffer)
+  if (pBuffer && videoStreamType.mediaType == mMediaMajorType::mMMT_Video)
   {
-    mERROR_CHECK(mMemcpy(pPixels, (uint32_t *)pBuffer, sizeX * sizeY));
+    mERROR_CHECK(mMemcpy(pPixels, (uint32_t *)pBuffer, videoStreamType.resolution.x * videoStreamType.resolution.y));
 
     SDL_UpdateWindowSurface(pWindow);
 

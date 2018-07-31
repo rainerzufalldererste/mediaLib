@@ -32,7 +32,6 @@ struct mVec2t
   __host__ __device__ inline mVec2t(mVec2t<T> &&move) : x(move.x), y(move.y) {}
   __host__ __device__ inline mVec2t(const mVec2t<T> &copy) : x(copy.x), y(copy.y) {}
   template <typename T2> __host__ __device__ inline explicit mVec2t(const mVec2t<T2> &cast) : x((T)cast.x), y((T)cast.y) { }
-  __host__ __device__ inline explicit mVec2t(const vec2 &cast) : x((T)cast.x), y((T)cast.y) { }
 
   __host__ __device__ inline mVec2t<T>& operator =  (mVec2t<T> &&move) { x = move.x; y = move.y; return *this; }
   __host__ __device__ inline mVec2t<T>& operator =  (const mVec2t<T> &copy) { x = copy.x; y = copy.y; return *this; }
@@ -80,7 +79,6 @@ struct mVec3t
   __host__ __device__ inline mVec3t(mVec3t<T> &&move) : x(move.x), y(move.y), z(move.z) {}
   __host__ __device__ inline mVec3t(const mVec3t<T> &copy) : x(copy.x), y(copy.y), z(copy.z) {}
   template <typename T2> __host__ __device__ inline explicit mVec3t(const mVec3t<T2> &cast) : x((T)cast.x), y((T)cast.y), z((T)cast.z) {}
-  __host__ __device__ inline explicit mVec3t(const vec3 &cast) : x((T)cast.x), y((T)cast.y), z((T)cast.z) {}
 
   __host__ __device__ inline mVec3t<T>& operator =  (mVec3t<T> &&move) { x = move.x; y = move.y; z = move.z; return *this; }
   __host__ __device__ inline mVec3t<T>& operator =  (const mVec3t<T> &copy) { x = copy.x; y = copy.y; z = copy.z; return *this; }
@@ -124,7 +122,6 @@ struct mVec4t
   __host__ __device__ inline mVec4t(mVec4t<T> &&move) : x(move.x), y(move.y), z(move.z), w(move.w) {}
   __host__ __device__ inline mVec4t(const mVec4t<T> &copy) : x(copy.x), y(copy.y), z(copy.z), w(copy.w) {}
   template <typename T2> __host__ __device__ inline explicit mVec4t(const mVec4t<T2> &cast) : x((T)cast.x), y((T)cast.y), z((T)cast.z), w((T)cast.w) {}
-  __host__ __device__ inline explicit mVec4t(const vec4 &cast) : x((T)cast.x), y((T)cast.y), z((T)cast.z), w((T)cast.w) {}
 
   __host__ __device__ inline mVec4t<T>& operator =  (mVec4t<T> &&move) { x = move.x; y = move.y; z = move.z; w = move.w; return *this; }
   __host__ __device__ inline mVec4t<T>& operator =  (const mVec4t<T> &copy) { x = copy.x; y = copy.y; z = copy.z; w = copy.w; return *this; }

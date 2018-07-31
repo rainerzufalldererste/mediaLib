@@ -22,6 +22,7 @@ enum mResult
   mR_MemoryAllocationFailure,
   mR_NotImplemented,
   mR_NotInitialized,
+  mR_IndexOutOfBounds,
 
   Count
 };

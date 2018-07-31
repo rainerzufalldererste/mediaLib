@@ -28,7 +28,7 @@ template <typename T> mFUNCTION(mMemset, IN_OUT T *pData, size_t count, uint8_t 
   mERROR_IF(pData == nullptr, mR_ArgumentNull);
   mERROR_IF(sizeof(T) * count > INT_MAX, mR_InvalidParameter);
 
-  memset(pData, (int)(sizeof(T) * count), (int)data);
+  memset(pData, (int)data, (int)(sizeof(T) * count));
 
   mRETURN_SUCCESS();
 }
@@ -155,28 +155,28 @@ template <typename T> mFUNCTION(mFreeStack, IN_OUT T *pData)
   mRETURN_SUCCESS();
 }
 
-template <typename T> mFUNCTION(mMemmove, T *pDst, T *pSrc, const size_t size)
+template <typename T> mFUNCTION(mMemmove, T *pDst, T *pSrc, const size_t count)
 {
   mFUNCTION_SETUP();
   mERROR_IF(pDst == nullptr || pSrc == nullptr, mR_ArgumentNull);
 
-  if (size == 0)
+  if (count == 0)
     mRETURN_SUCCESS();
 
-  memmove(pDst, pSrc, sizeof(T) * size);
+  memmove(pDst, pSrc, sizeof(T) * count);
 
   mRETURN_SUCCESS();
 }
 
-template <typename T> mFUNCTION(mMemcpy, T *pDst, T *pSrc, const size_t size)
+template <typename T> mFUNCTION(mMemcpy, T *pDst, T *pSrc, const size_t count)
 {
   mFUNCTION_SETUP();
   mERROR_IF(pDst == nullptr || pSrc == nullptr, mR_ArgumentNull);
 
-  if (size == 0)
+  if (count == 0)
     mRETURN_SUCCESS();
 
-  memcpy(pDst, pSrc, sizeof(T) * size);
+  memcpy(pDst, pSrc, sizeof(T) * count);
 
   mRETURN_SUCCESS();
 }

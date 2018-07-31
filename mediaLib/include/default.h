@@ -89,5 +89,6 @@ void mUnused(T unused, Args && ...args)
 #include "mDefer.h"
 #include "mMemory.h"
 #include "mSharedPointer.h"
+#include "mMath.h"
 
 #endif // default_h__
