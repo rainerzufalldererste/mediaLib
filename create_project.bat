@@ -1,8 +1,8 @@
 @ECHO OFF
 
 ECHO 1. Visual Studio 2017 Solution
-ECHO 1. Visual Studio 2015 Solution
-ECHO 2. Visual Studio 2013 Solution
+ECHO 2. Visual Studio 2015 Solution
+ECHO 3. Visual Studio 2013 Solution
 
 CHOICE /N /C:123 /M "[1-3]:"
 
