@@ -441,7 +441,7 @@ mFUNCTION(mMediaFileInputHandler_RunSession_Internal, IN mMediaFileInputHandler 
     LONGLONG timeStamp;
 
     mDEFER_DESTRUCTION(&pSample, _ReleaseReference);
-    mERROR_IF(FAILED(hr = pData->pSourceReader->ReadSample(MF_SOURCE_READER_ANY_STREAM, 0, &streamIndex, &flags, &timeStamp, &pSample)), mR_InternalError);
+    mERROR_IF(FAILED(hr = pData->pSourceReader->ReadSample((DWORD)MF_SOURCE_READER_ANY_STREAM, 0, &streamIndex, &flags, &timeStamp, &pSample)), mR_InternalError);
 
     mPRINT("Stream %d (%I64d)\n", streamIndex, timeStamp);
     
