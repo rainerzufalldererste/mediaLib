@@ -260,5 +260,9 @@ paket-files/
 __pycache__/
 *.pyc
 
+# Project & Solution Files
+*.sln
+*.vcxpro*
+
 # Additional Files
 mediaLib/lib/mediaLib.lib
