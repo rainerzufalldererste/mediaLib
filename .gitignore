@@ -265,4 +265,4 @@ __pycache__/
 *.vcxpro*
 
 # Additional Files
-mediaLib/lib/mediaLib.lib
+mediaLib/lib/*.lib
