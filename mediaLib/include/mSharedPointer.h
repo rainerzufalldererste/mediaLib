@@ -182,7 +182,7 @@ inline mSharedPointer<T>::~mSharedPointer()
       break;
 
     default:
-      mRELEASE_FAIL("Invalid SharedPointer MemoryAllocationType.");
+      mFAIL("Invalid SharedPointer MemoryAllocationType.");
       break;
     }
 

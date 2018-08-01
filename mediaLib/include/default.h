@@ -56,29 +56,29 @@
 #define mSQRT3f 1.414213562373095f
 #define mINVSQRT3f 0.57735026918962576f
 
-#define mRELEASE_ASSERT(expr, text) do { if(!(expression)) { mPRINT("Assertion Failed: %s\n'%s'\n\nIn File '%s' : Line '%" PRIi32 "' (Function '%s')\n", #expr, text, __FILE__, __LINE__, __FUNCTION__); assert(expression); } } while (0)
-#define mRELEASE_FAIL(text) mPRINT("Assertion Failed: '%s'\n\nIn File '%s' : Line '%" PRIi32 "' (Function '%s')\n", text, __FILE__, __LINE__, __FUNCTION__)
-
-#ifdef _DEBUG
-#define mASSERT(expr, text) mRELEASE_ASSERT(expr, text)
-#define mFAIL(text) mRELEASE_FAIL(text)
-#else
-#define mASSERT(expr, text)
-#define mFAIL(text)
-#endif //_DEBUG
+#define mASSERT(expr, text) do { if(!(expression)) { mPRINT("Assertion Failed: %s\n'%s'\n\nIn File '%s' : Line '%" PRIi32 "' (Function '%s')\n", #expr, text, __FILE__, __LINE__, __FUNCTION__); assert(expression); } } while (0)
+#define mFAIL(text) mPRINT("Assertion Failed: '%s'\n\nIn File '%s' : Line '%" PRIi32 "' (Function '%s')\n", text, __FILE__, __LINE__, __FUNCTION__)
 
 template <typename T>
-void mUnused(T unused) 
-{ 
-  (void)unused; 
+void mUnused(T unused)
+{
+  (void)unused;
 }
 
 template <typename T, typename ...Args>
 void mUnused(T unused, Args && ...args)
-{ 
-  (void)unused; 
+{
+  (void)unused;
   mUnused(args...);
 }
+
+#ifdef _DEBUG
+#define mASSERT_DEBUG(expr, text) mASSERT(expr, text)
+#define mFAIL_DEBUG(text) mFAIL(text)
+#else
+#define mASSERT_DEBUG(expr, text) mUnused(expr, text)
+#define mFAIL_DEBUG(text) mUnused(text)
+#endif //_DEBUG
 
 #endif // !_DEPENDENCIES_DEFINED
 
