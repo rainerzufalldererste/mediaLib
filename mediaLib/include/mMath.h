@@ -8,6 +8,20 @@
 #define __device__
 #endif // !__CUDA_ARCH__
 
+template <typename T> auto mSqrt(const T value)->decltype(sqrt(value)) { return sqrt(value); }
+template <typename T> auto mSin(const T value)->decltype(sin(value)) { return sin(value); }
+template <typename T> auto mCos(const T value)->decltype(cos(value)) { return cos(value); }
+template <typename T> auto mTan(const T value)->decltype(tan(value)) { return tan(value); }
+template <typename T> auto mASin(const T value)->decltype(asin(value)) { return asin(value); }
+template <typename T> auto mACos(const T value)->decltype(acos(value)) { return acos(value); }
+template <typename T> auto mATan(const T value)->decltype(atan(value)) { return atan(value); }
+template <typename T, typename U> auto mATan2(const T value, const U value2)->decltype(atan2(value, value2)) { return atan2(value, value2); }
+template <typename T, typename U> auto mPow(const T value, const U value2)->decltype(pow(value, value2)) { return pow(value, value2); }
+
+template <typename T> constexpr T mMax(const T a, const T b) { return (a >= b) ? a : b; }
+template <typename T> constexpr T mMin(const T a, const T b) { return (a <= b) ? a : b; }
+
+//////////////////////////////////////////////////////////////////////////
 
 template <typename T> T mClamp(T value, const T &min, const T &max)
 {
@@ -29,12 +43,7 @@ struct mVec2t
   __host__ __device__ inline mVec2t(T _v) : x(_v), y(_v) {}
   __host__ __device__ inline mVec2t(T _x, T _y) : x(_x), y(_y) {}
 
-  __host__ __device__ inline mVec2t(mVec2t<T> &&move) : x(move.x), y(move.y) {}
-  __host__ __device__ inline mVec2t(const mVec2t<T> &copy) : x(copy.x), y(copy.y) {}
   template <typename T2> __host__ __device__ inline explicit mVec2t(const mVec2t<T2> &cast) : x((T)cast.x), y((T)cast.y) { }
-
-  __host__ __device__ inline mVec2t<T>& operator =  (mVec2t<T> &&move) { x = move.x; y = move.y; return *this; }
-  __host__ __device__ inline mVec2t<T>& operator =  (const mVec2t<T> &copy) { x = copy.x; y = copy.y; return *this; }
 
   __host__ __device__ inline mVec2t<T>  operator +  (const mVec2t<T> &a) const { return mVec2t<T>(x + a.x, y + a.y); };
   __host__ __device__ inline mVec2t<T>  operator -  (const mVec2t<T> &a) const { return mVec2t<T>(x - a.x, y - a.y); };
@@ -55,9 +64,11 @@ struct mVec2t
 
   __host__ __device__ inline mVec2t<T>  operator -  () const { return mVec2t<T>(-x, -y); };
 
-  __host__ __device__ inline bool      operator == (const mVec2t<T> &a) const { return x == a.x && y == a.y; };
+  __host__ __device__ inline bool       operator == (const mVec2t<T> &a) const { return x == a.x && y == a.y; };
+  __host__ __device__ inline bool       operator != (const mVec2t<T> &a) const { return x != a.x || y != a.y; };
 
-  __host__ __device__ inline double Length() { return sqrt(x * x + y * y); };
+  __host__ __device__ inline double Length() { return mSqrt(x * x + y * y); };
+  __host__ __device__ inline T LengthSquared() { return x * x + y * y; };
 };
 
 typedef mVec2t<size_t> mVec2s;
@@ -76,12 +87,7 @@ struct mVec3t
   __host__ __device__ inline mVec3t(T _x, T _y, T _z) : x(_x), y(_y), z(_z) {}
   __host__ __device__ inline mVec3t(mVec2t<T> vector2, T _z) : x(vector2.x), y(vector2.y), z(_z) {}
 
-  __host__ __device__ inline mVec3t(mVec3t<T> &&move) : x(move.x), y(move.y), z(move.z) {}
-  __host__ __device__ inline mVec3t(const mVec3t<T> &copy) : x(copy.x), y(copy.y), z(copy.z) {}
   template <typename T2> __host__ __device__ inline explicit mVec3t(const mVec3t<T2> &cast) : x((T)cast.x), y((T)cast.y), z((T)cast.z) {}
-
-  __host__ __device__ inline mVec3t<T>& operator =  (mVec3t<T> &&move) { x = move.x; y = move.y; z = move.z; return *this; }
-  __host__ __device__ inline mVec3t<T>& operator =  (const mVec3t<T> &copy) { x = copy.x; y = copy.y; z = copy.z; return *this; }
 
   __host__ __device__ inline mVec3t<T>  operator +  (const mVec3t<T> &a) const { return mVec3t<T>(x + a.x, y + a.y, z + a.z); };
   __host__ __device__ inline mVec3t<T>  operator -  (const mVec3t<T> &a) const { return mVec3t<T>(x - a.x, y - a.y, z - a.z); };
@@ -98,9 +104,11 @@ struct mVec3t
 
   __host__ __device__ inline mVec3t<T>  operator -  () const { return mVec3t<T>(-x, -y, -z); };
 
-  __host__ __device__ inline bool      operator == (const mVec3t<T> &a) const { return x == a.x && y == a.y && z == a.z; };
+  __host__ __device__ inline bool       operator == (const mVec3t<T> &a) const { return x == a.x && y == a.y && z == a.z; };
+  __host__ __device__ inline bool       operator != (const mVec3t<T> &a) const { return x != a.x || y != a.y || z != a.z; };
 
-  __host__ __device__ inline double Length() { return sqrt(x * x + y * y + z * z); };
+  __host__ __device__ inline double Length() { return mSqrt(x * x + y * y + z * z); };
+  __host__ __device__ inline T LengthSquared() { return x * x + y * y + z * z; };
 };
 
 typedef mVec3t<size_t> mVec3s;
@@ -119,12 +127,7 @@ struct mVec4t
   __host__ __device__ inline mVec4t(T _x, T _y, T _z, T _w) : x(_x), y(_y), z(_z), w(_w) {}
   __host__ __device__ inline mVec4t(mVec3t<T> vector3, T _w) : x(vector3.x), y(vector3.y), z(vector3.z), w(_w) {}
 
-  __host__ __device__ inline mVec4t(mVec4t<T> &&move) : x(move.x), y(move.y), z(move.z), w(move.w) {}
-  __host__ __device__ inline mVec4t(const mVec4t<T> &copy) : x(copy.x), y(copy.y), z(copy.z), w(copy.w) {}
   template <typename T2> __host__ __device__ inline explicit mVec4t(const mVec4t<T2> &cast) : x((T)cast.x), y((T)cast.y), z((T)cast.z), w((T)cast.w) {}
-
-  __host__ __device__ inline mVec4t<T>& operator =  (mVec4t<T> &&move) { x = move.x; y = move.y; z = move.z; w = move.w; return *this; }
-  __host__ __device__ inline mVec4t<T>& operator =  (const mVec4t<T> &copy) { x = copy.x; y = copy.y; z = copy.z; w = copy.w; return *this; }
 
   __host__ __device__ inline mVec4t<T>  operator +  (const mVec4t<T> &a) const { return mVec4t<T>(x + a.x, y + a.y, z + a.z, w + a.w); };
   __host__ __device__ inline mVec4t<T>  operator -  (const mVec4t<T> &a) const { return mVec4t<T>(x - a.x, y - a.y, z - a.z, w - a.w); };
@@ -141,9 +144,11 @@ struct mVec4t
 
   __host__ __device__ inline mVec4t<T>  operator -  () const { return mVec4t<T>(-x, -y, -z, -w); };
 
-  __host__ __device__ inline bool      operator == (const mVec4t<T> &a) const { return x == a.x && y == a.y && z == a.z && w == a.w; };
+  __host__ __device__ inline bool       operator == (const mVec4t<T> &a) const { return x == a.x && y == a.y && z == a.z && w == a.w; };
+  __host__ __device__ inline bool       operator != (const mVec4t<T> &a) const { return x != a.x || y != a.y || z != a.z || w != a.w; };
 
-  __host__ __device__ inline double Length() { return sqrt(x * x + y * y + z * z + w * w); };
+  __host__ __device__ inline double Length() { return mSqrt(x * x + y * y + z * z + w * w); };
+  __host__ __device__ inline T LengthSquared() { return x * x + y * y + z * z + w * w; };
 };
 
 typedef mVec4t<size_t> mVec4s;
@@ -151,6 +156,5 @@ typedef mVec4t<int64_t> mVec4i;
 typedef mVec4t<uint64_t> mVec4u;
 typedef mVec4t<float_t> mVec4f;
 typedef mVec4t<double_t> mVec4d;
-
 
 #endif // mMath_h__
