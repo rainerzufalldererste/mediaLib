@@ -95,11 +95,6 @@ inline float_t mVector::w(const float_t _w)
   return _w;
 }
 
-inline float_t mVector::x() const { return ((DirectX::XMFLOAT4)*this).x; }
-inline float_t mVector::y() const { return ((DirectX::XMFLOAT4)*this).y; }
-inline float_t mVector::z() const { return ((DirectX::XMFLOAT4)*this).z; }
-inline float_t mVector::w() const { return ((DirectX::XMFLOAT4)*this).w; }
-
 inline mVector::operator mVec2f() const
 {
   DirectX::XMFLOAT2 f;
@@ -142,10 +137,62 @@ inline mVector::operator DirectX::XMFLOAT4() const
   return f;
 }
 
-mVec4t<bool> mVector::ComponentEquals(const mVector & a)
+inline mVec4t<bool> mVector::ComponentEquals(const mVector & a) const
 {
   DirectX::XMVECTOR _v = DirectX::XMVectorEqual(v, a.v);
   DirectX::XMFLOAT4 f;
   DirectX::XMStoreFloat4(&f, _v);
   return mVec4t<bool>(f.x, f.y, f.z, f.w);
+}
+
+inline mVector mVector::AngleBetweenNormals2(const mVector & a) const { return mVector(DirectX::XMVector2AngleBetweenNormals(v, a.v)); }
+inline mVector mVector::AngleBetweenNormalsEst2(const mVector & a) const { return mVector(DirectX::XMVector2AngleBetweenNormalsEst(v, a.v)); }
+inline mVector mVector::AngleBetweenVectors2(const mVector & a) const { return mVector(DirectX::XMVector2AngleBetweenVectors(v, a.v)); }
+inline mVector mVector::ClampLength2(const float_t min, const float_t max) const { return mVector(DirectX::XMVector2ClampLength(v, min, max)); }
+inline mVector mVector::ClampLengthVectors2(const mVector & min, const mVector & max) const { return mVector(DirectX::XMVector2ClampLengthV(v, min.v, max.v)); }
+inline mVector mVector::Dot2(const mVector & a) const { return mVector(DirectX::XMVector2Dot(v, a.v)); }
+inline mVector mVector::Cross2(const mVector & a) const { return mVector(DirectX::XMVector2Cross(v, a.v)); }
+inline bool mVector::Equals2(const mVector & a) const { return DirectX::XMVector2Equal(v, a.v); }
+inline bool mVector::NotEqualTo2(const mVector & a) const { return DirectX::XMVector2NotEqual(v, a.v); }
+inline bool mVector::EqualsApproximately2(const mVector & a, const mVector & epsilon) const { return DirectX::XMVector2NearEqual(v, a.v, epsilon.v); }
+inline bool mVector::Greater2(const mVector & a) const { return DirectX::XMVector2Greater(v, a.v); }
+inline bool mVector::GreaterOrEqual2(const mVector & a) const { return DirectX::XMVector2GreaterOrEqual(v, a.v); }
+inline bool mVector::Less2(const mVector & a) const { return DirectX::XMVector2Less(v, a.v); }
+inline bool mVector::LessOrEqual2(const mVector & a) const { return DirectX::XMVector2LessOrEqual(v, a.v); }
+inline bool mVector::InBounds(const mVector & a) const { return DirectX::XMVector2InBounds(v, a.v); }
+inline mVector mVector::IntersectLine2(const mVector & line1Point1, const mVector & line1Point2, const mVector & line2Point1, const mVector & line2Point2) { return mVector(DirectX::XMVector2IntersectLine(line1Point1.v, line1Point2.v, line2Point1.v, line2Point2.v)); }
+inline float_t mVector::LinePointDistance2(const mVector & line1Point1, const mVector & line1Point2, const mVector & point) { return mVector(DirectX::XMVector2LinePointDistance(line1Point1.v, line1Point2.v, point.v))._x; }
+inline float_t mVector::Length2() const { return mVector(DirectX::XMVector2Length(v))._x; }
+inline float_t mVector::LengthEst2() const { return mVector(DirectX::XMVector2LengthEst(v))._x; }
+inline float_t mVector::LengthSquared2() const { return mVector(DirectX::XMVector2LengthSq(v))._x; }
+inline mVector mVector::Normalize2() const { return mVector(DirectX::XMVector2Normalize(v)); }
+inline mVector mVector::NormalizeEst2() const { return mVector(DirectX::XMVector2NormalizeEst(v)); }
+inline mVector mVector::Orthogonal2() const { return mVector(DirectX::XMVector2Orthogonal(v)); }
+inline mVector mVector::ReciprocalLength2() const { return mVector(DirectX::XMVector2ReciprocalLength(v)); }
+inline mVector mVector::ReciprocalLengthEst2() const { return mVector(DirectX::XMVector2ReciprocalLengthEst(v)); }
+inline mVector mVector::Reflect2(const mVector & incident, const mVector & normal) { return mVector(DirectX::XMVector2Reflect(incident.v, normal.v)); }
+inline mVector mVector::Refract2(const mVector & incident, const mVector & normal, const float_t refractionIndex) { return mVector(DirectX::XMVector2Refract(incident.v, normal.v, refractionIndex)); }
+inline mVector mVector::RefractVector2(const mVector & incident, const mVector & normal, const mVector & refractionIndex) { return mVector(DirectX::XMVector2RefractV(incident.v, normal.v, refractionIndex.v)); }
+inline mVector mVector::Transform2(const mMatrix &matrix) const { return mVector(DirectX::XMVector2Transform(v, (DirectX::FXMMATRIX)matrix.m)); }
+inline mVector mVector::TransformCoord2(const mMatrix & matrix) const { return mVector(DirectX::XMVector2TransformCoord(v, (DirectX::FXMMATRIX)matrix.m)); }
+inline mVector mVector::TransformNormal2(const mMatrix & matrix) const { return mVector(DirectX::XMVector2TransformNormal(v, (DirectX::FXMMATRIX)matrix.m)); }
+
+inline mFUNCTION(mVector::TransformCoordStream2, OUT DirectX::XMFLOAT2 * pOutputData, const size_t outputStride, IN DirectX::XMFLOAT2 * pInputData, const size_t inputStride, const size_t inputLength, const mMatrix & matrix)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pOutputData == nullptr || pInputData == nullptr, mR_ArgumentNull);
+  DirectX::XMVector2TransformCoordStream(pOutputData, outputStride, pInputData, inputStride, inputLength, matrix.m);
+
+  mRETURN_SUCCESS();
+}
+
+inline mFUNCTION(mVector::TransformNormalStream2, OUT DirectX::XMFLOAT2 * pOutputData, const size_t outputStride, IN DirectX::XMFLOAT2 * pInputData, const size_t inputStride, const size_t inputLength, const mMatrix & matrix)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pOutputData == nullptr || pInputData == nullptr, mR_ArgumentNull);
+  DirectX::XMVector2TransformNormalStream(pOutputData, outputStride, pInputData, inputStride, inputLength, matrix.m);
+
+  mRETURN_SUCCESS();
 }
