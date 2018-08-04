@@ -24,6 +24,8 @@ project(ProjectName)
   
   includedirs { "src" }
   includedirs { "include" }
+  includedirs { "3rdParty/DirectXMath/Inc" }
+  includedirs { "3rdParty/DirectXMath/Extensions" }
   
   filter { "configurations:Debug", "system:Windows" }
     ignoredefaultlibraries { "libcmt" }

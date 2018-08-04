@@ -12,6 +12,12 @@ int main(int, char **)
 {
   mFUNCTION_SETUP();
 
+  mVec4f_fast v(0, 1, 2);
+  mVec4f_fast w(4, 2, -2);
+
+  mVec4f_fast r = v + w;
+  printf("%f, %f, %f\n", r.x, r.y, r.z);
+
   g_mResult_breakOnError = true;
   mPtr<mMediaFileInputHandler> videoInput;
   mDEFER_DESTRUCTION(&videoInput, mMediaFileInputHandler_Destroy);
