@@ -1,0 +1,3 @@
+[submodule "mediaLib/3rdParty/DirectXMath"]
+	path = mediaLib/3rdParty/DirectXMath
+	url = https://github.com/Microsoft/DirectXMath.git

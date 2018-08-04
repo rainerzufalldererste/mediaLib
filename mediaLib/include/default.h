@@ -90,5 +90,6 @@ void mUnused(T unused, Args && ...args)
 #include "mMemory.h"
 #include "mSharedPointer.h"
 #include "mMath.h"
+#include "mFastMath.h"
 
 #endif // default_h__
