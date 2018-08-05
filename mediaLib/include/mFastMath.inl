@@ -1,3 +1,4 @@
+#include "mFastMath.h"
 // Copyright 2018 Christoph Stiller
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
@@ -241,7 +242,7 @@ inline mFUNCTION(mVector::TransformStream4, OUT DirectX::XMFLOAT4 * pOutputData,
   mRETURN_SUCCESS();
 }
 
-inline mQuaternion mQuaternion::operator*(const mQuaternion & q1) { return Multiply(q1); };
+inline mQuaternion mQuaternion::operator*(const mQuaternion & q1) const { return Multiply(q1); };
 inline mQuaternion & mQuaternion::operator*=(const mQuaternion & q1) { return *this = Multiply(q1); };
 
 inline mQuaternion mQuaternion::BaryCentric(const mQuaternion & q0, const mQuaternion & q1, const mQuaternion & q2, const float_t f, const float_t g) { return mQuaternion(DirectX::XMQuaternionBaryCentric(q0.q, q1.q, q2.q, f, g)); }
@@ -291,3 +292,56 @@ inline mFUNCTION(mQuaternion::ToAxisAngle, OUT mVector *pAxis, OUT float_t *pAng
 
   mRETURN_SUCCESS();
 }
+
+inline mFUNCTION(mMatrix::Decompose, OUT mVector * pOutScale, OUT mQuaternion * pOutRotQuat, OUT mVector * pOutTrans) const
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pOutScale == nullptr || pOutRotQuat == nullptr || pOutTrans == nullptr, mR_ArgumentNull);
+  mERROR_IF(DirectX::XMMatrixDecompose(&pOutScale->v, &pOutRotQuat->q, &pOutTrans->v, m), mR_InternalError);
+
+  mRETURN_SUCCESS();
+}
+
+inline mMatrix mMatrix::operator*(const mMatrix & q1) const { return Multiply(q1); }
+inline mMatrix & mMatrix::operator*=(const mMatrix & q1) { return *this = Multiply(q1); }
+inline mMatrix & mMatrix::operator=(const mMatrix & copy) { m = copy.m; }
+
+inline mMatrix mMatrix::AffineTransformation(const mVector & scaling, const mVector & rotationOrigin, const mQuaternion & rotationQuaternion, const mVector & translation) { return mMatrix(DirectX::XMMatrixAffineTransformation(scaling.v, rotationOrigin.v, rotationQuaternion.q, translation.v)); }
+inline mMatrix mMatrix::AffineTransformation2D(const mVector & scaling, const mVector & rotationOrigin, const float_t rotation, const mVector & translation) { return mMatrix(DirectX::XMMatrixAffineTransformation2D(scaling.v, rotationOrigin.v, rotation, translation.v)); }
+inline mVector mMatrix::Determinant() const { return mVector(DirectX::XMMatrixDeterminant(m)); }
+inline mMatrix mMatrix::Identity() { return mMatrix(DirectX::XMMatrixIdentity()); }
+inline mMatrix mMatrix::Inverse(OUT OPTIONAL mVector * pDeterminant /* = nullptr */) const { return mMatrix(DirectX::XMMatrixInverse(&pDeterminant->v, m)); }
+inline mMatrix mMatrix::LookAtLH(const mVector & eyePosition, const mVector & focusPosition, const mVector & upDirection) { return mMatrix(DirectX::XMMatrixLookAtLH(eyePosition.v, focusPosition.v, upDirection.v)); }
+inline mMatrix mMatrix::LookAtRH(const mVector & eyePosition, const mVector & focusPosition, const mVector & upDirection) { return mMatrix(DirectX::XMMatrixLookAtRH(eyePosition.v, focusPosition.v, upDirection.v)); }
+inline mMatrix mMatrix::LookToLH(const mVector & eyePosition, const mVector & eyeDirection, const mVector & upDirection) { return mMatrix(DirectX::XMMatrixLookToLH(eyePosition.v, eyeDirection.v, upDirection.v)); }
+inline mMatrix mMatrix::LookToRH(const mVector & eyePosition, const mVector & eyeDirection, const mVector & upDirection) { return mMatrix(DirectX::XMMatrixLookToRH(eyePosition.v, eyeDirection.v, upDirection.v)); }
+inline mMatrix mMatrix::Multiply(const mMatrix & m2) const { return mMatrix(DirectX::XMMatrixMultiply(m, m2.m)); }
+inline mMatrix mMatrix::MultiplyTranspose(const mMatrix & m2) const { return mMatrix(DirectX::XMMatrixMultiplyTranspose(m, m2.m)); }
+inline mMatrix mMatrix::OrthographicLH(const float_t viewWidth, const float_t viewHeight, const float_t nearZ, const float_t farZ) { return mMatrix(DirectX::XMMatrixOrthographicLH(viewWidth, viewHeight, nearZ, farZ)); }
+inline mMatrix mMatrix::OrthographicRH(const float_t viewWidth, const float_t viewHeight, const float_t nearZ, const float_t farZ) { return mMatrix(DirectX::XMMatrixOrthographicRH(viewWidth, viewHeight, nearZ, farZ)); }
+inline mMatrix mMatrix::OrthographicOffCenterLH(const float_t viewLeft, const float_t viewRight, const float_t viewBottom, const float_t viewTop, const float_t nearZ, const float_t farZ) { return mMatrix(DirectX::XMMatrixOrthographicOffCenterLH(viewLeft, viewRight, viewBottom, viewTop, nearZ, farZ)); }
+inline mMatrix mMatrix::OrthographicOffCenterRH(const float_t viewLeft, const float_t viewRight, const float_t viewBottom, const float_t viewTop, const float_t nearZ, const float_t farZ) { return mMatrix(DirectX::XMMatrixOrthographicOffCenterRH(viewLeft, viewRight, viewBottom, viewTop, nearZ, farZ)); }
+inline mMatrix mMatrix::PerspectiveLH(const float_t viewWidth, const float_t viewHeight, const float_t nearZ, const float_t farZ) { return mMatrix(DirectX::XMMatrixPerspectiveLH(viewWidth, viewHeight, nearZ, farZ)); }
+inline mMatrix mMatrix::PerspectiveRH(const float_t viewWidth, const float_t viewHeight, const float_t nearZ, const float_t farZ) { return mMatrix(DirectX::XMMatrixPerspectiveRH(viewWidth, viewHeight, nearZ, farZ)); }
+inline mMatrix mMatrix::PerspectiveFovLH(const float_t fovAngleY, const float_t aspectRatio, const float_t nearZ, const float_t farZ) { return mMatrix(DirectX::XMMatrixPerspectiveFovLH(fovAngleY, aspectRatio, nearZ, farZ)); }
+inline mMatrix mMatrix::PerspectiveFovRH(const float_t fovAngleY, const float_t aspectRatio, const float_t nearZ, const float_t farZ) { return mMatrix(DirectX::XMMatrixPerspectiveFovRH(fovAngleY, aspectRatio, nearZ, farZ)); }
+inline mMatrix mMatrix::PerspectiveOffCenterLH(const float_t viewLeft, const float_t viewRight, const float_t viewBottom, const float_t viewTop, const float_t nearZ, const float_t farZ) { return mMatrix(DirectX::XMMatrixPerspectiveOffCenterLH(viewLeft, viewRight, viewBottom, viewTop, nearZ, farZ)); }
+inline mMatrix mMatrix::PerspectiveOffCenterRH(const float_t viewLeft, const float_t viewRight, const float_t viewBottom, const float_t viewTop, const float_t nearZ, const float_t farZ) { return mMatrix(DirectX::XMMatrixPerspectiveOffCenterRH(viewLeft, viewRight, viewBottom, viewTop, nearZ, farZ)); }
+inline mMatrix mMatrix::Reflect(const mVector & reflectionPlane) { return mMatrix(DirectX::XMMatrixReflect(reflectionPlane.v)); }
+inline mMatrix mMatrix::RotationAxis(const mVector & axis, const float_t angle) { return mMatrix(DirectX::XMMatrixRotationAxis(axis.v, angle)); }
+inline mMatrix mMatrix::RotationQuaternion(const mQuaternion & quaternion) { return mMatrix(DirectX::XMMatrixRotationQuaternion(quaternion.q)); }
+inline mMatrix mMatrix::RotationNormal(const mVector & normalAxis, const float_t angle) { return mMatrix(DirectX::XMMatrixRotationNormal(normalAxis.v, angle)); }
+inline mMatrix mMatrix::RotationRollPitchYaw(const float_t pitch, const float_t yaw, const float_t roll) { return mMatrix(DirectX::XMMatrixRotationRollPitchYaw(pitch, yaw, roll)); }
+inline mMatrix mMatrix::RotationRollPitchYawFromVector(const mVector & angles) { return mMatrix(DirectX::XMMatrixRotationRollPitchYawFromVector(angles.v)); }
+inline mMatrix mMatrix::RotationX(const float_t angle) { return mMatrix(DirectX::XMMatrixRotationX(angle)); }
+inline mMatrix mMatrix::RotationY(const float_t angle) { return mMatrix(DirectX::XMMatrixRotationY(angle)); }
+inline mMatrix mMatrix::RotationZ(const float_t angle) { return mMatrix(DirectX::XMMatrixRotationZ(angle)); }
+inline mMatrix mMatrix::Scale(const float_t scaleX, const float_t scaleY, const float_t scaleZ) { return mMatrix(DirectX::XMMatrixScaling(scaleX, scaleY, scaleZ)); }
+inline mMatrix mMatrix::ScalingFromVector(const mVector & scale) { return mMatrix(DirectX::XMMatrixScalingFromVector(scale.v)); }
+inline mMatrix mMatrix::Shadow(const mVector & shadowPlane, const mVector & lightPosition) { return mMatrix(DirectX::XMMatrixShadow(shadowPlane.v, lightPosition.v)); }
+inline mMatrix mMatrix::Transformation(const mVector & scalingOrigin, const mQuaternion & scalingOrientationQuaternion, const mVector & scaling, const mVector & rotationOrigin, const mQuaternion & rotationQuaternion, const mVector & translation) { return mMatrix(DirectX::XMMatrixTransformation(scalingOrigin.v, scalingOrientationQuaternion.q, scaling.v, rotationOrigin.v, rotationQuaternion.q, translation.v)); }
+inline mMatrix mMatrix::Transformation2D(const mVector & scalingOrigin, const float_t scalingOrientation, const mVector & scaling, const mVector & rotationOrigin, const float_t rotation, const mVector & translation) { return mMatrix(DirectX::XMMatrixTransformation2D(scalingOrigin.v, scalingOrientation, scaling.v, rotationOrigin.v, rotation, translation.v)); }
+inline mMatrix mMatrix::Translation(const float_t offsetX, const float_t offsetY, const float_t offsetZ) { return mMatrix(DirectX::XMMatrixTranslation(offsetX, offsetY, offsetZ)); }
+inline mMatrix mMatrix::TranslationFromVector(const mVector & offset) { return mMatrix(DirectX::XMMatrixTranslationFromVector(offset.v)); }
+inline mMatrix mMatrix::Transpose() const { return mMatrix(DirectX::XMMatrixTranspose(m)); }

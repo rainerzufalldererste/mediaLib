@@ -197,7 +197,7 @@ struct mQuaternion
 
   explicit mQuaternion(DirectX::XMVECTOR v);
 
-  inline mQuaternion operator *(const mQuaternion &q1);
+  inline mQuaternion operator *(const mQuaternion &q1) const;
   inline mQuaternion& operator *=(const mQuaternion &q1);
 
   inline static mQuaternion BaryCentric(const mQuaternion &q0, const mQuaternion &q1, const mQuaternion &q2, const float_t f, const float_t g);
@@ -248,45 +248,51 @@ struct mMatrix
   };
 #pragma warning(pop)
 
-  inline mMatrix AffineTransformation(const mVector &Scaling, const mVector &RotationOrigin, const mVector &RotationQuaternion, const mVector &Translation);
-  inline mMatrix AffineTransformation2D(const mVector &Scaling, const mVector &RotationOrigin, const float_t Rotation, const mVector &Translation);
-  inline mMatrix Decompose(OUT mVector *pOutScale, OUT mVector *pOutRotQuat, OUT mVector *pOutTrans, IN const mMatrix &M);
-  inline mMatrix Determinant(const mMatrix &M);
-  inline mMatrix Identity();
-  inline mMatrix Inverse(IN const mMatrix &M, OUT OPTIONAL mVector *pDeterminant = nullptr);
-  inline mMatrix LookAtLH(const mVector &EyePosition, const mVector &FocusPosition, const mVector &UpDirection);
-  inline mMatrix LookAtRH(const mVector &EyePosition, const mVector &FocusPosition, const mVector &UpDirection);
-  inline mMatrix LookToLH(const mVector &EyePosition, const mVector &EyeDirection, const mVector &UpDirection);
-  inline mMatrix LookToRH(const mVector &EyePosition, const mVector &EyeDirection, const mVector &UpDirection);
-  inline mMatrix Multiply(const mMatrix &M1, const mMatrix &M2);
-  inline mMatrix MultiplyTranspose(const mMatrix &M1, const mMatrix &M2);
-  inline mMatrix OrthographicLH(const float_t ViewWidth, const float_t ViewHeight, const float_t NearZ, const float_t FarZ);
-  inline mMatrix OrthographicRH(const float_t ViewWidth, const float_t ViewHeight, const float_t NearZ, const float_t FarZ);
-  inline mMatrix OrthographicOffCenterLH(const float_t ViewLeft, const float_t ViewRight, const float_t ViewBottom, const float_t ViewTop, const float_t NearZ, const float_t FarZ);
-  inline mMatrix OrthographicOffCenterRH(const float_t ViewLeft, const float_t ViewRight, const float_t ViewBottom, const float_t ViewTop, const float_t NearZ, const float_t FarZ);
-  inline mMatrix PerspectiveLH(const float_t ViewWidth, const float_t ViewHeight, const float_t NearZ, const float_t FarZ);
-  inline mMatrix PerspectiveRH(const float_t ViewWidth, const float_t ViewHeight, const float_t NearZ, const float_t FarZ);
-  inline mMatrix PerspectiveFovLH(const float_t FovAngleY, const float_t AspectRatio, const float_t NearZ, const float_t FarZ);
-  inline mMatrix PerspectiveFovRH(const float_t FovAngleY, const float_t AspectRatio, const float_t NearZ, const float_t FarZ);
-  inline mMatrix PerspectiveOffCenterLH(const float_t ViewLeft, const float_t ViewRight, const float_t ViewBottom, const float_t ViewTop, const float_t NearZ, const float_t FarZ);
-  inline mMatrix PerspectiveOffCenterRH(const float_t ViewLeft, const float_t ViewRight, const float_t ViewBottom, const float_t ViewTop, const float_t NearZ, const float_t FarZ);
-  inline mMatrix Reflect(const mVector &ReflectionPlane);
-  inline mMatrix RotationAxis(const mVector &Axis, const float_t Angle);
-  inline mMatrix RotationQuaternion(const mQuaternion &Quaternion);
-  inline mMatrix RotationNormal(const mVector &NormalAxis, const float_t Angle);
-  inline mMatrix RotationRollPitchYaw(const float_t Pitch, const float_t Yaw, const float_t Roll);
-  inline mMatrix RotationRollPitchYawFromVector(const mVector &Angles);
-  inline mMatrix RotationX(const float_t Angle);
-  inline mMatrix RotationY(const float_t Angle);
-  inline mMatrix RotationZ(const float_t Angle);
-  inline mMatrix Scaling(const float_t ScaleX, const float_t ScaleY, const float_t ScaleZ);
-  inline mMatrix ScalingFromVector(const mVector &Scale);
-  inline mMatrix Shadow(const mVector &ShadowPlane, const mVector &LightPosition);
-  inline mMatrix Transformation(const mVector &ScalingOrigin, const mQuaternion &ScalingOrientationQuaternion, const mVector &Scaling, const mVector &RotationOrigin, const mQuaternion &RotationQuaternion, const mVector &Translation);
-  inline mMatrix Transformation2D(const mVector &ScalingOrigin, const float_t ScalingOrientation, const mVector &Scaling, const mVector &RotationOrigin, const float_t Rotation, const mVector &Translation);
-  inline mMatrix Translation(const float_t OffsetX, const float_t OffsetY, const float_t OffsetZ);
-  inline mMatrix TranslationFromVector(const mVector &Offset);
-  inline mMatrix Transpose(const mMatrix &M);
+  explicit mMatrix(DirectX::XMMATRIX _m);
+
+  inline mMatrix operator *(const mMatrix &q1) const;
+  inline mMatrix& operator *=(const mMatrix &q1);
+  inline mMatrix& operator =(const mMatrix &copy);
+
+  inline static mMatrix AffineTransformation(const mVector &scaling, const mVector &rotationOrigin, const mQuaternion &rotationQuaternion, const mVector &translation);
+  inline static mMatrix AffineTransformation2D(const mVector &scaling, const mVector &rotationOrigin, const float_t rotation, const mVector &translation);
+  inline mFUNCTION(Decompose, OUT mVector *pOutScale, OUT mQuaternion *pOutRotQuat, OUT mVector *pOutTrans) const;
+  inline mVector Determinant() const;
+  inline static mMatrix Identity();
+  inline mMatrix Inverse(OUT OPTIONAL mVector *pDeterminant = nullptr) const;
+  inline static mMatrix LookAtLH(const mVector &eyePosition, const mVector &focusPosition, const mVector &upDirection);
+  inline static mMatrix LookAtRH(const mVector &eyePosition, const mVector &focusPosition, const mVector &upDirection);
+  inline static mMatrix LookToLH(const mVector &eyePosition, const mVector &eyeDirection, const mVector &upDirection);
+  inline static mMatrix LookToRH(const mVector &eyePosition, const mVector &eyeDirection, const mVector &upDirection);
+  inline mMatrix Multiply(const mMatrix &m2) const;
+  inline mMatrix MultiplyTranspose(const mMatrix &m2) const;
+  inline static mMatrix OrthographicLH(const float_t viewWidth, const float_t viewHeight, const float_t nearZ, const float_t farZ);
+  inline static mMatrix OrthographicRH(const float_t viewWidth, const float_t viewHeight, const float_t nearZ, const float_t farZ);
+  inline static mMatrix OrthographicOffCenterLH(const float_t viewLeft, const float_t viewRight, const float_t viewBottom, const float_t viewTop, const float_t nearZ, const float_t farZ);
+  inline static mMatrix OrthographicOffCenterRH(const float_t viewLeft, const float_t viewRight, const float_t viewBottom, const float_t viewTop, const float_t nearZ, const float_t farZ);
+  inline static mMatrix PerspectiveLH(const float_t viewWidth, const float_t viewHeight, const float_t nearZ, const float_t farZ);
+  inline static mMatrix PerspectiveRH(const float_t viewWidth, const float_t viewHeight, const float_t nearZ, const float_t farZ);
+  inline static mMatrix PerspectiveFovLH(const float_t fovAngleY, const float_t aspectRatio, const float_t nearZ, const float_t farZ);
+  inline static mMatrix PerspectiveFovRH(const float_t fovAngleY, const float_t aspectRatio, const float_t nearZ, const float_t farZ);
+  inline static mMatrix PerspectiveOffCenterLH(const float_t viewLeft, const float_t viewRight, const float_t viewBottom, const float_t viewTop, const float_t nearZ, const float_t farZ);
+  inline static mMatrix PerspectiveOffCenterRH(const float_t viewLeft, const float_t viewRight, const float_t viewBottom, const float_t viewTop, const float_t nearZ, const float_t farZ);
+  inline static mMatrix Reflect(const mVector &reflectionPlane);
+  inline static mMatrix RotationAxis(const mVector &axis, const float_t angle);
+  inline static mMatrix RotationQuaternion(const mQuaternion &quaternion);
+  inline static mMatrix RotationNormal(const mVector &normalAxis, const float_t angle);
+  inline static mMatrix RotationRollPitchYaw(const float_t pitch, const float_t yaw, const float_t roll);
+  inline static mMatrix RotationRollPitchYawFromVector(const mVector &angles);
+  inline static mMatrix RotationX(const float_t angle);
+  inline static mMatrix RotationY(const float_t angle);
+  inline static mMatrix RotationZ(const float_t angle);
+  inline static mMatrix Scale(const float_t scaleX, const float_t scaleY, const float_t scaleZ);
+  inline static mMatrix ScalingFromVector(const mVector &scale);
+  inline static mMatrix Shadow(const mVector &shadowPlane, const mVector &lightPosition);
+  inline static mMatrix Transformation(const mVector &scalingOrigin, const mQuaternion &scalingOrientationQuaternion, const mVector &scaling, const mVector &rotationOrigin, const mQuaternion &rotationQuaternion, const mVector &translation);
+  inline static mMatrix Transformation2D(const mVector &scalingOrigin, const float_t scalingOrientation, const mVector &scaling, const mVector &rotationOrigin, const float_t rotation, const mVector &translation);
+  inline static mMatrix Translation(const float_t offsetX, const float_t offsetY, const float_t offsetZ);
+  inline static mMatrix TranslationFromVector(const mVector &offset);
+  inline mMatrix Transpose() const;
 };
 
 #include "mFastMath.inl"

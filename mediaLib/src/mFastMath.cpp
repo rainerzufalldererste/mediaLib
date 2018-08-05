@@ -46,3 +46,5 @@ mVector::mVector(DirectX::XMFLOAT3 _v) { v = DirectX::XMLoadFloat3(&_v); }
 mVector::mVector(DirectX::XMFLOAT4 _v) { v = DirectX::XMLoadFloat4(&_v); }
 
 mQuaternion::mQuaternion(DirectX::XMVECTOR v) : q(v) { }
+
+mMatrix::mMatrix(DirectX::XMMATRIX _m) : m(_m) { }
