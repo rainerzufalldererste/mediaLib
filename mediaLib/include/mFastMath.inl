@@ -240,3 +240,54 @@ inline mFUNCTION(mVector::TransformStream4, OUT DirectX::XMFLOAT4 * pOutputData,
 
   mRETURN_SUCCESS();
 }
+
+inline mQuaternion mQuaternion::operator*(const mQuaternion & q1) { return Multiply(q1); };
+inline mQuaternion & mQuaternion::operator*=(const mQuaternion & q1) { return *this = Multiply(q1); };
+
+inline mQuaternion mQuaternion::BaryCentric(const mQuaternion & q0, const mQuaternion & q1, const mQuaternion & q2, const float_t f, const float_t g) { return mQuaternion(DirectX::XMQuaternionBaryCentric(q0.q, q1.q, q2.q, f, g)); }
+inline mQuaternion mQuaternion::BaryCentricV(const mQuaternion & q0, const mQuaternion & q1, const mQuaternion & q2, const mVector & f, const mVector & g) { return mQuaternion(DirectX::XMQuaternionBaryCentricV(q0.q, q1.q, q2.q, f.v, g.v)); }
+inline mQuaternion mQuaternion::Conjugate() const { return mQuaternion(DirectX::XMQuaternionConjugate(q)); }
+inline mQuaternion mQuaternion::Dot(const mQuaternion & q2) const { return mQuaternion(DirectX::XMQuaternionDot(q, q2.q)); }
+inline bool mQuaternion::Equals(const mQuaternion & q2) const { return DirectX::XMQuaternionEqual(q, q2.q); }
+inline mQuaternion mQuaternion::Exp() const { return mQuaternion(DirectX::XMQuaternionExp(q)); }
+inline mQuaternion mQuaternion::Identity() { return mQuaternion(DirectX::XMQuaternionIdentity()); }
+inline mQuaternion mQuaternion::Inverse() const { return mQuaternion(DirectX::XMQuaternionInverse(q)); }
+inline bool mQuaternion::IsIdentity() const { return DirectX::XMQuaternionIsIdentity(q); }
+inline float_t mQuaternion::Length() const { return mQuaternion(DirectX::XMQuaternionLength(q)).x; }
+inline float_t mQuaternion::LengthSq() const { return mQuaternion(DirectX::XMQuaternionLengthSq(q)).x; }
+inline mQuaternion mQuaternion::Ln() const { return mQuaternion(DirectX::XMQuaternionLn(q)); }
+inline mQuaternion mQuaternion::Multiply(const mQuaternion & q2) const { return mQuaternion(DirectX::XMQuaternionMultiply(q, q2.q)); }
+inline mQuaternion mQuaternion::Normalize() const { return mQuaternion(DirectX::XMQuaternionNormalize(q)); }
+inline mQuaternion mQuaternion::NormalizeEst() const { return mQuaternion(DirectX::XMQuaternionNormalizeEst(q)); }
+inline bool mQuaternion::NotEqualTo(const mQuaternion & q2) const { return DirectX::XMQuaternionNotEqual(q, q2.q); }
+inline mVector mQuaternion::ReciprocalLength() const { return mVector(DirectX::XMQuaternionReciprocalLength(q)); }
+inline mQuaternion mQuaternion::RotationAxis(const mVector & axis, const float_t angle) { return mQuaternion(DirectX::XMQuaternionRotationAxis(axis.v, angle)); }
+inline mQuaternion mQuaternion::RotationMatrix(const mMatrix & m) { return mQuaternion(DirectX::XMQuaternionRotationMatrix(m.m)); }
+inline mQuaternion mQuaternion::RotationNormal(const mVector & normalAxis, const float_t angle) { return mQuaternion(DirectX::XMQuaternionRotationNormal(normalAxis.v, angle)); }
+inline mQuaternion mQuaternion::RotationRollPitchYaw(const float_t pitch, const float_t yaw, const float_t roll) { return mQuaternion(DirectX::XMQuaternionRotationRollPitchYaw(pitch, yaw, roll)); }
+inline mQuaternion mQuaternion::RotationRollPitchYawFromVector(const mVector & angles) { return mQuaternion(DirectX::XMQuaternionRotationRollPitchYawFromVector(angles.v)); }
+inline mQuaternion mQuaternion::Slerp(const mQuaternion & q0, const mQuaternion & q1, const float_t t) { return mQuaternion(DirectX::XMQuaternionSlerp(q0.q, q1.q, t)); }
+inline mQuaternion mQuaternion::SlerpV(const mQuaternion & q0, const mQuaternion & q1, const mVector & t) { return mQuaternion(DirectX::XMQuaternionSlerpV(q0.q, q1.q, t.v)); }
+inline mQuaternion mQuaternion::Squad(const mQuaternion & q0, const mQuaternion & q1, const mQuaternion & q2, const mQuaternion & q3, const float_t t) { return mQuaternion(DirectX::XMQuaternionSquad(q0.q, q1.q, q2.q, q3.q, t)); }
+
+inline mFUNCTION(mQuaternion::SquadSetup, OUT mVector * pA, OUT mVector * pB, OUT mVector * pC, const mQuaternion & q0, const mQuaternion & q1, const mQuaternion & q2, const mQuaternion & q3) 
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pA == nullptr || pB == nullptr || pC == nullptr, mR_ArgumentNull);
+  DirectX::XMQuaternionSquadSetup(&pA->v, &pB->v, &pC->v, q0.q, q1.q, q2.q, q3.q); 
+
+  mRETURN_SUCCESS();
+}
+
+inline mQuaternion mQuaternion::SquadV(const mQuaternion & q0, const mQuaternion & q1, const mQuaternion & q2, const mQuaternion & q3, const mVector & t) { mQuaternion(DirectX::XMQuaternionSquadV(q0.q, q1.q, q2.q, q3.q, t.v)); }
+
+inline mFUNCTION(mQuaternion::ToAxisAngle, OUT mVector *pAxis, OUT float_t *pAngle)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pAxis == nullptr || pAngle == nullptr, mR_ArgumentNull);
+  DirectX::XMQuaternionToAxisAngle(&pAxis->v, pAngle, q);
+
+  mRETURN_SUCCESS();
+}
