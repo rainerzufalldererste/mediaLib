@@ -19,12 +19,15 @@ struct mMatrix
 
 struct mVector
 {
+#pragma warning( push ) 
+#pragma warning( disable: 4201 )
   union
   {
     DirectX::XMVECTOR v;
-    struct { float_t _x, _y, _z, _w; };
+    struct { float_t x, y, z, w; };
     float_t _v[4];
   };
+#pragma warning( pop )
 
   explicit mVector(const float_t s);
   static mVector Scalar(const float_t s);
@@ -57,11 +60,6 @@ struct mVector
 
   inline mVector  operator -    () const;
 
-  inline float_t x(const float_t _x);
-  inline float_t y(const float_t _y);
-  inline float_t z(const float_t _z);
-  inline float_t w(const float_t _w);
-
   inline explicit operator mVec2f() const;
   inline explicit operator mVec3f() const;
   inline explicit operator mVec4f() const;
@@ -71,6 +69,17 @@ struct mVector
   inline explicit operator DirectX::XMFLOAT4() const;
 
   inline mVec4t<bool> ComponentEquals(const mVector &a) const;
+
+  inline static mVector Min(const mVector &a, const mVector &b);
+  inline static mVector Max(const mVector &a, const mVector &b);
+  inline static mVector Lerp(const mVector &a, const mVector &b, const float_t t);
+  inline static mVector LerpVector(const mVector &a, const mVector &b, const mVector &t);
+  inline static mVector Barycentric(const mVector &a, const mVector &b, const mVector &c, const float_t f, const float_t g);
+  inline static mVector BarycentricVector(const mVector &a, const mVector &b, const mVector &c, const mVector &f, const mVector &g);
+  inline static mVector CatmullRom(const mVector &a, const mVector &b, const mVector &c, const mVector &d, const float_t f);
+  inline static mVector CatmullRomVector(const mVector &a, const mVector &b, const mVector &c, const mVector &d, const mVector &f);
+  inline static mVector Hermite(const mVector &v1, const mVector &t1, const mVector &v2, const mVector &t2, const float_t f);
+  inline static mVector HermiteVector(const mVector &v1, const mVector &t1, const mVector &v2, const mVector &t2, const mVector &f);
 
   inline mVector AngleBetweenNormals2(const mVector &a) const;
   inline mVector AngleBetweenNormalsEst2(const mVector &a) const;
@@ -103,8 +112,11 @@ struct mVector
   inline mVector Transform2(const mMatrix &matrix) const;
   inline mVector TransformCoord2(const mMatrix &matrix) const;
   inline mVector TransformNormal2(const mMatrix &matrix) const;
+
   inline static mFUNCTION(TransformCoordStream2, OUT DirectX::XMFLOAT2 *pOutputData, const size_t outputStride, IN DirectX::XMFLOAT2 *pInputData, const size_t inputStride, const size_t inputLength, const mMatrix &matrix);
   inline static mFUNCTION(TransformNormalStream2, OUT DirectX::XMFLOAT2 *pOutputData, const size_t outputStride, IN DirectX::XMFLOAT2 *pInputData, const size_t inputStride, const size_t inputLength, const mMatrix &matrix);
 };
+
+#include "mFastMath.inl"
 
 #endif // mFastMath_h__
