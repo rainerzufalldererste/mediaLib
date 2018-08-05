@@ -37,6 +37,10 @@
 #define IN_OUT IN OUT
 #endif // !IN_OUT
 
+#ifndef OPTIONAL
+#define OPTIONAL
+#endif // !OPTIONAL
+
 #define mPRINT(text, ...) printf(text, __VA_ARGS__)
 
 #define mPI M_PI
