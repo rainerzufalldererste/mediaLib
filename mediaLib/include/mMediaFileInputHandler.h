@@ -8,6 +8,7 @@
 
 #include "default.h"
 #include <string>
+#include "mPixelFormat.h"
 
 #pragma comment(lib, "dxva2.lib")
 #pragma comment(lib, "evr.lib")
@@ -33,14 +34,6 @@ struct mMediaType
   size_t streamIndex;
   mMediaMajorType mediaType;
   size_t wmf_streamIndex;
-};
-
-enum mPixelFormat
-{
-  mPF_B8G8R8,
-  mPF_B8G8R8A8,
-
-  mPixelFormat_Count
 };
 
 struct mVideoStreamType : mMediaType
