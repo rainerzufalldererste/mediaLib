@@ -6,47 +6,71 @@ mVec2s resulution;
 SDL_Window *pWindow = nullptr;
 uint32_t *pPixels = nullptr;
 
-mFUNCTION(ProcessVideoBufferCallback, IN uint8_t *pBuffer, const mVideoStreamType &videoStreamType);
-
 int main(int, char **)
 {
   mFUNCTION_SETUP();
 
-  mVector v(0, 1, 2);
-  printf("%f, %f, %f\n", v.x, v.y, v.z);
-  mVector w(4, 2, -2);
-  printf("%f, %f, %f\n", w.x, w.y, w.z);
+  resulution = mVec2s(1600, 900);
+  pWindow = SDL_CreateWindow("HoloRoom Software Render", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, (int)resulution.x, (int)resulution.y, 0);
+  pPixels = (uint32_t *)SDL_GetWindowSurface(pWindow)->pixels;
 
-  mVector r = v + w;
-  printf("%f, %f, %f\n", r.x, r.y, r.z);
+  const float_t width = 2.4f;
+  const mVector frontWall_0(-width / 2, 0, width);
+  const mVector frontWall_1(-width / 2, 0, 0);
+  const mVector frontWall_2(width / 2, 0, width);
+  const mVector frontWall_3(width / 2, 0, 0);
 
-  g_mResult_breakOnError = true;
-  mPtr<mMediaFileInputHandler> videoInput;
-  mDEFER_DESTRUCTION(&videoInput, mMediaFileInputHandler_Destroy);
-  mERROR_CHECK(mMediaFileInputHandler_Create(&videoInput, L"C:\\Users\\cstiller\\Videos\\Original.MP4", mMediaFileInputHandler_CreateFlags::mMMFIH_CF_AllMediaTypesEnabled));
-  
-  mERROR_CHECK(mMediaFileInputHandler_GetVideoStreamResolution(videoInput, &resulution));
+  const mMatrix rightWallMatrix = mMatrix::Translation(width / 2, 0, 0) * mMatrix::RotationZ(mDEG2RADf * -60) * mMatrix::Translation(width / 2, 0, 0);
+  const mMatrix leftWallMatrix = mMatrix::Translation(-width / 2, 0, 0) * mMatrix::RotationZ(mDEG2RADf * 60) * mMatrix::Translation(-width / 2, 0, 0);
 
-  SDL_Init(SDL_INIT_EVERYTHING);
+  const mVector rightWall_0 = frontWall_2;
+  const mVector rightWall_1 = frontWall_3;
+  const mVector rightWall_2 = frontWall_2.Transform3(rightWallMatrix);
+  const mVector rightWall_3 = frontWall_3.Transform3(rightWallMatrix);
 
-  pWindow = SDL_CreateWindow("VideoFrames", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, (int)resulution.x, (int)resulution.y, 0);
-  mDEFER_DESTRUCTION(pWindow, SDL_DestroyWindow);
-  SDL_Surface *pSurface = SDL_GetWindowSurface(pWindow);
-  pPixels = (uint32_t *)pSurface->pixels;
+  const mVector leftWall_0 = frontWall_0.Transform3(leftWallMatrix);
+  const mVector leftWall_1 = frontWall_1.Transform3(leftWallMatrix);
+  const mVector leftWall_2 = frontWall_0;
+  const mVector leftWall_3 = frontWall_1;
 
-  mERROR_CHECK(mMediaFileInputHandler_SetVideoCallback(videoInput, &ProcessVideoBufferCallback));
-  mERROR_CHECK(mMediaFileInputHandler_Play(videoInput));
+  const mVector floor_0 = leftWall_0;
+  const mVector floor_1 = leftWall_1;
+  const mVector floor_2 = rightWall_2;
+  const mVector floor_3 = rightWall_3;
 
-  mRETURN_SUCCESS();
-}
+  const mMatrix vpMatrix = (mMatrix::LookToRH(mVector(0, -5.0f, 1.75f, 0), mVector(0, 1.0, 0, 0), mVector(0, 0, 1, 0)) * mMatrix::PerspectiveFovRH(mHALFPIf, resulution.x / (float_t)resulution.y, 1e-3f, 1e6f));
 
-mFUNCTION(ProcessVideoBufferCallback, IN uint8_t *pBuffer, const mVideoStreamType &videoStreamType)
-{
-  mFUNCTION_SETUP();
+  mVector projectedPositions[] = { frontWall_0, frontWall_1, frontWall_2, frontWall_3, rightWall_2, rightWall_3, leftWall_0, leftWall_1 };
 
-  if (pBuffer && videoStreamType.mediaType == mMediaMajorType::mMMT_Video)
+  for (size_t i = 0; i < mARRAYSIZE(projectedPositions); i++)
+    projectedPositions[i] = projectedPositions[i].Transform3(vpMatrix);
+
+  mVec2f projectedPositions2d[mARRAYSIZE(projectedPositions)];
+  const mVec2f halfImageSize = mVec2f(resulution) / 2;
+
+  for (size_t i = 0; i < mARRAYSIZE(projectedPositions); i++)
   {
-    mERROR_CHECK(mMemcpy(pPixels, (uint32_t *)pBuffer, videoStreamType.resolution.x * videoStreamType.resolution.y));
+    projectedPositions2d[i] = halfImageSize + (mVec2f)projectedPositions[i] * halfImageSize / (projectedPositions[i].z);
+    projectedPositions2d[i].y = resulution.y - projectedPositions2d[i].y - 1.0f;
+  }
+
+  while (true)
+  {
+    mERROR_CHECK(mMemset(pPixels, resulution.x * resulution.y));
+
+    for (size_t i = 0; i < mARRAYSIZE(projectedPositions); i++)
+    {
+      for (size_t j = i + 1; j < mARRAYSIZE(projectedPositions); j++)
+      {
+        for (float_t k = 0.0f; k < 1.0f; k += 1.0f / 1000.0f)
+        {
+          mVec2i pos = (mVec2i)(mVec2f)mVector::Lerp((mVector)projectedPositions2d[i], (mVector)projectedPositions2d[j], k);
+
+          if (pos.x >= 0 && pos.x < (int64_t)resulution.x && pos.y >= 0 && pos.y < (int64_t)resulution.y)
+            pPixels[pos.x + pos.y * resulution.x] = 0xFFFFFF;
+        }
+      }
+    }
 
     SDL_UpdateWindowSurface(pWindow);
 

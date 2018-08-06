@@ -68,6 +68,13 @@
 #define mSQRT3f 1.414213562373095f
 #define mINVSQRT3f 0.57735026918962576f
 
+#define mDEG2RAD (mPI / 180.0)
+#define mDEG2RADf (mPIf / 180.0f)
+#define mRAD2DEG (180.0 / mPI)
+#define mRAD2DEGf (180.0f / mPIf)
+
+#define mARRAYSIZE(arrayName) (sizeof(arrayName) / sizeof(arrayName[0]))
+
 #define mASSERT(expr, text) do { if(!(expression)) { mPRINT("Assertion Failed: %s\n'%s'\n\nIn File '%s' : Line '%" PRIi32 "' (Function '%s')\n", #expr, text, __FILE__, __LINE__, __FUNCTION__); assert(expression); } } while (0)
 #define mFAIL(text) mPRINT("Assertion Failed: '%s'\n\nIn File '%s' : Line '%" PRIi32 "' (Function '%s')\n", text, __FILE__, __LINE__, __FUNCTION__)
 
