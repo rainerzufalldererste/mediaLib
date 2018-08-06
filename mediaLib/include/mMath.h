@@ -67,8 +67,8 @@ struct mVec2t
   __host__ __device__ inline bool       operator == (const mVec2t<T> &a) const { return x == a.x && y == a.y; };
   __host__ __device__ inline bool       operator != (const mVec2t<T> &a) const { return x != a.x || y != a.y; };
 
-  __host__ __device__ inline double Length() { return mSqrt(x * x + y * y); };
-  __host__ __device__ inline T LengthSquared() { return x * x + y * y; };
+  __host__ __device__ inline double Length() const { return mSqrt(x * x + y * y); };
+  __host__ __device__ inline T LengthSquared() const { return x * x + y * y; };
 };
 
 typedef mVec2t<size_t> mVec2s;
@@ -107,8 +107,10 @@ struct mVec3t
   __host__ __device__ inline bool       operator == (const mVec3t<T> &a) const { return x == a.x && y == a.y && z == a.z; };
   __host__ __device__ inline bool       operator != (const mVec3t<T> &a) const { return x != a.x || y != a.y || z != a.z; };
 
-  __host__ __device__ inline double Length() { return mSqrt(x * x + y * y + z * z); };
-  __host__ __device__ inline T LengthSquared() { return x * x + y * y + z * z; };
+  __host__ __device__ inline double Length() const { return mSqrt(x * x + y * y + z * z); };
+  __host__ __device__ inline T LengthSquared() const { return x * x + y * y + z * z; };
+
+  __host__ __device__ inline mVec2t<T> ToVector2() const { return mVec2t<T>(x, y) };
 };
 
 typedef mVec3t<size_t> mVec3s;
@@ -147,8 +149,11 @@ struct mVec4t
   __host__ __device__ inline bool       operator == (const mVec4t<T> &a) const { return x == a.x && y == a.y && z == a.z && w == a.w; };
   __host__ __device__ inline bool       operator != (const mVec4t<T> &a) const { return x != a.x || y != a.y || z != a.z || w != a.w; };
 
-  __host__ __device__ inline double Length() { return mSqrt(x * x + y * y + z * z + w * w); };
-  __host__ __device__ inline T LengthSquared() { return x * x + y * y + z * z + w * w; };
+  __host__ __device__ inline double Length() const { return mSqrt(x * x + y * y + z * z + w * w); };
+  __host__ __device__ inline T LengthSquared() const { return x * x + y * y + z * z + w * w; };
+
+  __host__ __device__ inline mVec2t<T> ToVector2() const { return mVec2t<T>(x, y) };
+  __host__ __device__ inline mVec3t<T> ToVector3() const { return mVec3t<T>(x, y, z) };
 };
 
 typedef mVec4t<size_t> mVec4s;
