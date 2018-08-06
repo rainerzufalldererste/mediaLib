@@ -162,4 +162,12 @@ typedef mVec4t<uint64_t> mVec4u;
 typedef mVec4t<float_t> mVec4f;
 typedef mVec4t<double_t> mVec4d;
 
+template <typename T>
+struct mRectangle2D
+{
+  T x, y, w, h;
+
+  __host__ __device__ inline mRectangle2D(const T x, const T y, const T w, const T h) : x(x), y(y), w(w), h(h) { }
+};
+
 #endif // mMath_h__
