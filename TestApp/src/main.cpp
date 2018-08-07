@@ -6,6 +6,8 @@ mVec2s resulution;
 SDL_Window *pWindow = nullptr;
 uint32_t *pPixels = nullptr;
 
+mFUNCTION(DrawFace, mVec2f *pCorners, const size_t cornerCount, const float_t steps);
+
 int main(int, char **)
 {
   mFUNCTION_SETUP();
@@ -13,6 +15,8 @@ int main(int, char **)
   resulution = mVec2s(1600, 900);
   pWindow = SDL_CreateWindow("HoloRoom Software Render", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, (int)resulution.x, (int)resulution.y, 0);
   pPixels = (uint32_t *)SDL_GetWindowSurface(pWindow)->pixels;
+
+  mERROR_IF(pPixels == nullptr, mR_ArgumentNull);
 
   const float_t width = 2.4f;
   const mVector frontWall_0(-width / 2, 0, width);
@@ -54,23 +58,19 @@ int main(int, char **)
     projectedPositions2d[i].y = resulution.y - projectedPositions2d[i].y - 1.0f;
   }
 
+  mVec2f frontWall[] = { projectedPositions2d[0], projectedPositions2d[1], projectedPositions2d[2], projectedPositions2d[3] };
+  mVec2f rightWall[] = { projectedPositions2d[2], projectedPositions2d[3], projectedPositions2d[4], projectedPositions2d[5] };
+  mVec2f leftWall[] = { projectedPositions2d[6], projectedPositions2d[7], projectedPositions2d[0], projectedPositions2d[1] };
+  mVec2f floor[] = { projectedPositions2d[1], projectedPositions2d[7], projectedPositions2d[3], projectedPositions2d[5] };
+
   while (true)
   {
     mERROR_CHECK(mMemset(pPixels, resulution.x * resulution.y));
 
-    for (size_t i = 0; i < mARRAYSIZE(projectedPositions); i++)
-    {
-      for (size_t j = i + 1; j < mARRAYSIZE(projectedPositions); j++)
-      {
-        for (float_t k = 0.0f; k < 1.0f; k += 1.0f / 1000.0f)
-        {
-          mVec2i pos = (mVec2i)(mVec2f)mVector::Lerp((mVector)projectedPositions2d[i], (mVector)projectedPositions2d[j], k);
-
-          if (pos.x >= 0 && pos.x < (int64_t)resulution.x && pos.y >= 0 && pos.y < (int64_t)resulution.y)
-            pPixels[pos.x + pos.y * resulution.x] = 0xFFFFFF;
-        }
-      }
-    }
+    mERROR_CHECK(DrawFace(frontWall, mARRAYSIZE(frontWall), 1000));
+    mERROR_CHECK(DrawFace(rightWall, mARRAYSIZE(frontWall), 1000));
+    mERROR_CHECK(DrawFace(leftWall, mARRAYSIZE(frontWall), 1000));
+    mERROR_CHECK(DrawFace(floor, mARRAYSIZE(frontWall), 1000));
 
     SDL_UpdateWindowSurface(pWindow);
 
@@ -81,3 +81,41 @@ int main(int, char **)
 
   mRETURN_SUCCESS();
 }
+
+mFUNCTION(DrawFace, mVec2f *pCorners, const size_t cornerCount, const float_t steps)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pCorners == nullptr, mR_ArgumentNull);
+  mERROR_IF(cornerCount < 4, mR_IndexOutOfBounds);
+
+  const float_t step = 1.0f / steps;
+
+  for (float_t i = 0; i < 1; i += step)
+  {
+    for (float_t j = 0; j < 1; j += step)
+    {
+      const mVec2i pos = (mVec2i)mInterpolateQuad(pCorners[0], pCorners[1], pCorners[2], pCorners[3], i, j);
+
+      if (pos.x >= 0 && pos.x < (int64_t)resulution.x && pos.y >= 0 && pos.y < (int64_t)resulution.y)
+        pPixels[pos.x + pos.y * resulution.x] = (uint32_t)(i * 0xFF) << 0x10 | (uint32_t)(j * 0xFF);
+    }
+  }
+
+  for (size_t i = 0; i < cornerCount; i++)
+  {
+    for (size_t j = i + 1; j < cornerCount; j++)
+    {
+      for (float_t k = 0.0f; k < 1.0f; k += step)
+      {
+        const mVec2i pos = (mVec2i)mLerp(pCorners[i], pCorners[j], k);
+
+        if (pos.x >= 0 && pos.x < (int64_t)resulution.x && pos.y >= 0 && pos.y < (int64_t)resulution.y)
+          pPixels[pos.x + pos.y * resulution.x] = 0xFFFFFF;
+      }
+    }
+  }
+
+  mRETURN_SUCCESS();
+}
+
