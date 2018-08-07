@@ -21,6 +21,38 @@ template <typename T, typename U> auto mPow(const T value, const U value2)->decl
 template <typename T> constexpr T mMax(const T a, const T b) { return (a >= b) ? a : b; }
 template <typename T> constexpr T mMin(const T a, const T b) { return (a <= b) ? a : b; }
 
+template <typename T, typename U>
+constexpr auto mLerp(const T a, const T b, const U ratio) -> decltype(a + (b - a) * ratio) { return a + (b - a) * ratio; }
+
+template <typename T, typename U>
+auto mBiLerp(const T a, const T b, const T c, const T d, const U ratio1, const U ratio2) -> decltype(mLerp(mLerp(a, b, ratio1), mLerp(c, d, ratio1), ratio2)) { return mLerp(mLerp(a, b, ratio1), mLerp(c, d, ratio1), ratio2); }
+
+template <typename T, typename U>
+T mTriLerp(const T a, const T b, const T c, const T d, const T e, const T f, const T g, const T h, const U factor1, const U factor2, const U factor3) 
+{
+  const U inverseFactor1 = (U)1 - factor1;
+  const U inverseFactor2 = (U)1 - factor2;
+
+  const T c00 = a * inverseFactor1 + e * factor1;
+  const T c01 = b * inverseFactor1 + f * factor1;
+  const T c10 = c * inverseFactor1 + g * factor1;
+  const T c11 = d * inverseFactor1 + h * factor1;
+
+  const T c0 = c00 * inverseFactor2 + c10 * factor2;
+  const T c1 = c01 * inverseFactor2 + c11 * factor2;
+
+  return c0 * (1.0 - factor3) + c1 * factor3;
+}
+
+template <typename T, typename U>
+T mInterpolateQuad(const T pos1, const T pos2, const T pos3, const T pos4, const U factor1, const U factor2)
+{
+  if (factor1 + factor2 <= (U)1)
+    return pos1 + (pos2 - pos1) * factor1 + (pos3 - pos1) * factor2;
+  else
+    return pos4 + (pos3 - pos4) * ((U)1 - factor1) + (pos2 - pos4) * ((U)1 - factor2);
+}
+
 //////////////////////////////////////////////////////////////////////////
 
 template <typename T> T mClamp(T value, const T &min, const T &max)
