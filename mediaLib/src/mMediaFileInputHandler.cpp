@@ -208,7 +208,7 @@ mFUNCTION(mMediaFileInputHandler_Create_Internal, IN mMediaFileInputHandler *pIn
   IMFAttributes *pAttributes = nullptr;
   mDEFER_DESTRUCTION(&pAttributes, _ReleaseReference);
   mERROR_IF(FAILED(MFCreateAttributes(&pAttributes, 1)), mR_InternalError);
-  mERROR_IF(FAILED(pAttributes->SetUINT32(MF_SOURCE_READER_ENABLE_VIDEO_PROCESSING, TRUE)), mR_InternalError);
+  //mERROR_IF(FAILED(pAttributes->SetUINT32(MF_SOURCE_READER_ENABLE_VIDEO_PROCESSING, TRUE)), mR_InternalError);
 
   IMFMediaType *pVideoMediaType = nullptr;
   mDEFER_DESTRUCTION(&pVideoMediaType, _ReleaseReference);
@@ -217,7 +217,7 @@ mFUNCTION(mMediaFileInputHandler_Create_Internal, IN mMediaFileInputHandler *pIn
   {
     mERROR_IF(FAILED(MFCreateMediaType(&pVideoMediaType)), mR_InternalError);
     mERROR_IF(FAILED(pVideoMediaType->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Video)), mR_InternalError);
-    mERROR_IF(FAILED(pVideoMediaType->SetGUID(MF_MT_SUBTYPE, MFVideoFormat_RGB32)), mR_InternalError);
+    mERROR_IF(FAILED(pVideoMediaType->SetGUID(MF_MT_SUBTYPE, MFVideoFormat_I420)), mR_InternalError);
   }
 
   IMFMediaType *pAudioMediaType = nullptr;

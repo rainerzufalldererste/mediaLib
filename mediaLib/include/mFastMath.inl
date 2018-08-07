@@ -93,7 +93,7 @@ inline mVector mVector::AngleBetweenNormalsEst2(const mVector & a) const { retur
 inline mVector mVector::AngleBetweenVectors2(const mVector & a) const { return mVector(DirectX::XMVector2AngleBetweenVectors(v, a.v)); }
 inline mVector mVector::ClampLength2(const float_t min, const float_t max) const { return mVector(DirectX::XMVector2ClampLength(v, min, max)); }
 inline mVector mVector::ClampLengthVectors2(const mVector & min, const mVector & max) const { return mVector(DirectX::XMVector2ClampLengthV(v, min.v, max.v)); }
-inline mVector mVector::Dot2(const mVector & a) const { return mVector(DirectX::XMVector2Dot(v, a.v)); }
+inline float_t mVector::Dot2(const mVector & a) const { return mVector(DirectX::XMVector2Dot(v, a.v)).x; }
 inline mVector mVector::Cross2(const mVector & a) const { return mVector(DirectX::XMVector2Cross(v, a.v)); }
 inline bool mVector::Equals2(const mVector & a) const { return DirectX::XMVector2Equal(v, a.v); }
 inline bool mVector::NotEqualTo2(const mVector & a) const { return DirectX::XMVector2NotEqual(v, a.v); }
@@ -145,7 +145,7 @@ inline mVector mVector::AngleBetweenNormalsEst3(const mVector & a) const { retur
 inline mVector mVector::AngleBetweenVectors3(const mVector & a) const { return mVector(DirectX::XMVector3AngleBetweenVectors(v, a.v)); }
 inline mVector mVector::ClampLength3(const float_t min, const float_t max) const { return mVector(DirectX::XMVector3ClampLength(v, min, max)); }
 inline mVector mVector::ClampLengthVectors3(const mVector & min, const mVector & max) const { return mVector(DirectX::XMVector3ClampLengthV(v, min.v, max.v)); }
-inline mVector mVector::Dot3(const mVector & a) const { return mVector(DirectX::XMVector3Dot(v, a.v)); }
+inline float_t mVector::Dot3(const mVector & a) const { return mVector(DirectX::XMVector3Dot(v, a.v)).x; }
 inline mVector mVector::Cross3(const mVector & a) const { return mVector(DirectX::XMVector3Cross(v, a.v)); }
 inline bool mVector::Equals3(const mVector & a) const { return DirectX::XMVector3Equal(v, a.v); }
 inline bool mVector::NotEqualTo3(const mVector & a) const { return DirectX::XMVector3NotEqual(v, a.v); }
@@ -208,7 +208,7 @@ inline mVector mVector::AngleBetweenNormalsEst4(const mVector & a) const { retur
 inline mVector mVector::AngleBetweenVectors4(const mVector & a) const { return mVector(DirectX::XMVector4AngleBetweenVectors(v, a.v)); }
 inline mVector mVector::ClampLength4(const float_t min, const float_t max) const { return mVector(DirectX::XMVector4ClampLength(v, min, max)); }
 inline mVector mVector::ClampLengthVectors4(const mVector & min, const mVector & max) const { return mVector(DirectX::XMVector4ClampLengthV(v, min.v, max.v)); }
-inline mVector mVector::Dot4(const mVector & a) const { return mVector(DirectX::XMVector4Dot(v, a.v)); }
+inline float_t mVector::Dot4(const mVector & a) const { return mVector(DirectX::XMVector4Dot(v, a.v)).x; }
 inline mVector mVector::Cross4(const mVector & a, const mVector & b) const { return mVector(DirectX::XMVector4Cross(v, a.v, b.v)); }
 inline bool mVector::Equals4(const mVector & a) const { return DirectX::XMVector4Equal(v, a.v); }
 inline bool mVector::NotEqualTo4(const mVector & a) const { return DirectX::XMVector4NotEqual(v, a.v); }
@@ -247,7 +247,7 @@ inline mQuaternion & mQuaternion::operator*=(const mQuaternion & q1) { return *t
 inline mQuaternion mQuaternion::BaryCentric(const mQuaternion & q0, const mQuaternion & q1, const mQuaternion & q2, const float_t f, const float_t g) { return mQuaternion(DirectX::XMQuaternionBaryCentric(q0.q, q1.q, q2.q, f, g)); }
 inline mQuaternion mQuaternion::BaryCentricV(const mQuaternion & q0, const mQuaternion & q1, const mQuaternion & q2, const mVector & f, const mVector & g) { return mQuaternion(DirectX::XMQuaternionBaryCentricV(q0.q, q1.q, q2.q, f.v, g.v)); }
 inline mQuaternion mQuaternion::Conjugate() const { return mQuaternion(DirectX::XMQuaternionConjugate(q)); }
-inline mQuaternion mQuaternion::Dot(const mQuaternion & q2) const { return mQuaternion(DirectX::XMQuaternionDot(q, q2.q)); }
+inline float_t mQuaternion::Dot(const mQuaternion & q2) const { return mQuaternion(DirectX::XMQuaternionDot(q, q2.q)).x; }
 inline bool mQuaternion::Equals(const mQuaternion & q2) const { return DirectX::XMQuaternionEqual(q, q2.q); }
 inline mQuaternion mQuaternion::Exp() const { return mQuaternion(DirectX::XMQuaternionExp(q)); }
 inline mQuaternion mQuaternion::Identity() { return mQuaternion(DirectX::XMQuaternionIdentity()); }
