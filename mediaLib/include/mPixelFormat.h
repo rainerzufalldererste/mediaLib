@@ -15,6 +15,9 @@ enum mPixelFormat
 {
   mPF_B8G8R8,
   mPF_B8G8R8A8,
+  mPF_YUV422,
+  mPF_Monochrome8,
+  mPF_Monochrome16,
 
   mPixelFormat_Count,
 };
@@ -22,6 +25,10 @@ enum mPixelFormat
 mFUNCTION(mPixelFormat_HasSubBuffers, const mPixelFormat pixelFormat, OUT bool *pValue);
 mFUNCTION(mPixelFormat_IsChromaSubsampled, const mPixelFormat pixelFormat, OUT bool *pValue);
 mFUNCTION(mPixelFormat_GetSize, const mPixelFormat pixelFormat, const mVec2s &size, OUT size_t *pBytes);
-mFUNCTION(mPixelFormat_UnitSize, const mPixelFormat pixelFormat, OUT size_t *pBytes);
+mFUNCTION(mPixelFormat_GetUnitSize, const mPixelFormat pixelFormat, OUT size_t *pBytes);
+mFUNCTION(mPixelFormat_GetSubBufferCount, const mPixelFormat pixelFormat, OUT size_t *pBufferCount);
+mFUNCTION(mPixelFormat_GetSubBufferOffset, const mPixelFormat pixelFormat, const size_t bufferIndex, const mVec2s &size, OUT size_t *pOffset);
+mFUNCTION(mPixelFormat_GetSubBufferSize, const mPixelFormat pixelFormat, const size_t bufferIndex, const mVec2s &size, OUT mVec2s *pSubBufferSize);
+mFUNCTION(mPixelFormat_GetSubBufferPixelFormat, const mPixelFormat pixelFormat, const size_t bufferIndex, OUT mPixelFormat *pSubBufferPixelFormat);
 
 #endif // mPixelFormat_h__

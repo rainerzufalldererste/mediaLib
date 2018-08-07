@@ -91,7 +91,7 @@ struct mVector
   inline mVector AngleBetweenVectors2(const mVector &a) const;
   inline mVector ClampLength2(const float_t min, const float_t max) const;
   inline mVector ClampLengthVectors2(const mVector &min, const mVector &max) const;
-  inline mVector Dot2(const mVector &a) const;
+  inline float_t Dot2(const mVector &a) const;
   inline mVector Cross2(const mVector &a) const;
   inline bool Equals2(const mVector &a) const;
   inline bool NotEqualTo2(const mVector &a) const;
@@ -126,7 +126,7 @@ struct mVector
   inline mVector AngleBetweenVectors3(const mVector &a) const;
   inline mVector ClampLength3(const float_t min, const float_t max) const;
   inline mVector ClampLengthVectors3(const mVector &min, const mVector &max) const;
-  inline mVector Dot3(const mVector &a) const;
+  inline float_t Dot3(const mVector &a) const;
   inline mVector Cross3(const mVector &a) const;
   inline bool Equals3(const mVector &a) const;
   inline bool NotEqualTo3(const mVector &a) const;
@@ -163,7 +163,7 @@ struct mVector
   inline mVector AngleBetweenVectors4(const mVector &a) const;
   inline mVector ClampLength4(const float_t min, const float_t max) const;
   inline mVector ClampLengthVectors4(const mVector &min, const mVector &max) const;
-  inline mVector Dot4(const mVector &a) const;
+  inline float_t Dot4(const mVector &a) const;
   inline mVector Cross4(const mVector &a, const mVector & b) const;
   inline bool Equals4(const mVector &a) const;
   inline bool NotEqualTo4(const mVector &a) const;
@@ -209,7 +209,7 @@ struct mQuaternion
   inline static mQuaternion mVECTORCALL BaryCentric(const mQuaternion &q0, const mQuaternion &q1, const mQuaternion &q2, const float_t f, const float_t g);
   inline static mQuaternion mVECTORCALL BaryCentricV(const mQuaternion &q0, const mQuaternion &q1, const mQuaternion &q2, const mVector &f, const mVector &g);
   inline mQuaternion Conjugate() const;
-  inline mQuaternion Dot(const mQuaternion &q2) const;
+  inline float_t Dot(const mQuaternion &q2) const;
   inline bool Equals(const mQuaternion &q2) const;
   inline mQuaternion Exp() const;
   inline static mQuaternion mVECTORCALL Identity();
