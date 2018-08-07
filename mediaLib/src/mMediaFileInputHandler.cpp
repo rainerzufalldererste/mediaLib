@@ -511,7 +511,9 @@ mFUNCTION(mMediaFileInputHandler_RunSession_Internal, IN mMediaFileInputHandler 
           mERROR_IF(pData->videoStreamCount < mediaTypeLookup.streamIndex, mR_IndexOutOfBounds);
           mVideoStreamType videoStreamType = pData->pVideoStreams[mediaTypeLookup.streamIndex];
 
-          mERROR_CHECK((*pData->pProcessVideoDataCallback)(pSampleData, videoStreamType));
+          mPtr<mImageBuffer> imageBuffer;
+          mERROR_CHECK(mImageBuffer_Create(&imageBuffer, pSampleData, videoStreamType.resolution, mPF_YUV411));
+          mERROR_CHECK((*pData->pProcessVideoDataCallback)(imageBuffer, videoStreamType));
         }
 
         break;

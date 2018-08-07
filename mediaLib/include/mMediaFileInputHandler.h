@@ -9,6 +9,7 @@
 #include "default.h"
 #include <string>
 #include "mPixelFormat.h"
+#include "mImageBuffer.h"
 
 #pragma comment(lib, "dxva2.lib")
 #pragma comment(lib, "evr.lib")
@@ -59,7 +60,7 @@ enum mMediaFileInputHandler_CreateFlags
   mMMFIH_CF_AllMediaTypesEnabled = mMMFIH_CF_VideoEnabled | mMMFIH_CF_AudioEnabled,
 };
 
-typedef mFUNCTION(ProcessVideoBufferFunction, IN uint8_t *, const mVideoStreamType &);
+typedef mFUNCTION(ProcessVideoBufferFunction, mPtr<mImageBuffer> &, const mVideoStreamType &);
 typedef mFUNCTION(ProcessAudioBufferFunction, IN uint8_t *, const mAudioStreamType &);
 
 mFUNCTION(mMediaFileInputHandler_Create, OUT mPtr<mMediaFileInputHandler> *pPtr, const std::wstring &fileName, const mMediaFileInputHandler_CreateFlags createFlags);

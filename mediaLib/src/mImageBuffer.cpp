@@ -79,20 +79,40 @@ mFUNCTION(mImageBuffer_AllocateBuffer, mPtr<mImageBuffer> &imageBuffer, const mV
 {
   mFUNCTION_SETUP();
 
-  if (imageBuffer->pPixels != nullptr)
+  if (!imageBuffer->ownedResource && imageBuffer->pPixels != nullptr)
     mERROR_CHECK(mImageBuffer_Destroy_Iternal(imageBuffer.GetPointer()));
 
   size_t allocatedSize;
   mERROR_CHECK(mPixelFormat_GetSize(pixelFormat, size, &allocatedSize));
 
-  uint8_t *pPixels = nullptr;
-  mERROR_CHECK(mAlloc(&pPixels, allocatedSize));
+  if (imageBuffer->pPixels == nullptr)
+  {
+    uint8_t *pPixels = nullptr;
+    mERROR_CHECK(mAlloc(&pPixels, allocatedSize));
 
-  imageBuffer->ownedResource = true;
-  imageBuffer->pPixels = pPixels;
-  imageBuffer->allocatedSize = allocatedSize;
-  imageBuffer->currentSize = size;
-  imageBuffer->lineStride = size.x;
+    imageBuffer->ownedResource = true;
+    imageBuffer->pPixels = pPixels;
+    imageBuffer->allocatedSize = allocatedSize;
+    imageBuffer->currentSize = size;
+    imageBuffer->lineStride = size.x;
+    imageBuffer->pixelFormat = pixelFormat;
+  }
+  else
+  {
+    if (imageBuffer->allocatedSize < allocatedSize)
+    {
+      uint8_t *pPixels = nullptr;
+      mERROR_CHECK(mRealloc(&pPixels, allocatedSize));
+
+      imageBuffer->allocatedSize = allocatedSize;
+      imageBuffer->ownedResource = true;
+      imageBuffer->pPixels = pPixels;
+    }
+
+    imageBuffer->currentSize = size;
+    imageBuffer->pixelFormat = pixelFormat;
+    imageBuffer->lineStride = size.x;
+  }
 
   mRETURN_SUCCESS();
 }
@@ -147,6 +167,93 @@ mFUNCTION(mImageBuffer_SetBuffer, mPtr<mImageBuffer> &imageBuffer, IN void *pDat
   imageBuffer->currentSize = mVec2s(rect.w, rect.h);
   imageBuffer->allocatedSize = (size.x * size.y - rect.x - rect.y * size.x) * pixelFormatUnitSize;
   imageBuffer->pixelFormat = pixelFormat;
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mImageBuffer_CopyTo, mPtr<mImageBuffer> &source, mPtr<mImageBuffer> &target, const mImageBuffer_CopyFlags copyFlags)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(source->pPixels == nullptr, mR_NotInitialized);
+  
+  if (target->pPixels == nullptr)
+    mERROR_CHECK(mImageBuffer_AllocateBuffer(target, source->currentSize, source->pixelFormat));
+
+  if ((copyFlags & mImageBuffer_CopyFlags::mIB_CF_ResizeAllowed) && target->ownedResource)
+  {
+    if (source->currentSize != target->currentSize)
+    {
+      mERROR_IF(source->pixelFormat != target->pixelFormat && (copyFlags & mImageBuffer_CopyFlags::mIB_CF_PixelFormatChangeAllowed) == 0, mR_InvalidParameter);
+      
+      mERROR_CHECK(mImageBuffer_AllocateBuffer(target, source->currentSize, source->pixelFormat));
+    }
+  }
+  else
+  {
+    mERROR_IF(source->currentSize != target->currentSize, mR_InvalidParameter);
+  }
+
+  if ((copyFlags & mImageBuffer_CopyFlags::mIB_CF_PixelFormatChangeAllowed) && target->ownedResource)
+  {
+    mERROR_IF(source->currentSize != target->currentSize && (copyFlags & mImageBuffer_CopyFlags::mIB_CF_ResizeAllowed) == 0, mR_InvalidParameter);
+
+    mERROR_CHECK(mImageBuffer_AllocateBuffer(target, source->currentSize, source->pixelFormat));
+  }
+  else
+  {
+    mERROR_IF(source->pixelFormat != target->pixelFormat, mR_InvalidParameter);
+  }
+
+  if (source->lineStride == target->lineStride)
+  {
+    size_t copiedSize;
+    mERROR_CHECK(mPixelFormat_GetSize(source->pixelFormat, mVec2s(source->lineStride, source->currentSize.y), &copiedSize));
+    mERROR_CHECK(mMemcpy(target->pPixels, source->pPixels, copiedSize));
+  }
+  else
+  {
+    size_t subBufferCount;
+    mERROR_CHECK(mPixelFormat_GetSubBufferCount(source->pixelFormat, &subBufferCount));
+
+    for (size_t i = 0; i < subBufferCount; i++)
+    {
+      size_t sourceSubBufferOffset;
+      mERROR_CHECK(mPixelFormat_GetSubBufferOffset(source->pixelFormat, i, mVec2s(source->lineStride, source->currentSize.y), &sourceSubBufferOffset));
+
+      size_t targetSubBufferOffset;
+      mERROR_CHECK(mPixelFormat_GetSubBufferOffset(target->pixelFormat, i, mVec2s(target->lineStride, target->currentSize.y), &targetSubBufferOffset));
+
+      mVec2s subBufferSize;
+      mERROR_CHECK(mPixelFormat_GetSubBufferSize(source->pixelFormat, i, source->currentSize, &subBufferSize));
+
+      size_t sourceSubBufferStride;
+      mERROR_CHECK(mPixelFormat_GetSubBufferStride(source->pixelFormat, i, source->lineStride, &sourceSubBufferStride));
+
+      size_t targetSubBufferStride;
+      mERROR_CHECK(mPixelFormat_GetSubBufferStride(target->pixelFormat, i, target->lineStride, &targetSubBufferStride));
+
+      mPixelFormat subBufferPixelFormat;
+      mERROR_CHECK(mPixelFormat_GetSubBufferPixelFormat(source->pixelFormat, i, &subBufferPixelFormat));
+
+      size_t subBufferUnitSize;
+      mERROR_CHECK(mPixelFormat_GetUnitSize(subBufferPixelFormat, &subBufferUnitSize));
+
+      uint8_t *pSourceSubBufferPixels = source->pPixels + sourceSubBufferOffset;
+      uint8_t *pTargetSubBufferPixels = target->pPixels + targetSubBufferOffset;
+
+      size_t targetLineStride = 0;
+      size_t sourceLineStride = 0;
+
+      for (size_t y = 0; y < source->currentSize.y; y++)
+      {
+        mERROR_CHECK(mMemcpy(pTargetSubBufferPixels + targetLineStride, pSourceSubBufferPixels + sourceLineStride, subBufferSize.x));
+
+        targetLineStride += sourceSubBufferStride * subBufferUnitSize;
+        sourceLineStride += targetSubBufferStride * subBufferUnitSize;
+      }
+    }
+  }
 
   mRETURN_SUCCESS();
 }
