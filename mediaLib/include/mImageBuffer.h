@@ -12,6 +12,13 @@
 #include "default.h"
 #include "mPixelFormat.h"
 
+enum mImageBuffer_CopyFlags
+{
+  mIB_CF_None = 0,
+  mIB_CF_ResizeAllowed = 1 << 0,
+  mIB_CF_PixelFormatChangeAllowed = 1 << 1,
+};
+
 struct mImageBuffer
 {
   uint8_t *pPixels;
@@ -33,5 +40,6 @@ mFUNCTION(mImageBuffer_AllocateBuffer, mPtr<mImageBuffer> &imageBuffer, const mV
 mFUNCTION(mImageBuffer_SetBuffer, mPtr<mImageBuffer> &imageBuffer, IN void *pData, const mVec2s &size, const mPixelFormat pixelFormat = mPF_B8G8R8A8);
 mFUNCTION(mImageBuffer_SetBuffer, mPtr<mImageBuffer> &imageBuffer, IN void *pData, const mVec2s &size, const size_t stride, const mPixelFormat pixelFormat = mPF_B8G8R8A8);
 mFUNCTION(mImageBuffer_SetBuffer, mPtr<mImageBuffer> &imageBuffer, IN void *pData, const mVec2s &size, const mRectangle2D<size_t> &rect, const mPixelFormat pixelFormat = mPF_B8G8R8A8);
+mFUNCTION(mImageBuffer_CopyTo, mPtr<mImageBuffer> &source, mPtr<mImageBuffer> &target, const mImageBuffer_CopyFlags copyFlags);
 
 #endif // mImageBuffer_h__
