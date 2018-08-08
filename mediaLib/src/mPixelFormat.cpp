@@ -174,16 +174,16 @@ mFUNCTION(mPixelFormat_GetSubBufferOffset, const mPixelFormat pixelFormat, const
 
   if (bufferIndex > 0)
   {
-    for (size_t i = 0; i <= bufferIndex; i++)
+    for (size_t i = 0; i < bufferIndex; i++)
     {
       mPixelFormat subBufferPixelFormat;
-      mERROR_CHECK(mPixelFormat_GetSubBufferPixelFormat(pixelFormat, bufferIndex, &subBufferPixelFormat));
+      mERROR_CHECK(mPixelFormat_GetSubBufferPixelFormat(pixelFormat, i, &subBufferPixelFormat));
 
       size_t subBufferUnitSize;
       mERROR_CHECK(mPixelFormat_GetUnitSize(subBufferPixelFormat, &subBufferUnitSize));
 
       mVec2s subBufferSize;
-      mERROR_CHECK(mPixelFormat_GetSubBufferSize(pixelFormat, bufferIndex, size, &subBufferSize));
+      mERROR_CHECK(mPixelFormat_GetSubBufferSize(pixelFormat, i, size, &subBufferSize));
 
       *pOffset += subBufferSize.x * subBufferSize.y * subBufferUnitSize;
     }
@@ -373,7 +373,7 @@ static inline void YUV422_to_RGB(const uint8_t y0, const uint8_t y1, const uint8
   *pB1 = (uint8_t)mClamp((c1_ + v2) >> 8, 0, 255);
 }
 
-static inline void YUV411_to_RGB(const uint8_t y0, const uint8_t y1, const uint8_t y2, const uint8_t y3, const uint8_t u, const uint8_t v, OUT uint8_t *pR0, OUT uint8_t *pG0, OUT uint8_t *pB0, OUT uint8_t *pR1, OUT uint8_t *pG1, OUT uint8_t *pB1, OUT uint8_t *pR2, OUT uint8_t *pG2, OUT uint8_t *pB2, OUT uint8_t *pR3, OUT uint8_t *pG3, OUT uint8_t *pB3)
+static inline void YUV411_to_BGRA(const uint8_t y0, const uint8_t y1, const uint8_t y2, const uint8_t y3, const uint8_t u, const uint8_t v, OUT uint8_t *pR0, OUT uint8_t *pG0, OUT uint8_t *pB0, OUT uint8_t *pR1, OUT uint8_t *pG1, OUT uint8_t *pB1, OUT uint8_t *pR2, OUT uint8_t *pG2, OUT uint8_t *pB2, OUT uint8_t *pR3, OUT uint8_t *pG3, OUT uint8_t *pB3)
 {
   const int32_t c0 = y0 - 16;
   const int32_t c1 = y1 - 16;
@@ -408,7 +408,7 @@ static inline void YUV411_to_RGB(const uint8_t y0, const uint8_t y1, const uint8
 }
 
 
-static inline void YUV411_to_RGB(const uint8_t y0, const uint8_t y1, const uint8_t y2, const uint8_t y3, const uint8_t u, const uint8_t v, OUT uint32_t *pColor0, OUT uint32_t *pColor1, OUT uint32_t *pColor2, OUT uint32_t *pColor3)
+static inline void YUV411_to_BGRA(const uint8_t y0, const uint8_t y1, const uint8_t y2, const uint8_t y3, const uint8_t u, const uint8_t v, OUT uint32_t *pColor0, OUT uint32_t *pColor1, OUT uint32_t *pColor2, OUT uint32_t *pColor3)
 {
   const int32_t c0 = y0 - 16;
   const int32_t c1 = y1 - 16;
@@ -426,15 +426,15 @@ static inline void YUV411_to_RGB(const uint8_t y0, const uint8_t y1, const uint8
   const int32_t v1 = -100 * d - 208 * e + 128;
   const int32_t v2 = 516 * d + 128;
 
-  *pColor0 = ((uint32_t)mClamp((c0_ + v2) << 8, 0, 0xFF0000) & 0xFF0000) | ((uint32_t)mClamp((c0_ + v1), 0, 0xFF00) & 0xFF00) | (uint32_t)mClamp((c0_ + v0) >> 8, 0, 0xFF);
-  *pColor1 = ((uint32_t)mClamp((c1_ + v2) << 8, 0, 0xFF0000) & 0xFF0000) | ((uint32_t)mClamp((c1_ + v1), 0, 0xFF00) & 0xFF00) | (uint32_t)mClamp((c1_ + v0) >> 8, 0, 0xFF);
-  *pColor2 = ((uint32_t)mClamp((c2_ + v2) << 8, 0, 0xFF0000) & 0xFF0000) | ((uint32_t)mClamp((c2_ + v1), 0, 0xFF00) & 0xFF00) | (uint32_t)mClamp((c2_ + v0) >> 8, 0, 0xFF);
-  *pColor3 = ((uint32_t)mClamp((c3_ + v2) << 8, 0, 0xFF0000) & 0xFF0000) | ((uint32_t)mClamp((c3_ + v1), 0, 0xFF00) & 0xFF00) | (uint32_t)mClamp((c3_ + v0) >> 8, 0, 0xFF);
+  *pColor0 = ((uint32_t)mClamp((c0_ + v0) << 8, 0, 0xFF0000) & 0xFF0000) | ((uint32_t)mClamp((c0_ + v1), 0, 0xFF00) & 0xFF00) | (uint32_t)mClamp((c0_ + v2) >> 8, 0, 0xFF);
+  *pColor1 = ((uint32_t)mClamp((c1_ + v0) << 8, 0, 0xFF0000) & 0xFF0000) | ((uint32_t)mClamp((c1_ + v1), 0, 0xFF00) & 0xFF00) | (uint32_t)mClamp((c1_ + v2) >> 8, 0, 0xFF);
+  *pColor2 = ((uint32_t)mClamp((c2_ + v0) << 8, 0, 0xFF0000) & 0xFF0000) | ((uint32_t)mClamp((c2_ + v1), 0, 0xFF00) & 0xFF00) | (uint32_t)mClamp((c2_ + v2) >> 8, 0, 0xFF);
+  *pColor3 = ((uint32_t)mClamp((c3_ + v0) << 8, 0, 0xFF0000) & 0xFF0000) | ((uint32_t)mClamp((c3_ + v1), 0, 0xFF00) & 0xFF00) | (uint32_t)mClamp((c3_ + v2) >> 8, 0, 0xFF);
 }
 
 static inline void YUV420_to_RGB(const uint8_t y0, const uint8_t y1, const uint8_t y2, const uint8_t y3, const uint8_t u, const uint8_t v, OUT uint8_t *pR0, OUT uint8_t *pG0, OUT uint8_t *pB0, OUT uint8_t *pR1, OUT uint8_t *pG1, OUT uint8_t *pB1, OUT uint8_t *pR2, OUT uint8_t *pG2, OUT uint8_t *pB2, OUT uint8_t *pR3, OUT uint8_t *pG3, OUT uint8_t *pB3)
 {
-  YUV411_to_RGB(y0, y1, y2, y3, u, v, pR0, pG0, pB0, pR1, pG1, pB1, pR2, pG2, pB2, pR3, pG3, pB3);
+  YUV411_to_BGRA(y0, y1, y2, y3, u, v, pR0, pG0, pB0, pR1, pG1, pB1, pR2, pG2, pB2, pR3, pG3, pB3);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -484,7 +484,7 @@ mFUNCTION(mPixelFormat_TransformBuffer, mPtr<mImageBuffer> &source, mPtr<mImageB
         const size_t yline = y * target->lineStride;
         const size_t yhalf = y >> 1;
         const size_t ySourceLine0 = y * sourceLineStride0;
-        const size_t ySourceLine1 = y * sourceLineStride1;
+        const size_t ySourceLine1 = (y >> 1) * sourceLineStride1;
 
         for (size_t x = 0; x < target->currentSize.x - 1; x += 2)
         {
@@ -493,14 +493,14 @@ mFUNCTION(mPixelFormat_TransformBuffer, mPtr<mImageBuffer> &source, mPtr<mImageB
           size_t xyTargetLine0 = x + yline;
           size_t sourcePosSubRes = xhalf + ySourceLine1;
 
-          YUV411_to_RGB(
+          YUV411_to_BGRA(
             pBuffer0[xySourceLine0], pBuffer0[xySourceLine0 + 1], 
             pBuffer0[xySourceLine0 + sourceLineStride0], pBuffer0[xySourceLine0 + sourceLineStride0 + 1],
 
             pBuffer1[sourcePosSubRes],
-            
+
             pBuffer2[sourcePosSubRes],
-            
+
             &pOutPixels[xyTargetLine0], &pOutPixels[xyTargetLine0 + 1], 
             &pOutPixels[xyTargetLine0 + target->lineStride], &pOutPixels[xyTargetLine0 + target->lineStride + 1]);
         }
