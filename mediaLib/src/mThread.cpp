@@ -6,68 +6,54 @@
 // 
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-#include "mMutex.h"
-#include <mutex>
+#include "mThread.h"
 
-struct mMutex
-{
-  std::mutex lock;
-};
+mFUNCTION(mThread_Destroy_Internal, IN_OUT mThread *pThread);
 
-mFUNCTION(mMutex_Destroy_Internal, IN mMutex *pMutex);
-
-mFUNCTION(mMutex_Create, OUT mMutex **ppMutex)
+mFUNCTION(mThread_Destroy, IN_OUT mThread **ppThread)
 {
   mFUNCTION_SETUP();
 
-  mERROR_IF(ppMutex == nullptr, mR_ArgumentNull);
+  mERROR_IF(ppThread == nullptr, mR_ArgumentNull);
 
-  mERROR_CHECK(mAllocZero(ppMutex, 1));
-  new (&(*ppMutex)->lock) std::mutex();
+  mDEFER_DESTRUCTION(ppThread, mSetToNullptr);
+  mERROR_CHECK(mThread_Destroy_Internal(*ppThread));
+  mERROR_CHECK(mFreePtr(ppThread));
 
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mMutex_Destroy, IN_OUT mMutex **ppMutex)
+mFUNCTION(mThread_Join, IN mThread *pThread)
 {
   mFUNCTION_SETUP();
 
-  mERROR_IF(ppMutex == nullptr, mR_ArgumentNull);
+  mERROR_IF(pThread == nullptr, mR_ArgumentNull);
+  mERROR_IF(pThread->handle.joinable() == false, mR_OperationNotSupported);
 
-  mDEFER_DESTRUCTION(ppMutex, mSetToNullptr);
-  mERROR_CHECK(mMutex_Destroy_Internal(*ppMutex));
-  mERROR_CHECK(mFreePtr(ppMutex));
+  pThread->handle.join();
 
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mMutex_Lock, IN mMutex *pMutex)
+mFUNCTION(mThread_GetNativeHandle, IN mThread *pThread, OUT std::thread::native_handle_type *pNativeHandle)
 {
   mFUNCTION_SETUP();
 
-  mERROR_IF(pMutex == nullptr, mR_ArgumentNull);
-  pMutex->lock.lock();
+  mERROR_IF(pThread == nullptr || pNativeHandle == nullptr, mR_ArgumentNull);
+
+  *pNativeHandle = pThread->handle.native_handle();
 
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mMutex_Release, IN mMutex *pMutex)
+mFUNCTION(mThread_Destroy_Internal, IN_OUT mThread *pThread)
 {
   mFUNCTION_SETUP();
 
-  mERROR_IF(pMutex == nullptr, mR_ArgumentNull);
-  pMutex->lock.unlock();
+  mERROR_IF(pThread == nullptr, mR_ArgumentNull);
 
-  mRETURN_SUCCESS();
-}
-
-mFUNCTION(mMutex_Destroy_Internal, IN mMutex *pMutex)
-{
-  mFUNCTION_SETUP();
-
-  mERROR_IF(pMutex == nullptr, mR_ArgumentNull);
-  
-  pMutex->lock.~mutex();
+  pThread->handle.~thread();
+  pThread->threadState.~atomic();
 
   mRETURN_SUCCESS();
 }

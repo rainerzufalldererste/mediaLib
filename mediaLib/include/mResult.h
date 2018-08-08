@@ -23,6 +23,8 @@ enum mResult
   mR_NotImplemented,
   mR_NotInitialized,
   mR_IndexOutOfBounds,
+  mR_Timeout,
+  mR_OperationNotSupported,
 
   Count
 };
