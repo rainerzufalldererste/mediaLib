@@ -6,17 +6,13 @@
 // 
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-#ifndef mMutex_h__
-#define mMutex_h__
+#ifndef mThreading_h__
+#define mThreading_h__
 
-#include "default.h"
+#include "mMutex.h"
+#include "mSemaphore.h"
+#include "mThread.h"
 
-struct mMutex;
+// This file includes common threading related header files.
 
-mFUNCTION(mMutex_Create, OUT mMutex **ppMutex);
-mFUNCTION(mMutex_Destroy, IN_OUT mMutex **ppMutex);
-
-mFUNCTION(mMutex_Lock, IN mMutex *pMutex);
-mFUNCTION(mMutex_Release, IN mMutex *pMutex);
-
-#endif // mMutex_h__
+#endif // mThreading_h__

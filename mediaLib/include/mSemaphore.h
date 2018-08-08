@@ -6,17 +6,26 @@
 // 
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-#ifndef mMutex_h__
-#define mMutex_h__
+
+#ifndef mSemaphore_h__
+#define mSemaphore_h__
 
 #include "default.h"
 
-struct mMutex;
+enum mSemaphore_SleepTime : size_t
+{
+  mS_ST_Infinite = 0xFFFFFFFF,
+};
 
-mFUNCTION(mMutex_Create, OUT mMutex **ppMutex);
-mFUNCTION(mMutex_Destroy, IN_OUT mMutex **ppMutex);
+struct mSemaphore;
 
-mFUNCTION(mMutex_Lock, IN mMutex *pMutex);
-mFUNCTION(mMutex_Release, IN mMutex *pMutex);
+mFUNCTION(mSemaphore_Create, OUT mSemaphore **ppSemaphore);
+mFUNCTION(mSemaphore_Destroy, IN_OUT mSemaphore **ppSemaphore);
 
-#endif // mMutex_h__
+mFUNCTION(mSemaphore_Lock, IN mSemaphore *pSemaphore);
+mFUNCTION(mSemaphore_Release, IN mSemaphore *pSemaphore);
+mFUNCTION(mSemaphore_WakeOne, IN mSemaphore *pSemaphore);
+mFUNCTION(mSemaphore_WakeAll, IN mSemaphore *pSemaphore);
+mFUNCTION(mSemaphore_Sleep, IN mSemaphore *pSemaphore, const size_t timeoutMilliseconds = mSemaphore_SleepTime::mS_ST_Infinite);
+
+#endif // mSemaphore_h__
