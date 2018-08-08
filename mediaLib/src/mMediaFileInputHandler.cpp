@@ -512,7 +512,8 @@ mFUNCTION(mMediaFileInputHandler_RunSession_Internal, IN mMediaFileInputHandler 
           mVideoStreamType videoStreamType = pData->pVideoStreams[mediaTypeLookup.streamIndex];
 
           mPtr<mImageBuffer> imageBuffer;
-          mERROR_CHECK(mImageBuffer_Create(&imageBuffer, pSampleData, videoStreamType.resolution, mPF_YUV411));
+          mDEFER_DESTRUCTION(&imageBuffer, mImageBuffer_Destroy);
+          mERROR_CHECK(mImageBuffer_Create(&imageBuffer, pSampleData, videoStreamType.resolution, mPF_YUV420));
           mERROR_CHECK((*pData->pProcessVideoDataCallback)(imageBuffer, videoStreamType));
         }
 

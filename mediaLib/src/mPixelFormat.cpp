@@ -25,7 +25,7 @@ mFUNCTION(mPixelFormat_HasSubBuffers, const mPixelFormat pixelFormat, OUT bool *
     break;
 
   case mPF_YUV422:
-  case mPF_YUV411:
+  case mPF_YUV420:
     *pValue = true;
     break;
 
@@ -52,7 +52,7 @@ mFUNCTION(mPixelFormat_IsChromaSubsampled, const mPixelFormat pixelFormat, OUT b
     break;
 
   case mPF_YUV422:
-  case mPF_YUV411:
+  case mPF_YUV420:
     *pValue = true;
     break;
 
@@ -83,7 +83,7 @@ mFUNCTION(mPixelFormat_GetSize, const mPixelFormat pixelFormat, const mVec2s &si
     *pBytes = sizeof(uint8_t) * size.x * size.y * 2;
     break;
 
-  case mPF_YUV411:
+  case mPF_YUV420:
     *pBytes = sizeof(uint8_t) * size.x * size.y * 3 / 2;
     break;
 
@@ -149,7 +149,7 @@ mFUNCTION(mPixelFormat_GetSubBufferCount, const mPixelFormat pixelFormat, OUT si
     break;
 
   case mPF_YUV422:
-  case mPF_YUV411:
+  case mPF_YUV420:
     *pBufferCount = 3;
     break;
 
@@ -221,7 +221,7 @@ mFUNCTION(mPixelFormat_GetSubBufferSize, const mPixelFormat pixelFormat, const s
     }
     break;
 
-  case mPF_YUV411:
+  case mPF_YUV420:
     switch (bufferIndex)
     {
     case 0:
@@ -266,7 +266,7 @@ mFUNCTION(mPixelFormat_GetSubBufferPixelFormat, const mPixelFormat pixelFormat, 
   switch (pixelFormat)
   {
   case mPF_YUV422:
-  case mPF_YUV411:
+  case mPF_YUV420:
     *pSubBufferPixelFormat = mPixelFormat::mPF_Monochrome8;
     break;
 
@@ -298,7 +298,7 @@ mFUNCTION(mPixelFormat_GetSubBufferStride, const mPixelFormat pixelFormat, const
   switch (pixelFormat)
   {
   case mPF_YUV422:
-  case mPF_YUV411:
+  case mPF_YUV420:
     if (bufferIndex == 0)
       *pSubBufferLineStride = originalLineStride;
     else
@@ -322,9 +322,399 @@ mFUNCTION(mPixelFormat_GetSubBufferStride, const mPixelFormat pixelFormat, const
 
 //////////////////////////////////////////////////////////////////////////
 
+#ifdef SSE2
+
+/*
+* Simd Library (http://ermig1979.github.io/Simd).
+*
+* Copyright (c) 2011-2017 Yermalayeu Ihar.
+*
+* Permission is hereby granted, free of charge, to any person obtaining a copy
+* of this software and associated documentation files (the "Software"), to deal
+* in the Software without restriction, including without limitation the rights
+* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+* copies of the Software, and to permit persons to whom the Software is
+* furnished to do so, subject to the following conditions:
+*
+* The above copyright notice and this permission notice shall be included in
+* all copies or substantial portions of the Software.
+*
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+* SOFTWARE.
+*/
+
+#include "mSimd.h"
+
+const int Y_ADJUST = 16;
+const int UV_ADJUST = 128;
+const int YUV_TO_BGR_AVERAGING_SHIFT = 13;
+const int YUV_TO_BGR_ROUND_TERM = 1 << (YUV_TO_BGR_AVERAGING_SHIFT - 1);
+const int Y_TO_RGB_WEIGHT = int(1.164*(1 << YUV_TO_BGR_AVERAGING_SHIFT) + 0.5);
+const int U_TO_BLUE_WEIGHT = int(2.018*(1 << YUV_TO_BGR_AVERAGING_SHIFT) + 0.5);
+const int U_TO_GREEN_WEIGHT = -int(0.391*(1 << YUV_TO_BGR_AVERAGING_SHIFT) + 0.5);
+const int V_TO_GREEN_WEIGHT = -int(0.813*(1 << YUV_TO_BGR_AVERAGING_SHIFT) + 0.5);
+const int V_TO_RED_WEIGHT = int(1.596*(1 << YUV_TO_BGR_AVERAGING_SHIFT) + 0.5);
+
+const __m128i K16_Y_ADJUST = SIMD_MM_SET1_EPI16(Y_ADJUST);
+const __m128i K16_UV_ADJUST = SIMD_MM_SET1_EPI16(UV_ADJUST);
+
+const __m128i K16_YRGB_RT = SIMD_MM_SET2_EPI16(Y_TO_RGB_WEIGHT, YUV_TO_BGR_ROUND_TERM);
+const __m128i K16_VR_0 = SIMD_MM_SET2_EPI16(V_TO_RED_WEIGHT, 0);
+const __m128i K16_UG_VG = SIMD_MM_SET2_EPI16(U_TO_GREEN_WEIGHT, V_TO_GREEN_WEIGHT);
+const __m128i K16_UB_0 = SIMD_MM_SET2_EPI16(U_TO_BLUE_WEIGHT, 0);
+
+mINLINE __m128i AdjustY16(__m128i y16)
+{
+  return _mm_subs_epi16(y16, K16_Y_ADJUST);
+}
+
+mINLINE __m128i AdjustUV16(__m128i uv16)
+{
+  return _mm_subs_epi16(uv16, K16_UV_ADJUST);
+}
+
+mINLINE __m128i AdjustedYuvToRed32(__m128i y16_1, __m128i v16_0)
+{
+  return _mm_srai_epi32(_mm_add_epi32(_mm_madd_epi16(y16_1, K16_YRGB_RT),
+    _mm_madd_epi16(v16_0, K16_VR_0)), YUV_TO_BGR_AVERAGING_SHIFT);
+}
+
+mINLINE __m128i AdjustedYuvToRed16(__m128i y16, __m128i v16)
+{
+  return SaturateI16ToU8(_mm_packs_epi32(
+    AdjustedYuvToRed32(_mm_unpacklo_epi16(y16, K16_0001), _mm_unpacklo_epi16(v16, mSimdZero)),
+    AdjustedYuvToRed32(_mm_unpackhi_epi16(y16, K16_0001), _mm_unpackhi_epi16(v16, mSimdZero))));
+}
+
+mINLINE __m128i AdjustedYuvToGreen32(__m128i y16_1, __m128i u16_v16)
+{
+  return _mm_srai_epi32(_mm_add_epi32(_mm_madd_epi16(y16_1, K16_YRGB_RT),
+    _mm_madd_epi16(u16_v16, K16_UG_VG)), YUV_TO_BGR_AVERAGING_SHIFT);
+}
+
+mINLINE __m128i AdjustedYuvToGreen16(__m128i y16, __m128i u16, __m128i v16)
+{
+  return SaturateI16ToU8(_mm_packs_epi32(
+    AdjustedYuvToGreen32(_mm_unpacklo_epi16(y16, K16_0001), _mm_unpacklo_epi16(u16, v16)),
+    AdjustedYuvToGreen32(_mm_unpackhi_epi16(y16, K16_0001), _mm_unpackhi_epi16(u16, v16))));
+}
+
+mINLINE __m128i AdjustedYuvToBlue32(__m128i y16_1, __m128i u16_0)
+{
+  return _mm_srai_epi32(_mm_add_epi32(_mm_madd_epi16(y16_1, K16_YRGB_RT),
+    _mm_madd_epi16(u16_0, K16_UB_0)), YUV_TO_BGR_AVERAGING_SHIFT);
+}
+
+mINLINE __m128i AdjustedYuvToBlue16(__m128i y16, __m128i u16)
+{
+  return SaturateI16ToU8(_mm_packs_epi32(
+    AdjustedYuvToBlue32(_mm_unpacklo_epi16(y16, K16_0001), _mm_unpacklo_epi16(u16, mSimdZero)),
+    AdjustedYuvToBlue32(_mm_unpackhi_epi16(y16, K16_0001), _mm_unpackhi_epi16(u16, mSimdZero))));
+}
+
+mINLINE __m128i YuvToRed(__m128i y, __m128i v)
+{
+  __m128i lo = AdjustedYuvToRed16(
+    AdjustY16(_mm_unpacklo_epi8(y, mSimdZero)),
+    AdjustUV16(_mm_unpacklo_epi8(v, mSimdZero)));
+  __m128i hi = AdjustedYuvToRed16(
+    AdjustY16(_mm_unpackhi_epi8(y, mSimdZero)),
+    AdjustUV16(_mm_unpackhi_epi8(v, mSimdZero)));
+  return _mm_packus_epi16(lo, hi);
+}
+
+mINLINE __m128i YuvToGreen(__m128i y, __m128i u, __m128i v)
+{
+  __m128i lo = AdjustedYuvToGreen16(
+    AdjustY16(_mm_unpacklo_epi8(y, mSimdZero)),
+    AdjustUV16(_mm_unpacklo_epi8(u, mSimdZero)),
+    AdjustUV16(_mm_unpacklo_epi8(v, mSimdZero)));
+  __m128i hi = AdjustedYuvToGreen16(
+    AdjustY16(_mm_unpackhi_epi8(y, mSimdZero)),
+    AdjustUV16(_mm_unpackhi_epi8(u, mSimdZero)),
+    AdjustUV16(_mm_unpackhi_epi8(v, mSimdZero)));
+  return _mm_packus_epi16(lo, hi);
+}
+
+mINLINE __m128i YuvToBlue(__m128i y, __m128i u)
+{
+  __m128i lo = AdjustedYuvToBlue16(
+    AdjustY16(_mm_unpacklo_epi8(y, mSimdZero)),
+    AdjustUV16(_mm_unpacklo_epi8(u, mSimdZero)));
+  __m128i hi = AdjustedYuvToBlue16(
+    AdjustY16(_mm_unpackhi_epi8(y, mSimdZero)),
+    AdjustUV16(_mm_unpackhi_epi8(u, mSimdZero)));
+  return _mm_packus_epi16(lo, hi);
+}
+
+template <bool align> mINLINE void AdjustedYuv16ToBgra(__m128i y16, __m128i u16, __m128i v16, const __m128i & a_0, __m128i * bgra)
+{
+  const __m128i b16 = AdjustedYuvToBlue16(y16, u16);
+  const __m128i g16 = AdjustedYuvToGreen16(y16, u16, v16);
+  const __m128i r16 = AdjustedYuvToRed16(y16, v16);
+  const __m128i bg8 = _mm_or_si128(b16, _mm_slli_si128(g16, 1));
+  const __m128i ra8 = _mm_or_si128(r16, a_0);
+  Store<align>(bgra + 0, _mm_unpacklo_epi16(bg8, ra8));
+  Store<align>(bgra + 1, _mm_unpackhi_epi16(bg8, ra8));
+}
+
+template <bool align> mINLINE void Yuv16ToBgra(__m128i y16, __m128i u16, __m128i v16, const __m128i & a_0, __m128i * bgra)
+{
+  AdjustedYuv16ToBgra<align>(AdjustY16(y16), AdjustUV16(u16), AdjustUV16(v16), a_0, bgra);
+}
+
+template <bool align> mINLINE void Yuv8ToBgra(__m128i y8, __m128i u8, __m128i v8, const __m128i & a_0, __m128i * bgra)
+{
+  Yuv16ToBgra<align>(_mm_unpacklo_epi8(y8, mSimdZero), _mm_unpacklo_epi8(u8, mSimdZero),
+    _mm_unpacklo_epi8(v8, mSimdZero), a_0, bgra + 0);
+  Yuv16ToBgra<align>(_mm_unpackhi_epi8(y8, mSimdZero), _mm_unpackhi_epi8(u8, mSimdZero),
+    _mm_unpackhi_epi8(v8, mSimdZero), a_0, bgra + 2);
+}
+
+template <bool align> mINLINE void Yuv444pToBgra(const uint8_t * y, const uint8_t * u, const uint8_t * v, const __m128i & a_0, uint8_t * bgra)
+{
+  Yuv8ToBgra<align>(Load<align>((__m128i*)y), Load<align>((__m128i*)u), Load<align>((__m128i*)v), a_0, (__m128i*)bgra);
+}
+
+template <bool align> mFUNCTION(Yuv444pToBgra, const uint8_t * y, size_t yStride, const uint8_t * u, size_t uStride, const uint8_t * v, size_t vStride,
+  size_t width, size_t height, uint8_t * bgra, size_t bgraStride, uint8_t alpha)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(!(width >= mSimd128bit), mR_InvalidParameter);
+
+#ifdef _DEBUG
+  if (align)
+  {
+    bool yIsAligned, yStrideIsAligned, uIsAligned, uStrideIsAligned, vIsAligned, vStrideIsAligned, bgraIsAligned, bgraStrideIsAligned;
+
+    mERROR_CHECK(mMemoryIsAligned(y, sizeof(__m128), &yIsAligned));
+    mERROR_CHECK(mMemoryIsAligned(yStride, sizeof(__m128), &yStrideIsAligned));
+    mERROR_CHECK(mMemoryIsAligned(u, sizeof(__m128), &uIsAligned));
+    mERROR_CHECK(mMemoryIsAligned(uStride, sizeof(__m128), &uStrideIsAligned));
+    mERROR_CHECK(mMemoryIsAligned(v, sizeof(__m128), &vIsAligned));
+    mERROR_CHECK(mMemoryIsAligned(vStride, sizeof(__m128), &vStrideIsAligned));
+    mERROR_CHECK(mMemoryIsAligned(bgra, sizeof(__m128), &bgraIsAligned));
+    mERROR_CHECK(mMemoryIsAligned(bgraStride, sizeof(__m128), &bgraStrideIsAligned));
+
+    mASSERT(yIsAligned && yStrideIsAligned && uIsAligned && uStrideIsAligned && vIsAligned && vStrideIsAligned && bgraIsAligned && bgraStrideIsAligned, "Unaligned memory passed to aligned function.");
+}
+#endif // _DEBUG
+
+  __m128i a_0 = _mm_slli_si128(_mm_set1_epi16(alpha), 1);
+  size_t bodyWidth;
+  mERROR_CHECK(mMemoryAlignLo(width, mSimd128bit, &bodyWidth));
+  size_t tail = width - bodyWidth;
+  for (size_t row = 0; row < height; ++row)
+  {
+    for (size_t colYuv = 0, colBgra = 0; colYuv < bodyWidth; colYuv += mSimd128bit, colBgra += mSimd512bit)
+    {
+      Yuv444pToBgra<align>(y + colYuv, u + colYuv, v + colYuv, a_0, bgra + colBgra);
+    }
+    if (tail)
+    {
+      size_t col = width - mSimd128bit;
+      Yuv444pToBgra<false>(y + col, u + col, v + col, a_0, bgra + 4 * col);
+    }
+    y += yStride;
+    u += uStride;
+    v += vStride;
+    bgra += bgraStride;
+  }
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(Yuv444pToBgra, const uint8_t * y, size_t yStride, const uint8_t * u, size_t uStride, const uint8_t * v, size_t vStride, size_t width, size_t height, uint8_t * bgra, size_t bgraStride, uint8_t alpha)
+{
+  mFUNCTION_SETUP();
+
+  bool yIsAligned, yStrideIsAligned, uIsAligned, uStrideIsAligned, vIsAligned, vStrideIsAligned, bgraIsAligned, bgraStrideIsAligned;
+
+  mERROR_CHECK(mMemoryIsAligned(y, sizeof(__m128), &yIsAligned));
+  mERROR_CHECK(mMemoryIsAligned(yStride, sizeof(__m128), &yStrideIsAligned));
+  mERROR_CHECK(mMemoryIsAligned(u, sizeof(__m128), &uIsAligned));
+  mERROR_CHECK(mMemoryIsAligned(uStride, sizeof(__m128), &uStrideIsAligned));
+  mERROR_CHECK(mMemoryIsAligned(v, sizeof(__m128), &vIsAligned));
+  mERROR_CHECK(mMemoryIsAligned(vStride, sizeof(__m128), &vStrideIsAligned));
+  mERROR_CHECK(mMemoryIsAligned(bgra, sizeof(__m128), &bgraIsAligned));
+  mERROR_CHECK(mMemoryIsAligned(bgraStride, sizeof(__m128), &bgraStrideIsAligned));
+
+  if (yIsAligned && yStrideIsAligned && uIsAligned && uStrideIsAligned && vIsAligned && vStrideIsAligned && bgraIsAligned && bgraStrideIsAligned)
+    mERROR_CHECK(Yuv444pToBgra<true>(y, yStride, u, uStride, v, vStride, width, height, bgra, bgraStride, alpha));
+  else
+    mERROR_CHECK(Yuv444pToBgra<false>(y, yStride, u, uStride, v, vStride, width, height, bgra, bgraStride, alpha));
+
+  mRETURN_SUCCESS();
+}
+
+template <bool align> mINLINE void Yuv422pToBgra(const uint8_t * y, const __m128i & u, const __m128i & v, const __m128i & a_0, uint8_t * bgra)
+{
+  Yuv8ToBgra<align>(Load<align>((__m128i*)y + 0), _mm_unpacklo_epi8(u, u), _mm_unpacklo_epi8(v, v), a_0, (__m128i*)bgra + 0);
+  Yuv8ToBgra<align>(Load<align>((__m128i*)y + 1), _mm_unpackhi_epi8(u, u), _mm_unpackhi_epi8(v, v), a_0, (__m128i*)bgra + 4);
+}
+
+template <bool align> mFUNCTION(Yuv420pToBgra, const uint8_t * y, size_t yStride, const uint8_t * u, size_t uStride, const uint8_t * v, size_t vStride,
+  size_t width, size_t height, uint8_t * bgra, size_t bgraStride, uint8_t alpha)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(!((width % 2 == 0) && (height % 2 == 0) && (width >= mSimd256bit) && (height >= 2)), mR_InvalidParameter);
+
+#ifdef _DEBUG
+  if (align)
+  {
+    bool yIsAligned, yStrideIsAligned, uIsAligned, uStrideIsAligned, vIsAligned, vStrideIsAligned, bgraIsAligned, bgraStrideIsAligned;
+
+    mERROR_CHECK(mMemoryIsAligned(y, sizeof(__m128), &yIsAligned));
+    mERROR_CHECK(mMemoryIsAligned(yStride, sizeof(__m128), &yStrideIsAligned));
+    mERROR_CHECK(mMemoryIsAligned(u, sizeof(__m128), &uIsAligned));
+    mERROR_CHECK(mMemoryIsAligned(uStride, sizeof(__m128), &uStrideIsAligned));
+    mERROR_CHECK(mMemoryIsAligned(v, sizeof(__m128), &vIsAligned));
+    mERROR_CHECK(mMemoryIsAligned(vStride, sizeof(__m128), &vStrideIsAligned));
+    mERROR_CHECK(mMemoryIsAligned(bgra, sizeof(__m128), &bgraIsAligned));
+    mERROR_CHECK(mMemoryIsAligned(bgraStride, sizeof(__m128), &bgraStrideIsAligned));
+
+    mASSERT(yIsAligned && yStrideIsAligned && uIsAligned && uStrideIsAligned && vIsAligned && vStrideIsAligned && bgraIsAligned && bgraStrideIsAligned, "Unaligned memory passed to aligned function.");
+  }
+#endif // _DEBUG
+
+  __m128i a_0 = _mm_slli_si128(_mm_set1_epi16(alpha), 1);
+  size_t bodyWidth;
+  mERROR_CHECK(mMemoryAlignLo(width, mSimd256bit, &bodyWidth));
+  size_t tail = width - bodyWidth;
+  for (size_t row = 0; row < height; row += 2)
+  {
+    for (size_t colUV = 0, colY = 0, colBgra = 0; colY < bodyWidth; colY += mSimd256bit, colUV += mSimd128bit, colBgra += mSimd1024bit)
+    {
+      __m128i u_ = Load<align>((__m128i*)(u + colUV));
+      __m128i v_ = Load<align>((__m128i*)(v + colUV));
+      Yuv422pToBgra<align>(y + colY, u_, v_, a_0, bgra + colBgra);
+      Yuv422pToBgra<align>(y + colY + yStride, u_, v_, a_0, bgra + colBgra + bgraStride);
+    }
+    if (tail)
+    {
+      size_t offset = width - mSimd256bit;
+      __m128i u_ = Load<false>((__m128i*)(u + offset / 2));
+      __m128i v_ = Load<false>((__m128i*)(v + offset / 2));
+      Yuv422pToBgra<false>(y + offset, u_, v_, a_0, bgra + 4 * offset);
+      Yuv422pToBgra<false>(y + offset + yStride, u_, v_, a_0, bgra + 4 * offset + bgraStride);
+    }
+    y += 2 * yStride;
+    u += uStride;
+    v += vStride;
+    bgra += 2 * bgraStride;
+  }
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(Yuv420pToBgra, const uint8_t * y, size_t yStride, const uint8_t * u, size_t uStride, const uint8_t * v, size_t vStride, size_t width, size_t height, uint8_t * bgra, size_t bgraStride, uint8_t alpha)
+{
+  mFUNCTION_SETUP();
+
+  bool yIsAligned, yStrideIsAligned, uIsAligned, uStrideIsAligned, vIsAligned, vStrideIsAligned, bgraIsAligned, bgraStrideIsAligned;
+
+  mERROR_CHECK(mMemoryIsAligned(y, sizeof(__m128), &yIsAligned));
+  mERROR_CHECK(mMemoryIsAligned(yStride, sizeof(__m128), &yStrideIsAligned));
+  mERROR_CHECK(mMemoryIsAligned(u, sizeof(__m128), &uIsAligned));
+  mERROR_CHECK(mMemoryIsAligned(uStride, sizeof(__m128), &uStrideIsAligned));
+  mERROR_CHECK(mMemoryIsAligned(v, sizeof(__m128), &vIsAligned));
+  mERROR_CHECK(mMemoryIsAligned(vStride, sizeof(__m128), &vStrideIsAligned));
+  mERROR_CHECK(mMemoryIsAligned(bgra, sizeof(__m128), &bgraIsAligned));
+  mERROR_CHECK(mMemoryIsAligned(bgraStride, sizeof(__m128), &bgraStrideIsAligned));
+
+  if (yIsAligned && yStrideIsAligned && uIsAligned && uStrideIsAligned && vIsAligned && vStrideIsAligned && bgraIsAligned && bgraStrideIsAligned)
+    mERROR_CHECK(Yuv420pToBgra<true>(y, yStride, u, uStride, v, vStride, width, height, bgra, bgraStride, alpha));
+  else
+    mERROR_CHECK(Yuv420pToBgra<false>(y, yStride, u, uStride, v, vStride, width, height, bgra, bgraStride, alpha));
+
+  mRETURN_SUCCESS();
+}
 
 
-static inline void YUV444_to_RGB(const uint8_t y, const uint8_t u, const uint8_t v, OUT uint8_t *pR, OUT uint8_t *pG, OUT uint8_t *pB)
+template <bool align> mINLINE void Yuv422pToBgra(const uint8_t * y, const uint8_t * u, const uint8_t * v, const __m128i & a_0, uint8_t * bgra)
+{
+  Yuv422pToBgra<align>(y, Load<align>((__m128i*)u), Load<align>((__m128i*)v), a_0, bgra);
+}
+
+template <bool align> mFUNCTION(Yuv422pToBgra, const uint8_t * y, size_t yStride, const uint8_t * u, size_t uStride, const uint8_t * v, size_t vStride, size_t width, size_t height, uint8_t * bgra, size_t bgraStride, uint8_t alpha)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(!((width % 2 == 0) && (width >= mSimd256bit)), mR_InvalidParameter);
+
+#ifdef _DEBUG
+  if (align)
+  {
+    bool yIsAligned, yStrideIsAligned, uIsAligned, uStrideIsAligned, vIsAligned, vStrideIsAligned, bgraIsAligned, bgraStrideIsAligned;
+
+    mERROR_CHECK(mMemoryIsAligned(y, sizeof(__m128), &yIsAligned));
+    mERROR_CHECK(mMemoryIsAligned(yStride, sizeof(__m128), &yStrideIsAligned));
+    mERROR_CHECK(mMemoryIsAligned(u, sizeof(__m128), &uIsAligned));
+    mERROR_CHECK(mMemoryIsAligned(uStride, sizeof(__m128), &uStrideIsAligned));
+    mERROR_CHECK(mMemoryIsAligned(v, sizeof(__m128), &vIsAligned));
+    mERROR_CHECK(mMemoryIsAligned(vStride, sizeof(__m128), &vStrideIsAligned));
+    mERROR_CHECK(mMemoryIsAligned(bgra, sizeof(__m128), &bgraIsAligned));
+    mERROR_CHECK(mMemoryIsAligned(bgraStride, sizeof(__m128), &bgraStrideIsAligned));
+
+    mASSERT(yIsAligned && yStrideIsAligned && uIsAligned && uStrideIsAligned && vIsAligned && vStrideIsAligned && bgraIsAligned && bgraStrideIsAligned, "Unaligned memory passed to aligned function.");
+  }
+#endif // _DEBUG
+
+  __m128i a_0 = _mm_slli_si128(_mm_set1_epi16(alpha), 1);
+  size_t bodyWidth;
+  mERROR_CHECK(mMemoryAlignLo(width, mSimd256bit, &bodyWidth));
+  size_t tail = width - bodyWidth;
+  for (size_t row = 0; row < height; ++row)
+  {
+    for (size_t colUV = 0, colY = 0, colBgra = 0; colY < bodyWidth; colY += mSimd256bit, colUV += mSimd128bit, colBgra += mSimd1024bit)
+      Yuv422pToBgra<align>(y + colY, u + colUV, v + colUV, a_0, bgra + colBgra);
+
+    if (tail)
+    {
+      size_t offset = width - mSimd256bit;
+      Yuv422pToBgra<false>(y + offset, u + offset / 2, v + offset / 2, a_0, bgra + 4 * offset);
+    }
+    y += yStride;
+    u += uStride;
+    v += vStride;
+    bgra += bgraStride;
+  }
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(Yuv422pToBgra, const uint8_t * y, size_t yStride, const uint8_t * u, size_t uStride, const uint8_t * v, size_t vStride, size_t width, size_t height, uint8_t * bgra, size_t bgraStride, uint8_t alpha)
+{
+  mFUNCTION_SETUP();
+
+  bool yIsAligned, yStrideIsAligned, uIsAligned, uStrideIsAligned, vIsAligned, vStrideIsAligned, bgraIsAligned, bgraStrideIsAligned;
+
+  mERROR_CHECK(mMemoryIsAligned(y, sizeof(__m128), &yIsAligned));
+  mERROR_CHECK(mMemoryIsAligned(yStride, sizeof(__m128), &yStrideIsAligned));
+  mERROR_CHECK(mMemoryIsAligned(u, sizeof(__m128), &uIsAligned));
+  mERROR_CHECK(mMemoryIsAligned(uStride, sizeof(__m128), &uStrideIsAligned));
+  mERROR_CHECK(mMemoryIsAligned(v, sizeof(__m128), &vIsAligned));
+  mERROR_CHECK(mMemoryIsAligned(vStride, sizeof(__m128), &vStrideIsAligned));
+  mERROR_CHECK(mMemoryIsAligned(bgra, sizeof(__m128), &bgraIsAligned));
+  mERROR_CHECK(mMemoryIsAligned(bgraStride, sizeof(__m128), &bgraStrideIsAligned));
+
+  if (yIsAligned && yStrideIsAligned && uIsAligned && uStrideIsAligned && vIsAligned && vStrideIsAligned && bgraIsAligned && bgraStrideIsAligned)
+    Yuv422pToBgra<true>(y, yStride, u, uStride, v, vStride, width, height, bgra, bgraStride, alpha);
+  else
+    Yuv422pToBgra<false>(y, yStride, u, uStride, v, vStride, width, height, bgra, bgraStride, alpha);
+
+  mRETURN_SUCCESS();
+}
+
+#endif // SSE2
+
+static mINLINE void YUV444_to_RGB(const uint8_t y, const uint8_t u, const uint8_t v, OUT uint8_t *pR, OUT uint8_t *pG, OUT uint8_t *pB)
 {
   const int32_t c = y - 16;
   const int32_t d = u - 128;
@@ -337,7 +727,7 @@ static inline void YUV444_to_RGB(const uint8_t y, const uint8_t u, const uint8_t
   *pB = (uint8_t)mClamp((c_ + 516 * d + 128) >> 8, 0, 255);
 }
 
-static inline void RGB_to_YUV444(const uint8_t r, const uint8_t g, const uint8_t b, OUT uint8_t *pY, OUT uint8_t *pU, OUT uint8_t *pV)
+static mINLINE void RGB_to_YUV444(const uint8_t r, const uint8_t g, const uint8_t b, OUT uint8_t *pY, OUT uint8_t *pU, OUT uint8_t *pV)
 {
   const int32_t b_ = b + 128;
   const int32_t y = ((66 * r + 129 * g + 25 * b_) >> 8) + 16;
@@ -349,7 +739,7 @@ static inline void RGB_to_YUV444(const uint8_t r, const uint8_t g, const uint8_t
   *pV = (uint8_t)v;
 }
 
-static inline void YUV422_to_RGB(const uint8_t y0, const uint8_t y1, const uint8_t u, const uint8_t v, OUT uint8_t *pR0, OUT uint8_t *pG0, OUT uint8_t *pB0, OUT uint8_t *pR1, OUT uint8_t *pG1, OUT uint8_t *pB1)
+static mINLINE void YUV422_to_RGB(const uint8_t y0, const uint8_t y1, const uint8_t u, const uint8_t v, OUT uint8_t *pR0, OUT uint8_t *pG0, OUT uint8_t *pB0, OUT uint8_t *pR1, OUT uint8_t *pG1, OUT uint8_t *pB1)
 {
   const int32_t c0 = y0 - 16;
   const int32_t c1 = y1 - 16;
@@ -373,7 +763,7 @@ static inline void YUV422_to_RGB(const uint8_t y0, const uint8_t y1, const uint8
   *pB1 = (uint8_t)mClamp((c1_ + v2) >> 8, 0, 255);
 }
 
-static inline void YUV411_to_BGRA(const uint8_t y0, const uint8_t y1, const uint8_t y2, const uint8_t y3, const uint8_t u, const uint8_t v, OUT uint8_t *pR0, OUT uint8_t *pG0, OUT uint8_t *pB0, OUT uint8_t *pR1, OUT uint8_t *pG1, OUT uint8_t *pB1, OUT uint8_t *pR2, OUT uint8_t *pG2, OUT uint8_t *pB2, OUT uint8_t *pR3, OUT uint8_t *pG3, OUT uint8_t *pB3)
+static mINLINE void YUV420_to_RGB(const uint8_t y0, const uint8_t y1, const uint8_t y2, const uint8_t y3, const uint8_t u, const uint8_t v, OUT uint8_t *pR0, OUT uint8_t *pG0, OUT uint8_t *pB0, OUT uint8_t *pR1, OUT uint8_t *pG1, OUT uint8_t *pB1, OUT uint8_t *pR2, OUT uint8_t *pG2, OUT uint8_t *pB2, OUT uint8_t *pR3, OUT uint8_t *pG3, OUT uint8_t *pB3)
 {
   const int32_t c0 = y0 - 16;
   const int32_t c1 = y1 - 16;
@@ -407,8 +797,7 @@ static inline void YUV411_to_BGRA(const uint8_t y0, const uint8_t y1, const uint
   *pB3 = (uint8_t)mClamp((c3_ + v2) >> 8, 0, 255);
 }
 
-
-static inline void YUV411_to_BGRA(const uint8_t y0, const uint8_t y1, const uint8_t y2, const uint8_t y3, const uint8_t u, const uint8_t v, OUT uint32_t *pColor0, OUT uint32_t *pColor1, OUT uint32_t *pColor2, OUT uint32_t *pColor3)
+static mINLINE void YUV420_to_BGRA(const uint8_t y0, const uint8_t y1, const uint8_t y2, const uint8_t y3, const uint8_t u, const uint8_t v, OUT uint32_t *pColor0, OUT uint32_t *pColor1, OUT uint32_t *pColor2, OUT uint32_t *pColor3)
 {
   const int32_t c0 = y0 - 16;
   const int32_t c1 = y1 - 16;
@@ -432,11 +821,6 @@ static inline void YUV411_to_BGRA(const uint8_t y0, const uint8_t y1, const uint
   *pColor3 = ((uint32_t)mClamp((c3_ + v0) << 8, 0, 0xFF0000) & 0xFF0000) | ((uint32_t)mClamp((c3_ + v1), 0, 0xFF00) & 0xFF00) | (uint32_t)mClamp((c3_ + v2) >> 8, 0, 0xFF);
 }
 
-static inline void YUV420_to_RGB(const uint8_t y0, const uint8_t y1, const uint8_t y2, const uint8_t y3, const uint8_t u, const uint8_t v, OUT uint8_t *pR0, OUT uint8_t *pG0, OUT uint8_t *pB0, OUT uint8_t *pR1, OUT uint8_t *pG1, OUT uint8_t *pB1, OUT uint8_t *pR2, OUT uint8_t *pG2, OUT uint8_t *pB2, OUT uint8_t *pR3, OUT uint8_t *pG3, OUT uint8_t *pB3)
-{
-  YUV411_to_BGRA(y0, y1, y2, y3, u, v, pR0, pG0, pB0, pR1, pG1, pB1, pR2, pG2, pB2, pR3, pG3, pB3);
-}
-
 //////////////////////////////////////////////////////////////////////////
 
 mFUNCTION(mPixelFormat_TransformBuffer, mPtr<mImageBuffer> &source, mPtr<mImageBuffer> &target)
@@ -455,10 +839,11 @@ mFUNCTION(mPixelFormat_TransformBuffer, mPtr<mImageBuffer> &source, mPtr<mImageB
   case mPF_B8G8R8A8:
   {
     uint32_t *pOutPixels = (uint32_t *)target->pPixels;
+    mUnused(pOutPixels);
 
     switch (source->pixelFormat)
     {
-    case mPF_YUV411:
+    case mPF_YUV420:
     {
       uint8_t *pBuffer0 = source->pPixels;
       uint8_t *pBuffer1 = source->pPixels;
@@ -479,32 +864,36 @@ mFUNCTION(mPixelFormat_TransformBuffer, mPtr<mImageBuffer> &source, mPtr<mImageB
       mERROR_CHECK(mPixelFormat_GetSubBufferStride(source->pixelFormat, 1, source->lineStride, &sourceLineStride1));
       mERROR_CHECK(mPixelFormat_GetSubBufferStride(source->pixelFormat, 2, source->lineStride, &sourceLineStride2));
 
+#ifndef SSE2
       for (size_t y = 0; y < target->currentSize.y - 1; y += 2)
       {
         const size_t yline = y * target->lineStride;
         const size_t yhalf = y >> 1;
         const size_t ySourceLine0 = y * sourceLineStride0;
         const size_t ySourceLine1 = (y >> 1) * sourceLineStride1;
-
+      
         for (size_t x = 0; x < target->currentSize.x - 1; x += 2)
         {
           size_t xhalf = x >> 1;
           size_t xySourceLine0 = x + ySourceLine0;
           size_t xyTargetLine0 = x + yline;
           size_t sourcePosSubRes = xhalf + ySourceLine1;
-
-          YUV411_to_BGRA(
+      
+          YUV420_to_BGRA(
             pBuffer0[xySourceLine0], pBuffer0[xySourceLine0 + 1], 
             pBuffer0[xySourceLine0 + sourceLineStride0], pBuffer0[xySourceLine0 + sourceLineStride0 + 1],
-
+      
             pBuffer1[sourcePosSubRes],
-
+      
             pBuffer2[sourcePosSubRes],
-
+      
             &pOutPixels[xyTargetLine0], &pOutPixels[xyTargetLine0 + 1], 
             &pOutPixels[xyTargetLine0 + target->lineStride], &pOutPixels[xyTargetLine0 + target->lineStride + 1]);
         }
       }
+#else
+      mERROR_CHECK(Yuv420pToBgra(pBuffer0, sourceLineStride0, pBuffer1, sourceLineStride1, pBuffer2, sourceLineStride2, target->currentSize.x, target->currentSize.y, target->pPixels, target->lineStride * sizeof(uint32_t), 0));
+#endif
 
       break;
     }
@@ -522,7 +911,7 @@ mFUNCTION(mPixelFormat_TransformBuffer, mPtr<mImageBuffer> &source, mPtr<mImageB
   case mPF_Monochrome8:
   case mPF_Monochrome16:
   case mPF_YUV422:
-  case mPF_YUV411:
+  case mPF_YUV420:
   {
     mRETURN_RESULT(mR_NotImplemented);
   }

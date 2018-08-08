@@ -48,8 +48,7 @@
 #endif // !OPTIONAL
 
 #define mVECTORCALL __vectorcall
-
-#define mPRINT(text, ...) printf(text, __VA_ARGS__)
+#define mINLINE __forceinline
 
 #define mPI M_PI
 #define mTWOPI 6.283185307179586476925286766559
@@ -75,8 +74,9 @@
 
 #define mARRAYSIZE(arrayName) (sizeof(arrayName) / sizeof(arrayName[0]))
 
-#define mASSERT(expr, text) do { if(!(expression)) { mPRINT("Assertion Failed: %s\n'%s'\n\nIn File '%s' : Line '%" PRIi32 "' (Function '%s')\n", #expr, text, __FILE__, __LINE__, __FUNCTION__); assert(expression); } } while (0)
+#define mASSERT(expression, text) do { if(!(expression)) { mPRINT("Assertion Failed: %s\n'%s'\n\nIn File '%s' : Line '%" PRIi32 "' (Function '%s')\n", #expression, text, __FILE__, __LINE__, __FUNCTION__); assert(expression); } } while (0)
 #define mFAIL(text) mPRINT("Assertion Failed: '%s'\n\nIn File '%s' : Line '%" PRIi32 "' (Function '%s')\n", text, __FILE__, __LINE__, __FUNCTION__)
+#define mPRINT(text, ...) printf(text, __VA_ARGS__)
 
 template <typename T>
 void mUnused(T unused)
