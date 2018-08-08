@@ -55,7 +55,7 @@ T mInterpolateQuad(const T pos1, const T pos2, const T pos3, const T pos4, const
 
 //////////////////////////////////////////////////////////////////////////
 
-template <typename T> T mClamp(T value, const T &min, const T &max)
+template <typename T> mINLINE T mClamp(T value, const T &min, const T &max)
 {
   if (value > max)
     value = max;

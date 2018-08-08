@@ -28,6 +28,7 @@ int main(int, char **)
   pPixels = (uint32_t *)SDL_GetWindowSurface(pWindow)->pixels;
   mERROR_IF(pPixels == nullptr, mR_ArgumentNull);
 
+  mDEFER_DESTRUCTION(&bgraImageBuffer, mImageBuffer_Destroy);
   mERROR_CHECK(mImageBuffer_Create(&bgraImageBuffer, resolution));
 
   mERROR_CHECK(mMediaFileInputHandler_SetVideoCallback(mediaFileHandler, OnVideoFramCallback));

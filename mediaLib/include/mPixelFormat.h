@@ -18,7 +18,7 @@ enum mPixelFormat
   mPF_B8G8R8,
   mPF_B8G8R8A8,
   mPF_YUV422,
-  mPF_YUV411,
+  mPF_YUV420,
   mPF_Monochrome8,
   mPF_Monochrome16,
 
