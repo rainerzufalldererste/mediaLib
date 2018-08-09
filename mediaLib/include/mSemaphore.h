@@ -23,7 +23,7 @@ mFUNCTION(mSemaphore_Create, OUT mSemaphore **ppSemaphore);
 mFUNCTION(mSemaphore_Destroy, IN_OUT mSemaphore **ppSemaphore);
 
 mFUNCTION(mSemaphore_Lock, IN mSemaphore *pSemaphore);
-mFUNCTION(mSemaphore_Release, IN mSemaphore *pSemaphore);
+mFUNCTION(mSemaphore_Unlock, IN mSemaphore *pSemaphore);
 mFUNCTION(mSemaphore_WakeOne, IN mSemaphore *pSemaphore);
 mFUNCTION(mSemaphore_WakeAll, IN mSemaphore *pSemaphore);
 mFUNCTION(mSemaphore_Sleep, IN mSemaphore *pSemaphore, const size_t timeoutMilliseconds = mSemaphore_SleepTime::mS_ST_Infinite);

@@ -61,6 +61,26 @@ mFUNCTION(mTask_Join, IN mTask *pTask, const size_t timeoutMilliseconds /* = mSe
 
   mERROR_IF(pTask == nullptr, mR_ArgumentNull);
 
+  if (pTask->state < mTask_State::mT_S_Complete)
+  {
+    if (pTask->pSemaphore != nullptr)
+    {
+      mERROR_CHECK(mSemaphore_Sleep(pTask->pSemaphore, timeoutMilliseconds));
+    }
+    else
+    {
+      clock_t start = clock();
+
+      while (true)
+      {
+        mERROR_IF(timeoutMilliseconds != mSemaphore_SleepTime::mS_ST_Infinite && clock() - start > timeoutMilliseconds, mR_Timeout);
+
+        if (pTask->state > mTask_State::mT_S_Running)
+          mRETURN_SUCCESS();
+      }
+    }
+  }
+
   mRETURN_SUCCESS();
 }
 
@@ -69,6 +89,33 @@ mFUNCTION(mTask_Execute, IN mTask *pTask)
   mFUNCTION_SETUP();
 
   mERROR_IF(pTask == nullptr, mR_ArgumentNull);
+
+  mResult result = mR_Success;
+  bool hasBeenExecuted = false;
+  mDefer<mSemaphore> defer;
+
+  if (pTask->pSemaphore != nullptr)
+  {
+    mERROR_CHECK_GOTO(mSemaphore_Lock(pTask->pSemaphore), result, epilogue);
+    defer = mDefer_Create(mSemaphore_Unlock, pTask->pSemaphore);
+  }
+
+  if (pTask->state < mTask_State::mT_S_Running)
+    pTask->state = mTask_State::mT_S_Running;
+  else
+    mRETURN_SUCCESS();
+
+  mERROR_IF_GOTO(pTask->function == nullptr, mR_NotInitialized, result, epilogue);
+
+  pTask->result = pTask->function();
+  hasBeenExecuted = true;
+
+  if (pTask->pSemaphore != nullptr)
+    mERROR_CHECK_GOTO(mSemaphore_WakeAll(pTask->pSemaphore), result, epilogue);
+
+epilogue:
+  if (!hasBeenExecuted || (mSUCCEEDED(pTask->result) && mFAILED(result)))
+    pTask->result = result;
 
   mRETURN_SUCCESS();
 }
@@ -79,14 +126,30 @@ mFUNCTION(mTask_Abort, IN mTask *pTask)
 
   mERROR_IF(pTask == nullptr, mR_ArgumentNull);
 
+  if (pTask->state < mTask_State::mT_S_Running)
+  {
+    if (pTask->pSemaphore != nullptr)
+      mERROR_CHECK(mSemaphore_Lock(pTask->pSemaphore));
+
+    pTask->state = mTask_State::mT_S_Aborted;
+
+    if (pTask->pSemaphore != nullptr)
+    {
+      mERROR_CHECK(mSemaphore_Unlock(pTask->pSemaphore));
+      mERROR_CHECK(mSemaphore_WakeAll(pTask->pSemaphore));
+    }
+  }
+
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mTask_GetResult, IN mTask * pTask, OUT mResult * pResult)
+mFUNCTION(mTask_GetResult, IN mTask *pTask, OUT mResult *pResult)
 {
   mFUNCTION_SETUP();
 
-  mERROR_IF(pTask == nullptr, mR_ArgumentNull);
+  mERROR_IF(pTask == nullptr || pResult == nullptr, mR_ArgumentNull);
+
+  *pResult = pTask->result;
 
   mRETURN_SUCCESS();
 }
@@ -95,7 +158,9 @@ mFUNCTION(mTask_GetState, IN mTask *pTask, OUT mTask_State *pTaskState)
 {
   mFUNCTION_SETUP();
 
-  mERROR_IF(pTask == nullptr, mR_ArgumentNull);
+  mERROR_IF(pTask == nullptr || pTaskState == nullptr, mR_ArgumentNull);
+
+  *pTaskState = pTask->state;
 
   mRETURN_SUCCESS();
 }

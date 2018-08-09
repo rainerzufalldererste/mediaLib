@@ -59,7 +59,7 @@ mFUNCTION(mSemaphore_Lock, IN mSemaphore *pSemaphore)
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mSemaphore_Release, IN mSemaphore *pSemaphore)
+mFUNCTION(mSemaphore_Unlock, IN mSemaphore *pSemaphore)
 {
   mFUNCTION_SETUP();
 
