@@ -1,5 +1,6 @@
 #include "default.h"
 #include "mMediaFileInputHandler.h"
+#include "mThreadPool.h"
 #include "SDL.h"
 #include <time.h>
 
@@ -16,6 +17,10 @@ int main(int, char **)
   mFUNCTION_SETUP();
 
   g_mResult_breakOnError = true;
+  mPtr<mThreadPool> threadPool;
+  mDEFER_DESTRUCTION(&threadPool, mThreadPool_Destroy);
+  mERROR_CHECK(mThreadPool_Create(&threadPool));
+
   mPtr<mMediaFileInputHandler> mediaFileHandler;
   mDEFER_DESTRUCTION(&mediaFileHandler, mMediaFileInputHandler_Destroy);
   mERROR_CHECK(mMediaFileInputHandler_Create(&mediaFileHandler, L"C:/Users/cstiller/Videos/Converted.MP4", mMediaFileInputHandler_CreateFlags::mMMFIH_CF_VideoEnabled));

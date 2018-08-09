@@ -26,40 +26,41 @@ struct mThread
   std::atomic<mThread_ThreadState> threadState;
 };
 
-template<class TFunction>
-struct _mThread_DataStruct
+template<size_t ...>
+struct _mThread_ThreadInternalSequence { };
+
+template<size_t TCount, size_t ...TCountArgs>
+struct _mThread_ThreadInternalIntegerSequenceGenerator : _mThread_ThreadInternalIntegerSequenceGenerator<TCount - 1, TCount - 1, TCountArgs...> { };
+
+template<size_t ...TCountArgs>
+struct _mThread_ThreadInternalIntegerSequenceGenerator<0, TCountArgs...>
 {
-  mThread *pThread; TFunction *pFunction;// std::tuple<Args> args;
+  typedef _mThread_ThreadInternalSequence<TCountArgs...> type;
 };
 
-template<class TFunction>
-_mThread_DataStruct<TFunction> _MakeDataStruct(mThread *pThread, TFunction *pFunction)
+template<class TFunction, class Args, size_t ...TCountArgs>
+void callFunc(TFunction function, Args params, _mThread_ThreadInternalSequence<TCountArgs...>)
 {
-  _mThread_DataStruct<TFunction> dataStruct;
-  dataStruct.pFunction = pFunction;
-  dataStruct.pThread = pThread;
-  return dataStruct;
+  function(std::get<TCountArgs>(params) ...);
 }
 
-//template<class TFunction, class ...Args>
-//void _mThread_ThreadInternalFunc(mThread *pThread, TFunction *pFunction, Args... args)
-//{
-//  mUnused(pFunction, pThread, std::forward<Args>(args)...);
-//  //mThread *pThread, TFunction&& function, Args&&... args;
-//
-//  if(pThread != nullptr)
-//    pThread->threadState = mT_TS_Running;
-//  
-//  //function(std::forward<Args>(args)...);
-//  
-//  if (pThread != nullptr)
-//    pThread->threadState = mT_TS_Stopped;
-//}
-
-template<typename ...Args>
-void _mThread_ThreadInternalFunc1(Args... args)
+template<class TFunction, class Args>
+void _mThread_ThreadInternalFunc(mThread *pThread, TFunction *pFunction, Args args)
 {
-  mUnused(std::forward<Args>(args)...);
+  mASSERT(pThread != nullptr && pFunction != nullptr, "pThread and pFunction cannot be nullptr.");
+
+  pThread->threadState = mT_TS_Running;
+
+  callFunc(*pFunction, args, typename _mThread_ThreadInternalIntegerSequenceGenerator<std::tuple_size<Args>::value>::type());
+
+  pThread->threadState = mT_TS_Stopped;
+}
+
+template<class TFunction, typename Args>
+void _mThread_ThreadInternalFuncPacker(mThread *pThread, TFunction *pFunction, Args args)
+{
+  mUnused(args, pFunction, pThread);
+  _mThread_ThreadInternalFunc(pThread, pFunction, args);
 }
 
 // Creates and starts a thread.
@@ -73,13 +74,11 @@ mFUNCTION(mThread_Create, OUT mThread **ppThread, TFunction *pFunction, Args&&..
   mDEFER_DESTRUCTION_ON_ERROR(ppThread, mSetToNullptr);
   mERROR_CHECK(mAllocZero(ppThread, 1));
 
-  mUnused(pFunction, std::forward<Args>(args)...);
-  //auto dataStruct = _MakeDataStruct(*ppThread, pFunction);
-
   new (&(*ppThread)->threadState) std::atomic<mThread_ThreadState>(mT_TS_NotStarted);
-  //new (&(*ppThread)->handle) std::thread(&_mThread_ThreadInternalFunc<TFunction, Args...>, *ppThread, pFunction, args...);
-  std::thread t(&_mThread_ThreadInternalFunc1<Args...>, args...);
 
+  auto tupleRef = std::make_tuple(std::forward<Args>(args)...);
+  new (&(*ppThread)->handle) std::thread (&_mThread_ThreadInternalFuncPacker<TFunction, decltype(tupleRef)>, *ppThread, pFunction, tupleRef);
+  
   mRETURN_SUCCESS();
 }
 
