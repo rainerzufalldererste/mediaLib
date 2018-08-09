@@ -23,6 +23,7 @@
 #include <functional>
 #include <type_traits>
 #include <inttypes.h>
+#include <float.h>
 
 #ifndef _DEPENDENCIES_DEFINED
 #define _DEPENDENCIES_DEFINED

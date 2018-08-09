@@ -204,16 +204,16 @@ struct mRectangle2D
 
 struct mVector;
 
-__host__ __device__ inline mVec3f UnpackBgraToVec3f(const uint32_t bgraColor);
-__host__ __device__ inline mVec3d UnpackBgraToVec3d(const uint32_t bgraColor);
-__host__ __device__ inline mVec4f UnpackBgraToVec4f(const uint32_t bgraColor);
-__host__ __device__ inline mVec4d UnpackBgraToVec4d(const uint32_t bgraColor);
-__host__ __device__ inline mVector UnpackBgraToVector(const uint32_t bgraColor);
+mVec3f UnpackBgraToVec3f(const uint32_t bgraColor);
+mVec3d UnpackBgraToVec3d(const uint32_t bgraColor);
+mVec4f UnpackBgraToVec4f(const uint32_t bgraColor);
+mVec4d UnpackBgraToVec4d(const uint32_t bgraColor);
+mVector UnpackBgraToVector(const uint32_t bgraColor);
 
-__host__ __device__ inline uint32_t PackVec3fToBgra(const mVec3f rgbVector);
-__host__ __device__ inline uint32_t PackVec3dToBgra(const mVec3d rgbVector);
-__host__ __device__ inline uint32_t PackVec4fToBgra(const mVec4f rgbaVector);
-__host__ __device__ inline uint32_t PackVec4dToBgra(const mVec4d rgbaVector);
-__host__ __device__ inline uint32_t PackVectorToBgra(const mVector rgbaVector);
+uint32_t PackVec3fToBgra(const mVec3f rgbVector);
+uint32_t PackVec3dToBgra(const mVec3d rgbVector);
+uint32_t PackVec4fToBgra(const mVec4f rgbaVector);
+uint32_t PackVec4dToBgra(const mVec4d rgbaVector);
+uint32_t PackVectorToBgra(const mVector rgbaVector);
 
 #endif // mMath_h__
