@@ -68,7 +68,7 @@ template <typename ...Args> void mDeinit(const std::function<void(void)> &param,
       if (g_mResult_breakOnError && mBREAK_ON_FAILURE) \
       { __debugbreak(); \
       } \
-          mRETURN_RESULT(mSTDRESULT); \
+      mRETURN_RESULT(mSTDRESULT); \
     } \
   } while (0)
 
@@ -84,7 +84,39 @@ template <typename ...Args> void mDeinit(const std::function<void(void)> &param,
         if (g_mResult_breakOnError && mBREAK_ON_FAILURE) \
         { __debugbreak(); \
         } \
-            mRETURN_RESULT(mSTDRESULT); \
+        mRETURN_RESULT(mSTDRESULT); \
+      } \
+    } \
+  } while (0)
+
+#define mERROR_CHECK_GOTO(functionCall, result, label, ...) \
+  do \
+  { result = (functionCall); \
+    if (mFAILED(result)) \
+    { g_mResult_lastErrorResult = result; \
+      g_mResult_lastErrorFile = __FILE__; \
+      g_mResult_lastErrorLine = __LINE__; \
+      mDeinit(__VA_ARGS__); \
+      if (g_mResult_breakOnError && mBREAK_ON_FAILURE) \
+      { __debugbreak(); \
+      } \
+      goto label; \
+    } \
+  } while (0)
+
+#define mERROR_IF_GOTO(conditional, resultOnError, result, label, ...) \
+  do \
+  { if (conditional) \
+    { result = (resultOnError); \
+      if (mFAILED(result)) \
+      { g_mResult_lastErrorResult = result; \
+        g_mResult_lastErrorFile = __FILE__; \
+        g_mResult_lastErrorLine = __LINE__; \
+        mDeinit(__VA_ARGS__); \
+        if (g_mResult_breakOnError && mBREAK_ON_FAILURE) \
+        { __debugbreak(); \
+        } \
+        goto label; \
       } \
     } \
   } while (0)

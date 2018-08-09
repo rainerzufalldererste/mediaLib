@@ -14,6 +14,7 @@
 
 struct mTask;
 
+// Ordered so that every `mTask_State` >= `mT_S_Running` will not be executed and `mTask_State` >= `mT_S_Complete` is considered to be done.
 enum mTask_State
 {
   mT_S_NotInitialized,
@@ -43,8 +44,8 @@ mFUNCTION(mTask_Create, OUT mTask **ppTask, TFunction&& function, Args&&... args
   {
     mResult result = mR_Success;
 
-    mStaticIf<std::is_same<mResult, typename std::decay<function>::type>::value>(
-      [&]() { result = function(std::forward<Args>(args)...); })
+    mStaticIf<std::is_same<mResult, typename std::decay<function>::type>::value>
+      ([&]() { result = function(std::forward<Args>(args)...); })
       .Else([]() { function(std::forward<Args>(args)...); });
 
     RETURN result;
