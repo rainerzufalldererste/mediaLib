@@ -11,31 +11,31 @@
 inline __host__ __device__ mVec3f UnpackBgraToVec3f(const uint32_t bgraColor)
 {
   const float_t v(1.0f / 0xFF);
-  return mVec3f((bgraColor & 0x00FF0000) >> 0x10, (bgraColor & 0x0000FF00) >> 0x8, bgraColor & 0x000000FF) * v;
+  return mVec3f((float_t)((bgraColor & 0x00FF0000) >> 0x10), (float_t)((bgraColor & 0x0000FF00) >> 0x8), (float_t)(bgraColor & 0x000000FF)) * v;
 }
 
 inline __host__ __device__ mVec3d UnpackBgraToVec3d(const uint32_t bgraColor)
 {
   const double_t v(1.0 / 0xFF);
-  return mVec3d((bgraColor & 0x00FF0000) >> 0x10, (bgraColor & 0x0000FF00) >> 0x8, bgraColor & 0x000000FF) * v;
+  return mVec3d((double_t)((bgraColor & 0x00FF0000) >> 0x10), (double_t)((bgraColor & 0x0000FF00) >> 0x8), (double_t)(bgraColor & 0x000000FF)) * v;
 }
 
 inline __host__ __device__ mVec4f UnpackBgraToVec4f(const uint32_t bgraColor)
 {
   static const float_t v(1.0f / 0xFF);
-  return mVec4f((bgraColor & 0x00FF0000) >> 0x10, (bgraColor & 0x0000FF00) >> 0x8, bgraColor & 0x000000FF, (bgraColor & 0xFF000000) >> 0x18) * v;
+  return mVec4f((float_t)((bgraColor & 0x00FF0000) >> 0x10), (float_t)((bgraColor & 0x0000FF00) >> 0x8), (float_t)(bgraColor & 0x000000FF), (float_t)((bgraColor & 0xFF000000) >> 0x18)) * v;
 }
 
 inline __host__ __device__ mVec4d UnpackBgraToVec4d(const uint32_t bgraColor)
 {
   const double_t v(1.0 / 0xFF);
-  return mVec4d((bgraColor & 0x00FF0000) >> 0x10, (bgraColor & 0x0000FF00) >> 0x8, bgraColor & 0x000000FF, (bgraColor & 0xFF000000) >> 0x18) * v;
+  return mVec4d((double_t)((bgraColor & 0x00FF0000) >> 0x10), (double_t)((bgraColor & 0x0000FF00) >> 0x8), (double_t)(bgraColor & 0x000000FF), (double_t)((bgraColor & 0xFF000000) >> 0x18)) * v;
 }
 
 inline __host__ __device__ mVector UnpackBgraToVector(const uint32_t bgraColor)
 {
   const float_t v = 1.0f / 0xFF;
-  return mVector((bgraColor & 0x00FF0000) >> 0x10, (bgraColor & 0x0000FF00) >> 0x8, bgraColor & 0x000000FF, (bgraColor & 0xFF000000) >> 0x18) * v;
+  return mVector((float_t)((bgraColor & 0x00FF0000) >> 0x10), (float_t)((bgraColor & 0x0000FF00) >> 0x8), (float_t)(bgraColor & 0x000000FF), (float_t)((bgraColor & 0xFF000000) >> 0x18)) * v;
 }
 
 inline __host__ __device__ uint32_t PackVec3fToBgra(const mVec3f rgbVector)
