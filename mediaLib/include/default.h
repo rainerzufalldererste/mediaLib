@@ -113,4 +113,6 @@ void mUnused(T unused, Args && ...args)
 #include "mFastMath.h"
 #include "mStaticIf.h"
 
+mFUNCTION(mSleep, const size_t milliseconds = 0);
+
 #endif // default_h__
