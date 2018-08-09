@@ -59,6 +59,7 @@ struct mThreadPool;
 enum mThreadPool_ThreadCount : size_t
 {
   mTP_TC_NumberOfLogicalCores = (size_t)-1,
+  mTP_TC_DefaulThreadCount = 4,
 };
 
 mFUNCTION(mThreadPool_Create, OUT mPtr<mThreadPool> *pThreadPool, const size_t threads = mThreadPool_ThreadCount::mTP_TC_NumberOfLogicalCores);

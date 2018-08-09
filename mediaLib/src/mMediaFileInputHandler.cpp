@@ -66,7 +66,7 @@ mFUNCTION(mMediaFileInputHandler_Create, OUT mPtr<mMediaFileInputHandler> *pPtr,
 
   mERROR_IF(pPtr == nullptr, mR_ArgumentNull);
 
-  if (pPtr != nullptr)
+  if (*pPtr != nullptr)
   {
     mERROR_CHECK(mSharedPointer_Destroy(pPtr));
     *pPtr = nullptr;
