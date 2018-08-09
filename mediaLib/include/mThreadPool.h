@@ -14,16 +14,41 @@
 
 struct mTask;
 
-mFUNCTION(mTask_Create, OUT mTask **ppTask, const std::function<void(void)> &function);
+enum mTask_State
+{
+  mT_S_NotInitialized,
+  mT_S_Initialized,
+  mT_S_Enqueued,
+  mT_S_Running,
+  mT_S_Complete,
+  mT_S_Aborted,
+};
+
+mFUNCTION(mTask_Create, OUT mTask **ppTask, const std::function<mResult(void)> &function);
+mFUNCTION(mTask_CreateInplace, IN mTask *pTask, const std::function<mResult(void)> &function);
 mFUNCTION(mTask_Destroy, IN_OUT mTask **ppTask);
 
-mFUNCTION(mTask_Join, IN mTask *pTask, size_t timeoutMilliseconds = mSemaphore_SleepTime::mS_ST_Infinite);
+mFUNCTION(mTask_Join, IN mTask *pTask, const size_t timeoutMilliseconds = mSemaphore_SleepTime::mS_ST_Infinite);
+mFUNCTION(mTask_Execute, IN mTask *pTask);
 mFUNCTION(mTask_Abort, IN mTask *pTask);
+
+mFUNCTION(mTask_GetResult, IN mTask *pTask, OUT mResult *pResult);
+mFUNCTION(mTask_GetState, IN mTask *pTask, OUT mTask_State *pTaskState);
 
 template <class TFunction, class ...Args, class = typename enable_if<!is_same<typename decay<TFunction>::type, thread>::value>::type>
 mFUNCTION(mTask_Create, OUT mTask **ppTask, TFunction&& function, Args&&... args)
 {
-  mTask_Create(ppTask, [&]() { function(std::forward<Args>(args)...); });
+  mTask_Create(ppTask, (std::function<mResult(void)>)
+    [=]()
+  {
+    mResult result = mR_Success;
+
+    mStaticIf<std::is_same<mResult, typename std::decay<function>::type>::value>(
+      [&]() { result = function(std::forward<Args>(args)...); })
+      .Else([]() { function(std::forward<Args>(args)...); });
+
+    RETURN result;
+  });
 }
 
 //////////////////////////////////////////////////////////////////////////

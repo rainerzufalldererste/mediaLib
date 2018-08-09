@@ -25,6 +25,9 @@ enum mResult
   mR_IndexOutOfBounds,
   mR_Timeout,
   mR_OperationNotSupported,
+  mR_ResourceNotFound,
+  mR_ResourceInvalid,
+  mR_ResourceIncompatible,
 
   Count
 };

@@ -230,7 +230,9 @@ mFUNCTION(mMediaFileInputHandler_Create_Internal, IN mMediaFileInputHandler *pIn
     mERROR_IF(FAILED(pAudioMediaType->SetGUID(MF_MT_SUBTYPE, MFAudioFormat_PCM)), mR_InternalError);
   }
 
-  mERROR_IF(FAILED(hr = MFCreateSourceReaderFromURL(fileName.c_str(), pAttributes, &pInputHandler->pSourceReader)), mR_InvalidParameter);
+  hr = MFCreateSourceReaderFromURL(fileName.c_str(), pAttributes, &pInputHandler->pSourceReader);
+  mERROR_IF(hr == HRESULT_FROM_WIN32(ERROR_PATH_NOT_FOUND), mR_ResourceNotFound);
+  mERROR_IF(FAILED(hr), mR_ResourceInvalid);
 
   GUID majorType;
   GUID minorType;
@@ -333,7 +335,7 @@ mFUNCTION(mMediaFileInputHandler_Create_Internal, IN mMediaFileInputHandler *pIn
     ++streamIndex;
   }
 
-  mERROR_IF(!isValid, mR_InvalidParameter);
+  mERROR_IF(!isValid, mR_ResourceIncompatible);
 
   mRETURN_SUCCESS();
 }
