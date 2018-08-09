@@ -46,6 +46,19 @@ mFUNCTION(mThread_GetNativeHandle, IN mThread *pThread, OUT std::thread::native_
   mRETURN_SUCCESS();
 }
 
+mFUNCTION(mThread_GetMaximumConcurrentThreads, OUT size_t *pMaximumConcurrentThreadCount)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pMaximumConcurrentThreadCount == nullptr, mR_ArgumentNull);
+
+  *pMaximumConcurrentThreadCount = std::thread::hardware_concurrency();
+
+  mERROR_IF(*pMaximumConcurrentThreadCount == 0, mR_OperationNotSupported);
+
+  mRETURN_SUCCESS();
+}
+
 mFUNCTION(mThread_Destroy_Internal, IN_OUT mThread *pThread)
 {
   mFUNCTION_SETUP();

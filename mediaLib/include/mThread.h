@@ -26,31 +26,59 @@ struct mThread
   std::atomic<mThread_ThreadState> threadState;
 };
 
-template<class TFunction, class... Args, class = typename enable_if<!is_same<typename decay<TFunction>::type, thread>::value>::type>
-void _mThread_ThreadInternalFunc(mThread *pThread, TFunction&& function, Args&&... args)
+template<class TFunction>
+struct _mThread_DataStruct
 {
-  if(pThread != nullptr)
-    *pThread->threadState = mT_TS_Running;
+  mThread *pThread; TFunction *pFunction;// std::tuple<Args> args;
+};
 
-  function(std::forward<Args>(args)...);
+template<class TFunction>
+_mThread_DataStruct<TFunction> _MakeDataStruct(mThread *pThread, TFunction *pFunction)
+{
+  _mThread_DataStruct<TFunction> dataStruct;
+  dataStruct.pFunction = pFunction;
+  dataStruct.pThread = pThread;
+  return dataStruct;
+}
 
-  if (pThread != nullptr)
-    *pThread->threadState = mT_TS_Stopped;
+//template<class TFunction, class ...Args>
+//void _mThread_ThreadInternalFunc(mThread *pThread, TFunction *pFunction, Args... args)
+//{
+//  mUnused(pFunction, pThread, std::forward<Args>(args)...);
+//  //mThread *pThread, TFunction&& function, Args&&... args;
+//
+//  if(pThread != nullptr)
+//    pThread->threadState = mT_TS_Running;
+//  
+//  //function(std::forward<Args>(args)...);
+//  
+//  if (pThread != nullptr)
+//    pThread->threadState = mT_TS_Stopped;
+//}
+
+template<typename ...Args>
+void _mThread_ThreadInternalFunc1(Args... args)
+{
+  mUnused(std::forward<Args>(args)...);
 }
 
 // Creates and starts a thread.
-template<class TFunction, class... Args, class = typename enable_if<!is_same<typename decay<TFunction>::type, thread>::value>::type>
-mFUNCTION(mThread_Create, OUT mThread **ppThread, TFunction&& function, Args&&... args)
+template<class TFunction, class... Args>
+mFUNCTION(mThread_Create, OUT mThread **ppThread, TFunction *pFunction, Args&&... args)
 {
   mFUNCTION_SETUP();
 
-  mERROR_IF(pThread == nullptr, mR_ArgumentNull);
+  mERROR_IF(ppThread == nullptr, mR_ArgumentNull);
 
   mDEFER_DESTRUCTION_ON_ERROR(ppThread, mSetToNullptr);
   mERROR_CHECK(mAllocZero(ppThread, 1));
 
-  new ((*ppThread)->threadState) mThread_ThreadState(mT_TS_NotStarted);
-  new ((*ppThread)->handle) std::thread(_mThread_ThreadInternalFunc, pThread, std::forward<TFunction>(function), std::forward<Args>(args)...);
+  mUnused(pFunction, std::forward<Args>(args)...);
+  //auto dataStruct = _MakeDataStruct(*ppThread, pFunction);
+
+  new (&(*ppThread)->threadState) std::atomic<mThread_ThreadState>(mT_TS_NotStarted);
+  //new (&(*ppThread)->handle) std::thread(&_mThread_ThreadInternalFunc<TFunction, Args...>, *ppThread, pFunction, args...);
+  std::thread t(&_mThread_ThreadInternalFunc1<Args...>, args...);
 
   mRETURN_SUCCESS();
 }
@@ -58,5 +86,7 @@ mFUNCTION(mThread_Create, OUT mThread **ppThread, TFunction&& function, Args&&..
 mFUNCTION(mThread_Destroy, IN_OUT mThread **ppThread);
 mFUNCTION(mThread_Join, IN mThread *pThread);
 mFUNCTION(mThread_GetNativeHandle, IN mThread *pThread, OUT std::thread::native_handle_type *pNativeHandle);
+
+mFUNCTION(mThread_GetMaximumConcurrentThreads, OUT size_t *pMaximumConcurrentThreadCount);
 
 #endif // mThread_h__

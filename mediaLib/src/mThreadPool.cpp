@@ -177,3 +177,137 @@ mFUNCTION(mTask_Destroy_Internal, IN mTask *pTask)
 
   mRETURN_SUCCESS();
 }
+
+//////////////////////////////////////////////////////////////////////////
+
+struct mThreadPool
+{
+  volatile bool isRunning;
+  size_t threadCount;
+  mThread **ppThreads;
+  mSemaphore *pSemaphore;
+};
+
+mFUNCTION(mThreadPool_Create_Internal, mThreadPool *pThreadPool, const size_t threads);
+mFUNCTION(mThreadPool_Destroy_Internal, mThreadPool *pThreadPool);
+
+void WorkerThread(mThreadPool *pThreadPool)
+{
+  mASSERT(pThreadPool != nullptr, "ThreadPool cannot be nullptr.");
+
+  while (pThreadPool->isRunning)
+  {
+
+  }
+}
+
+mFUNCTION(mThreadPool_Create, OUT mPtr<mThreadPool> *pThreadPool, const size_t threads /* = mThreadPool_ThreadCount::mTP_TC_NumberOfLogicalCores */)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pThreadPool == nullptr, mR_ArgumentNull);
+
+  if (*pThreadPool != nullptr)
+  {
+    mERROR_CHECK(mSharedPointer_Destroy(pThreadPool));
+    *pThreadPool = nullptr;
+  }
+
+  mThreadPool *pObject = nullptr;
+  mDEFER_DESTRUCTION_ON_ERROR(&pObject, mFreePtr);
+  mERROR_CHECK(mAllocZero(&pObject, 1));
+
+  mDEFER_DESTRUCTION_ON_ERROR(pThreadPool, mSharedPointer_Destroy);
+  mERROR_CHECK(mSharedPointer_Create<mThreadPool>(pThreadPool, pObject, [](mThreadPool *pData) { mThreadPool_Destroy_Internal(pData); }, mAT_mAlloc));
+  pObject = nullptr; // to not be destroyed on error.
+
+  mERROR_CHECK(mThreadPool_Create_Internal(pThreadPool->GetPointer(), threads));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mThreadPool_Destroy, IN_OUT mPtr<mThreadPool> *pThreadPool)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pThreadPool == nullptr, mR_ArgumentNull);
+
+  mERROR_CHECK(mThreadPool_Destroy_Internal(pThreadPool->GetPointer()));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mThreadPool_EnqueueTask, mPtr<mThreadPool> &threadPool, IN mTask *pTask)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pTask == nullptr, mR_ArgumentNull);
+
+  // TODO: Enqueue task.
+
+  mERROR_CHECK(mSemaphore_WakeOne(threadPool->pSemaphore));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mThreadPool_Create_Internal, mThreadPool *pThreadPool, const size_t threads)
+{
+  mFUNCTION_SETUP();
+
+  if (threads == mThreadPool_ThreadCount::mTP_TC_NumberOfLogicalCores)
+  {
+    const mResult result = mThread_GetMaximumConcurrentThreads(&pThreadPool->threadCount);
+
+    if (mFAILED(result))
+    {
+      if (result == mR_OperationNotSupported)
+        pThreadPool->threadCount = mThreadPool_ThreadCount::mTP_TC_DefaulThreadCount;
+      else
+        mRETURN_RESULT(result);
+    }
+  }
+  else
+  {
+    pThreadPool->threadCount = threads;
+  }
+
+  mERROR_CHECK(mAllocZero(&pThreadPool->ppThreads, pThreadPool->threadCount));
+
+  for (size_t i = 0; i < pThreadPool->threadCount; ++i)
+    mERROR_CHECK(mThread_Create(&pThreadPool->ppThreads[i], &WorkerThread, pThreadPool));
+
+  // TODO: Create Task queue.
+
+  mERROR_CHECK(mSemaphore_Create(&pThreadPool->pSemaphore));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mThreadPool_Destroy_Internal, mThreadPool *pThreadPool)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pThreadPool == nullptr, mR_ArgumentNull);
+
+  pThreadPool->isRunning = false;
+
+  // TODO: For each task: abort.
+
+  if (pThreadPool->ppThreads != nullptr)
+  {
+    for (size_t i = 0; i < pThreadPool->threadCount; ++i)
+      if (pThreadPool->ppThreads[i] != nullptr)
+        mERROR_CHECK(mThread_Destroy(&pThreadPool->ppThreads[i]));
+
+    mERROR_CHECK(mFreePtr(&pThreadPool->ppThreads));
+  }
+
+  pThreadPool->threadCount = 0;
+
+  if(pThreadPool->pSemaphore != nullptr)
+    mERROR_CHECK(mSemaphore_Destroy(&pThreadPool->pSemaphore));
+
+  // TODO: delete task queue.
+
+  mRETURN_SUCCESS();
+}
