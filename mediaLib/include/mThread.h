@@ -39,7 +39,7 @@ struct _mThread_ThreadInternalIntegerSequenceGenerator<0, TCountArgs...>
 };
 
 template<class TFunction, class Args, size_t ...TCountArgs>
-void callFunc(TFunction function, Args params, _mThread_ThreadInternalSequence<TCountArgs...>)
+void _mThread_ThreadInternal_CallFunctionUnpack(TFunction function, Args params, _mThread_ThreadInternalSequence<TCountArgs...>)
 {
   function(std::get<TCountArgs>(params) ...);
 }
@@ -51,15 +51,14 @@ void _mThread_ThreadInternalFunc(mThread *pThread, TFunction *pFunction, Args ar
 
   pThread->threadState = mT_TS_Running;
 
-  callFunc(*pFunction, args, typename _mThread_ThreadInternalIntegerSequenceGenerator<std::tuple_size<Args>::value>::type());
+  _mThread_ThreadInternal_CallFunctionUnpack(*pFunction, args, typename _mThread_ThreadInternalIntegerSequenceGenerator<std::tuple_size<Args>::value>::type());
 
   pThread->threadState = mT_TS_Stopped;
 }
 
 template<class TFunction, typename Args>
-void _mThread_ThreadInternalFuncPacker(mThread *pThread, TFunction *pFunction, Args args)
+void _mThread_ThreadInternalFunctionPacked(mThread *pThread, TFunction *pFunction, Args args)
 {
-  mUnused(args, pFunction, pThread);
   _mThread_ThreadInternalFunc(pThread, pFunction, args);
 }
 
@@ -77,7 +76,7 @@ mFUNCTION(mThread_Create, OUT mThread **ppThread, TFunction *pFunction, Args&&..
   new (&(*ppThread)->threadState) std::atomic<mThread_ThreadState>(mT_TS_NotStarted);
 
   auto tupleRef = std::make_tuple(std::forward<Args>(args)...);
-  new (&(*ppThread)->handle) std::thread (&_mThread_ThreadInternalFuncPacker<TFunction, decltype(tupleRef)>, *ppThread, pFunction, tupleRef);
+  new (&(*ppThread)->handle) std::thread (&_mThread_ThreadInternalFunctionPacked<TFunction, decltype(tupleRef)>, *ppThread, pFunction, tupleRef);
   
   mRETURN_SUCCESS();
 }

@@ -77,6 +77,8 @@ mFUNCTION(mTask_Join, IN mTask *pTask, const size_t timeoutMilliseconds /* = mSe
 
         if (pTask->state > mTask_State::mT_S_Running)
           mRETURN_SUCCESS();
+
+        mERROR_CHECK(mSleep(1));
       }
     }
   }
@@ -197,7 +199,7 @@ void WorkerThread(mThreadPool *pThreadPool)
 
   while (pThreadPool->isRunning)
   {
-
+    printf("Hello main thread!");
   }
 }
 
