@@ -29,7 +29,7 @@ enum mResult
   mR_ResourceInvalid,
   mR_ResourceIncompatible,
 
-  Count
+  mResult_Count
 };
 
 #define mSTDRESULT __result
