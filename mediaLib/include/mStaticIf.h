@@ -20,37 +20,37 @@ struct mStaticIfIdentity
 template<bool conditional>
 struct mStaticIfStatement 
 {
-  template<typename F>
-  void Then(const F& f) 
+  template<typename TFunction>
+  void Then(const TFunction& f) 
   {
     f(mStaticIfIdentity());
   }
 
-  template<typename F>
-  void Else(const F&) 
+  template<typename TFunction>
+  void Else(const TFunction&) 
   {
   }
 };
 
 template<>
 struct mStaticIfStatement<false> {
-  template<typename F>
-  void Then(const F&) 
+  template<typename TFunction>
+  void Then(const TFunction&) 
   {
   }
 
-  template<typename F>
-  void Else(const F& f) 
+  template<typename TFunction>
+  void Else(const TFunction& f) 
   {
     f(mStaticIfIdentity());
   }
 };
 
-template<bool conditional, typename F>
-mStaticIfStatement<conditional> mStaticIf(F const& f) 
+template<bool conditional, typename TFunction>
+mStaticIfStatement<conditional> mStaticIf(TFunction const& f) 
 {
   mStaticIfStatement<conditional> if_;
-  if_.then(f);
+  if_.Then(f);
 
   return if_;
 }
