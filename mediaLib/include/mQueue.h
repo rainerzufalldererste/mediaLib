@@ -16,7 +16,7 @@ struct mQueue
 {
   mAllocator *pAllocator;
   T *pData;
-  size_t frontItem, size, count;
+  size_t startIndex, size, count;
 };
 
 template <typename T>
@@ -64,7 +64,7 @@ template<typename T>
 mFUNCTION(mQueue_Destroy_Internal, IN mQueue<T> *pQueue);
 
 template<typename T>
-inline mFUNCTION(mQueue_Grow_Internal, mPtr<mQueue<T>> &queue);
+mFUNCTION(mQueue_Grow_Internal, mPtr<mQueue<T>> &queue);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -111,7 +111,7 @@ inline mFUNCTION(mQueue_PushBack, mPtr<mQueue<T>> &queue, IN T *pItem)
 {
   mFUNCTION_SETUP();
 
-  mERROR_IF(pQueue == nullptr, mR_ArgumentNull);
+  mERROR_IF(queue == nullptr, mR_ArgumentNull);
 
   if (queue->pData == nullptr)
     mERROR_CHECK(mQueue_Reserve(queue, 1));
@@ -140,7 +140,7 @@ inline mFUNCTION(mQueue_PushFront, mPtr<mQueue<T>>& queue, IN T * pItem)
 {
   mFUNCTION_SETUP();
 
-  mERROR_IF(pQueue == nullptr, mR_ArgumentNull);
+  mERROR_IF(queue == nullptr, mR_ArgumentNull);
 
   if (queue->pData == nullptr)
     mERROR_CHECK(mQueue_Reserve(queue, 1));
@@ -191,17 +191,17 @@ inline mFUNCTION(mQueue_PeekFront, mPtr<mQueue<T>> &queue, OUT T *pItem)
 {
   mFUNCTION_SETUP();
 
-  mERROR_CHECK(mQueue_PeekAt(queue, 0));
+  mERROR_CHECK(mQueue_PeekAt(queue, 0, pItem));
 
   mRETURN_SUCCESS();
 }
 
 template<typename T>
-inline mFUNCTION(mQueue_PeekBack, mPtr<mQueue<T>>& queue, OUT T * pItem)
+inline mFUNCTION(mQueue_PeekBack, mPtr<mQueue<T>>& queue, OUT T *pItem)
 {
   mFUNCTION_SETUP();
 
-  mERROR_CHECK(mQueue_PeekAt(queue, queue->count - 1));
+  mERROR_CHECK(mQueue_PeekAt(queue, queue->count - 1, pItem));
 
   mRETURN_SUCCESS();
 }
@@ -223,7 +223,7 @@ inline mFUNCTION(mQueue_PeekAt, mPtr<mQueue<T>> &queue, const size_t index, OUT 
 {
   mFUNCTION_SETUP();
 
-  mERROR_IF(pItem == nullptr, mR_ArgumentNull);
+  mERROR_IF(queue == nullptr || pItem == nullptr, mR_ArgumentNull);
 
   if (queue->count < index)
     mRETURN_RESULT(mR_IndexOutOfBounds);
@@ -240,7 +240,7 @@ inline mFUNCTION(mQueue_GetCount, mPtr<mQueue<T>> &queue, OUT size_t *pCount)
 {
   mFUNCTION_SETUP();
 
-  mERROR_IF(pCount == nullptr, mR_ArgumentNull);
+  mERROR_IF(queue == nullptr || pCount == nullptr, mR_ArgumentNull);
 
   *pCount = queue->count;
 
@@ -254,7 +254,7 @@ inline mFUNCTION(mQueue_Reserve, mPtr<mQueue<T>> &queue, const size_t count)
 {
   mFUNCTION_SETUP();
 
-  mERROR_IF(pQueue == nullptr, mR_ArgumentNull);
+  mERROR_IF(queue == nullptr, mR_ArgumentNull);
 
   if (count <= queue->size)
     mRETURN_SUCCESS();
@@ -262,7 +262,7 @@ inline mFUNCTION(mQueue_Reserve, mPtr<mQueue<T>> &queue, const size_t count)
   if (queue->pData == nullptr)
     mERROR_CHECK(mAllocator_Allocate(queue->pAllocator, &queue->pData, count));
   else
-    mERROR_CHECK(mAllocator_Reallocate(queue->Allocator, &queue->pData, count));
+    mERROR_CHECK(mAllocator_Reallocate(queue->pAllocator, &queue->pData, count));
 
   queue->size = count;
 
@@ -290,7 +290,7 @@ inline mFUNCTION(mQueue_Grow_Internal, mPtr<mQueue<T>> &queue)
 {
   mFUNCTION_SETUP();
 
-  mERROR_IF(pQueue == nullptr, mR_ArgumentNull);
+  mERROR_IF(queue == nullptr, mR_ArgumentNull);
 
   const size_t originalSize = queue->size;
 

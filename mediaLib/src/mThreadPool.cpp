@@ -13,10 +13,11 @@ struct mTask
 {
   std::function<mResult(void)> function;
   std::atomic<mTask_State> state;
+  std::atomic<size_t> referenceCount;
   mSemaphore *pSemaphore = nullptr;
   mResult result;
   mAllocator *pAllocator = nullptr;
-  bool IsAllocated = false;
+  bool isAllocated = false;
 };
 
 mFUNCTION(mTask_Destroy_Internal, IN mTask *pTask);
@@ -28,7 +29,7 @@ mFUNCTION(mTask_Create, OUT mTask **ppTask, IN OPTIONAL mAllocator *pAllocator, 
   mERROR_IF(ppTask == nullptr, mR_ArgumentNull);
 
   mERROR_CHECK(mAllocator_AllocateZero(pAllocator, ppTask, 1));
-  (*ppTask)->IsAllocated = true;
+  (*ppTask)->isAllocated = true;
   (*ppTask)->pAllocator = pAllocator;
 
   mDEFER_DESTRUCTION_ON_ERROR(ppTask, mTask_Destroy);
@@ -46,6 +47,7 @@ mFUNCTION(mTask_CreateInplace, IN mTask *pTask, const std::function<mResult(void
   pTask->result = mR_Success;
   new (&pTask->function) std::function<mResult(void)>(function);
   new (&pTask->state) std::atomic<mTask_State>(mT_S_Initialized);
+  new (&pTask->referenceCount) std::atomic<size_t>(1);
 
   mERROR_CHECK(mSemaphore_Create(&pTask->pSemaphore, pTask->pAllocator));
 
@@ -56,14 +58,19 @@ mFUNCTION(mTask_Destroy, IN_OUT mTask **ppTask)
 {
   mFUNCTION_SETUP();
 
-  mERROR_IF(ppTask == nullptr, mR_ArgumentNull);
+  mERROR_IF(ppTask == nullptr || *ppTask == nullptr, mR_ArgumentNull);
 
-  mERROR_CHECK(mTask_Destroy_Internal(*ppTask));
+  const size_t referenceCount = --(*ppTask)->referenceCount;
 
-  if ((*ppTask)->IsAllocated)
+  if (referenceCount == 0)
   {
-    mAllocator *pAllocator;
-    mERROR_CHECK(mAllocator_FreePtr(pAllocator, ppTask));
+    mAllocator *pAllocator = (*ppTask)->pAllocator;
+    const bool wasAllocated = (*ppTask)->isAllocated;
+
+    mERROR_CHECK(mTask_Destroy_Internal(*ppTask));
+
+    if (wasAllocated)
+      mERROR_CHECK(mAllocator_FreePtr(pAllocator, ppTask));
   }
 
   mRETURN_SUCCESS();
@@ -190,8 +197,12 @@ mFUNCTION(mTask_Destroy_Internal, IN mTask *pTask)
   if(pTask->pSemaphore)
     mERROR_CHECK(mSemaphore_Destroy(&pTask->pSemaphore));
 
+  pTask->referenceCount.~atomic();
   pTask->state.~atomic();
   pTask->function.~function();
+  pTask->pAllocator = nullptr;
+  pTask->result = mR_NotInitialized;
+  pTask->isAllocated = false;
 
   mRETURN_SUCCESS();
 }
@@ -211,13 +222,32 @@ struct mThreadPool
 mFUNCTION(mThreadPool_Create_Internal, mThreadPool *pThreadPool, IN OPTIONAL mAllocator *pAllocator, const size_t threads);
 mFUNCTION(mThreadPool_Destroy_Internal, mThreadPool *pThreadPool);
 
-void WorkerThread(mThreadPool *pThreadPool)
+void mThreadPool_WorkerThread(mThreadPool *pThreadPool)
 {
   mASSERT(pThreadPool != nullptr, "ThreadPool cannot be nullptr.");
 
   while (pThreadPool->isRunning)
   {
-    ;
+    {
+      mASSERT(mSUCCEEDED(mSemaphore_Lock(pThreadPool->pSemaphore)), "Error in " __FUNCTION__ ": Semaphore error.");
+      mDEFER_DESTRUCTION(pThreadPool->pSemaphore, mSemaphore_Unlock);
+
+      size_t count = 0;
+      mASSERT(mSUCCEEDED(mQueue_GetCount(pThreadPool->queue, &count)), "Error in " __FUNCTION__ ": Could not get task queue length.");
+
+      if (count > 0)
+      {
+        mTask *pTask = nullptr;
+        mASSERT(mSUCCEEDED(mQueue_PopFront(pThreadPool->queue, &pTask)), "Error in " __FUNCTION__ ": Could not dequeue task.");
+      }
+    }
+
+    const mResult result = mSemaphore_Sleep(pThreadPool->pSemaphore, 1);
+
+    if (result == mR_Timeout)
+      continue;
+    else
+      mASSERT(mSUCCEEDED(result), "Error in " __FUNCTION__ ": Semaphore error.");
   }
 }
 
@@ -252,7 +282,7 @@ mFUNCTION(mThreadPool_Destroy, IN_OUT mPtr<mThreadPool> *pThreadPool)
 
   mERROR_IF(pThreadPool == nullptr, mR_ArgumentNull);
 
-  mERROR_CHECK(mThreadPool_Destroy_Internal(pThreadPool->GetPointer()));
+  mERROR_CHECK(mSharedPointer_Destroy(pThreadPool));
 
   mRETURN_SUCCESS();
 }
@@ -263,7 +293,14 @@ mFUNCTION(mThreadPool_EnqueueTask, mPtr<mThreadPool> &threadPool, IN mTask *pTas
 
   mERROR_IF(pTask == nullptr, mR_ArgumentNull);
 
-  // TODO: Enqueue task.
+  // Enqueue task.
+  {
+    ++pTask->referenceCount;
+
+    mERROR_CHECK(mSemaphore_Lock(threadPool->pSemaphore));
+    mDEFER_DESTRUCTION(threadPool->pSemaphore, mSemaphore_Unlock);
+    mERROR_CHECK(mQueue_PushBack(threadPool->queue, pTask));
+  }
 
   mERROR_CHECK(mSemaphore_WakeOne(threadPool->pSemaphore));
 
@@ -276,6 +313,9 @@ mFUNCTION(mThreadPool_Create_Internal, mThreadPool *pThreadPool, IN OPTIONAL mAl
 
   pThreadPool->pAllocator = pAllocator;
   pThreadPool->isRunning = true;
+
+  mERROR_CHECK(mQueue_Create(&pThreadPool->queue, pThreadPool->pAllocator));
+  mERROR_CHECK(mSemaphore_Create(&pThreadPool->pSemaphore, pThreadPool->pAllocator));
 
   if (threads == mThreadPool_ThreadCount::mTP_TC_NumberOfLogicalCores)
   {
@@ -297,11 +337,7 @@ mFUNCTION(mThreadPool_Create_Internal, mThreadPool *pThreadPool, IN OPTIONAL mAl
   mERROR_CHECK(mAllocator_AllocateZero(pThreadPool->pAllocator, &pThreadPool->ppThreads, pThreadPool->threadCount));
 
   for (size_t i = 0; i < pThreadPool->threadCount; ++i)
-    mERROR_CHECK(mThread_Create(&pThreadPool->ppThreads[i], pThreadPool->pAllocator, &WorkerThread, pThreadPool));
-
-  mERROR_CHECK(mQueue_Create(&pThreadPool->queue, pThreadPool->pAllocator));
-
-  mERROR_CHECK(mSemaphore_Create(&pThreadPool->pSemaphore, pThreadPool->pAllocator));
+    mERROR_CHECK(mThread_Create(&pThreadPool->ppThreads[i], pThreadPool->pAllocator, &mThreadPool_WorkerThread, pThreadPool));
 
   mRETURN_SUCCESS();
 }
@@ -314,7 +350,22 @@ mFUNCTION(mThreadPool_Destroy_Internal, mThreadPool *pThreadPool)
 
   pThreadPool->isRunning = false;
 
-  // TODO: For each task: abort.
+  // Remove all tasks.
+  {
+    mERROR_CHECK(mSemaphore_Lock(pThreadPool->pSemaphore));
+    mDEFER_DESTRUCTION(pThreadPool->pSemaphore, mSemaphore_Unlock);
+
+    size_t count = 0;
+    mERROR_CHECK(mQueue_GetCount(pThreadPool->queue, &count));
+
+    for (size_t i = 0; i < count; ++i)
+    {
+      mTask *pTask = nullptr;
+
+      mERROR_CHECK(mQueue_PopFront(pThreadPool->queue, &pTask));
+      mERROR_CHECK(mTask_Destroy(&pTask));
+    }
+  }
 
   if (pThreadPool->ppThreads != nullptr)
   {

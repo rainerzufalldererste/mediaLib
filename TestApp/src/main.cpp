@@ -23,12 +23,12 @@ int main(int, char **)
 
   mPtr<mMediaFileInputHandler> mediaFileHandler;
   mDEFER_DESTRUCTION(&mediaFileHandler, mMediaFileInputHandler_Destroy);
-  mERROR_CHECK(mMediaFileInputHandler_Create(&mediaFileHandler, nullptr, L"C:/Users/cstiller/Videos/Converted.MP4", mMediaFileInputHandler_CreateFlags::mMMFIH_CF_VideoEnabled));
+  mERROR_CHECK(mMediaFileInputHandler_Create(&mediaFileHandler, nullptr, L"N:/Data/video/PublicHologram.mp4", mMediaFileInputHandler_CreateFlags::mMMFIH_CF_VideoEnabled));
 
   mERROR_CHECK(mMediaFileInputHandler_GetVideoStreamResolution(mediaFileHandler, &resolution));
 
   mDEFER_DESTRUCTION(pWindow, SDL_DestroyWindow);
-  pWindow = SDL_CreateWindow("HoloRoom Software Render", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, (int)resolution.x / subScale, (int)resolution.y / subScale, 0);
+  pWindow = SDL_CreateWindow("VideoStream Renderer", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, (int)resolution.x / subScale, (int)resolution.y / subScale, 0);
   mERROR_IF(pWindow == nullptr, mR_ArgumentNull);
   pPixels = (uint32_t *)SDL_GetWindowSurface(pWindow)->pixels;
   mERROR_IF(pPixels == nullptr, mR_ArgumentNull);
@@ -48,6 +48,7 @@ mFUNCTION(OnVideoFramCallback, mPtr<mImageBuffer> &buffer, const mVideoStreamTyp
 
   const clock_t now = clock();
 
+  mERROR_CHECK(mImageBuffer_AllocateBuffer(bgraImageBuffer, buffer->currentSize, bgraImageBuffer->pixelFormat));
   mERROR_CHECK(mPixelFormat_TransformBuffer(buffer, bgraImageBuffer));
   mPRINT("frame time: %" PRIi32 "\n", clock() - now);
 

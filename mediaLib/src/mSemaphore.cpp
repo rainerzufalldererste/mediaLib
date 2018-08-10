@@ -107,15 +107,15 @@ mFUNCTION(mSemaphore_Sleep, IN mSemaphore *pSemaphore, const size_t timeoutMilli
 
   const BOOL result = SleepConditionVariableCS(&pSemaphore->conditionVariable, &pSemaphore->criticalSection, (DWORD)timeoutMilliseconds);
 
-  switch (result)
+  if (result == 0)
   {
-  case 0:
+    if (GetLastError() == ERROR_TIMEOUT)
+      mRETURN_RESULT(mR_Timeout);
+
     mRETURN_SUCCESS();
-
-  case ERROR_TIMEOUT:
-    mRETURN_RESULT(mR_Timeout);
-
-  default:
+  }
+  else
+  {
     mRETURN_RESULT(mR_InternalError);
   }
 }
