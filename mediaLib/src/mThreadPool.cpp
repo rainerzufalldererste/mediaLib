@@ -12,18 +12,25 @@ struct mTask
 {
   std::function<mResult(void)> function;
   std::atomic<mTask_State> state;
-  mSemaphore *pSemaphore;
+  mSemaphore *pSemaphore = nullptr;
   mResult result;
+  mAllocator *pAllocator = nullptr;
+  bool IsAllocated = false;
 };
 
 mFUNCTION(mTask_Destroy_Internal, IN mTask *pTask);
 
-mFUNCTION(mTask_Create, OUT mTask **ppTask, const std::function<mResult(void)> &function)
+mFUNCTION(mTask_Create, OUT mTask **ppTask, IN OPTIONAL mAllocator *pAllocator, const std::function<mResult(void)> &function)
 {
   mFUNCTION_SETUP();
 
   mERROR_IF(ppTask == nullptr, mR_ArgumentNull);
-  mERROR_CHECK(mAllocZero(ppTask, 1));
+
+  mERROR_CHECK(mAllocator_AllocateZero(pAllocator, ppTask, 1));
+  (*ppTask)->IsAllocated = true;
+  (*ppTask)->pAllocator = pAllocator;
+
+  mDEFER_DESTRUCTION_ON_ERROR(ppTask, mTask_Destroy);
   mERROR_CHECK(mTask_CreateInplace(*ppTask, function));
 
   mRETURN_SUCCESS();
@@ -39,7 +46,7 @@ mFUNCTION(mTask_CreateInplace, IN mTask *pTask, const std::function<mResult(void
   new (&pTask->function) std::function<mResult(void)>(function);
   new (&pTask->state) std::atomic<mTask_State>(mT_S_Initialized);
 
-  mERROR_CHECK(mSemaphore_Create(&pTask->pSemaphore));
+  mERROR_CHECK(mSemaphore_Create(&pTask->pSemaphore, pTask->pAllocator));
 
   mRETURN_SUCCESS();
 }
@@ -51,6 +58,12 @@ mFUNCTION(mTask_Destroy, IN_OUT mTask **ppTask)
   mERROR_IF(ppTask == nullptr, mR_ArgumentNull);
 
   mERROR_CHECK(mTask_Destroy_Internal(*ppTask));
+
+  if ((*ppTask)->IsAllocated)
+  {
+    mAllocator *pAllocator;
+    mERROR_CHECK(mAllocator_FreePtr(pAllocator, ppTask));
+  }
 
   mRETURN_SUCCESS();
 }
@@ -173,7 +186,9 @@ mFUNCTION(mTask_Destroy_Internal, IN mTask *pTask)
 
   mERROR_IF(pTask == nullptr, mR_ArgumentNull);
 
-  mERROR_CHECK(mSemaphore_Destroy(&pTask->pSemaphore));
+  if(pTask->pSemaphore)
+    mERROR_CHECK(mSemaphore_Destroy(&pTask->pSemaphore));
+
   pTask->state.~atomic();
   pTask->function.~function();
 
@@ -188,9 +203,10 @@ struct mThreadPool
   size_t threadCount;
   mThread **ppThreads;
   mSemaphore *pSemaphore;
+  mAllocator *pAllocator;
 };
 
-mFUNCTION(mThreadPool_Create_Internal, mThreadPool *pThreadPool, const size_t threads);
+mFUNCTION(mThreadPool_Create_Internal, mThreadPool *pThreadPool, IN OPTIONAL mAllocator *pAllocator, const size_t threads);
 mFUNCTION(mThreadPool_Destroy_Internal, mThreadPool *pThreadPool);
 
 void WorkerThread(mThreadPool *pThreadPool)
@@ -203,7 +219,7 @@ void WorkerThread(mThreadPool *pThreadPool)
   }
 }
 
-mFUNCTION(mThreadPool_Create, OUT mPtr<mThreadPool> *pThreadPool, const size_t threads /* = mThreadPool_ThreadCount::mTP_TC_NumberOfLogicalCores */)
+mFUNCTION(mThreadPool_Create, OUT mPtr<mThreadPool> *pThreadPool, IN OPTIONAL mAllocator *pAllocator, const size_t threads /* = mThreadPool_ThreadCount::mTP_TC_NumberOfLogicalCores */)
 {
   mFUNCTION_SETUP();
 
@@ -216,14 +232,14 @@ mFUNCTION(mThreadPool_Create, OUT mPtr<mThreadPool> *pThreadPool, const size_t t
   }
 
   mThreadPool *pObject = nullptr;
-  mDEFER_DESTRUCTION_ON_ERROR(&pObject, mFreePtr);
-  mERROR_CHECK(mAllocZero(&pObject, 1));
+  mDEFER_ON_ERROR(mAllocator_FreePtr(pAllocator, &pObject));
+  mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &pObject, 1));
 
   mDEFER_DESTRUCTION_ON_ERROR(pThreadPool, mSharedPointer_Destroy);
-  mERROR_CHECK(mSharedPointer_Create<mThreadPool>(pThreadPool, pObject, [](mThreadPool *pData) { mThreadPool_Destroy_Internal(pData); }, mAT_mAlloc));
+  mERROR_CHECK(mSharedPointer_Create<mThreadPool>(pThreadPool, pObject, [](mThreadPool *pData) { mThreadPool_Destroy_Internal(pData); }, pAllocator));
   pObject = nullptr; // to not be destroyed on error.
 
-  mERROR_CHECK(mThreadPool_Create_Internal(pThreadPool->GetPointer(), threads));
+  mERROR_CHECK(mThreadPool_Create_Internal(pThreadPool->GetPointer(), pAllocator, threads));
 
   mRETURN_SUCCESS();
 }
@@ -252,9 +268,11 @@ mFUNCTION(mThreadPool_EnqueueTask, mPtr<mThreadPool> &threadPool, IN mTask *pTas
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mThreadPool_Create_Internal, mThreadPool *pThreadPool, const size_t threads)
+mFUNCTION(mThreadPool_Create_Internal, mThreadPool *pThreadPool, IN OPTIONAL mAllocator *pAllocator, const size_t threads)
 {
   mFUNCTION_SETUP();
+
+  pThreadPool->pAllocator = pAllocator;
 
   if (threads == mThreadPool_ThreadCount::mTP_TC_NumberOfLogicalCores)
   {
@@ -273,14 +291,14 @@ mFUNCTION(mThreadPool_Create_Internal, mThreadPool *pThreadPool, const size_t th
     pThreadPool->threadCount = threads;
   }
 
-  mERROR_CHECK(mAllocZero(&pThreadPool->ppThreads, pThreadPool->threadCount));
+  mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &pThreadPool->ppThreads, pThreadPool->threadCount));
 
   for (size_t i = 0; i < pThreadPool->threadCount; ++i)
-    mERROR_CHECK(mThread_Create(&pThreadPool->ppThreads[i], &WorkerThread, pThreadPool));
+    mERROR_CHECK(mThread_Create(&pThreadPool->ppThreads[i], pAllocator, &WorkerThread, pThreadPool));
 
   // TODO: Create Task queue.
 
-  mERROR_CHECK(mSemaphore_Create(&pThreadPool->pSemaphore));
+  mERROR_CHECK(mSemaphore_Create(&pThreadPool->pSemaphore, pAllocator));
 
   mRETURN_SUCCESS();
 }
@@ -301,7 +319,7 @@ mFUNCTION(mThreadPool_Destroy_Internal, mThreadPool *pThreadPool)
       if (pThreadPool->ppThreads[i] != nullptr)
         mERROR_CHECK(mThread_Destroy(&pThreadPool->ppThreads[i]));
 
-    mERROR_CHECK(mFreePtr(&pThreadPool->ppThreads));
+    mERROR_CHECK(mAllocator_FreePtr(pThreadPool->pAllocator, &pThreadPool->ppThreads));
   }
 
   pThreadPool->threadCount = 0;

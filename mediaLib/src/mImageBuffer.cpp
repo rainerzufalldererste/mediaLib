@@ -8,58 +8,58 @@
 
 #include "mImageBuffer.h"
 
+mFUNCTION(mImageBuffer_Create_Iternal, mPtr<mImageBuffer> *pImageBuffer, IN OPTIONAL mAllocator *pAllocator);
 mFUNCTION(mImageBuffer_Destroy_Iternal, mImageBuffer *pImageBuffer);
-mFUNCTION(mImageBuffer_Create_Iternal, mPtr<mImageBuffer> *pImageBuffer);
 
-mFUNCTION(mImageBuffer_Create, OUT mPtr<mImageBuffer> *pImageBuffer)
+mFUNCTION(mImageBuffer_Create, OUT mPtr<mImageBuffer> *pImageBuffer, IN OPTIONAL mAllocator *pAllocator)
 {
   mFUNCTION_SETUP();
 
   mERROR_IF(pImageBuffer == nullptr, mR_ArgumentNull);
-  mERROR_CHECK(mImageBuffer_Create_Iternal(pImageBuffer));
+  mERROR_CHECK(mImageBuffer_Create_Iternal(pImageBuffer, pAllocator));
 
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mImageBuffer_Create, OUT mPtr<mImageBuffer> *pImageBuffer, const mVec2s &size, const mPixelFormat pixelFormat /* = mPF_B8G8R8A8 */)
+mFUNCTION(mImageBuffer_Create, OUT mPtr<mImageBuffer> *pImageBuffer, IN OPTIONAL mAllocator *pAllocator, const mVec2s &size, const mPixelFormat pixelFormat /* = mPF_B8G8R8A8 */)
 {
   mFUNCTION_SETUP();
 
   mERROR_IF(pImageBuffer == nullptr, mR_ArgumentNull);
-  mERROR_CHECK(mImageBuffer_Create_Iternal(pImageBuffer));
+  mERROR_CHECK(mImageBuffer_Create_Iternal(pImageBuffer, pAllocator));
   mERROR_CHECK(mImageBuffer_AllocateBuffer(*pImageBuffer, size, pixelFormat));
 
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mImageBuffer_Create, OUT mPtr<mImageBuffer> *pImageBuffer, IN void *pData, const mVec2s &size, const mPixelFormat pixelFormat /* = mPF_B8G8R8A8 */)
+mFUNCTION(mImageBuffer_Create, OUT mPtr<mImageBuffer> *pImageBuffer, IN OPTIONAL mAllocator *pAllocator, IN void *pData, const mVec2s &size, const mPixelFormat pixelFormat /* = mPF_B8G8R8A8 */)
 {
   mFUNCTION_SETUP();
 
   mERROR_IF(pImageBuffer == nullptr, mR_ArgumentNull);
-  mERROR_CHECK(mImageBuffer_Create_Iternal(pImageBuffer));
+  mERROR_CHECK(mImageBuffer_Create_Iternal(pImageBuffer, pAllocator));
   mERROR_CHECK(mImageBuffer_SetBuffer(*pImageBuffer, pData, size, pixelFormat));
 
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mImageBuffer_Create, OUT mPtr<mImageBuffer> *pImageBuffer, IN void *pData, const mVec2s &size, const size_t stride, const mPixelFormat pixelFormat /* = mPF_B8G8R8A8 */)
+mFUNCTION(mImageBuffer_Create, OUT mPtr<mImageBuffer> *pImageBuffer, IN OPTIONAL mAllocator *pAllocator, IN void *pData, const mVec2s &size, const size_t stride, const mPixelFormat pixelFormat /* = mPF_B8G8R8A8 */)
 {
   mFUNCTION_SETUP();
 
   mERROR_IF(pImageBuffer == nullptr, mR_ArgumentNull);
-  mERROR_CHECK(mImageBuffer_Create_Iternal(pImageBuffer));
+  mERROR_CHECK(mImageBuffer_Create_Iternal(pImageBuffer, pAllocator));
   mERROR_CHECK(mImageBuffer_SetBuffer(*pImageBuffer, pData, size, stride, pixelFormat));
 
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mImageBuffer_Create, OUT mPtr<mImageBuffer> *pImageBuffer, IN void *pData, const mVec2s &size, const mRectangle2D<size_t> &rect, const mPixelFormat pixelFormat /* = mPF_B8G8R8A8 */)
+mFUNCTION(mImageBuffer_Create, OUT mPtr<mImageBuffer> *pImageBuffer, IN OPTIONAL mAllocator *pAllocator, IN void *pData, const mVec2s &size, const mRectangle2D<size_t> &rect, const mPixelFormat pixelFormat /* = mPF_B8G8R8A8 */)
 {
   mFUNCTION_SETUP();
 
   mERROR_IF(pImageBuffer == nullptr, mR_ArgumentNull);
-  mERROR_CHECK(mImageBuffer_Create_Iternal(pImageBuffer));
+  mERROR_CHECK(mImageBuffer_Create_Iternal(pImageBuffer, pAllocator));
   mERROR_CHECK(mImageBuffer_SetBuffer(*pImageBuffer, pData, size, rect, pixelFormat));
 
   mRETURN_SUCCESS();
@@ -88,7 +88,7 @@ mFUNCTION(mImageBuffer_AllocateBuffer, mPtr<mImageBuffer> &imageBuffer, const mV
   if (imageBuffer->pPixels == nullptr)
   {
     uint8_t *pPixels = nullptr;
-    mERROR_CHECK(mAlloc(&pPixels, allocatedSize));
+    mERROR_CHECK(mAllocator_Allocate(imageBuffer->pAllocator, &pPixels, allocatedSize));
 
     imageBuffer->ownedResource = true;
     imageBuffer->pPixels = pPixels;
@@ -102,7 +102,7 @@ mFUNCTION(mImageBuffer_AllocateBuffer, mPtr<mImageBuffer> &imageBuffer, const mV
     if (imageBuffer->allocatedSize < allocatedSize)
     {
       uint8_t *pPixels = nullptr;
-      mERROR_CHECK(mRealloc(&pPixels, allocatedSize));
+      mERROR_CHECK(mAllocator_Reallocate(imageBuffer->pAllocator, &pPixels, allocatedSize));
 
       imageBuffer->allocatedSize = allocatedSize;
       imageBuffer->ownedResource = true;
@@ -209,7 +209,7 @@ mFUNCTION(mImageBuffer_CopyTo, mPtr<mImageBuffer> &source, mPtr<mImageBuffer> &t
   {
     size_t copiedSize;
     mERROR_CHECK(mPixelFormat_GetSize(source->pixelFormat, mVec2s(source->lineStride, source->currentSize.y), &copiedSize));
-    mERROR_CHECK(mMemcpy(target->pPixels, source->pPixels, copiedSize));
+    mERROR_CHECK(mAllocator_Copy(source->pAllocator, target->pPixels, source->pPixels, copiedSize));
   }
   else
   {
@@ -247,7 +247,7 @@ mFUNCTION(mImageBuffer_CopyTo, mPtr<mImageBuffer> &source, mPtr<mImageBuffer> &t
 
       for (size_t y = 0; y < source->currentSize.y; y++)
       {
-        mERROR_CHECK(mMemcpy(pTargetSubBufferPixels + targetLineStride, pSourceSubBufferPixels + sourceLineStride, subBufferSize.x));
+        mERROR_CHECK(mAllocator_Copy(source->pAllocator, pTargetSubBufferPixels + targetLineStride, pSourceSubBufferPixels + sourceLineStride, subBufferSize.x));
 
         targetLineStride += sourceSubBufferStride * subBufferUnitSize;
         sourceLineStride += targetSubBufferStride * subBufferUnitSize;
@@ -267,7 +267,7 @@ mFUNCTION(mImageBuffer_Destroy_Iternal, mImageBuffer *pImageBuffer)
   mERROR_IF(pImageBuffer == nullptr, mR_ArgumentNull);
 
   if (pImageBuffer->ownedResource && pImageBuffer->pPixels != nullptr)
-    mFreePtr(&pImageBuffer->pPixels);
+    mSTDRESULT = mAllocator_FreePtr(pImageBuffer->pAllocator, &pImageBuffer->pPixels);
 
   pImageBuffer->ownedResource = false;
   pImageBuffer->pPixels = nullptr;
@@ -275,10 +275,12 @@ mFUNCTION(mImageBuffer_Destroy_Iternal, mImageBuffer *pImageBuffer)
   pImageBuffer->currentSize = 0;
   pImageBuffer->lineStride = 0;
 
+  mERROR_IF(mFAILED(mSTDRESULT), mSTDRESULT);
+
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mImageBuffer_Create_Iternal, mPtr<mImageBuffer> *pImageBuffer)
+mFUNCTION(mImageBuffer_Create_Iternal, mPtr<mImageBuffer> *pImageBuffer, IN OPTIONAL mAllocator *pAllocator)
 {
   mFUNCTION_SETUP();
 
@@ -291,12 +293,14 @@ mFUNCTION(mImageBuffer_Create_Iternal, mPtr<mImageBuffer> *pImageBuffer)
   }
 
   mImageBuffer *pImageBufferRaw = nullptr;
-  mDEFER_DESTRUCTION_ON_ERROR(&pImageBufferRaw, mFreePtr);
-  mERROR_CHECK(mAllocZero(&pImageBufferRaw, 1));
+  mDEFER_ON_ERROR(mAllocator_FreePtr(pAllocator, &pImageBufferRaw));
+  mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &pImageBufferRaw, 1));
 
   mDEFER_DESTRUCTION_ON_ERROR(pImageBuffer, mSharedPointer_Destroy);
-  mERROR_CHECK(mSharedPointer_Create<mImageBuffer>(pImageBuffer, pImageBufferRaw, [](mImageBuffer *pData) { mImageBuffer_Destroy_Iternal(pData); }, mAT_mAlloc));
+  mERROR_CHECK(mSharedPointer_Create<mImageBuffer>(pImageBuffer, pImageBufferRaw, [](mImageBuffer *pData) { mImageBuffer_Destroy_Iternal(pData); }, pAllocator));
   pImageBufferRaw = nullptr; // to not be destroyed on error.
+
+  (*pImageBuffer)->pAllocator = pAllocator;
 
   mRETURN_SUCCESS();
 }

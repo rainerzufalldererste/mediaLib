@@ -19,11 +19,11 @@ int main(int, char **)
   g_mResult_breakOnError = true;
   mPtr<mThreadPool> threadPool;
   mDEFER_DESTRUCTION(&threadPool, mThreadPool_Destroy);
-  mERROR_CHECK(mThreadPool_Create(&threadPool));
+  mERROR_CHECK(mThreadPool_Create(&threadPool, nullptr));
 
   mPtr<mMediaFileInputHandler> mediaFileHandler;
   mDEFER_DESTRUCTION(&mediaFileHandler, mMediaFileInputHandler_Destroy);
-  mERROR_CHECK(mMediaFileInputHandler_Create(&mediaFileHandler, L"C:/Users/cstiller/Videos/Converted.MP4", mMediaFileInputHandler_CreateFlags::mMMFIH_CF_VideoEnabled));
+  mERROR_CHECK(mMediaFileInputHandler_Create(&mediaFileHandler, nullptr, L"C:/Users/cstiller/Videos/Converted.MP4", mMediaFileInputHandler_CreateFlags::mMMFIH_CF_VideoEnabled));
 
   mERROR_CHECK(mMediaFileInputHandler_GetVideoStreamResolution(mediaFileHandler, &resolution));
 
@@ -34,7 +34,7 @@ int main(int, char **)
   mERROR_IF(pPixels == nullptr, mR_ArgumentNull);
 
   mDEFER_DESTRUCTION(&bgraImageBuffer, mImageBuffer_Destroy);
-  mERROR_CHECK(mImageBuffer_Create(&bgraImageBuffer, resolution));
+  mERROR_CHECK(mImageBuffer_Create(&bgraImageBuffer, nullptr, resolution));
 
   mERROR_CHECK(mMediaFileInputHandler_SetVideoCallback(mediaFileHandler, OnVideoFramCallback));
   mERROR_CHECK(mMediaFileInputHandler_Play(mediaFileHandler));

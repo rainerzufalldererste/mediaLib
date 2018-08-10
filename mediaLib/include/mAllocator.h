@@ -9,6 +9,7 @@
 #ifndef mAllocator_h__
 #define mAllocator_h__
 
+#include "mResult.h"
 #include "default.h"
 
 // Parameters: 
@@ -50,6 +51,9 @@ mFUNCTION(mDefaultAllocator_Free, OUT uint8_t *pData, IN void *pUserData = nullp
 mFUNCTION(mDefaultAllocator_Move, IN_OUT uint8_t *pDestimation, IN uint8_t *pSource, const size_t size, const size_t count, IN void *pUserData = nullptr);
 mFUNCTION(mDefaultAllocator_Copy, IN_OUT uint8_t *pDestimation, IN uint8_t *pSource, const size_t size, const size_t count, IN void *pUserData = nullptr);
 
+struct mAllocator;
+extern mAllocator mDefaultAllocator;
+
 struct mAllocator
 {
   mAllocator_AllocFunction *pAllocate = nullptr;
@@ -64,7 +68,9 @@ struct mAllocator
   bool initialized = false;
 };
 
-mFUNCTION(mAllocator_Create, OUT mAllocator *pAllocator, IN mAllocator_AllocFunction *pAllocFunction, IN mAllocator_FreeFunction *pFree, IN OPTIONAL mAllocator_MoveFunction *pMove = nullptr, IN OPTIONAL mAllocator_CopyFunction *pCopy = nullptr, IN OPTIONAL mAllocator_AllocFunction *pAllocZeroFunction = nullptr, IN OPTIONAL mAllocator_AllocFunction *pReallocFunction = nullptr, IN OPTIONAL mAllocator_DestroyAllocator *pDestroyAllocator = nullptr, IN OPTIONAL void *pUserData = nullptr);
+mAllocator mAllocator_StaticCreate(IN mAllocator_AllocFunction *pAllocFunction, IN mAllocator_AllocFunction *pReallocFunction, IN mAllocator_FreeFunction *pFree, IN OPTIONAL mAllocator_MoveFunction *pMove = nullptr, IN OPTIONAL mAllocator_CopyFunction *pCopy = nullptr, IN OPTIONAL mAllocator_AllocFunction *pAllocZeroFunction = nullptr, IN OPTIONAL mAllocator_DestroyAllocator *pDestroyAllocator = nullptr, IN OPTIONAL void *pUserData = nullptr);
+
+mFUNCTION(mAllocator_Create, OUT mAllocator *pAllocator, IN mAllocator_AllocFunction *pAllocFunction, IN mAllocator_AllocFunction *pReallocFunction, IN mAllocator_FreeFunction *pFree, IN OPTIONAL mAllocator_MoveFunction *pMove = nullptr, IN OPTIONAL mAllocator_CopyFunction *pCopy = nullptr, IN OPTIONAL mAllocator_AllocFunction *pAllocZeroFunction = nullptr, IN OPTIONAL mAllocator_DestroyAllocator *pDestroyAllocator = nullptr, IN OPTIONAL void *pUserData = nullptr);
 mFUNCTION(mAllocator_Destoy, IN_OUT mAllocator *pAllocator);
 
 template <typename T>
@@ -141,7 +147,7 @@ inline mFUNCTION(mAllocator_Reallocate, IN OPTIONAL mAllocator * pAllocator, OUT
   if (pAllocator == nullptr || !pAllocator->initialized || pAllocator->pReallocate == nullptr)
     mERROR_CHECK(mDefaultAllocator_Realloc((uint8_t **)ppData, sizeof(T), count));
   else
-    mERROR_CHECK(pAllocator->pReallocate((uint8_t **)ppData, sizeof(T), count));
+    mERROR_CHECK(pAllocator->pReallocate((uint8_t **)ppData, sizeof(T), count, pAllocator->pUserData));
 
   mRETURN_SUCCESS();
 }
@@ -207,7 +213,7 @@ inline mFUNCTION(mAllocator_Copy, IN OPTIONAL mAllocator *pAllocator, IN_OUT T *
   if (pAllocator == nullptr || !pAllocator->initialized || pAllocator->pCopy == nullptr)
     mERROR_CHECK(mDefaultAllocator_Copy((uint8_t *)pDestination, (uint8_t *)pSource, sizeof(T), count));
   else
-    mERROR_CHECK(pAllocator->pOopy((uint8_t *)pDestination, (uint8_t *)pSource, sizeof(T), count, pAllocator->pUserData));
+    mERROR_CHECK(pAllocator->pCopy((uint8_t *)pDestination, (uint8_t *)pSource, sizeof(T), count, pAllocator->pUserData));
 
   mRETURN_SUCCESS();
 }

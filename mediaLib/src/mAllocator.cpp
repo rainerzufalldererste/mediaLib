@@ -8,6 +8,9 @@
 
 #include "mAllocator.h"
 
+#ifndef MEDIA_LIB_CUSTOM_DEFAULT_ALLOCATOR
+mAllocator mDefaultAllocator = mAllocator_StaticCreate(&mDefaultAllocator_Alloc, &mDefaultAllocator_Realloc, &mDefaultAllocator_Free, &mDefaultAllocator_Move, &mDefaultAllocator_Copy, &mDefaultAllocator_AllocZero);
+
 mFUNCTION(mDefaultAllocator_Alloc, OUT uint8_t **ppData, const size_t size, const size_t count, IN void *)
 {
   mFUNCTION_SETUP();
@@ -17,7 +20,7 @@ mFUNCTION(mDefaultAllocator_Alloc, OUT uint8_t **ppData, const size_t size, cons
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mDefaultAllocator_AllocZero, OUT uint8_t ** ppData, const size_t size, const size_t count, IN void * pUserData)
+mFUNCTION(mDefaultAllocator_AllocZero, OUT uint8_t **ppData, const size_t size, const size_t count, IN void *)
 {
   mFUNCTION_SETUP();
 
@@ -26,7 +29,7 @@ mFUNCTION(mDefaultAllocator_AllocZero, OUT uint8_t ** ppData, const size_t size,
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mDefaultAllocator_Realloc, OUT uint8_t ** ppData, const size_t size, const size_t count, IN void * pUserData)
+mFUNCTION(mDefaultAllocator_Realloc, OUT uint8_t **ppData, const size_t size, const size_t count, IN void *)
 {
   mFUNCTION_SETUP();
 
@@ -61,14 +64,35 @@ mFUNCTION(mDefaultAllocator_Copy, IN_OUT uint8_t *pDestimation, IN uint8_t *pSou
 
   mRETURN_SUCCESS();
 }
+#endif
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mAllocator_Create, OUT mAllocator *pAllocator, IN mAllocator_AllocFunction *pAllocFunction, IN mAllocator_FreeFunction *pFree, IN OPTIONAL mAllocator_MoveFunction *pMove /* = nullptr */, IN OPTIONAL mAllocator_CopyFunction *pCopy /* = nullptr */, IN OPTIONAL mAllocator_AllocFunction *pAllocZeroFunction /* = nullptr */, IN OPTIONAL mAllocator_AllocFunction *pReallocFunction /* = nullptr */, IN OPTIONAL mAllocator_DestroyAllocator *pDestroyAllocator /* = nullptr */, IN OPTIONAL void *pUserData /* = nullptr */)
+mAllocator mAllocator_StaticCreate(IN mAllocator_AllocFunction *pAllocFunction, IN mAllocator_AllocFunction *pReallocFunction, IN mAllocator_FreeFunction *pFree, IN OPTIONAL mAllocator_MoveFunction *pMove, IN OPTIONAL mAllocator_CopyFunction *pCopy, IN OPTIONAL mAllocator_AllocFunction *pAllocZeroFunction, IN OPTIONAL mAllocator_DestroyAllocator *pDestroyAllocator, IN OPTIONAL void *pUserData)
+{
+  mAllocator allocator;
+
+  mASSERT_DEBUG((pAllocFunction != nullptr || pAllocZeroFunction != nullptr) && pFree != nullptr && pReallocFunction != nullptr, "Invalid static allocator. Allocate/AllocateZero, Free and Realloc cannot be nullptr.");
+
+  allocator.pAllocate = pAllocFunction;
+  allocator.pAllocateZero = pAllocZeroFunction;
+  allocator.pReallocate = pReallocFunction;
+  allocator.pFree = pFree;
+  allocator.pMove = pMove;
+  allocator.pCopy = pCopy;
+  allocator.pDestroyAllocator = pDestroyAllocator;
+  allocator.pUserData = pUserData;
+
+  allocator.initialized = true;
+
+  return allocator;
+}
+
+mFUNCTION(mAllocator_Create, OUT mAllocator *pAllocator, IN mAllocator_AllocFunction *pAllocFunction, IN mAllocator_AllocFunction *pReallocFunction, IN mAllocator_FreeFunction *pFree, IN OPTIONAL mAllocator_MoveFunction *pMove /* = nullptr */, IN OPTIONAL mAllocator_CopyFunction *pCopy /* = nullptr */, IN OPTIONAL mAllocator_AllocFunction *pAllocZeroFunction /* = nullptr */, IN OPTIONAL mAllocator_DestroyAllocator *pDestroyAllocator /* = nullptr */, IN OPTIONAL void *pUserData /* = nullptr */)
 {
   mFUNCTION_SETUP();
 
-  mERROR_IF(pAllocator == nullptr || pAllocFunction == nullptr || pFree == nullptr, mR_ArgumentNull);
+  mERROR_IF(pAllocator == nullptr || (pAllocFunction == nullptr && pAllocZeroFunction == nullptr) || pReallocFunction == nullptr || pFree == nullptr, mR_ArgumentNull);
 
   pAllocator->pAllocate = pAllocFunction;
   pAllocator->pAllocateZero = pAllocZeroFunction;

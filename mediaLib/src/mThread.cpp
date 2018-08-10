@@ -18,7 +18,9 @@ mFUNCTION(mThread_Destroy, IN_OUT mThread **ppThread)
 
   mDEFER_DESTRUCTION(ppThread, mSetToNullptr);
   mERROR_CHECK(mThread_Destroy_Internal(*ppThread));
-  mERROR_CHECK(mFreePtr(ppThread));
+  
+  mAllocator *pAllocator = (*ppThread)->pAllocator;
+  mERROR_CHECK(mAllocator_FreePtr(pAllocator, ppThread));
 
   mRETURN_SUCCESS();
 }
