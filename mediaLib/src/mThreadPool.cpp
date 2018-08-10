@@ -7,6 +7,7 @@
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "mThreadPool.h"
+#include "mQueue.h"
 
 struct mTask
 {
@@ -204,6 +205,7 @@ struct mThreadPool
   mThread **ppThreads;
   mSemaphore *pSemaphore;
   mAllocator *pAllocator;
+  mPtr<mQueue<mTask *>> queue;
 };
 
 mFUNCTION(mThreadPool_Create_Internal, mThreadPool *pThreadPool, IN OPTIONAL mAllocator *pAllocator, const size_t threads);
@@ -215,7 +217,7 @@ void WorkerThread(mThreadPool *pThreadPool)
 
   while (pThreadPool->isRunning)
   {
-    printf("Hello main thread!");
+    ;
   }
 }
 
@@ -273,6 +275,7 @@ mFUNCTION(mThreadPool_Create_Internal, mThreadPool *pThreadPool, IN OPTIONAL mAl
   mFUNCTION_SETUP();
 
   pThreadPool->pAllocator = pAllocator;
+  pThreadPool->isRunning = true;
 
   if (threads == mThreadPool_ThreadCount::mTP_TC_NumberOfLogicalCores)
   {
@@ -291,14 +294,14 @@ mFUNCTION(mThreadPool_Create_Internal, mThreadPool *pThreadPool, IN OPTIONAL mAl
     pThreadPool->threadCount = threads;
   }
 
-  mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &pThreadPool->ppThreads, pThreadPool->threadCount));
+  mERROR_CHECK(mAllocator_AllocateZero(pThreadPool->pAllocator, &pThreadPool->ppThreads, pThreadPool->threadCount));
 
   for (size_t i = 0; i < pThreadPool->threadCount; ++i)
-    mERROR_CHECK(mThread_Create(&pThreadPool->ppThreads[i], pAllocator, &WorkerThread, pThreadPool));
+    mERROR_CHECK(mThread_Create(&pThreadPool->ppThreads[i], pThreadPool->pAllocator, &WorkerThread, pThreadPool));
 
-  // TODO: Create Task queue.
+  mERROR_CHECK(mQueue_Create(&pThreadPool->queue, pThreadPool->pAllocator));
 
-  mERROR_CHECK(mSemaphore_Create(&pThreadPool->pSemaphore, pAllocator));
+  mERROR_CHECK(mSemaphore_Create(&pThreadPool->pSemaphore, pThreadPool->pAllocator));
 
   mRETURN_SUCCESS();
 }
@@ -327,7 +330,8 @@ mFUNCTION(mThreadPool_Destroy_Internal, mThreadPool *pThreadPool)
   if(pThreadPool->pSemaphore != nullptr)
     mERROR_CHECK(mSemaphore_Destroy(&pThreadPool->pSemaphore));
 
-  // TODO: delete task queue.
+  if (pThreadPool->queue != nullptr)
+    mERROR_CHECK(mQueue_Destroy(&pThreadPool->queue));
 
   mRETURN_SUCCESS();
 }
