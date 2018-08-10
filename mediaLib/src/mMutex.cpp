@@ -12,17 +12,21 @@
 struct mMutex
 {
   std::mutex lock;
+  mAllocator *pAllocator;
 };
 
 mFUNCTION(mMutex_Destroy_Internal, IN mMutex *pMutex);
 
-mFUNCTION(mMutex_Create, OUT mMutex **ppMutex)
+mFUNCTION(mMutex_Create, OUT mMutex **ppMutex, IN OPTIONAL mAllocator *pAllocator)
 {
   mFUNCTION_SETUP();
 
   mERROR_IF(ppMutex == nullptr, mR_ArgumentNull);
 
-  mERROR_CHECK(mAllocZero(ppMutex, 1));
+  mERROR_CHECK(mAllocator_AllocateZero(pAllocator, ppMutex, 1));
+  mDEFER_ON_ERROR(mAllocator_FreePtr(pAllocator, ppMutex));
+
+  (*ppMutex)->pAllocator = pAllocator;
   new (&(*ppMutex)->lock) std::mutex();
 
   mRETURN_SUCCESS();
@@ -36,7 +40,9 @@ mFUNCTION(mMutex_Destroy, IN_OUT mMutex **ppMutex)
 
   mDEFER_DESTRUCTION(ppMutex, mSetToNullptr);
   mERROR_CHECK(mMutex_Destroy_Internal(*ppMutex));
-  mERROR_CHECK(mFreePtr(ppMutex));
+
+  mAllocator *pAllocator = (*ppMutex)->pAllocator;
+  mERROR_CHECK(mAllocator_FreePtr(pAllocator, ppMutex));
 
   mRETURN_SUCCESS();
 }

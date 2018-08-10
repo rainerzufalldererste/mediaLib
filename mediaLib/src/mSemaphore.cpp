@@ -14,18 +14,22 @@ struct mSemaphore
 {
   CRITICAL_SECTION criticalSection;
   CONDITION_VARIABLE conditionVariable;
+  mAllocator *pAllocator;
 };
 
 mFUNCTION(mSemaphore_Destroy_Internal, IN mSemaphore *pSemaphore);
 
-mFUNCTION(mSemaphore_Create, OUT mSemaphore **ppSemaphore)
+mFUNCTION(mSemaphore_Create, OUT mSemaphore **ppSemaphore, IN OPTIONAL mAllocator *pAllocator)
 {
   mFUNCTION_SETUP();
 
   mERROR_IF(ppSemaphore == nullptr, mR_ArgumentNull);
 
   mDEFER_DESTRUCTION_ON_ERROR(ppSemaphore, mSetToNullptr);
-  mERROR_CHECK(mAllocZero(ppSemaphore, 1));
+  mDEFER_ON_ERROR(mAllocator_FreePtr(pAllocator, ppSemaphore));
+  mERROR_CHECK(mAllocator_AllocateZero(pAllocator, ppSemaphore, 1));
+
+  (*ppSemaphore)->pAllocator = pAllocator;
 
   InitializeCriticalSection(&(*ppSemaphore)->criticalSection);
   mDEFER_ON_ERROR(DeleteCriticalSection(&(*ppSemaphore)->criticalSection));
@@ -43,7 +47,9 @@ mFUNCTION(mSemaphore_Destroy, IN_OUT mSemaphore **ppSemaphore)
 
   mDEFER_DESTRUCTION(ppSemaphore, mSetToNullptr);
   mERROR_CHECK(mSemaphore_Destroy_Internal(*ppSemaphore));
-  mERROR_CHECK(mFreePtr(ppSemaphore));
+
+  mAllocator *pAllocator = (*ppSemaphore)->pAllocator;
+  mERROR_CHECK(mAllocator_FreePtr(pAllocator, ppSemaphore));
 
   mRETURN_SUCCESS();
 }

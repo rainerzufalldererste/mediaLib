@@ -19,7 +19,7 @@ enum mSemaphore_SleepTime : size_t
 
 struct mSemaphore;
 
-mFUNCTION(mSemaphore_Create, OUT mSemaphore **ppSemaphore);
+mFUNCTION(mSemaphore_Create, OUT mSemaphore **ppSemaphore, IN OPTIONAL mAllocator *pAllocator);
 mFUNCTION(mSemaphore_Destroy, IN_OUT mSemaphore **ppSemaphore);
 
 mFUNCTION(mSemaphore_Lock, IN mSemaphore *pSemaphore);

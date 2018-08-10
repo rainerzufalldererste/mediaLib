@@ -22,6 +22,7 @@ enum mThread_ThreadState
 
 struct mThread
 {
+  mAllocator *pAllocator;
   std::thread handle;
   std::atomic<mThread_ThreadState> threadState;
 };
@@ -56,27 +57,24 @@ void _mThread_ThreadInternalFunc(mThread *pThread, TFunction *pFunction, Args ar
   pThread->threadState = mT_TS_Stopped;
 }
 
-template<class TFunction, typename Args>
-void _mThread_ThreadInternalFunctionPacked(mThread *pThread, TFunction *pFunction, Args args)
-{
-  _mThread_ThreadInternalFunc(pThread, pFunction, args);
-}
-
 // Creates and starts a thread.
 template<class TFunction, class... Args>
-mFUNCTION(mThread_Create, OUT mThread **ppThread, TFunction *pFunction, Args&&... args)
+mFUNCTION(mThread_Create, OUT mThread **ppThread, IN OPTIONAL mAllocator *pAllocator, TFunction *pFunction, Args&&... args)
 {
   mFUNCTION_SETUP();
 
   mERROR_IF(ppThread == nullptr, mR_ArgumentNull);
 
   mDEFER_DESTRUCTION_ON_ERROR(ppThread, mSetToNullptr);
-  mERROR_CHECK(mAllocZero(ppThread, 1));
+  mDEFER_ON_ERROR(mAllocator_FreePtr(pAllocator, ppThread));
+  mERROR_CHECK(mAllocator_AllocateZero(pAllocator, ppThread, 1));
+
+  (*ppThread)->pAllocator = pAllocator;
 
   new (&(*ppThread)->threadState) std::atomic<mThread_ThreadState>(mT_TS_NotStarted);
 
   auto tupleRef = std::make_tuple(std::forward<Args>(args)...);
-  new (&(*ppThread)->handle) std::thread (&_mThread_ThreadInternalFunctionPacked<TFunction, decltype(tupleRef)>, *ppThread, pFunction, tupleRef);
+  new (&(*ppThread)->handle) std::thread (&_mThread_ThreadInternalFunc<TFunction, decltype(tupleRef)>, *ppThread, pFunction, tupleRef);
   
   mRETURN_SUCCESS();
 }
