@@ -86,7 +86,34 @@ mFUNCTION(mTask_Join, IN mTask *pTask, const size_t timeoutMilliseconds /* = mSe
   {
     if (pTask->pSemaphore != nullptr)
     {
-      mERROR_CHECK(mSemaphore_Sleep(pTask->pSemaphore, timeoutMilliseconds));
+      for (size_t i = 0; i < timeoutMilliseconds; ++i)
+      {
+        //const mResult result = mR_Timeout; //mSemaphore_Sleep(pTask->pSemaphore, 1);
+
+        mSleep(1);
+
+        //if (mSUCCEEDED(result))
+        //{
+        //  mRETURN_SUCCESS();
+        //}
+        //else
+        {
+          //mERROR_IF(result != mR_Timeout, result);
+
+          if (pTask->state < mTask_State::mT_S_Complete)
+          {
+            if (timeoutMilliseconds == mSemaphore_SleepTime::mS_ST_Infinite)
+              i = 0;
+
+            continue;
+          }
+          else
+          {
+            mRETURN_SUCCESS();
+          }
+        }
+
+      }
     }
     else
     {
@@ -126,20 +153,19 @@ mFUNCTION(mTask_Execute, IN mTask *pTask)
   if (pTask->state < mTask_State::mT_S_Running)
     pTask->state = mTask_State::mT_S_Running;
   else
-    goto wake_all;
+    mRETURN_SUCCESS();
 
   mERROR_IF_GOTO(pTask->function == nullptr, mR_NotInitialized, result, epilogue);
 
   pTask->result = pTask->function();
   hasBeenExecuted = true;
 
-wake_all:
-  if (pTask->pSemaphore != nullptr)
-    mERROR_CHECK_GOTO(mSemaphore_WakeAll(pTask->pSemaphore), result, epilogue);
-
 epilogue:
   if (!hasBeenExecuted || (mSUCCEEDED(pTask->result) && mFAILED(result)))
     pTask->result = result;
+
+  pTask->state = mTask_State::mT_S_Complete;
+  result = mSemaphore_WakeAll(pTask->pSemaphore);
 
   mRETURN_SUCCESS();
 }
