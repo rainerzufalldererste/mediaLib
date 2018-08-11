@@ -350,105 +350,83 @@ mFUNCTION(mPixelFormat_GetSubBufferStride, const mPixelFormat pixelFormat, const
 
 #include "mSimd.h"
 
-const int Y_ADJUST = 16;
-const int UV_ADJUST = 128;
-const int YUV_TO_BGR_AVERAGING_SHIFT = 13;
-const int YUV_TO_BGR_ROUND_TERM = 1 << (YUV_TO_BGR_AVERAGING_SHIFT - 1);
-const int Y_TO_RGB_WEIGHT = int(1.164*(1 << YUV_TO_BGR_AVERAGING_SHIFT) + 0.5);
-const int U_TO_BLUE_WEIGHT = int(2.018*(1 << YUV_TO_BGR_AVERAGING_SHIFT) + 0.5);
-const int U_TO_GREEN_WEIGHT = -int(0.391*(1 << YUV_TO_BGR_AVERAGING_SHIFT) + 0.5);
-const int V_TO_GREEN_WEIGHT = -int(0.813*(1 << YUV_TO_BGR_AVERAGING_SHIFT) + 0.5);
-const int V_TO_RED_WEIGHT = int(1.596*(1 << YUV_TO_BGR_AVERAGING_SHIFT) + 0.5);
+const int mPixelFormatTransform_YUV_SIMD_Y_ADJUST = 16;
+const int mPixelFormatTransform_YUV_SIMD_UV_ADJUST = 128;
+const int mPixelFormatTransform_YUV_SIMD_YUV_TO_BGR_AVERAGING_SHIFT = 13;
+const int mPixelFormatTransform_YUV_SIMD_YUV_TO_BGR_ROUND_TERM = 1 << (mPixelFormatTransform_YUV_SIMD_YUV_TO_BGR_AVERAGING_SHIFT - 1);
+const int mPixelFormatTransform_YUV_SIMD_Y_TO_RGB_WEIGHT = int(1.164*(1 << mPixelFormatTransform_YUV_SIMD_YUV_TO_BGR_AVERAGING_SHIFT) + 0.5);
+const int mPixelFormatTransform_YUV_SIMD_U_TO_BLUE_WEIGHT = int(2.018*(1 << mPixelFormatTransform_YUV_SIMD_YUV_TO_BGR_AVERAGING_SHIFT) + 0.5);
+const int mPixelFormatTransform_YUV_SIMD_U_TO_GREEN_WEIGHT = -int(0.391*(1 << mPixelFormatTransform_YUV_SIMD_YUV_TO_BGR_AVERAGING_SHIFT) + 0.5);
+const int mPixelFormatTransform_YUV_SIMD_V_TO_GREEN_WEIGHT = -int(0.813*(1 << mPixelFormatTransform_YUV_SIMD_YUV_TO_BGR_AVERAGING_SHIFT) + 0.5);
+const int mPixelFormatTransform_YUV_SIMD_V_TO_RED_WEIGHT = int(1.596*(1 << mPixelFormatTransform_YUV_SIMD_YUV_TO_BGR_AVERAGING_SHIFT) + 0.5);
 
-const __m128i K16_Y_ADJUST = SIMD_MM_SET1_EPI16(Y_ADJUST);
-const __m128i K16_UV_ADJUST = SIMD_MM_SET1_EPI16(UV_ADJUST);
+const __m128i mPixelFormatTransform_YUV_SIMD_K16_Y_ADJUST = mSIMD_MM_SET1_EPI16(mPixelFormatTransform_YUV_SIMD_Y_ADJUST);
+const __m128i mPixelFormatTransform_YUV_SIMD_K16_UV_ADJUST = mSIMD_MM_SET1_EPI16(mPixelFormatTransform_YUV_SIMD_UV_ADJUST);
 
-const __m128i K16_YRGB_RT = SIMD_MM_SET2_EPI16(Y_TO_RGB_WEIGHT, YUV_TO_BGR_ROUND_TERM);
-const __m128i K16_VR_0 = SIMD_MM_SET2_EPI16(V_TO_RED_WEIGHT, 0);
-const __m128i K16_UG_VG = SIMD_MM_SET2_EPI16(U_TO_GREEN_WEIGHT, V_TO_GREEN_WEIGHT);
-const __m128i K16_UB_0 = SIMD_MM_SET2_EPI16(U_TO_BLUE_WEIGHT, 0);
+const __m128i mPixelFormatTransform_YUV_SIMD_K16_YRGB_RT = mSIMD_MM_SET2_EPI16(mPixelFormatTransform_YUV_SIMD_Y_TO_RGB_WEIGHT, mPixelFormatTransform_YUV_SIMD_YUV_TO_BGR_ROUND_TERM);
+const __m128i mPixelFormatTransform_YUV_SIMD_K16_VR_0 = mSIMD_MM_SET2_EPI16(mPixelFormatTransform_YUV_SIMD_V_TO_RED_WEIGHT, 0);
+const __m128i mPixelFormatTransform_YUV_SIMD_K16_UG_VG = mSIMD_MM_SET2_EPI16(mPixelFormatTransform_YUV_SIMD_U_TO_GREEN_WEIGHT, mPixelFormatTransform_YUV_SIMD_V_TO_GREEN_WEIGHT);
+const __m128i mPixelFormatTransform_YUV_SIMD_K16_UB_0 = mSIMD_MM_SET2_EPI16(mPixelFormatTransform_YUV_SIMD_U_TO_BLUE_WEIGHT, 0);
 
 mINLINE __m128i AdjustY16(__m128i y16)
 {
-  return _mm_subs_epi16(y16, K16_Y_ADJUST);
+  return _mm_subs_epi16(y16, mPixelFormatTransform_YUV_SIMD_K16_Y_ADJUST);
 }
 
 mINLINE __m128i AdjustUV16(__m128i uv16)
 {
-  return _mm_subs_epi16(uv16, K16_UV_ADJUST);
+  return _mm_subs_epi16(uv16, mPixelFormatTransform_YUV_SIMD_K16_UV_ADJUST);
 }
 
 mINLINE __m128i AdjustedYuvToRed32(__m128i y16_1, __m128i v16_0)
 {
-  return _mm_srai_epi32(_mm_add_epi32(_mm_madd_epi16(y16_1, K16_YRGB_RT),
-    _mm_madd_epi16(v16_0, K16_VR_0)), YUV_TO_BGR_AVERAGING_SHIFT);
+  return _mm_srai_epi32(_mm_add_epi32(_mm_madd_epi16(y16_1, mPixelFormatTransform_YUV_SIMD_K16_YRGB_RT), _mm_madd_epi16(v16_0, mPixelFormatTransform_YUV_SIMD_K16_VR_0)), mPixelFormatTransform_YUV_SIMD_YUV_TO_BGR_AVERAGING_SHIFT);
 }
 
 mINLINE __m128i AdjustedYuvToRed16(__m128i y16, __m128i v16)
 {
-  return SaturateI16ToU8(_mm_packs_epi32(
-    AdjustedYuvToRed32(_mm_unpacklo_epi16(y16, K16_0001), _mm_unpacklo_epi16(v16, mSimdZero)),
-    AdjustedYuvToRed32(_mm_unpackhi_epi16(y16, K16_0001), _mm_unpackhi_epi16(v16, mSimdZero))));
+  return mSimd_SaturateI16ToU8(_mm_packs_epi32(AdjustedYuvToRed32(_mm_unpacklo_epi16(y16, mSimd_K16_0001), _mm_unpacklo_epi16(v16, mSimdZero)), AdjustedYuvToRed32(_mm_unpackhi_epi16(y16, mSimd_K16_0001), _mm_unpackhi_epi16(v16, mSimdZero))));
 }
 
 mINLINE __m128i AdjustedYuvToGreen32(__m128i y16_1, __m128i u16_v16)
 {
-  return _mm_srai_epi32(_mm_add_epi32(_mm_madd_epi16(y16_1, K16_YRGB_RT),
-    _mm_madd_epi16(u16_v16, K16_UG_VG)), YUV_TO_BGR_AVERAGING_SHIFT);
+  return _mm_srai_epi32(_mm_add_epi32(_mm_madd_epi16(y16_1, mPixelFormatTransform_YUV_SIMD_K16_YRGB_RT), _mm_madd_epi16(u16_v16, mPixelFormatTransform_YUV_SIMD_K16_UG_VG)), mPixelFormatTransform_YUV_SIMD_YUV_TO_BGR_AVERAGING_SHIFT);
 }
 
 mINLINE __m128i AdjustedYuvToGreen16(__m128i y16, __m128i u16, __m128i v16)
 {
-  return SaturateI16ToU8(_mm_packs_epi32(
-    AdjustedYuvToGreen32(_mm_unpacklo_epi16(y16, K16_0001), _mm_unpacklo_epi16(u16, v16)),
-    AdjustedYuvToGreen32(_mm_unpackhi_epi16(y16, K16_0001), _mm_unpackhi_epi16(u16, v16))));
+  return mSimd_SaturateI16ToU8(_mm_packs_epi32(AdjustedYuvToGreen32(_mm_unpacklo_epi16(y16, mSimd_K16_0001), _mm_unpacklo_epi16(u16, v16)), AdjustedYuvToGreen32(_mm_unpackhi_epi16(y16, mSimd_K16_0001), _mm_unpackhi_epi16(u16, v16))));
 }
 
 mINLINE __m128i AdjustedYuvToBlue32(__m128i y16_1, __m128i u16_0)
 {
-  return _mm_srai_epi32(_mm_add_epi32(_mm_madd_epi16(y16_1, K16_YRGB_RT),
-    _mm_madd_epi16(u16_0, K16_UB_0)), YUV_TO_BGR_AVERAGING_SHIFT);
+  return _mm_srai_epi32(_mm_add_epi32(_mm_madd_epi16(y16_1, mPixelFormatTransform_YUV_SIMD_K16_YRGB_RT), _mm_madd_epi16(u16_0, mPixelFormatTransform_YUV_SIMD_K16_UB_0)), mPixelFormatTransform_YUV_SIMD_YUV_TO_BGR_AVERAGING_SHIFT);
 }
 
 mINLINE __m128i AdjustedYuvToBlue16(__m128i y16, __m128i u16)
 {
-  return SaturateI16ToU8(_mm_packs_epi32(
-    AdjustedYuvToBlue32(_mm_unpacklo_epi16(y16, K16_0001), _mm_unpacklo_epi16(u16, mSimdZero)),
-    AdjustedYuvToBlue32(_mm_unpackhi_epi16(y16, K16_0001), _mm_unpackhi_epi16(u16, mSimdZero))));
+  return mSimd_SaturateI16ToU8(_mm_packs_epi32(AdjustedYuvToBlue32(_mm_unpacklo_epi16(y16, mSimd_K16_0001), _mm_unpacklo_epi16(u16, mSimdZero)), AdjustedYuvToBlue32(_mm_unpackhi_epi16(y16, mSimd_K16_0001), _mm_unpackhi_epi16(u16, mSimdZero))));
 }
 
 mINLINE __m128i YuvToRed(__m128i y, __m128i v)
 {
-  __m128i lo = AdjustedYuvToRed16(
-    AdjustY16(_mm_unpacklo_epi8(y, mSimdZero)),
-    AdjustUV16(_mm_unpacklo_epi8(v, mSimdZero)));
-  __m128i hi = AdjustedYuvToRed16(
-    AdjustY16(_mm_unpackhi_epi8(y, mSimdZero)),
-    AdjustUV16(_mm_unpackhi_epi8(v, mSimdZero)));
+  __m128i lo = AdjustedYuvToRed16(AdjustY16(_mm_unpacklo_epi8(y, mSimdZero)), AdjustUV16(_mm_unpacklo_epi8(v, mSimdZero)));
+  __m128i hi = AdjustedYuvToRed16(AdjustY16(_mm_unpackhi_epi8(y, mSimdZero)),AdjustUV16(_mm_unpackhi_epi8(v, mSimdZero)));
   return _mm_packus_epi16(lo, hi);
 }
 
 mINLINE __m128i YuvToGreen(__m128i y, __m128i u, __m128i v)
 {
-  __m128i lo = AdjustedYuvToGreen16(
-    AdjustY16(_mm_unpacklo_epi8(y, mSimdZero)),
-    AdjustUV16(_mm_unpacklo_epi8(u, mSimdZero)),
-    AdjustUV16(_mm_unpacklo_epi8(v, mSimdZero)));
-  __m128i hi = AdjustedYuvToGreen16(
-    AdjustY16(_mm_unpackhi_epi8(y, mSimdZero)),
-    AdjustUV16(_mm_unpackhi_epi8(u, mSimdZero)),
-    AdjustUV16(_mm_unpackhi_epi8(v, mSimdZero)));
+  __m128i lo = AdjustedYuvToGreen16(AdjustY16(_mm_unpacklo_epi8(y, mSimdZero)), AdjustUV16(_mm_unpacklo_epi8(u, mSimdZero)), AdjustUV16(_mm_unpacklo_epi8(v, mSimdZero)));
+  __m128i hi = AdjustedYuvToGreen16(AdjustY16(_mm_unpackhi_epi8(y, mSimdZero)), AdjustUV16(_mm_unpackhi_epi8(u, mSimdZero)), AdjustUV16(_mm_unpackhi_epi8(v, mSimdZero)));
   return _mm_packus_epi16(lo, hi);
 }
 
 mINLINE __m128i YuvToBlue(__m128i y, __m128i u)
 {
-  __m128i lo = AdjustedYuvToBlue16(
-    AdjustY16(_mm_unpacklo_epi8(y, mSimdZero)),
-    AdjustUV16(_mm_unpacklo_epi8(u, mSimdZero)));
-  __m128i hi = AdjustedYuvToBlue16(
-    AdjustY16(_mm_unpackhi_epi8(y, mSimdZero)),
-    AdjustUV16(_mm_unpackhi_epi8(u, mSimdZero)));
+  __m128i lo = AdjustedYuvToBlue16(AdjustY16(_mm_unpacklo_epi8(y, mSimdZero)), AdjustUV16(_mm_unpacklo_epi8(u, mSimdZero)));
+  __m128i hi = AdjustedYuvToBlue16(AdjustY16(_mm_unpackhi_epi8(y, mSimdZero)), AdjustUV16(_mm_unpackhi_epi8(u, mSimdZero)));
+
   return _mm_packus_epi16(lo, hi);
 }
 
@@ -459,8 +437,9 @@ template <bool align> mINLINE void AdjustedYuv16ToBgra(__m128i y16, __m128i u16,
   const __m128i r16 = AdjustedYuvToRed16(y16, v16);
   const __m128i bg8 = _mm_or_si128(b16, _mm_slli_si128(g16, 1));
   const __m128i ra8 = _mm_or_si128(r16, a_0);
-  Store<align>(pBgra + 0, _mm_unpacklo_epi16(bg8, ra8));
-  Store<align>(pBgra + 1, _mm_unpackhi_epi16(bg8, ra8));
+
+  mSimd_Store<align>(pBgra + 0, _mm_unpacklo_epi16(bg8, ra8));
+  mSimd_Store<align>(pBgra + 1, _mm_unpackhi_epi16(bg8, ra8));
 }
 
 template <bool align> mINLINE void Yuv16ToBgra(__m128i y16, __m128i u16, __m128i v16, const __m128i & a_0, __m128i *pBgra)
@@ -470,15 +449,13 @@ template <bool align> mINLINE void Yuv16ToBgra(__m128i y16, __m128i u16, __m128i
 
 template <bool align> mINLINE void Yuv8ToBgra(__m128i y8, __m128i u8, __m128i v8, const __m128i & a_0, __m128i * pBgra)
 {
-  Yuv16ToBgra<align>(_mm_unpacklo_epi8(y8, mSimdZero), _mm_unpacklo_epi8(u8, mSimdZero),
-    _mm_unpacklo_epi8(v8, mSimdZero), a_0, pBgra + 0);
-  Yuv16ToBgra<align>(_mm_unpackhi_epi8(y8, mSimdZero), _mm_unpackhi_epi8(u8, mSimdZero),
-    _mm_unpackhi_epi8(v8, mSimdZero), a_0, pBgra + 2);
+  Yuv16ToBgra<align>(_mm_unpacklo_epi8(y8, mSimdZero), _mm_unpacklo_epi8(u8, mSimdZero), _mm_unpacklo_epi8(v8, mSimdZero), a_0, pBgra + 0);
+  Yuv16ToBgra<align>(_mm_unpackhi_epi8(y8, mSimdZero), _mm_unpackhi_epi8(u8, mSimdZero), _mm_unpackhi_epi8(v8, mSimdZero), a_0, pBgra + 2);
 }
 
 template <bool align> mINLINE void Yuv444pToBgra(const uint8_t * pY, const uint8_t * pU, const uint8_t * pV, const __m128i & a_0, uint8_t * pBgra)
 {
-  Yuv8ToBgra<align>(Load<align>((__m128i*)pY), Load<align>((__m128i*)pU), Load<align>((__m128i*)pV), a_0, (__m128i*)pBgra);
+  Yuv8ToBgra<align>(mSimd_Load<align>((__m128i*)pY), mSimd_Load<align>((__m128i*)pU), mSimd_Load<align>((__m128i*)pV), a_0, (__m128i*)pBgra);
 }
 
 template <bool align> mFUNCTION(Yuv444pToBgra, const uint8_t * pY, size_t yStride, const uint8_t * pU, size_t uStride, const uint8_t * pV, size_t vStride,
@@ -510,17 +487,20 @@ template <bool align> mFUNCTION(Yuv444pToBgra, const uint8_t * pY, size_t yStrid
   size_t bodyWidth;
   mERROR_CHECK(mMemoryAlignLo(width, mSimd128bit, &bodyWidth));
   size_t tail = width - bodyWidth;
+
   for (size_t row = 0; row < height; ++row)
   {
     for (size_t colYuv = 0, colBgra = 0; colYuv < bodyWidth; colYuv += mSimd128bit, colBgra += mSimd512bit)
     {
       Yuv444pToBgra<align>(pY + colYuv, pU + colYuv, pV + colYuv, a_0, bgra + colBgra);
     }
+
     if (tail)
     {
       size_t col = width - mSimd128bit;
       Yuv444pToBgra<false>(pY + col, pU + col, pV + col, a_0, bgra + 4 * col);
     }
+
     pY += yStride;
     pU += uStride;
     pV += vStride;
@@ -555,8 +535,8 @@ mFUNCTION(Yuv444pToBgra, const uint8_t * pY, size_t yStride, const uint8_t * pU,
 
 template <bool align> mINLINE void Yuv422pToBgra(const uint8_t * pY, const __m128i & u, const __m128i & v, const __m128i & a_0, uint8_t * pBgra)
 {
-  Yuv8ToBgra<align>(Load<align>((__m128i*)pY + 0), _mm_unpacklo_epi8(u, u), _mm_unpacklo_epi8(v, v), a_0, (__m128i*)pBgra + 0);
-  Yuv8ToBgra<align>(Load<align>((__m128i*)pY + 1), _mm_unpackhi_epi8(u, u), _mm_unpackhi_epi8(v, v), a_0, (__m128i*)pBgra + 4);
+  Yuv8ToBgra<align>(mSimd_Load<align>((__m128i*)pY + 0), _mm_unpacklo_epi8(u, u), _mm_unpacklo_epi8(v, v), a_0, (__m128i*)pBgra + 0);
+  Yuv8ToBgra<align>(mSimd_Load<align>((__m128i*)pY + 1), _mm_unpackhi_epi8(u, u), _mm_unpackhi_epi8(v, v), a_0, (__m128i*)pBgra + 4);
 }
 
 template <bool align> mFUNCTION(mPixelFormat_Transform_Yuv420pToBgra_SSE2, const uint8_t * pY, size_t yStride, const uint8_t * pU, size_t uStride, const uint8_t * pV, size_t vStride, size_t width, size_t height, uint8_t * bgra, size_t bgraStride, uint8_t alpha)
@@ -592,8 +572,8 @@ template <bool align> mFUNCTION(mPixelFormat_Transform_Yuv420pToBgra_SSE2, const
   {
     for (size_t colUV = 0, colY = 0, colBgra = 0; colY < bodyWidth; colY += mSimd256bit, colUV += mSimd128bit, colBgra += mSimd1024bit)
     {
-      __m128i u_ = Load<align>((__m128i*)(pU + colUV));
-      __m128i v_ = Load<align>((__m128i*)(pV + colUV));
+      __m128i u_ = mSimd_Load<align>((__m128i*)(pU + colUV));
+      __m128i v_ = mSimd_Load<align>((__m128i*)(pV + colUV));
       Yuv422pToBgra<align>(pY + colY, u_, v_, a_0, bgra + colBgra);
       Yuv422pToBgra<align>(pY + colY + yStride, u_, v_, a_0, bgra + colBgra + bgraStride);
     }
@@ -601,8 +581,8 @@ template <bool align> mFUNCTION(mPixelFormat_Transform_Yuv420pToBgra_SSE2, const
     if (tail)
     {
       size_t offset = width - mSimd256bit;
-      __m128i u_ = Load<false>((__m128i*)(pU + offset / 2));
-      __m128i v_ = Load<false>((__m128i*)(pV + offset / 2));
+      __m128i u_ = mSimd_Load<false>((__m128i*)(pU + offset / 2));
+      __m128i v_ = mSimd_Load<false>((__m128i*)(pV + offset / 2));
       Yuv422pToBgra<false>(pY + offset, u_, v_, a_0, bgra + 4 * offset);
       Yuv422pToBgra<false>(pY + offset + yStride, u_, v_, a_0, bgra + 4 * offset + bgraStride);
     }
@@ -641,7 +621,7 @@ mFUNCTION(mPixelFormat_Transform_Yuv420pToBgra_SSE2, const uint8_t *pY, const si
 
 template <bool align> mINLINE void Yuv422pToBgra(const uint8_t * y, const uint8_t * u, const uint8_t * v, const __m128i & a_0, uint8_t * bgra)
 {
-  Yuv422pToBgra<align>(y, Load<align>((__m128i*)u), Load<align>((__m128i*)v), a_0, bgra);
+  Yuv422pToBgra<align>(y, mSimd_Load<align>((__m128i*)u), mSimd_Load<align>((__m128i*)v), a_0, bgra);
 }
 
 template <bool align> mFUNCTION(Yuv422pToBgra, const uint8_t * y, size_t yStride, const uint8_t * u, size_t uStride, const uint8_t * v, size_t vStride, size_t width, size_t height, uint8_t * bgra, size_t bgraStride, uint8_t alpha)
@@ -837,10 +817,10 @@ mFUNCTION(mPixelFormat_Transform_YUV420ToBgra_Base, uint8_t *pY, uint8_t *pU, ui
 
     for (size_t x = 0; x < width - 1; x += 2)
     {
-      size_t xhalf = x >> 1;
-      size_t xySourceLine0 = x + ySourceLine0;
-      size_t xyTargetLine0 = x + yline;
-      size_t sourcePosSubRes = xhalf + ySourceLine1;
+      const size_t xhalf = x >> 1;
+      const size_t xySourceLine0 = x + ySourceLine0;
+      const size_t xyTargetLine0 = x + yline;
+      const size_t sourcePosSubRes = xhalf + ySourceLine1;
 
       YUV420_to_BGRA(
         pY[xySourceLine0], pY[xySourceLine0 + 1],
@@ -867,7 +847,7 @@ mFUNCTION(mPixelFormat_Transform_YUV420ToBgra_Wrapper, uint8_t *pY, uint8_t *pU,
 #ifndef SSE2
   mERROR_CHECK(mPixelFormat_Transform_YUV420ToBgra_Base(pY, pU, pV, pBgra, width, height, yStride, uvStride, bgraStride));
 #else
-  mERROR_CHECK(mPixelFormat_Transform_Yuv420pToBgra_SSE2(pY, yStride, pU, uvStride, pV, uvStride, width, height, (uint8_t *)pBgra, bgraStride * targetUnitSize, 0));
+  mERROR_CHECK(mPixelFormat_Transform_Yuv420pToBgra_SSE2(pY, yStride, pU, uvStride, pV, uvStride, width, height, (uint8_t *)pBgra, bgraStride * targetUnitSize, 0xFF));
 #endif
 
   mRETURN_SUCCESS();
