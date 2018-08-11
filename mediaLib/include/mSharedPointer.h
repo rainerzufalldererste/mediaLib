@@ -133,11 +133,11 @@ template<typename T>
 inline mSharedPointer<T>::mSharedPointer(mSharedPointer<T> &&move)
   : m_pData(nullptr), m_pParams(nullptr)
 {
-  if (copy == nullptr)
+  if (move == nullptr)
     return;
 
-  m_pData = copy.m_pData;
-  m_pParams = copy.m_pParams;
+  m_pData = move.m_pData;
+  m_pParams = move.m_pParams;
 
   move.m_pData = nullptr;
   move.m_pParams = nullptr;
