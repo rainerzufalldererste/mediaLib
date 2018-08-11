@@ -8,6 +8,8 @@
 
 #include "default.h"
 #include <string>
+#include "mPixelFormat.h"
+#include "mImageBuffer.h"
 
 #pragma comment(lib, "dxva2.lib")
 #pragma comment(lib, "evr.lib")
@@ -35,14 +37,6 @@ struct mMediaType
   size_t wmf_streamIndex;
 };
 
-enum mPixelFormat
-{
-  mPF_B8G8R8,
-  mPF_B8G8R8A8,
-
-  mPixelFormat_Count
-};
-
 struct mVideoStreamType : mMediaType
 {
   mVec2s resolution;
@@ -66,10 +60,10 @@ enum mMediaFileInputHandler_CreateFlags
   mMMFIH_CF_AllMediaTypesEnabled = mMMFIH_CF_VideoEnabled | mMMFIH_CF_AudioEnabled,
 };
 
-typedef mFUNCTION(ProcessVideoBufferFunction, IN uint8_t *, const mVideoStreamType &);
+typedef mFUNCTION(ProcessVideoBufferFunction, mPtr<mImageBuffer> &, const mVideoStreamType &);
 typedef mFUNCTION(ProcessAudioBufferFunction, IN uint8_t *, const mAudioStreamType &);
 
-mFUNCTION(mMediaFileInputHandler_Create, OUT mPtr<mMediaFileInputHandler> *pPtr, const std::wstring &fileName, const mMediaFileInputHandler_CreateFlags createFlags);
+mFUNCTION(mMediaFileInputHandler_Create, OUT mPtr<mMediaFileInputHandler> *pPtr, IN OPTIONAL mAllocator *pAllocator, const std::wstring &fileName, const mMediaFileInputHandler_CreateFlags createFlags);
 mFUNCTION(mMediaFileInputHandler_Destroy, IN_OUT mPtr<mMediaFileInputHandler> *pPtr);
 mFUNCTION(mMediaFileInputHandler_Play, mPtr<mMediaFileInputHandler> &ptr);
 mFUNCTION(mMediaFileInputHandler_GetVideoStreamResolution, mPtr<mMediaFileInputHandler> &ptr, OUT mVec2s *pResolution, const size_t videoStreamIndex = 0);
