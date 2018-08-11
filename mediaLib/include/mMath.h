@@ -55,7 +55,7 @@ T mInterpolateQuad(const T pos1, const T pos2, const T pos3, const T pos4, const
 
 //////////////////////////////////////////////////////////////////////////
 
-template <typename T> T mClamp(T value, const T &min, const T &max)
+template <typename T> mINLINE T mClamp(T value, const T &min, const T &max)
 {
   if (value > max)
     value = max;
@@ -194,18 +194,26 @@ typedef mVec4t<uint64_t> mVec4u;
 typedef mVec4t<float_t> mVec4f;
 typedef mVec4t<double_t> mVec4d;
 
+template <typename T>
+struct mRectangle2D
+{
+  T x, y, w, h;
+
+  __host__ __device__ inline mRectangle2D(const T x, const T y, const T w, const T h) : x(x), y(y), w(w), h(h) { }
+};
+
 struct mVector;
 
-__host__ __device__ inline mVec3f UnpackBgraToVec3f(const uint32_t bgraColor);
-__host__ __device__ inline mVec3d UnpackBgraToVec3d(const uint32_t bgraColor);
-__host__ __device__ inline mVec4f UnpackBgraToVec4f(const uint32_t bgraColor);
-__host__ __device__ inline mVec4d UnpackBgraToVec4d(const uint32_t bgraColor);
-__host__ __device__ inline mVector UnpackBgraToVector(const uint32_t bgraColor);
+mVec3f mColor_UnpackBgraToVec3f(const uint32_t bgraColor);
+mVec3d mColor_UnpackBgraToVec3d(const uint32_t bgraColor);
+mVec4f mColor_UnpackBgraToVec4f(const uint32_t bgraColor);
+mVec4d mColor_UnpackBgraToVec4d(const uint32_t bgraColor);
+mVector mColor_UnpackBgraToVector(const uint32_t bgraColor);
 
-__host__ __device__ inline uint32_t PackVec3fToBgra(const mVec3f rgbVector);
-__host__ __device__ inline uint32_t PackVec3dToBgra(const mVec3d rgbVector);
-__host__ __device__ inline uint32_t PackVec4fToBgra(const mVec4f rgbaVector);
-__host__ __device__ inline uint32_t PackVec4dToBgra(const mVec4d rgbaVector);
-__host__ __device__ inline uint32_t PackVectorToBgra(const mVector rgbaVector);
+uint32_t mColor_PackVec3fToBgra(const mVec3f rgbVector);
+uint32_t mColor_PackVec3dToBgra(const mVec3d rgbVector);
+uint32_t mColor_PackVec4fToBgra(const mVec4f rgbaVector);
+uint32_t mColor_PackVec4dToBgra(const mVec4d rgbaVector);
+uint32_t mColor_PackVectorToBgra(const mVector rgbaVector);
 
 #endif // mMath_h__

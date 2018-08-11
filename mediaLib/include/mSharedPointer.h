@@ -9,18 +9,11 @@
 #ifndef mSharedPointer_h__
 #define mSharedPointer_h__
 
-#include <stdint.h>
-#include <type_traits>
-#include "mResult.h"
-#include "mMemory.h"
+#include "default.h"
 
-enum mAllocationType
-{
-  mAT_mAlloc,
-  mAT_crtmalloc,
+struct mAllocator;
 
-  mAT_ForeignRessource,
-};
+#define mSHARED_POINTER_FOREIGN_RESOURCE ((mAllocator *)-1)
 
 template <typename T>
 class mSharedPointer
@@ -57,7 +50,8 @@ public:
   struct PointerParams
   {
     volatile size_t referenceCount;
-    mAllocationType allocationType;
+    bool freeResource;
+    mAllocator *pAllocator;
     std::function<void (T*)> cleanupFunction;
 
     PointerParams() = default;
@@ -72,7 +66,7 @@ template <typename T> void mDeinit(mPtr<T> *pParam) { if (pParam != nullptr) { m
 template <typename T, typename ...Args> void mDeinit(mPtr<T> *pParam, Args... args) { if (pParam != nullptr) { mSharedPointer_Destroy(pParam); } mDeinit(std::forward<Args>(args)); };
 
 template <typename T>
-inline mFUNCTION(mSharedPointer_Create, OUT mSharedPointer<T> *pOutSharedPointer, IN T *pData, std::function<void(T *pData)> cleanupFunction, const mAllocationType allocationType = mAT_ForeignRessource)
+inline mFUNCTION(mSharedPointer_Create, OUT mSharedPointer<T> *pOutSharedPointer, IN T *pData, std::function<void(T *pData)> cleanupFunction, IN mAllocator *pAllocator)
 {
   mFUNCTION_SETUP();
   mERROR_IF(pOutSharedPointer == nullptr, mR_ArgumentNull);
@@ -80,10 +74,11 @@ inline mFUNCTION(mSharedPointer_Create, OUT mSharedPointer<T> *pOutSharedPointer
   if (*pOutSharedPointer != nullptr)
     *pOutSharedPointer = nullptr;
 
-  mERROR_CHECK(mAllocZero(&pOutSharedPointer->m_pParams, 1));
+  mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &pOutSharedPointer->m_pParams, 1));
   pOutSharedPointer->m_pParams = new (pOutSharedPointer->m_pParams) typename mSharedPointer<T>::PointerParams();
   pOutSharedPointer->m_pParams->referenceCount = 1;
-  pOutSharedPointer->m_pParams->allocationType = allocationType;
+  pOutSharedPointer->m_pParams->pAllocator = pAllocator;
+  pOutSharedPointer->m_pParams->freeResource = (pAllocator != mSHARED_POINTER_FOREIGN_RESOURCE);
   pOutSharedPointer->m_pParams->cleanupFunction = cleanupFunction;
   pOutSharedPointer->m_pData = pData;
 
@@ -91,7 +86,7 @@ inline mFUNCTION(mSharedPointer_Create, OUT mSharedPointer<T> *pOutSharedPointer
 }
 
 template <typename T>
-inline mFUNCTION(mSharedPointer_Create, OUT mSharedPointer<T> *pOutSharedPointer, IN T *pData, const mAllocationType allocationType)
+inline mFUNCTION(mSharedPointer_Create, OUT mSharedPointer<T> *pOutSharedPointer, IN T *pData, IN mAllocator *pAllocator)
 {
   mFUNCTION_SETUP();
   mERROR_CHECK(mSharedPointer_Create(pOutSharedPointer, pData, std::function<void(T *pData)>(nullptr), allocationType));
@@ -138,11 +133,11 @@ template<typename T>
 inline mSharedPointer<T>::mSharedPointer(mSharedPointer<T> &&move)
   : m_pData(nullptr), m_pParams(nullptr)
 {
-  if (copy == nullptr)
+  if (move == nullptr)
     return;
 
-  m_pData = copy.m_pData;
-  m_pParams = copy.m_pParams;
+  m_pData = move.m_pData;
+  m_pParams = move.m_pParams;
 
   move.m_pData = nullptr;
   move.m_pParams = nullptr;
@@ -168,26 +163,13 @@ inline mSharedPointer<T>::~mSharedPointer()
     if (m_pParams->cleanupFunction)
       m_pParams->cleanupFunction(m_pData);
 
-    switch (m_pParams->allocationType)
-    {
-    case mAT_mAlloc:
-      mFree(m_pData);
-      break;
+    mAllocator *pAllocator = m_pParams->pAllocator;
 
-    case mAT_crtmalloc:
-      free(m_pData);
-      break;
-
-    case mAT_ForeignRessource:
-      break;
-
-    default:
-      mFAIL("Invalid SharedPointer MemoryAllocationType.");
-      break;
-    }
+    if (m_pParams->freeResource)
+      mAllocator_FreePtr(m_pParams->pAllocator, &m_pData);
 
     m_pParams->~PointerParams();
-    mFreePtr(&m_pParams);
+    mAllocator_FreePtr(pAllocator, &m_pParams);
 
     m_pParams = nullptr;
     m_pData = nullptr;

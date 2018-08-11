@@ -1,121 +1,75 @@
 #include "default.h"
 #include "mMediaFileInputHandler.h"
+#include "mThreadPool.h"
 #include "SDL.h"
+#include <time.h>
 
-mVec2s resulution;
+mVec2s resolution;
 SDL_Window *pWindow = nullptr;
 uint32_t *pPixels = nullptr;
+const size_t subScale = 1;
+mPtr<mImageBuffer> bgraImageBuffer = nullptr;
+mPtr<mThreadPool> threadPool = nullptr;
 
-mFUNCTION(DrawFace, mVec2f *pCorners, const size_t cornerCount, const float_t steps);
+mFUNCTION(OnVideoFramCallback, mPtr<mImageBuffer> &, const mVideoStreamType &videoStreamType);
 
 int main(int, char **)
 {
   mFUNCTION_SETUP();
 
-  resulution = mVec2s(1600, 900);
-  pWindow = SDL_CreateWindow("HoloRoom Software Render", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, (int)resulution.x, (int)resulution.y, 0);
-  pPixels = (uint32_t *)SDL_GetWindowSurface(pWindow)->pixels;
+  g_mResult_breakOnError = true;
+  mDEFER_DESTRUCTION(&threadPool, mThreadPool_Destroy);
+  mERROR_CHECK(mThreadPool_Create(&threadPool, nullptr));
 
+  mPtr<mMediaFileInputHandler> mediaFileHandler;
+  mDEFER_DESTRUCTION(&mediaFileHandler, mMediaFileInputHandler_Destroy);
+  mERROR_CHECK(mMediaFileInputHandler_Create(&mediaFileHandler, nullptr, L"N:/Data/video/PublicHologram.mp4", mMediaFileInputHandler_CreateFlags::mMMFIH_CF_VideoEnabled));
+
+  mERROR_CHECK(mMediaFileInputHandler_GetVideoStreamResolution(mediaFileHandler, &resolution));
+
+  mDEFER_DESTRUCTION(pWindow, SDL_DestroyWindow);
+  pWindow = SDL_CreateWindow("VideoStream Renderer", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, (int)resolution.x / subScale, (int)resolution.y / subScale, 0);
+  mERROR_IF(pWindow == nullptr, mR_ArgumentNull);
+  pPixels = (uint32_t *)SDL_GetWindowSurface(pWindow)->pixels;
   mERROR_IF(pPixels == nullptr, mR_ArgumentNull);
 
-  const float_t width = 2.4f;
-  const mVector frontWall_0(-width / 2, 0, width);
-  const mVector frontWall_1(-width / 2, 0, 0);
-  const mVector frontWall_2(width / 2, 0, width);
-  const mVector frontWall_3(width / 2, 0, 0);
+  mDEFER_DESTRUCTION(&bgraImageBuffer, mImageBuffer_Destroy);
+  mERROR_CHECK(mImageBuffer_Create(&bgraImageBuffer, nullptr, resolution));
 
-  const mMatrix rightWallMatrix = mMatrix::Translation(width / 2, 0, 0) * mMatrix::RotationZ(mDEG2RADf * -60) * mMatrix::Translation(width / 2, 0, 0);
-  const mMatrix leftWallMatrix = mMatrix::Translation(-width / 2, 0, 0) * mMatrix::RotationZ(mDEG2RADf * 60) * mMatrix::Translation(-width / 2, 0, 0);
-
-  const mVector rightWall_0 = frontWall_2;
-  const mVector rightWall_1 = frontWall_3;
-  const mVector rightWall_2 = frontWall_2.Transform3(rightWallMatrix);
-  const mVector rightWall_3 = frontWall_3.Transform3(rightWallMatrix);
-
-  const mVector leftWall_0 = frontWall_0.Transform3(leftWallMatrix);
-  const mVector leftWall_1 = frontWall_1.Transform3(leftWallMatrix);
-  const mVector leftWall_2 = frontWall_0;
-  const mVector leftWall_3 = frontWall_1;
-
-  const mVector floor_0 = leftWall_0;
-  const mVector floor_1 = leftWall_1;
-  const mVector floor_2 = rightWall_2;
-  const mVector floor_3 = rightWall_3;
-
-  const mMatrix vpMatrix = (mMatrix::LookToRH(mVector(0, -5.0f, 1.75f, 0), mVector(0, 1.0, 0, 0), mVector(0, 0, 1, 0)) * mMatrix::PerspectiveFovRH(mHALFPIf, resulution.x / (float_t)resulution.y, 1e-3f, 1e6f));
-
-  mVector projectedPositions[] = { frontWall_0, frontWall_1, frontWall_2, frontWall_3, rightWall_2, rightWall_3, leftWall_0, leftWall_1 };
-
-  for (size_t i = 0; i < mARRAYSIZE(projectedPositions); i++)
-    projectedPositions[i] = projectedPositions[i].Transform3(vpMatrix);
-
-  mVec2f projectedPositions2d[mARRAYSIZE(projectedPositions)];
-  const mVec2f halfImageSize = mVec2f(resulution) / 2;
-
-  for (size_t i = 0; i < mARRAYSIZE(projectedPositions); i++)
-  {
-    projectedPositions2d[i] = halfImageSize + (mVec2f)projectedPositions[i] * halfImageSize / (projectedPositions[i].z);
-    projectedPositions2d[i].y = resulution.y - projectedPositions2d[i].y - 1.0f;
-  }
-
-  mVec2f frontWall[] = { projectedPositions2d[0], projectedPositions2d[1], projectedPositions2d[2], projectedPositions2d[3] };
-  mVec2f rightWall[] = { projectedPositions2d[2], projectedPositions2d[3], projectedPositions2d[4], projectedPositions2d[5] };
-  mVec2f leftWall[] = { projectedPositions2d[6], projectedPositions2d[7], projectedPositions2d[0], projectedPositions2d[1] };
-  mVec2f floor[] = { projectedPositions2d[1], projectedPositions2d[7], projectedPositions2d[3], projectedPositions2d[5] };
-
-  while (true)
-  {
-    mERROR_CHECK(mMemset(pPixels, resulution.x * resulution.y));
-
-    mERROR_CHECK(DrawFace(frontWall, mARRAYSIZE(frontWall), 1000));
-    mERROR_CHECK(DrawFace(rightWall, mARRAYSIZE(frontWall), 1000));
-    mERROR_CHECK(DrawFace(leftWall, mARRAYSIZE(frontWall), 1000));
-    mERROR_CHECK(DrawFace(floor, mARRAYSIZE(frontWall), 1000));
-
-    SDL_UpdateWindowSurface(pWindow);
-
-    SDL_Event sdl_event;
-    while (SDL_PollEvent(&sdl_event))
-      ; // We don't care.
-  }
+  mERROR_CHECK(mMediaFileInputHandler_SetVideoCallback(mediaFileHandler, OnVideoFramCallback));
+  mERROR_CHECK(mMediaFileInputHandler_Play(mediaFileHandler));
 
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(DrawFace, mVec2f *pCorners, const size_t cornerCount, const float_t steps)
+mFUNCTION(OnVideoFramCallback, mPtr<mImageBuffer> &buffer, const mVideoStreamType &videoStreamType)
 {
   mFUNCTION_SETUP();
 
-  mERROR_IF(pCorners == nullptr, mR_ArgumentNull);
-  mERROR_IF(cornerCount < 4, mR_IndexOutOfBounds);
+  const clock_t now = clock();
 
-  const float_t step = 1.0f / steps;
-
-  for (float_t i = 0; i < 1; i += step)
+  if (buffer->currentSize != bgraImageBuffer->currentSize)
   {
-    for (float_t j = 0; j < 1; j += step)
-    {
-      const mVec2i pos = (mVec2i)mInterpolateQuad(pCorners[0], pCorners[1], pCorners[2], pCorners[3], i, j);
-
-      if (pos.x >= 0 && pos.x < (int64_t)resulution.x && pos.y >= 0 && pos.y < (int64_t)resulution.y)
-        pPixels[pos.x + pos.y * resulution.x] = (uint32_t)(i * 0xFF) << 0x10 | (uint32_t)(j * 0xFF);
-    }
+    SDL_SetWindowSize(pWindow, (int)buffer->currentSize.x / subScale, (int)buffer->currentSize.y / subScale);
+    pPixels = (uint32_t *)SDL_GetWindowSurface(pWindow)->pixels;
+    mERROR_IF(pPixels == nullptr, mR_ArgumentNull);
+    mERROR_CHECK(mImageBuffer_AllocateBuffer(bgraImageBuffer, buffer->currentSize, bgraImageBuffer->pixelFormat));
   }
 
-  for (size_t i = 0; i < cornerCount; i++)
-  {
-    for (size_t j = i + 1; j < cornerCount; j++)
-    {
-      for (float_t k = 0.0f; k < 1.0f; k += step)
-      {
-        const mVec2i pos = (mVec2i)mLerp(pCorners[i], pCorners[j], k);
+  mERROR_CHECK(mPixelFormat_TransformBuffer(buffer, bgraImageBuffer, threadPool));
+  mPRINT("frame time: %" PRIi32 "\n", clock() - now);
 
-        if (pos.x >= 0 && pos.x < (int64_t)resulution.x && pos.y >= 0 && pos.y < (int64_t)resulution.y)
-          pPixels[pos.x + pos.y * resulution.x] = 0xFFFFFF;
-      }
-    }
-  }
+  size_t i = 0;
+
+  for (size_t y = 0; y < videoStreamType.resolution.y; y += subScale)
+    for (size_t x = 0; x < videoStreamType.resolution.x; x += subScale)
+      pPixels[i++] = ((uint32_t *)(bgraImageBuffer->pPixels))[x + y * videoStreamType.resolution.x];
+
+  SDL_UpdateWindowSurface(pWindow);
+
+  SDL_Event sdl_event;
+  while (SDL_PollEvent(&sdl_event))
+    ; // We don't care.
 
   mRETURN_SUCCESS();
 }
-

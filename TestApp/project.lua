@@ -14,7 +14,7 @@ project(ProjectName)
     flags { "LinkTimeOptimization" }
 
   filter {}
-  defines { "_CRT_SECURE_NO_WARNINGS" }
+  defines { "_CRT_SECURE_NO_WARNINGS", "SSE2" }
 
   objdir "intermediate/obj"
 
