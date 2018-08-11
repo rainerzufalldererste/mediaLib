@@ -8,7 +8,8 @@ mVec2s resolution;
 SDL_Window *pWindow = nullptr;
 uint32_t *pPixels = nullptr;
 const size_t subScale = 6;
-mPtr<mImageBuffer> bgraImageBuffer;
+mPtr<mImageBuffer> bgraImageBuffer = nullptr;
+mPtr<mThreadPool> threadPool = nullptr;
 
 mFUNCTION(OnVideoFramCallback, mPtr<mImageBuffer> &, const mVideoStreamType &videoStreamType);
 
@@ -17,7 +18,6 @@ int main(int, char **)
   mFUNCTION_SETUP();
 
   g_mResult_breakOnError = true;
-  mPtr<mThreadPool> threadPool;
   mDEFER_DESTRUCTION(&threadPool, mThreadPool_Destroy);
   mERROR_CHECK(mThreadPool_Create(&threadPool, nullptr));
 
@@ -49,7 +49,7 @@ mFUNCTION(OnVideoFramCallback, mPtr<mImageBuffer> &buffer, const mVideoStreamTyp
   const clock_t now = clock();
 
   mERROR_CHECK(mImageBuffer_AllocateBuffer(bgraImageBuffer, buffer->currentSize, bgraImageBuffer->pixelFormat));
-  mERROR_CHECK(mPixelFormat_TransformBuffer(buffer, bgraImageBuffer));
+  mERROR_CHECK(mPixelFormat_TransformBuffer(buffer, bgraImageBuffer, threadPool));
   mPRINT("frame time: %" PRIi32 "\n", clock() - now);
 
   size_t i = 0;

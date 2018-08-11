@@ -559,7 +559,7 @@ template <bool align> mINLINE void Yuv422pToBgra(const uint8_t * y, const __m128
   Yuv8ToBgra<align>(Load<align>((__m128i*)y + 1), _mm_unpackhi_epi8(u, u), _mm_unpackhi_epi8(v, v), a_0, (__m128i*)bgra + 4);
 }
 
-template <bool align> mFUNCTION(Yuv420pToBgra, const uint8_t * y, size_t yStride, const uint8_t * u, size_t uStride, const uint8_t * v, size_t vStride,
+template <bool align> mFUNCTION(mPixelFormat_Transform_Yuv420pToBgra_SSE2, const uint8_t * y, size_t yStride, const uint8_t * u, size_t uStride, const uint8_t * v, size_t vStride,
   size_t width, size_t height, uint8_t * bgra, size_t bgraStride, uint8_t alpha)
 {
   mFUNCTION_SETUP();
@@ -613,7 +613,7 @@ template <bool align> mFUNCTION(Yuv420pToBgra, const uint8_t * y, size_t yStride
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(Yuv420pToBgra, const uint8_t * y, size_t yStride, const uint8_t * u, size_t uStride, const uint8_t * v, size_t vStride, size_t width, size_t height, uint8_t * bgra, size_t bgraStride, uint8_t alpha)
+mFUNCTION(mPixelFormat_Transform_Yuv420pToBgra_SSE2, const uint8_t * y, size_t yStride, const uint8_t * u, size_t uStride, const uint8_t * v, size_t vStride, size_t width, size_t height, uint8_t * bgra, size_t bgraStride, uint8_t alpha)
 {
   mFUNCTION_SETUP();
 
@@ -629,9 +629,9 @@ mFUNCTION(Yuv420pToBgra, const uint8_t * y, size_t yStride, const uint8_t * u, s
   mERROR_CHECK(mMemoryIsAligned(bgraStride, sizeof(__m128), &bgraStrideIsAligned));
 
   if (yIsAligned && yStrideIsAligned && uIsAligned && uStrideIsAligned && vIsAligned && vStrideIsAligned && bgraIsAligned && bgraStrideIsAligned)
-    mERROR_CHECK(Yuv420pToBgra<true>(y, yStride, u, uStride, v, vStride, width, height, bgra, bgraStride, alpha));
+    mERROR_CHECK(mPixelFormat_Transform_Yuv420pToBgra_SSE2<true>(y, yStride, u, uStride, v, vStride, width, height, bgra, bgraStride, alpha));
   else
-    mERROR_CHECK(Yuv420pToBgra<false>(y, yStride, u, uStride, v, vStride, width, height, bgra, bgraStride, alpha));
+    mERROR_CHECK(mPixelFormat_Transform_Yuv420pToBgra_SSE2<false>(y, yStride, u, uStride, v, vStride, width, height, bgra, bgraStride, alpha));
 
   mRETURN_SUCCESS();
 }
@@ -821,9 +821,121 @@ static mINLINE void YUV420_to_BGRA(const uint8_t y0, const uint8_t y1, const uin
   *pColor3 = ((uint32_t)mClamp((c3_ + v0) << 8, 0, 0xFF0000) & 0xFF0000) | ((uint32_t)mClamp((c3_ + v1), 0, 0xFF00) & 0xFF00) | (uint32_t)mClamp((c3_ + v2) >> 8, 0, 0xFF);
 }
 
+mFUNCTION(mPixelFormat_Transform_YUV420ToBgra_Base, uint8_t *pY, uint8_t *pU, uint8_t *pV, uint32_t *pBgra, const size_t width, const size_t height, const size_t yStride, const size_t uvStride, const size_t bgraStride)
+{
+  mFUNCTION_SETUP();
+
+  for (size_t y = 0; y < height - 1; y += 2)
+  {
+    const size_t yline = y * bgraStride;
+    const size_t yhalf = y >> 1;
+    const size_t ySourceLine0 = y * yStride;
+    const size_t ySourceLine1 = (y >> 1) * uvStride;
+
+    for (size_t x = 0; x < width - 1; x += 2)
+    {
+      size_t xhalf = x >> 1;
+      size_t xySourceLine0 = x + ySourceLine0;
+      size_t xyTargetLine0 = x + yline;
+      size_t sourcePosSubRes = xhalf + ySourceLine1;
+
+      YUV420_to_BGRA(
+        pY[xySourceLine0], pY[xySourceLine0 + 1],
+        pY[xySourceLine0 + yStride], pY[xySourceLine0 + yStride + 1],
+
+        pU[sourcePosSubRes],
+
+        pV[sourcePosSubRes],
+
+        &pBgra[xyTargetLine0], &pBgra[xyTargetLine0 + 1],
+        &pBgra[xyTargetLine0 + bgraStride], &pBgra[xyTargetLine0 + bgraStride + 1]);
+    }
+  }
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mPixelFormat_Transform_YUV420ToBgra_Wrapper, uint8_t *pY, uint8_t *pU, uint8_t *pV, uint32_t *pBgra, const size_t width, const size_t height, const size_t bgraStride, const size_t yStride, size_t uvStride, size_t targetUnitSize)
+{
+  mFUNCTION_SETUP();
+
+  mUnused(targetUnitSize);
+
+#ifdef SSE2
+  mERROR_CHECK(mPixelFormat_Transform_YUV420ToBgra_Base(pY, pU, pV, pBgra, width, height, yStride, uvStride, bgraStride));
+#else
+  mERROR_CHECK(mPixelFormat_Transform_Yuv420pToBgra_SSE2(pY, yStride, pU, uvStride, pV, uvStride, width, height, (uint8_t *)pBgra, bgraStride * targetUnitSize, 0));
+#endif
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mPixelFormat_Transform_YUV420ToBgra, mPtr<mImageBuffer> &source, mPtr<mImageBuffer> &target, mPtr<mThreadPool> &threadPool)
+{
+  mFUNCTION_SETUP();
+
+  uint32_t *pOutPixels = (uint32_t *)target->pPixels;
+  uint8_t *pBuffer0 = source->pPixels;
+  uint8_t *pBuffer1 = source->pPixels;
+  uint8_t *pBuffer2 = source->pPixels;
+
+  size_t offset;
+  mERROR_CHECK(mPixelFormat_GetSubBufferOffset(source->pixelFormat, 0, mVec2s(source->lineStride, source->currentSize.y), &offset));
+  pBuffer0 += offset;
+
+  mERROR_CHECK(mPixelFormat_GetSubBufferOffset(source->pixelFormat, 1, mVec2s(source->lineStride, source->currentSize.y), &offset));
+  pBuffer1 += offset;
+
+  mERROR_CHECK(mPixelFormat_GetSubBufferOffset(source->pixelFormat, 2, mVec2s(source->lineStride, source->currentSize.y), &offset));
+  pBuffer2 += offset;
+
+  size_t sourceLineStride0, sourceLineStride1;
+  mERROR_CHECK(mPixelFormat_GetSubBufferStride(source->pixelFormat, 0, source->lineStride, &sourceLineStride0));
+  mERROR_CHECK(mPixelFormat_GetSubBufferStride(source->pixelFormat, 1, source->lineStride, &sourceLineStride1));
+
+  size_t targetUnitSize;
+  mERROR_CHECK(mPixelFormat_GetUnitSize(target->pixelFormat, &targetUnitSize));
+
+  if (threadPool == nullptr)
+  {
+    mERROR_CHECK(mPixelFormat_Transform_YUV420ToBgra_Wrapper(pBuffer0, pBuffer1, pBuffer2, pOutPixels, target->currentSize.x, target->currentSize.y, target->lineStride, sourceLineStride0, sourceLineStride1, targetUnitSize));
+  }
+  else
+  {
+    mTask **ppTasks = nullptr;
+    size_t threadCount;
+    mERROR_CHECK(mThreadPool_GetThreadCount(threadPool, &threadCount));
+
+    mAllocator *pAllocator = &mDefaultAllocator;
+    mDEFER(mAllocator_FreePtr(pAllocator, &ppTasks));
+    mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &ppTasks, threadCount));
+
+    const size_t subHeight = target->currentSize.y / threadCount;
+    const size_t yOffset = sourceLineStride0 * (subHeight);
+    const size_t uvOffset = sourceLineStride1 * (subHeight / 2);
+    const size_t bgraOffset = target->lineStride * (subHeight);
+
+    mResult result;
+    for (size_t i = 0; i < threadCount; ++i)
+      mERROR_CHECK_GOTO(mTask_Create(&ppTasks[i], pAllocator, &mPixelFormat_Transform_YUV420ToBgra_Wrapper, pBuffer0 + i * yOffset, pBuffer1 + i * uvOffset, pBuffer2 + i * uvOffset, pOutPixels + i * bgraOffset, target->currentSize.x, subHeight, target->lineStride, sourceLineStride0, sourceLineStride1, targetUnitSize), result, epilogue);
+
+    for (size_t i = 0; i < threadCount; ++i)
+      mERROR_CHECK_GOTO(mThreadPool_EnqueueTask(threadPool, ppTasks[i]), result, epilogue);
+
+  epilogue:
+    for (size_t i = 0; i < threadCount; ++i)
+      if (ppTasks[i] != nullptr)
+        mERROR_CHECK(mTask_Destroy(&ppTasks[i]));
+
+    mRETURN_RESULT(result);
+  }
+
+  mRETURN_SUCCESS();
+}
+
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mPixelFormat_TransformBuffer, mPtr<mImageBuffer> &source, mPtr<mImageBuffer> &target)
+mFUNCTION(mPixelFormat_TransformBuffer, mPtr<mImageBuffer> &source, mPtr<mImageBuffer> &target, mPtr<mThreadPool> &threadPool)
 {
   mFUNCTION_SETUP();
 
@@ -845,56 +957,7 @@ mFUNCTION(mPixelFormat_TransformBuffer, mPtr<mImageBuffer> &source, mPtr<mImageB
     {
     case mPF_YUV420:
     {
-      uint8_t *pBuffer0 = source->pPixels;
-      uint8_t *pBuffer1 = source->pPixels;
-      uint8_t *pBuffer2 = source->pPixels;
-
-      size_t offset;
-      mERROR_CHECK(mPixelFormat_GetSubBufferOffset(source->pixelFormat, 0, mVec2s(source->lineStride, source->currentSize.y), &offset));
-      pBuffer0 += offset;
-
-      mERROR_CHECK(mPixelFormat_GetSubBufferOffset(source->pixelFormat, 1, mVec2s(source->lineStride, source->currentSize.y), &offset));
-      pBuffer1 += offset;
-
-      mERROR_CHECK(mPixelFormat_GetSubBufferOffset(source->pixelFormat, 2, mVec2s(source->lineStride, source->currentSize.y), &offset));
-      pBuffer2 += offset;
-
-      size_t sourceLineStride0, sourceLineStride1, sourceLineStride2;
-      mERROR_CHECK(mPixelFormat_GetSubBufferStride(source->pixelFormat, 0, source->lineStride, &sourceLineStride0));
-      mERROR_CHECK(mPixelFormat_GetSubBufferStride(source->pixelFormat, 1, source->lineStride, &sourceLineStride1));
-      mERROR_CHECK(mPixelFormat_GetSubBufferStride(source->pixelFormat, 2, source->lineStride, &sourceLineStride2));
-
-#ifndef SSE2
-      for (size_t y = 0; y < target->currentSize.y - 1; y += 2)
-      {
-        const size_t yline = y * target->lineStride;
-        const size_t yhalf = y >> 1;
-        const size_t ySourceLine0 = y * sourceLineStride0;
-        const size_t ySourceLine1 = (y >> 1) * sourceLineStride1;
-      
-        for (size_t x = 0; x < target->currentSize.x - 1; x += 2)
-        {
-          size_t xhalf = x >> 1;
-          size_t xySourceLine0 = x + ySourceLine0;
-          size_t xyTargetLine0 = x + yline;
-          size_t sourcePosSubRes = xhalf + ySourceLine1;
-      
-          YUV420_to_BGRA(
-            pBuffer0[xySourceLine0], pBuffer0[xySourceLine0 + 1], 
-            pBuffer0[xySourceLine0 + sourceLineStride0], pBuffer0[xySourceLine0 + sourceLineStride0 + 1],
-      
-            pBuffer1[sourcePosSubRes],
-      
-            pBuffer2[sourcePosSubRes],
-      
-            &pOutPixels[xyTargetLine0], &pOutPixels[xyTargetLine0 + 1], 
-            &pOutPixels[xyTargetLine0 + target->lineStride], &pOutPixels[xyTargetLine0 + target->lineStride + 1]);
-        }
-      }
-#else
-      mERROR_CHECK(Yuv420pToBgra(pBuffer0, sourceLineStride0, pBuffer1, sourceLineStride1, pBuffer2, sourceLineStride2, target->currentSize.x, target->currentSize.y, target->pPixels, target->lineStride * sizeof(uint32_t), 0));
-#endif
-
+      mERROR_CHECK(mPixelFormat_Transform_YUV420ToBgra(source, target, threadPool));
       break;
     }
 
@@ -921,6 +984,16 @@ mFUNCTION(mPixelFormat_TransformBuffer, mPtr<mImageBuffer> &source, mPtr<mImageB
     mRETURN_RESULT(mR_InvalidParameter);
   }
   }
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mPixelFormat_TransformBuffer, mPtr<mImageBuffer>& source, mPtr<mImageBuffer>& target)
+{
+  mFUNCTION_SETUP();
+
+  mPtr<mThreadPool> nullThreadPool = nullptr;
+  mERROR_CHECK(mPixelFormat_TransformBuffer(source, target, nullThreadPool));
 
   mRETURN_SUCCESS();
 }
