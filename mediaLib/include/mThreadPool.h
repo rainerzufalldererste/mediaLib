@@ -65,5 +65,6 @@ enum mThreadPool_ThreadCount : size_t
 mFUNCTION(mThreadPool_Create, OUT mPtr<mThreadPool> *pThreadPool, IN OPTIONAL mAllocator *pAllocator, const size_t threads = mThreadPool_ThreadCount::mTP_TC_NumberOfLogicalCores);
 mFUNCTION(mThreadPool_Destroy, IN_OUT mPtr<mThreadPool> *pThreadPool);
 mFUNCTION(mThreadPool_EnqueueTask, mPtr<mThreadPool> &threadPool, IN mTask *pTask);
+mFUNCTION(mThreadPool_GetThreadCount, mPtr<mThreadPool> &threadPool, OUT size_t *pThreadCount);
 
 #endif // mThreadPool_h__

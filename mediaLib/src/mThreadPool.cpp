@@ -291,7 +291,7 @@ mFUNCTION(mThreadPool_EnqueueTask, mPtr<mThreadPool> &threadPool, IN mTask *pTas
 {
   mFUNCTION_SETUP();
 
-  mERROR_IF(pTask == nullptr, mR_ArgumentNull);
+  mERROR_IF(threadPool == nullptr || pTask == nullptr, mR_ArgumentNull);
 
   // Enqueue task.
   {
@@ -303,6 +303,17 @@ mFUNCTION(mThreadPool_EnqueueTask, mPtr<mThreadPool> &threadPool, IN mTask *pTas
   }
 
   mERROR_CHECK(mSemaphore_WakeOne(threadPool->pSemaphore));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mThreadPool_GetThreadCount, mPtr<mThreadPool> &threadPool, OUT size_t *pThreadCount)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(threadPool == nullptr || pThreadCount == nullptr, mR_ArgumentNull);
+
+  *pThreadCount = threadPool->threadCount;
 
   mRETURN_SUCCESS();
 }
