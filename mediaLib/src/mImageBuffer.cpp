@@ -12,8 +12,10 @@
 #pragma warning(push)
 #pragma warning(disable: 4100)
 #include "stb_image.h"
-#include "stb_image_write.h"
 #pragma warning(pop)
+
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "stb_image_write.h"
 
 mFUNCTION(mImageBuffer_Create_Iternal, mPtr<mImageBuffer> *pImageBuffer, IN OPTIONAL mAllocator *pAllocator);
 mFUNCTION(mImageBuffer_Destroy_Iternal, mImageBuffer *pImageBuffer);
@@ -286,6 +288,125 @@ mFUNCTION(mImageBuffer_CopyTo, mPtr<mImageBuffer> &source, mPtr<mImageBuffer> &t
       }
     }
   }
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mImageBuffer_SaveAsPng, mPtr<mImageBuffer> &imageBuffer, const std::string &filename)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(imageBuffer == nullptr || imageBuffer->pPixels == nullptr, mR_NotInitialized);
+
+  int components;
+
+  switch (imageBuffer->pixelFormat)
+  {
+  case mPF_B8G8R8A8:
+    components = 4;
+    break;
+
+  case mPF_B8G8R8:
+    components = 3;
+    break;
+
+  default:
+    mRETURN_RESULT(mR_OperationNotSupported);
+  }
+
+  int result = stbi_write_png(filename.c_str(), (int)imageBuffer->currentSize.x, (int)imageBuffer->currentSize.y, components, imageBuffer->pPixels, (int)(imageBuffer->lineStride * sizeof(uint8_t)) * components);
+
+  mERROR_IF(result == 0, mR_InternalError);
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mImageBuffer_SaveAsJpeg, mPtr<mImageBuffer> &imageBuffer, const std::string &filename)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(imageBuffer == nullptr || imageBuffer->pPixels == nullptr, mR_NotInitialized);
+  mERROR_IF(imageBuffer->lineStride != imageBuffer->currentSize.x, mR_InvalidParameter);
+
+  int components;
+
+  switch (imageBuffer->pixelFormat)
+  {
+  case mPF_B8G8R8A8:
+    components = 4;
+    break;
+
+  case mPF_B8G8R8:
+    components = 3;
+    break;
+
+  default:
+    mRETURN_RESULT(mR_OperationNotSupported);
+  }
+
+  int result = stbi_write_jpg(filename.c_str(), (int)imageBuffer->currentSize.x, (int)imageBuffer->currentSize.y, components, imageBuffer->pPixels, 85);
+
+  mERROR_IF(result == 0, mR_InternalError);
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mImageBuffer_SaveAsBmp, mPtr<mImageBuffer> &imageBuffer, const std::string &filename)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(imageBuffer == nullptr || imageBuffer->pPixels == nullptr, mR_NotInitialized);
+  mERROR_IF(imageBuffer->lineStride != imageBuffer->currentSize.x, mR_InvalidParameter);
+
+  int components;
+
+  switch (imageBuffer->pixelFormat)
+  {
+  case mPF_B8G8R8A8:
+    components = 4;
+    break;
+
+  case mPF_B8G8R8:
+    components = 3;
+    break;
+
+  default:
+    mRETURN_RESULT(mR_OperationNotSupported);
+  }
+
+  int result = stbi_write_bmp(filename.c_str(), (int)imageBuffer->currentSize.x, (int)imageBuffer->currentSize.y, components, imageBuffer->pPixels);
+
+  mERROR_IF(result == 0, mR_InternalError);
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mImageBuffer_SaveAsTga, mPtr<mImageBuffer> &imageBuffer, const std::string &filename)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(imageBuffer == nullptr || imageBuffer->pPixels == nullptr, mR_NotInitialized);
+  mERROR_IF(imageBuffer->lineStride != imageBuffer->currentSize.x, mR_InvalidParameter);
+
+  int components;
+
+  switch (imageBuffer->pixelFormat)
+  {
+  case mPF_B8G8R8A8:
+    components = 4;
+    break;
+
+  case mPF_B8G8R8:
+    components = 3;
+    break;
+
+  default:
+    mRETURN_RESULT(mR_OperationNotSupported);
+  }
+
+  int result = stbi_write_tga(filename.c_str(), (int)imageBuffer->currentSize.x, (int)imageBuffer->currentSize.y, components, imageBuffer->pPixels);
+
+  mERROR_IF(result == 0, mR_InternalError);
 
   mRETURN_SUCCESS();
 }
