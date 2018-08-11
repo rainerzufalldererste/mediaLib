@@ -8,6 +8,13 @@
 
 #include "mImageBuffer.h"
 
+#define STB_IMAGE_IMPLEMENTATION
+#pragma warning(push)
+#pragma warning(disable: 4100)
+#include "stb_image.h"
+#include "stb_image_write.h"
+#pragma warning(pop)
+
 mFUNCTION(mImageBuffer_Create_Iternal, mPtr<mImageBuffer> *pImageBuffer, IN OPTIONAL mAllocator *pAllocator);
 mFUNCTION(mImageBuffer_Destroy_Iternal, mImageBuffer *pImageBuffer);
 
@@ -17,6 +24,31 @@ mFUNCTION(mImageBuffer_Create, OUT mPtr<mImageBuffer> *pImageBuffer, IN OPTIONAL
 
   mERROR_IF(pImageBuffer == nullptr, mR_ArgumentNull);
   mERROR_CHECK(mImageBuffer_Create_Iternal(pImageBuffer, pAllocator));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mImageBuffer_CreateFromFile, OUT mPtr<mImageBuffer> *pImageBuffer, IN OPTIONAL mAllocator *pAllocator, const std::string &filename)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pImageBuffer == nullptr, mR_ArgumentNull);
+  mERROR_CHECK(mImageBuffer_Create_Iternal(pImageBuffer, pAllocator));
+
+  int x, y, originalChannelCount;
+  stbi_uc *pResult = stbi_load(filename.c_str(), &x, &y, &originalChannelCount, 4);
+
+  if (pResult == nullptr)
+    mRETURN_RESULT(mR_InternalError);
+
+  mDEFER_DESTRUCTION((void *)pResult, stbi_image_free);
+
+  mERROR_CHECK(mImageBuffer_AllocateBuffer(*pImageBuffer, mVec2s((size_t)x, (size_t)y), mPF_B8G8R8A8));
+
+  size_t imageBytes;
+  mERROR_CHECK(mPixelFormat_GetSize((*pImageBuffer)->pixelFormat, (*pImageBuffer)->currentSize, &imageBytes));
+
+  mERROR_CHECK(mAllocator_Copy((*pImageBuffer)->pAllocator, (*pImageBuffer)->pPixels, (uint8_t *)pResult, imageBytes));
 
   mRETURN_SUCCESS();
 }
