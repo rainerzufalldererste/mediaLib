@@ -7,13 +7,13 @@
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "mSemaphore.h"
-#include <windows.h>
-#include <IntSafe.h>
+#include <condition_variable>
+#include <mutex>
 
 struct mSemaphore
 {
-  CRITICAL_SECTION criticalSection;
-  CONDITION_VARIABLE conditionVariable;
+  std::mutex mutex;
+  std::condition_variable conditionVariable;
   mAllocator *pAllocator;
 };
 
@@ -31,10 +31,8 @@ mFUNCTION(mSemaphore_Create, OUT mSemaphore **ppSemaphore, IN OPTIONAL mAllocato
 
   (*ppSemaphore)->pAllocator = pAllocator;
 
-  InitializeCriticalSection(&(*ppSemaphore)->criticalSection);
-  mDEFER_ON_ERROR(DeleteCriticalSection(&(*ppSemaphore)->criticalSection));
-
-  InitializeConditionVariable(&(*ppSemaphore)->conditionVariable);
+  new (&(*ppSemaphore)->mutex) std::mutex();
+  new (&(*ppSemaphore)->conditionVariable) std::condition_variable();
 
   mRETURN_SUCCESS();
 }
@@ -60,7 +58,7 @@ mFUNCTION(mSemaphore_Lock, IN mSemaphore *pSemaphore)
 
   mERROR_IF(pSemaphore == nullptr, mR_ArgumentNull);
 
-  EnterCriticalSection(&pSemaphore->criticalSection);
+  pSemaphore->mutex.lock();
 
   mRETURN_SUCCESS();
 }
@@ -71,7 +69,7 @@ mFUNCTION(mSemaphore_Unlock, IN mSemaphore *pSemaphore)
 
   mERROR_IF(pSemaphore == nullptr, mR_ArgumentNull);
 
-  LeaveCriticalSection(&pSemaphore->criticalSection);
+  pSemaphore->mutex.unlock();
 
   mRETURN_SUCCESS();
 }
@@ -82,7 +80,7 @@ mFUNCTION(mSemaphore_WakeOne, IN mSemaphore *pSemaphore)
 
   mERROR_IF(pSemaphore == nullptr, mR_ArgumentNull);
 
-  WakeConditionVariable(&pSemaphore->conditionVariable);
+  pSemaphore->conditionVariable.notify_one();
 
   mRETURN_SUCCESS();
 }
@@ -93,7 +91,7 @@ mFUNCTION(mSemaphore_WakeAll, IN mSemaphore *pSemaphore)
 
   mERROR_IF(pSemaphore == nullptr, mR_ArgumentNull);
 
-  WakeAllConditionVariable(&pSemaphore->conditionVariable);
+  pSemaphore->conditionVariable.notify_all();
 
   mRETURN_SUCCESS();
 }
@@ -103,23 +101,22 @@ mFUNCTION(mSemaphore_Sleep, IN mSemaphore *pSemaphore, const size_t timeoutMilli
   mFUNCTION_SETUP();
 
   mERROR_IF(pSemaphore == nullptr, mR_ArgumentNull);
-  mERROR_IF(timeoutMilliseconds > DWORD_MAX, mR_IndexOutOfBounds);
 
-  const BOOL result = SleepConditionVariableCS(&pSemaphore->conditionVariable, &pSemaphore->criticalSection, (DWORD)timeoutMilliseconds);
+  std::unique_lock<std::mutex> lock(pSemaphore->mutex);
 
-  if (result != 0)
-  {
-    mRETURN_SUCCESS();
-  }
+  if (timeoutMilliseconds == mSemaphore_SleepTime::mS_ST_Infinite)
+    pSemaphore->conditionVariable.wait(lock);
   else
   {
-    const DWORD error = GetLastError();
+    std::cv_status result = pSemaphore->conditionVariable.wait_for(lock, std::chrono::milliseconds(timeoutMilliseconds));
 
-    if (error == ERROR_TIMEOUT)
+    if (result == std::cv_status::no_timeout)
+      mRETURN_SUCCESS();
+    else
       mRETURN_RESULT(mR_Timeout);
-
-    mRETURN_RESULT(mR_InternalError);
   }
+
+  mRETURN_SUCCESS();
 }
 
 mFUNCTION(mSemaphore_Destroy_Internal, IN mSemaphore *pSemaphore)
@@ -128,8 +125,8 @@ mFUNCTION(mSemaphore_Destroy_Internal, IN mSemaphore *pSemaphore)
 
   mERROR_IF(pSemaphore == nullptr, mR_ArgumentNull);
 
-  // A `CONDITION_VARIABLE` does not have a destroy function. (https://stackoverflow.com/a/28981408)
-  DeleteCriticalSection(&pSemaphore->criticalSection);
+  pSemaphore->conditionVariable.~condition_variable();
+  pSemaphore->mutex.~mutex();
 
   mRETURN_SUCCESS();
 }
