@@ -1,3 +1,6 @@
 [submodule "mediaLib/3rdParty/DirectXMath"]
 	path = mediaLib/3rdParty/DirectXMath
 	url = https://github.com/Microsoft/DirectXMath.git
+[submodule "mediaLib/3rdParty/stb"]
+	path = mediaLib/3rdParty/stb
+	url = https://github.com/nothings/stb

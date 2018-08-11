@@ -140,29 +140,33 @@ mFUNCTION(mTask_Execute, IN mTask *pTask)
 
   mResult result = mR_Success;
   bool hasBeenExecuted = false;
-  mDefer<mSemaphore> defer;
 
-  if (pTask->pSemaphore != nullptr)
   {
-    mERROR_CHECK_GOTO(mSemaphore_Lock(pTask->pSemaphore), result, epilogue);
-    defer = mDefer_Create(mSemaphore_Unlock, pTask->pSemaphore);
+    mDefer<mSemaphore> defer;
+
+    if (pTask->pSemaphore != nullptr)
+    {
+      mERROR_CHECK_GOTO(mSemaphore_Lock(pTask->pSemaphore), result, epilogue);
+      defer = mDefer_Create(mSemaphore_Unlock, pTask->pSemaphore);
+    }
+
+    if (pTask->state < mTask_State::mT_S_Running)
+      pTask->state = mTask_State::mT_S_Running;
+    else
+      mRETURN_SUCCESS();
+
+    mERROR_IF_GOTO(pTask->function == nullptr, mR_NotInitialized, result, epilogue);
+
+    pTask->result = pTask->function();
+    hasBeenExecuted = true;
+
+  epilogue:
+    if (!hasBeenExecuted || (mSUCCEEDED(pTask->result) && mFAILED(result)))
+      pTask->result = result;
+
+    pTask->state = mTask_State::mT_S_Complete;
   }
 
-  if (pTask->state < mTask_State::mT_S_Running)
-    pTask->state = mTask_State::mT_S_Running;
-  else
-    mRETURN_SUCCESS();
-
-  mERROR_IF_GOTO(pTask->function == nullptr, mR_NotInitialized, result, epilogue);
-
-  pTask->result = pTask->function();
-  hasBeenExecuted = true;
-
-epilogue:
-  if (!hasBeenExecuted || (mSUCCEEDED(pTask->result) && mFAILED(result)))
-    pTask->result = result;
-
-  pTask->state = mTask_State::mT_S_Complete;
   result = mSemaphore_WakeAll(pTask->pSemaphore);
 
   mRETURN_SUCCESS();

@@ -22,10 +22,10 @@ project(ProjectName)
   files { "include/**.cpp", "include/**.h", "include/**.inl", "src/**rc" }
   files { "project.lua" }
   
-  includedirs { "src" }
   includedirs { "include" }
   includedirs { "3rdParty/DirectXMath/Inc" }
   includedirs { "3rdParty/DirectXMath/Extensions" }
+  includedirs { "3rdParty/stb" }
   
   filter { "configurations:Debug", "system:Windows" }
     ignoredefaultlibraries { "libcmt" }
