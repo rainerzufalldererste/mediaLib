@@ -19,7 +19,7 @@ int main(int, char **)
 
   g_mResult_breakOnError = true;
   mDEFER_DESTRUCTION(&threadPool, mThreadPool_Destroy);
-  mERROR_CHECK(mThreadPool_Create(&threadPool, nullptr, 1));
+  mERROR_CHECK(mThreadPool_Create(&threadPool, nullptr));
 
   mPtr<mMediaFileInputHandler> mediaFileHandler;
   mDEFER_DESTRUCTION(&mediaFileHandler, mMediaFileInputHandler_Destroy);
