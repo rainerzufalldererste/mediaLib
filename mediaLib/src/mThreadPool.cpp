@@ -88,17 +88,15 @@ mFUNCTION(mTask_Join, IN mTask *pTask, const size_t timeoutMilliseconds /* = mSe
     {
       for (size_t i = 0; i < timeoutMilliseconds; ++i)
       {
-        //const mResult result = mR_Timeout; //mSemaphore_Sleep(pTask->pSemaphore, 1);
+        const mResult result = mSemaphore_Sleep(pTask->pSemaphore, 1);
 
-        mSleep(1);
-
-        //if (mSUCCEEDED(result))
-        //{
-        //  mRETURN_SUCCESS();
-        //}
-        //else
+        if (mSUCCEEDED(result))
         {
-          //mERROR_IF(result != mR_Timeout, result);
+          mRETURN_SUCCESS();
+        }
+        else
+        {
+          mERROR_IF(result != mR_Timeout, result);
 
           if (pTask->state < mTask_State::mT_S_Complete)
           {
