@@ -86,6 +86,7 @@ inline mDefer<T>::mDefer()
 {
   m_deferType = mDeferType::mDT_None;
   m_pData = nullptr;
+  m_pResult = nullptr;
 }
 
 template<typename T>

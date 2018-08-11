@@ -25,7 +25,7 @@ enum mTask_State
   mT_S_Aborted,
 };
 
-mFUNCTION(mTask_Create, OUT mTask **ppTask, IN OPTIONAL mAllocator *pAllocator, const std::function<mResult(void)> &function);
+mFUNCTION(mTask_CreateWithLambda, OUT mTask **ppTask, IN OPTIONAL mAllocator *pAllocator, const std::function<mResult(void)> &function);
 mFUNCTION(mTask_CreateInplace, IN mTask *pTask, const std::function<mResult(void)> &function);
 mFUNCTION(mTask_Destroy, IN_OUT mTask **ppTask);
 

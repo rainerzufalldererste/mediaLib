@@ -7,7 +7,7 @@
 mVec2s resolution;
 SDL_Window *pWindow = nullptr;
 uint32_t *pPixels = nullptr;
-const size_t subScale = 6;
+const size_t subScale = 1;
 mPtr<mImageBuffer> bgraImageBuffer = nullptr;
 mPtr<mThreadPool> threadPool = nullptr;
 
@@ -19,7 +19,7 @@ int main(int, char **)
 
   g_mResult_breakOnError = true;
   mDEFER_DESTRUCTION(&threadPool, mThreadPool_Destroy);
-  mERROR_CHECK(mThreadPool_Create(&threadPool, nullptr));
+  mERROR_CHECK(mThreadPool_Create(&threadPool, nullptr, 1));
 
   mPtr<mMediaFileInputHandler> mediaFileHandler;
   mDEFER_DESTRUCTION(&mediaFileHandler, mMediaFileInputHandler_Destroy);
@@ -48,7 +48,14 @@ mFUNCTION(OnVideoFramCallback, mPtr<mImageBuffer> &buffer, const mVideoStreamTyp
 
   const clock_t now = clock();
 
-  mERROR_CHECK(mImageBuffer_AllocateBuffer(bgraImageBuffer, buffer->currentSize, bgraImageBuffer->pixelFormat));
+  if (buffer->currentSize != bgraImageBuffer->currentSize)
+  {
+    SDL_SetWindowSize(pWindow, (int)buffer->currentSize.x / subScale, (int)buffer->currentSize.y / subScale);
+    pPixels = (uint32_t *)SDL_GetWindowSurface(pWindow)->pixels;
+    mERROR_IF(pPixels == nullptr, mR_ArgumentNull);
+    mERROR_CHECK(mImageBuffer_AllocateBuffer(bgraImageBuffer, buffer->currentSize, bgraImageBuffer->pixelFormat));
+  }
+
   mERROR_CHECK(mPixelFormat_TransformBuffer(buffer, bgraImageBuffer, threadPool));
   mPRINT("frame time: %" PRIi32 "\n", clock() - now);
 

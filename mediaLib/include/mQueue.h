@@ -179,6 +179,7 @@ inline mFUNCTION(mQueue_PopFront, mPtr<mQueue<T>> &queue, OUT T *pItem)
   mERROR_CHECK(mQueue_PeekFront(queue, pItem));
 
   ++queue->startIndex;
+  --queue->count;
 
   if (queue->startIndex >= queue->size)
     queue->startIndex = 0;

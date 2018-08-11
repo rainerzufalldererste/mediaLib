@@ -22,7 +22,7 @@ struct mTask
 
 mFUNCTION(mTask_Destroy_Internal, IN mTask *pTask);
 
-mFUNCTION(mTask_Create, OUT mTask **ppTask, IN OPTIONAL mAllocator *pAllocator, const std::function<mResult(void)> &function)
+mFUNCTION(mTask_CreateWithLambda, OUT mTask **ppTask, IN OPTIONAL mAllocator *pAllocator, const std::function<mResult(void)> &function)
 {
   mFUNCTION_SETUP();
 
@@ -126,13 +126,14 @@ mFUNCTION(mTask_Execute, IN mTask *pTask)
   if (pTask->state < mTask_State::mT_S_Running)
     pTask->state = mTask_State::mT_S_Running;
   else
-    mRETURN_SUCCESS();
+    goto wake_all;
 
   mERROR_IF_GOTO(pTask->function == nullptr, mR_NotInitialized, result, epilogue);
 
   pTask->result = pTask->function();
   hasBeenExecuted = true;
 
+wake_all:
   if (pTask->pSemaphore != nullptr)
     mERROR_CHECK_GOTO(mSemaphore_WakeAll(pTask->pSemaphore), result, epilogue);
 
@@ -239,6 +240,8 @@ void mThreadPool_WorkerThread(mThreadPool *pThreadPool)
       {
         mTask *pTask = nullptr;
         mASSERT(mSUCCEEDED(mQueue_PopFront(pThreadPool->queue, &pTask)), "Error in " __FUNCTION__ ": Could not dequeue task.");
+        mASSERT(mSUCCEEDED(mTask_Execute(pTask)), "Error in " __FUNCTION__ ": Failed to execute task.");
+        mASSERT(mSUCCEEDED(mTask_Destroy(&pTask)), "Error in " __FUNCTION__ ": Failed to destroy task.");
       }
     }
 

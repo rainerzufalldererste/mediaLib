@@ -915,12 +915,15 @@ mFUNCTION(mPixelFormat_Transform_YUV420ToBgra, mPtr<mImageBuffer> &source, mPtr<
     const size_t uvOffset = sourceLineStride1 * (subHeight / 2);
     const size_t bgraOffset = target->lineStride * (subHeight);
 
-    mResult result;
+    mResult result = mR_Success;
     for (size_t i = 0; i < threadCount; ++i)
-      mERROR_CHECK_GOTO(mTask_Create(&ppTasks[i], pAllocator, &mPixelFormat_Transform_YUV420ToBgra_Wrapper, pBuffer0 + i * yOffset, pBuffer1 + i * uvOffset, pBuffer2 + i * uvOffset, pOutPixels + i * bgraOffset, target->currentSize.x, subHeight, target->lineStride, sourceLineStride0, sourceLineStride1, targetUnitSize), result, epilogue);
+      mERROR_CHECK_GOTO(mTask_CreateWithLambda(&ppTasks[i], pAllocator, [=]() { return mPixelFormat_Transform_YUV420ToBgra_Wrapper(pBuffer0 + i * yOffset, pBuffer1 + i * uvOffset, pBuffer2 + i * uvOffset, pOutPixels + i * bgraOffset, target->currentSize.x, subHeight, target->lineStride, sourceLineStride0, sourceLineStride1, targetUnitSize); }), result, epilogue);
 
     for (size_t i = 0; i < threadCount; ++i)
       mERROR_CHECK_GOTO(mThreadPool_EnqueueTask(threadPool, ppTasks[i]), result, epilogue);
+
+    for (size_t i = 0; i < threadCount; ++i)
+      mERROR_CHECK_GOTO(mTask_Join(ppTasks[i]), result, epilogue);
 
   epilogue:
     for (size_t i = 0; i < threadCount; ++i)
