@@ -426,12 +426,9 @@ mFUNCTION(mMediaFileInputHandler_RunSession_Internal, IN mMediaFileInputHandler 
 
     mDEFER_DESTRUCTION(&pSample, _ReleaseReference);
     mERROR_IF(FAILED(hr = pData->pSourceReader->ReadSample((DWORD)MF_SOURCE_READER_ANY_STREAM, 0, &streamIndex, &flags, &timeStamp, &pSample)), mR_InternalError);
-
-    mPRINT("Stream %d (%" PRIi64 ")\n", streamIndex, timeStamp);
     
     if (flags & MF_SOURCE_READERF_ENDOFSTREAM)
     {
-      mPRINT("End of stream\n");
       break;
     }
 
@@ -548,8 +545,6 @@ mFUNCTION(mMediaFileInputHandler_RunSession_Internal, IN mMediaFileInputHandler 
       //mERROR_IF(FAILED(hr = pMediaBuffer->QueryInterface(__uuidof(IMF2DBuffer2), (void **)&p2DBuffer)), mR_InternalError);
     }
   }
-
-  mPRINT("Processed %" PRIu64 " samples\n", (uint64_t)sampleCount);
 
   mRETURN_SUCCESS();
 }

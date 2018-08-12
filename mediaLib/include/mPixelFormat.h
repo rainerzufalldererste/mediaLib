@@ -17,7 +17,9 @@ struct mImageBuffer;
 enum mPixelFormat
 {
   mPF_B8G8R8,
+  mPF_R8G8B8,
   mPF_B8G8R8A8,
+  mPF_R8G8B8A8,
   mPF_YUV422,
   mPF_YUV420,
   mPF_Monochrome8,

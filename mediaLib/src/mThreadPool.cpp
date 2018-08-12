@@ -358,7 +358,10 @@ mFUNCTION(mThreadPool_Create_Internal, mThreadPool *pThreadPool, IN OPTIONAL mAl
   pThreadPool->pAllocator = pAllocator;
   pThreadPool->isRunning = true;
 
+  mDEFER_DESTRUCTION_ON_ERROR(&pThreadPool->queue, mQueue_Destroy);
   mERROR_CHECK(mQueue_Create(&pThreadPool->queue, pThreadPool->pAllocator));
+
+  mDEFER_DESTRUCTION_ON_ERROR(&pThreadPool->pSemaphore, mSemaphore_Destroy);
   mERROR_CHECK(mSemaphore_Create(&pThreadPool->pSemaphore, pThreadPool->pAllocator));
 
   if (threads == mThreadPool_ThreadCount::mTP_TC_NumberOfLogicalCores)
@@ -377,6 +380,8 @@ mFUNCTION(mThreadPool_Create_Internal, mThreadPool *pThreadPool, IN OPTIONAL mAl
   {
     pThreadPool->threadCount = threads;
   }
+
+  mERROR_IF(pThreadPool->threadCount == 0, mR_InvalidParameter);
 
   mERROR_CHECK(mAllocator_AllocateZero(pThreadPool->pAllocator, &pThreadPool->ppThreads, pThreadPool->threadCount));
 

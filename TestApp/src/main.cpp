@@ -11,6 +11,7 @@ const size_t subScale = 5;
 mPtr<mImageBuffer> bgraImageBuffer = nullptr;
 mPtr<mThreadPool> threadPool = nullptr;
 
+mFUNCTION(ResizeWindow, const mVec2s &newSize);
 mFUNCTION(OnVideoFramCallback, mPtr<mImageBuffer> &, const mVideoStreamType &videoStreamType);
 
 int main(int, char **)
@@ -36,8 +37,28 @@ int main(int, char **)
   mDEFER_DESTRUCTION(&bgraImageBuffer, mImageBuffer_Destroy);
   mERROR_CHECK(mImageBuffer_Create(&bgraImageBuffer, nullptr, resolution));
 
+  mPtr<mImageBuffer> image;
+  mERROR_CHECK(mImageBuffer_CreateFromFile(&image, nullptr, "C:/Users/cstiller/Pictures/avatar.png"));
+  mERROR_CHECK(mImageBuffer_AllocateBuffer(bgraImageBuffer, image->currentSize));
+  mERROR_CHECK(mPixelFormat_TransformBuffer(image, bgraImageBuffer));
+  mERROR_CHECK(ResizeWindow(image->currentSize));
+  mERROR_CHECK(mMemcpy(pPixels, (uint32_t *)bgraImageBuffer->pPixels, bgraImageBuffer->currentSize.x * bgraImageBuffer->currentSize.y));
+
+  SDL_UpdateWindowSurface(pWindow);
+
   mERROR_CHECK(mMediaFileInputHandler_SetVideoCallback(mediaFileHandler, OnVideoFramCallback));
   mERROR_CHECK(mMediaFileInputHandler_Play(mediaFileHandler));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(ResizeWindow, const mVec2s &newSize)
+{
+  mFUNCTION_SETUP();
+
+  SDL_SetWindowSize(pWindow, (int)newSize.x, (int)newSize.y);
+  pPixels = (uint32_t *)SDL_GetWindowSurface(pWindow)->pixels;
+  mERROR_IF(pPixels == nullptr, mR_ArgumentNull);
 
   mRETURN_SUCCESS();
 }
@@ -50,9 +71,7 @@ mFUNCTION(OnVideoFramCallback, mPtr<mImageBuffer> &buffer, const mVideoStreamTyp
 
   if (buffer->currentSize != bgraImageBuffer->currentSize)
   {
-    SDL_SetWindowSize(pWindow, (int)buffer->currentSize.x / subScale, (int)buffer->currentSize.y / subScale);
-    pPixels = (uint32_t *)SDL_GetWindowSurface(pWindow)->pixels;
-    mERROR_IF(pPixels == nullptr, mR_ArgumentNull);
+    ResizeWindow(buffer->currentSize / subScale);
     mERROR_CHECK(mImageBuffer_AllocateBuffer(bgraImageBuffer, buffer->currentSize, bgraImageBuffer->pixelFormat));
   }
 
