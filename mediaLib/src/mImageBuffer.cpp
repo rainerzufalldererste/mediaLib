@@ -302,11 +302,11 @@ mFUNCTION(mImageBuffer_SaveAsPng, mPtr<mImageBuffer> &imageBuffer, const std::st
 
   switch (imageBuffer->pixelFormat)
   {
-  case mPF_B8G8R8A8:
+  case mPF_R8G8B8A8:
     components = 4;
     break;
 
-  case mPF_B8G8R8:
+  case mPF_R8G8B8:
     components = 3;
     break;
 
@@ -332,11 +332,11 @@ mFUNCTION(mImageBuffer_SaveAsJpeg, mPtr<mImageBuffer> &imageBuffer, const std::s
 
   switch (imageBuffer->pixelFormat)
   {
-  case mPF_B8G8R8A8:
+  case mPF_R8G8B8A8:
     components = 4;
     break;
 
-  case mPF_B8G8R8:
+  case mPF_R8G8B8:
     components = 3;
     break;
 
@@ -362,11 +362,11 @@ mFUNCTION(mImageBuffer_SaveAsBmp, mPtr<mImageBuffer> &imageBuffer, const std::st
 
   switch (imageBuffer->pixelFormat)
   {
-  case mPF_B8G8R8A8:
+  case mPF_R8G8B8A8:
     components = 4;
     break;
 
-  case mPF_B8G8R8:
+  case mPF_R8G8B8:
     components = 3;
     break;
 
@@ -392,11 +392,11 @@ mFUNCTION(mImageBuffer_SaveAsTga, mPtr<mImageBuffer> &imageBuffer, const std::st
 
   switch (imageBuffer->pixelFormat)
   {
-  case mPF_B8G8R8A8:
+  case mPF_R8G8B8A8:
     components = 4;
     break;
 
-  case mPF_B8G8R8:
+  case mPF_R8G8B8:
     components = 3;
     break;
 

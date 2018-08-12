@@ -38,7 +38,9 @@ int main(int, char **)
   mERROR_CHECK(mImageBuffer_Create(&bgraImageBuffer, nullptr, resolution));
 
   mPtr<mImageBuffer> image;
+  mDEFER_DESTRUCTION(&image, mImageBuffer_Destroy);
   mERROR_CHECK(mImageBuffer_CreateFromFile(&image, nullptr, "C:/Users/cstiller/Pictures/avatar.png"));
+  mERROR_CHECK(mImageBuffer_SaveAsJpeg(image, "C:/Users/cstiller/Pictures/avatar.jpg"));
   mERROR_CHECK(mImageBuffer_AllocateBuffer(bgraImageBuffer, image->currentSize));
   mERROR_CHECK(mPixelFormat_TransformBuffer(image, bgraImageBuffer));
   mERROR_CHECK(ResizeWindow(image->currentSize));
