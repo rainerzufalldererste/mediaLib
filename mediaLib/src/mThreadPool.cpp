@@ -270,6 +270,8 @@ void mThreadPool_WorkerThread(mThreadPool *pThreadPool)
         mASSERT(mSUCCEEDED(mQueue_PopFront(pThreadPool->queue, &pTask)), "Error in " __FUNCTION__ ": Could not dequeue task.");
         mASSERT(mSUCCEEDED(mTask_Execute(pTask)), "Error in " __FUNCTION__ ": Failed to execute task.");
         mASSERT(mSUCCEEDED(mTask_Destroy(&pTask)), "Error in " __FUNCTION__ ": Failed to destroy task.");
+
+        continue;
       }
     }
 
