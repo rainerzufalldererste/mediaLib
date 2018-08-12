@@ -50,7 +50,7 @@ mFUNCTION(mAudioStreamType_Create, IN IMFMediaType *pMediaType, IN mMediaTypeLoo
 mFUNCTION(mVideoStreamType_Create, IN IMFMediaType *pMediaType, IN mMediaTypeLookup *pMediaTypeLookup, const size_t streamIndex, OUT mVideoStreamType *pVideoStreamType);
 
 template <typename T>
-static void _ReleaseReference(T **pData)
+static mINLINE void _ReleaseReference(T **pData)
 {
   if (pData && *pData)
   {
@@ -82,6 +82,7 @@ mFUNCTION(mMediaFileInputHandler_Create, OUT mPtr<mMediaFileInputHandler> *pPtr,
   pInputHandler = nullptr; // to not be destroyed on error.
 
   mERROR_CHECK(mMediaFileInputHandler_Create_Internal(pPtr->GetPointer(), pAllocator, fileName, (createFlags & mMediaFileInputHandler_CreateFlags::mMMFIH_CF_VideoEnabled) != 0, (createFlags & mMediaFileInputHandler_CreateFlags::mMMFIH_CF_AudioEnabled) != 0));
+
   mRETURN_SUCCESS();
 }
 
