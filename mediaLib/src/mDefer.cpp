@@ -8,22 +8,22 @@
 
 #include "mDefer.h"
 
-mDefer<void> mDefer_Create(const std::function<void()> &onExit, const mResult *pResult /* = nullptr */)
+mDefer<void>&& mDefer_Create(const std::function<void()> &onExit, const mResult *pResult /* = nullptr */)
 {
-  return mDefer<void>(onExit, pResult);
+  return std::forward<mDefer<void>>(mDefer<void>(onExit, pResult));
 }
 
-mDefer<void> mDefer_Create(std::function<void()> &&onExit, const mResult *pResult /* = nullptr */)
+mDefer<void>&& mDefer_Create(std::function<void()> &&onExit, const mResult *pResult /* = nullptr */)
 {
-  return mDefer<void>(std::forward<std::function<void ()>>(onExit), pResult);
+  return std::forward<mDefer<void>>(mDefer<void>(std::forward<std::function<void ()>>(onExit), pResult));
 }
 
-mDefer<void> mDefer_Create(mDefer<void>::OnExitFuncVoid *pOnExit, const mResult *pResult /* = nullptr */)
+mDefer<void>&& mDefer_Create(mDefer<void>::OnExitFuncVoid *pOnExit, const mResult *pResult /* = nullptr */)
 {
-  return mDefer<void>(pOnExit, pResult);
+  return std::forward<mDefer<void>>(mDefer<void>(pOnExit, pResult));
 }
 
-mDefer<void> mDefer_Create(mDefer<void>::OnExitFuncResultVoid *pOnExit, const mResult *pResult /* = nullptr */)
+mDefer<void>&& mDefer_Create(mDefer<void>::OnExitFuncResultVoid *pOnExit, const mResult *pResult /* = nullptr */)
 {
-  return mDefer<void>(pOnExit, pResult);
+  return std::forward<mDefer<void>>(mDefer<void>(pOnExit, pResult));
 }

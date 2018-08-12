@@ -34,6 +34,10 @@ public:
   mDefer(OnExitFuncResultT *pOnExit, T *pData, const mResult *pResult = nullptr);
   ~mDefer();
 
+  mDefer<T>& operator = (const mDefer<T> &copy) = delete;
+  mDefer<T>& operator = (mDefer<T> &&move);
+  
+
 private:
   enum mDeferType
   {
@@ -62,24 +66,24 @@ private:
   };
 };
 
-mDefer<void> mDefer_Create(const std::function<void()> &onExit, const mResult *pResult = nullptr);
-mDefer<void> mDefer_Create(std::function<void()> &&onExit, const mResult *pResult = nullptr);
+mDefer<void>&& mDefer_Create(const std::function<void()> &onExit, const mResult *pResult = nullptr);
+mDefer<void>&& mDefer_Create(std::function<void()> &&onExit, const mResult *pResult = nullptr);
 
 template <typename T>
-mDefer<T> mDefer_Create(const std::function<void(T *)> &onExit, T *pData, const mResult *pResult = nullptr);
+mDefer<T>&& mDefer_Create(const std::function<void(T *)> &onExit, T *pData, const mResult *pResult = nullptr);
 
 template <typename T>
-mDefer<T> mDefer_Create(std::function<void(T *)> &&onExit, T *pData, const mResult *pResult = nullptr);
+mDefer<T>&& mDefer_Create(std::function<void(T *)> &&onExit, T *pData, const mResult *pResult = nullptr);
 
-mDefer<void> mDefer_Create(mDefer<void>::OnExitFuncVoid *pOnExit, const mResult *pResult = nullptr);
-
-template <typename T>
-mDefer<T> mDefer_Create(typename mDefer<T>::OnExitFuncT *pOnExit, T *pData, const mResult *pResult = nullptr);
-
-mDefer<void> mDefer_Create(mDefer<void>::OnExitFuncResultVoid *pOnExit, const mResult *pResult = nullptr);
+mDefer<void>&& mDefer_Create(mDefer<void>::OnExitFuncVoid *pOnExit, const mResult *pResult = nullptr);
 
 template <typename T>
-mDefer<T> mDefer_Create(typename mDefer<T>::OnExitFuncResultT *pOnExit, T *pData, const mResult *pResult = nullptr);
+mDefer<T>&& mDefer_Create(typename mDefer<T>::OnExitFuncT *pOnExit, T *pData, const mResult *pResult = nullptr);
+
+mDefer<void>&& mDefer_Create(mDefer<void>::OnExitFuncResultVoid *pOnExit, const mResult *pResult = nullptr);
+
+template <typename T>
+mDefer<T>&& mDefer_Create(typename mDefer<T>::OnExitFuncResultT *pOnExit, T *pData, const mResult *pResult = nullptr);
 
 template<typename T>
 inline mDefer<T>::mDefer()
@@ -207,44 +211,65 @@ inline mDefer<T>::~mDefer()
 }
 
 template<typename T>
-inline mDefer<T> mDefer_Create(const std::function<void(T*)> &onExit, T *pData, const mResult *pResult /* = nullptr */)
+inline mDefer<T>& mDefer<T>::operator = (mDefer<T> &&move)
 {
-  return mDefer<T>(onExit, pData, pResult);
+  m_deferType = move.m_deferType;
+  m_pData = move.m_pData;
+  m_pResult = move.m_pResult;
+
+  m_onExitLV = move.m_onExitLV;
+  m_onExitLP = move.m_pOnExitFP;
+  
+  // assign union:
+  m_pOnExitFP = move.m_pOnExitFP;
+
+  move.m_deferType = mDT_None;
+  move.m_pResult = nullptr;
+  move.m_pData = nullptr;
+  move.m_onExitLP = nullptr;
+  move.m_onExitLV = nullptr;
+  move.m_pOnExitFP = nullptr;
 }
 
 template<typename T>
-inline mDefer<T> mDefer_Create(std::function<void(T*)> &&onExit, T *pData, const mResult *pResult /* = nullptr */)
+inline mDefer<T>&& mDefer_Create(const std::function<void(T*)> &onExit, T *pData, const mResult *pResult /* = nullptr */)
 {
-  return mDefer<T>(std::forward<std::function<void(T*)>>(onExit), pData, pResult);
+  return std::forward<mDefer<T>>(mDefer<T>(onExit, pData, pResult));
 }
 
 template<typename T>
-inline mDefer<T> mDefer_Create(typename mDefer<T>::OnExitFuncT *pOnExit, T *pData, const mResult *pResult /* = nullptr */)
+inline mDefer<T>&& mDefer_Create(std::function<void(T*)> &&onExit, T *pData, const mResult *pResult /* = nullptr */)
 {
-  return mDefer<T>(pOnExit, pData, pResult);
+  return std::forward<mDefer<T>>(mDefer<T>(std::forward<std::function<void(T*)>>(onExit), pData, pResult));
 }
 
 template<typename T>
-inline mDefer<T> mDefer_Create(typename mDefer<T>::OnExitFuncResultT *pOnExit, T *pData, const mResult *pResult /* = nullptr */)
+inline mDefer<T>&& mDefer_Create(typename mDefer<T>::OnExitFuncT *pOnExit, T *pData, const mResult *pResult /* = nullptr */)
 {
-  return mDefer<T>(pOnExit, pData, pResult);
+  return std::forward<mDefer<T>>(mDefer<T>(pOnExit, pData, pResult));
+}
+
+template<typename T>
+inline mDefer<T>&& mDefer_Create(typename mDefer<T>::OnExitFuncResultT *pOnExit, T *pData, const mResult *pResult /* = nullptr */)
+{
+  return std::forward<mDefer<T>>(mDefer<T>(pOnExit, pData, pResult));
 }
 
 #define mCOMBINE_LITERALS(x, y) x ## y
 #define mCOMBINE_LITERALS_INDIRECTION(x, y) mCOMBINE_LITERALS(x, y)
 
 #ifdef __COUNTER__
-#define mDEFER(...) const auto mCOMBINE_LITERALS_INDIRECTION(__defer__, __COUNTER__) = mDefer_Create([&](){ __VA_ARGS__; })
-#define mDEFER_IF(conditional, ...) const auto mCOMBINE_LITERALS_INDIRECTION(__defer__, __COUNTER__) = mDefer_Create([&](){ if (conditional) { __VA_ARGS__; } })
-#define mDEFER_ON_ERROR(...) const auto mCOMBINE_LITERALS_INDIRECTION(__defer__, __COUNTER__) = mDefer_Create([&](){ { __VA_ARGS__; } }, &(mSTDRESULT))
-#define mDEFER_DESTRUCTION(Ressource, DestructionFunction) const auto mCOMBINE_LITERALS_INDIRECTION(__defer__, __COUNTER__) = mDefer_Create((DestructionFunction), (Ressource))
-#define mDEFER_DESTRUCTION_ON_ERROR(Ressource, DestructionFunction) const auto mCOMBINE_LITERALS_INDIRECTION(__defer__, __COUNTER__) = mDefer_Create((DestructionFunction), (Ressource), &(mSTDRESULT))
+#define mDEFER(...) const auto mCOMBINE_LITERALS_INDIRECTION(__defer__, __COUNTER__) = std::move(mDefer_Create([&](){ __VA_ARGS__; }))
+#define mDEFER_IF(conditional, ...) const auto mCOMBINE_LITERALS_INDIRECTION(__defer__, __COUNTER__) = std::move(mDefer_Create([&](){ if (conditional) { __VA_ARGS__; } }))
+#define mDEFER_ON_ERROR(...) const auto mCOMBINE_LITERALS_INDIRECTION(__defer__, __COUNTER__) = std::move(mDefer_Create([&](){ { __VA_ARGS__; } }, &(mSTDRESULT)))
+#define mDEFER_DESTRUCTION(Ressource, DestructionFunction) const auto mCOMBINE_LITERALS_INDIRECTION(__defer__, __COUNTER__) = std::move(mDefer_Create((DestructionFunction), (Ressource)))
+#define mDEFER_DESTRUCTION_ON_ERROR(Ressource, DestructionFunction) const auto mCOMBINE_LITERALS_INDIRECTION(__defer__, __COUNTER__) = std::move(mDefer_Create((DestructionFunction), (Ressource), &(mSTDRESULT)))
 #else
-#define mDEFER(...) const auto mCOMBINE_LITERALS_INDIRECTION(__defer__, __LINE__) = mDefer_Create([&](){ __VA_ARGS__; })
-#define mDEFER_IF(conditional, ...) const auto mCOMBINE_LITERALS_INDIRECTION(__defer__, __LINE__) = mDefer_Create([&](){ if (conditional) { __VA_ARGS__; } })
-#define mDEFER_ON_ERROR(...) const auto mCOMBINE_LITERALS_INDIRECTION(__defer__, __LINE__) = mDefer_Create([&](){ { __VA_ARGS__; } }, &(mSTDRESULT))
-#define mDEFER_DESTRUCTION(Ressource, DestructionFunction) const auto mCOMBINE_LITERALS_INDIRECTION(__defer__, __LINE__) = mDefer_Create(&(DestructionFunction), &(Ressource))
-#define mDEFER_DESTRUCTION_ON_ERROR(Ressource, DestructionFunction) const auto mCOMBINE_LITERALS_INDIRECTION(__defer__, __LINE__) = mDefer_Create(&(DestructionFunction), &(Ressource), &(mSTDRESULT))
+#define mDEFER(...) const auto mCOMBINE_LITERALS_INDIRECTION(__defer__, __LINE__) = std::move(mDefer_Create([&](){ __VA_ARGS__; }))
+#define mDEFER_IF(conditional, ...) const auto mCOMBINE_LITERALS_INDIRECTION(__defer__, __LINE__) = std::move(mDefer_Create([&](){ if (conditional) { __VA_ARGS__; } }))
+#define mDEFER_ON_ERROR(...) const auto mCOMBINE_LITERALS_INDIRECTION(__defer__, __LINE__) = std::move(mDefer_Create([&](){ { __VA_ARGS__; } }, &(mSTDRESULT)))
+#define mDEFER_DESTRUCTION(Ressource, DestructionFunction) const auto mCOMBINE_LITERALS_INDIRECTION(__defer__, __LINE__) = std::move(mDefer_Create((DestructionFunction), (Ressource)))
+#define mDEFER_DESTRUCTION_ON_ERROR(Ressource, DestructionFunction) const auto mCOMBINE_LITERALS_INDIRECTION(__defer__, __LINE__) = std::move(mDefer_Create((DestructionFunction), (Ressource), &(mSTDRESULT)))
 #endif
 
 #endif // mDefer_h__
