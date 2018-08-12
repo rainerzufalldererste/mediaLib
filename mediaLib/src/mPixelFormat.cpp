@@ -984,7 +984,7 @@ namespace mPixelFormat_Transform
       }
 #endif
 
-      if (x < size.x)
+      for (; x < size.x; x++)
       {
         const uint32_t color = pSource[x + ySourceOffset];
         pTarget[x + yTargetOffset] = (color & 0xFF00FF00) | ((color & 0x00FF0000) >> 0x10) | ((color & 0x000000FF) << 0x10);
