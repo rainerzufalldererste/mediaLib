@@ -7,7 +7,7 @@
 mVec2s resolution;
 SDL_Window *pWindow = nullptr;
 uint32_t *pPixels = nullptr;
-const size_t subScale = 1;
+const size_t subScale = 5;
 mPtr<mImageBuffer> bgraImageBuffer = nullptr;
 mPtr<mThreadPool> threadPool = nullptr;
 
@@ -23,7 +23,7 @@ int main(int, char **)
 
   mPtr<mMediaFileInputHandler> mediaFileHandler;
   mDEFER_DESTRUCTION(&mediaFileHandler, mMediaFileInputHandler_Destroy);
-  mERROR_CHECK(mMediaFileInputHandler_Create(&mediaFileHandler, nullptr, L"N:/Data/video/PublicHologram.mp4", mMediaFileInputHandler_CreateFlags::mMMFIH_CF_VideoEnabled));
+  mERROR_CHECK(mMediaFileInputHandler_Create(&mediaFileHandler, nullptr, L"C:/Users/cstiller/Videos/Converted.mp4", mMediaFileInputHandler_CreateFlags::mMMFIH_CF_VideoEnabled));
 
   mERROR_CHECK(mMediaFileInputHandler_GetVideoStreamResolution(mediaFileHandler, &resolution));
 
