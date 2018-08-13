@@ -101,7 +101,12 @@ mFUNCTION(mMediaFileWriter_AppendVideoFrame, mPtr<mMediaFileWriter> &mediaFileWr
   const size_t sourceStride = imageBuffer->lineStride;
 
   for (size_t y = 0; y < imageBuffer->currentSize.y; y++)
+  {
+    if (mediaFileWriter->mediaFileInformation.videoFormat == mMediaFileVideoFormat::mMFVF_H264 || mediaFileWriter->mediaFileInformation.videoFormat == mMediaFileVideoFormat::mMFVF_H264_ES || mediaFileWriter->mediaFileInformation.videoFormat == mMediaFileVideoFormat::mMFVF_H263 || mediaFileWriter->mediaFileInformation.videoFormat == mMediaFileVideoFormat::mMFVF_HEVC || mediaFileWriter->mediaFileInformation.videoFormat == mMediaFileVideoFormat::mMFVF_HEVC_ES) // Just h.264 is tested to be upside down.
     mERROR_CHECK(mAllocator_Move(imageBuffer->pAllocator, &((uint32_t *)pData)[y * targetStride], &((uint32_t *)imageBuffer->pPixels)[(imageBuffer->currentSize.y - y - 1) * sourceStride], imageBuffer->currentSize.x));
+    else
+      mERROR_CHECK(mAllocator_Move(imageBuffer->pAllocator, &((uint32_t *)pData)[y * targetStride], &((uint32_t *)imageBuffer->pPixels)[y * sourceStride], imageBuffer->currentSize.x));
+  }
 
   mERROR_IF(FAILED(hr = pBuffer->Unlock()), mR_InternalError);
   mERROR_IF(FAILED(hr = pBuffer->SetCurrentLength((DWORD)bufferPixels)), mR_InternalError);
@@ -159,8 +164,57 @@ mFUNCTION(mMediaFileWriter_Create_Internal, OUT mMediaFileWriter *pMediaFileWrit
   mDEFER_DESTRUCTION(&pVideoOutputMediaType, _ReleaseReference);
   mERROR_IF(FAILED(hr = MFCreateMediaType(&pVideoOutputMediaType)), mR_InternalError);
 
+  GUID subtype = MFVideoFormat_H264;
+
+  switch (pMediaFileInformation->videoFormat)
+  {
+  case mMFVF_H264:
+    subtype = MFVideoFormat_H264;
+    break;
+
+  case mMFVF_H264_ES:
+    subtype = MFVideoFormat_H264_ES;
+    break;
+
+  case mMFVF_H263:
+    subtype = MFVideoFormat_H263;
+    break;
+
+  case mMFVF_WMV1:
+    subtype = MFVideoFormat_WMV1;
+    break;
+
+  case mMFVF_WMV2:
+    subtype = MFVideoFormat_WMV2;
+    break;
+
+  case mMFVF_WMV3:
+    subtype = MFVideoFormat_WMV3;
+    break;
+
+  case mMFVF_RGB32:
+    subtype = MFVideoFormat_RGB32;
+    break;
+
+  case mMFVF_RGB24:
+    subtype = MFVideoFormat_RGB24;
+    break;
+
+  case mMFVF_YUV420:
+    subtype = MFVideoFormat_I420;
+    break;
+
+  case mMFVF_HEVC:
+    subtype = MFVideoFormat_HEVC;
+    break;
+
+  case mMFVF_HEVC_ES:
+    subtype = MFVideoFormat_HEVC_ES;
+    break;
+  }
+
   mERROR_IF(FAILED(hr = pVideoOutputMediaType->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Video)), mR_InternalError);
-  mERROR_IF(FAILED(hr = pVideoOutputMediaType->SetGUID(MF_MT_SUBTYPE, MFVideoFormat_H264)), mR_InternalError);
+  mERROR_IF(FAILED(hr = pVideoOutputMediaType->SetGUID(MF_MT_SUBTYPE, subtype)), mR_InternalError);
   mERROR_IF(FAILED(hr = pVideoOutputMediaType->SetUINT32(MF_MT_AVG_BITRATE, (uint32_t)pMediaFileInformation->averageBitrate)), mR_InternalError);
   mERROR_IF(FAILED(hr = pVideoOutputMediaType->SetUINT32(MF_MT_INTERLACE_MODE, MFVideoInterlace_Progressive)), mR_InvalidParameter);
   mERROR_IF(FAILED(hr = MFSetAttributeSize(pVideoOutputMediaType, MF_MT_FRAME_SIZE, (uint32_t)pMediaFileInformation->frameSize.x, (uint32_t)pMediaFileInformation->frameSize.y)), mR_InternalError);
