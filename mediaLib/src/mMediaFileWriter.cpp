@@ -79,36 +79,47 @@ mFUNCTION(mMediaFileWriter_AppendVideoFrame, mPtr<mMediaFileWriter> &mediaFileWr
   mERROR_IF(mediaFileWriter == nullptr || imageBuffer == nullptr, mR_ArgumentNull);
   mERROR_IF(imageBuffer->currentSize.x != mediaFileWriter->mediaFileInformation.frameSize.x || imageBuffer->currentSize.y != mediaFileWriter->mediaFileInformation.frameSize.y || imageBuffer->pixelFormat != mPF_B8G8R8A8, mR_InvalidParameter);
 
+  HRESULT hr = S_OK;
+  mUnused(hr);
+
   size_t bufferPixels;
   mERROR_CHECK(mPixelFormat_GetSize(imageBuffer->pixelFormat, imageBuffer->currentSize, &bufferPixels));
 
   IMFMediaBuffer *pBuffer = nullptr;
   mDEFER_DESTRUCTION(&pBuffer, _ReleaseReference);
-  mERROR_IF(FAILED(MFCreateMemoryBuffer((DWORD)bufferPixels, &pBuffer)), mR_InternalError);
+  mERROR_IF(FAILED(hr = MFCreateMemoryBuffer((DWORD)bufferPixels, &pBuffer)), mR_InternalError);
 
   BYTE *pData;
-  mERROR_IF(FAILED(pBuffer->Lock(&pData, nullptr, nullptr)), mR_InternalError);
+  mERROR_IF(FAILED(hr = pBuffer->Lock(&pData, nullptr, nullptr)), mR_InternalError);
 
   size_t pixelFormatUnitSize;
   mERROR_CHECK(mPixelFormat_GetUnitSize(imageBuffer->pixelFormat, &pixelFormatUnitSize));
 
-  mERROR_IF(FAILED(MFCopyImage(pData, (DWORD)(imageBuffer->currentSize.x * pixelFormatUnitSize), imageBuffer->pPixels, (DWORD)(imageBuffer->lineStride * pixelFormatUnitSize), (DWORD)(imageBuffer->currentSize.x * pixelFormatUnitSize), (DWORD)imageBuffer->currentSize.y)), mR_InternalError);
-  mERROR_IF(FAILED(pBuffer->Unlock()), mR_InternalError);
+  mERROR_IF(FAILED(hr = MFCopyImage(pData, (DWORD)(imageBuffer->currentSize.x * pixelFormatUnitSize), imageBuffer->pPixels, (DWORD)(imageBuffer->lineStride * pixelFormatUnitSize), (DWORD)(imageBuffer->currentSize.x * pixelFormatUnitSize), (DWORD)imageBuffer->currentSize.y)), mR_InternalError);
+
+  const size_t targetStride = imageBuffer->currentSize.x;
+  const size_t sourceStride = imageBuffer->lineStride;
+
+  for (size_t y = 0; y < imageBuffer->currentSize.y; y++)
+    mERROR_CHECK(mAllocator_Move(imageBuffer->pAllocator, &((uint32_t *)pData)[y * targetStride], &((uint32_t *)imageBuffer->pPixels)[(imageBuffer->currentSize.y - y - 1) * sourceStride], imageBuffer->currentSize.x));
+
+  mERROR_IF(FAILED(hr = pBuffer->Unlock()), mR_InternalError);
+  mERROR_IF(FAILED(hr = pBuffer->SetCurrentLength((DWORD)bufferPixels)), mR_InternalError);
 
   IMFSample *pSample = nullptr;
   mDEFER_DESTRUCTION(&pSample, _ReleaseReference);
-  mERROR_IF(FAILED(MFCreateSample(&pSample)), mR_InternalError);
-  mERROR_IF(FAILED(pSample->AddBuffer(pBuffer)), mR_InternalError);
-  mERROR_IF(FAILED(pSample->SetSampleTime(mediaFileWriter->lastFrameTimestamp)), mR_InternalError);
+  mERROR_IF(FAILED(hr = MFCreateSample(&pSample)), mR_InternalError);
+  mERROR_IF(FAILED(hr = pSample->AddBuffer(pBuffer)), mR_InternalError);
+  mERROR_IF(FAILED(hr = pSample->SetSampleTime(mediaFileWriter->lastFrameTimestamp)), mR_InternalError);
 
-  const size_t duration = (10 * 1000 * 1000 * mediaFileWriter->mediaFileInformation.frameRateFraction.x) / mediaFileWriter->mediaFileInformation.frameRateFraction.y;
+  const size_t duration = (10 * 1000 * mediaFileWriter->mediaFileInformation.frameRateFraction.x) / mediaFileWriter->mediaFileInformation.frameRateFraction.y;
   mediaFileWriter->lastFrameTimestamp += duration;
   mERROR_IF(mediaFileWriter->lastFrameTimestamp > LONGLONG_MAX, mR_IndexOutOfBounds);
 
   mERROR_IF(duration > LONGLONG_MAX, mR_IndexOutOfBounds);
-  mERROR_IF(FAILED(pSample->SetSampleDuration((LONGLONG)duration)), mR_InternalError);
+  mERROR_IF(FAILED(hr = pSample->SetSampleDuration((LONGLONG)duration)), mR_InternalError);
 
-  mERROR_IF(FAILED(mediaFileWriter->pSinkWriter->WriteSample(mediaFileWriter->videoStreamIndex, pSample)), mR_InternalError);
+  mERROR_IF(FAILED(hr = mediaFileWriter->pSinkWriter->WriteSample(mediaFileWriter->videoStreamIndex, pSample)), mR_InternalError);
 
   mRETURN_SUCCESS();
 }
@@ -139,7 +150,7 @@ mFUNCTION(mMediaFileWriter_Create_Internal, OUT mMediaFileWriter *pMediaFileWrit
   pMediaFileWriter->lastFrameTimestamp = 0;
   mUnused(pAllocator);
 
-  HRESULT hr;
+  HRESULT hr = S_OK;
   mUnused(hr);
 
   mERROR_IF(FAILED(hr = MFCreateSinkWriterFromURL(filename.c_str(), nullptr, nullptr, &pMediaFileWriter->pSinkWriter)), mR_InternalError);
