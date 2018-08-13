@@ -4,8 +4,14 @@
 #include "mThreadPool.h"
 #include "SDL.h"
 #include <time.h>
+
 #include "GL/glew.h"
 #include "GL/wglew.h"
+
+#pragma warning(push)
+#pragma warning(disable: 4505)
+#include "GL/freeglut.h"
+#pragma warning(pop)
 
 mVec2s resolution;
 SDL_Window *pWindow = nullptr;
@@ -30,7 +36,11 @@ int main(int, char **)
   mDEFER_DESTRUCTION(&mediaFileHandler, mMediaFileInputHandler_Destroy);
   mERROR_CHECK(mMediaFileInputHandler_Create(&mediaFileHandler, nullptr, L"C:/Users/cstiller/Videos/Converted.mp4", mMediaFileInputHandler_CreateFlags::mMMFIH_CF_VideoEnabled));
 
+  GLenum glError = GL_NO_ERROR;
+  mUnused(glError);
+
   SDL_Init(SDL_INIT_EVERYTHING);
+  mERROR_IF(glewInit() != GL_TRUE, mR_InternalError);
 
   SDL_DisplayMode displayMode;
   SDL_GetCurrentDisplayMode(0, &displayMode);
@@ -90,10 +100,8 @@ mFUNCTION(RenderFrame)
 {
   mFUNCTION_SETUP();
 
-  glClearColor(frame / 255.0f, 0.0f, 0.0f, 1.0f);
-  glClear(GL_DEPTH_BUFFER_BIT);
-
-
+  glClearColor((frame & 0xFF) / 255.0f, 0.0f, 0.0f, 1.0f);
+  glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
   SDL_UpdateWindowSurface(pWindow);
 
