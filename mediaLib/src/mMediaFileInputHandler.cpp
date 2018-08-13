@@ -34,6 +34,16 @@ struct mMediaFileInputHandler
 
   size_t audioStreamCount;
   mAudioStreamType *pAudioStreams;
+
+  bool iteratorCreated;
+};
+
+struct mMediaFileInputIterator
+{
+  mPtr<mMediaFileInputHandler> mediaFileInputHandler;
+  mMediaMajorType mediaType;
+  size_t wmf_streamIndex;
+  bool hasFinished;
 };
 
 mFUNCTION(mMediaFileInputHandler_Create_Internal, IN mMediaFileInputHandler *pData, IN mAllocator *pAllocator, const std::wstring &fileName, const bool enableVideoProcessing, const bool enableAudioProcessing);
@@ -47,6 +57,11 @@ mFUNCTION(mMediaFileInputHandler_AddAudioStream_Internal, IN mMediaFileInputHand
 
 mFUNCTION(mAudioStreamType_Create, IN IMFMediaType *pMediaType, IN mMediaTypeLookup *pMediaTypeLookup, const size_t streamIndex, OUT mAudioStreamType *pAudioStreamType);
 mFUNCTION(mVideoStreamType_Create, IN IMFMediaType *pMediaType, IN mMediaTypeLookup *pMediaTypeLookup, const size_t streamIndex, OUT mVideoStreamType *pVideoStreamType);
+
+mFUNCTION(mMediaFileInputIterator_Create, OUT mPtr<mMediaFileInputIterator> *pIterator, mPtr<mMediaFileInputHandler> &mediaFileInputHandlerRef, const size_t wmf_streamIndex, const mMediaMajorType mediaType);
+mFUNCTION(mMediaFileInputIterator_Create_Internal, mMediaFileInputIterator *pIterator, mPtr<mMediaFileInputHandler> &mediaFileInputHandlerRef, const size_t wmf_streamIndex, const mMediaMajorType mediaType);
+mFUNCTION(mMediaFileInputIterator_Destroy_Internal, mMediaFileInputIterator *pIterator);
+mFUNCTION(mMediaFileInputIterator_IterateToStreamIndex, mPtr<mMediaFileInputIterator> &iterator, OUT IMFSample **ppSample, OUT LONGLONG *pTimeStamp);
 
 template <typename T>
 static mINLINE void _ReleaseReference(T **pData)
@@ -100,6 +115,10 @@ mFUNCTION(mMediaFileInputHandler_Play, mPtr<mMediaFileInputHandler> &ptr)
   mFUNCTION_SETUP();
 
   mERROR_IF(ptr == nullptr, mR_ArgumentNull);
+  mERROR_IF(ptr->iteratorCreated, mR_ResourceStateInvalid);
+
+  ptr->iteratorCreated = true;
+
   mERROR_CHECK(mMediaFileInputHandler_RunSession_Internal(ptr.GetPointer()));
 
   mRETURN_SUCCESS();
@@ -135,6 +154,187 @@ mFUNCTION(mMediaFileInputHandler_SetAudioCallback, mPtr<mMediaFileInputHandler> 
 
   mERROR_IF(ptr == nullptr, mR_ArgumentNull);
   ptr->pProcessAudioDataCallback = pCallback;
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mMediaFileInputHandler_GetIterator, mPtr<mMediaFileInputHandler> &ptr, OUT mPtr<mMediaFileInputIterator> *pIterator, const mMediaMajorType mediaType, const size_t streamIndex)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(ptr == nullptr, mR_ArgumentNull);
+  mERROR_IF(ptr->iteratorCreated, mR_ResourceStateInvalid);
+
+  ptr->iteratorCreated = true;
+
+  size_t wmf_streamIndex = (size_t)-1;
+
+  switch (mediaType)
+  {
+  case mMMT_Video:
+    mERROR_IF(ptr->videoStreamCount >= streamIndex, mR_IndexOutOfBounds);
+    wmf_streamIndex = ptr->pVideoStreams[streamIndex].wmf_streamIndex;
+    break;
+
+  case mMMT_Audio:
+    mERROR_IF(ptr->audioStreamCount >= streamIndex, mR_IndexOutOfBounds);
+    wmf_streamIndex = ptr->pAudioStreams[streamIndex].wmf_streamIndex;
+    break;
+
+  default:
+    mRETURN_RESULT(mR_ResourceIncompatible);
+    break;
+  }
+
+  mERROR_IF(wmf_streamIndex == (size_t)-1, mR_ResourceNotFound);
+
+  mPtr<mMediaFileInputIterator> iterator;
+
+  mERROR_CHECK(mMediaFileInputIterator_Create(&iterator, ptr, wmf_streamIndex, mediaType));
+
+  *pIterator = iterator;
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mMediaFileInputIterator_Destroy, IN_OUT mPtr<mMediaFileInputIterator> *pIterator)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pIterator == nullptr, mR_ArgumentNull);
+
+  mERROR_CHECK(mSharedPointer_Destroy(pIterator));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mMediaFileInputIterator_GetNextVideoFrame, mPtr<mMediaFileInputIterator> &iterator, OUT mPtr<mImageBuffer> *pImageBuffer, OUT OPTIONAL mVideoStreamType *pVideoStreamType)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(iterator == nullptr || pImageBuffer == nullptr, mR_ArgumentNull);
+  mERROR_IF(iterator->mediaType != mMediaMajorType::mMMT_Video, mR_ResourceIncompatible);
+  mERROR_IF(iterator->hasFinished, mR_EndOfStream);
+
+  IMFSample *pSample = nullptr;
+  mDEFER_DESTRUCTION(&pSample, _ReleaseReference);
+
+  LONGLONG timestamp;
+
+  mERROR_CHECK(mMediaFileInputIterator_IterateToStreamIndex(iterator, &pSample, &timestamp));
+
+  {
+    HRESULT hr = S_OK;
+    mUnused(hr);
+
+    IMFMediaBuffer *pMediaBuffer = nullptr;
+    mDEFER_DESTRUCTION(&pMediaBuffer, _ReleaseReference);
+    mERROR_IF(FAILED(hr = pSample->ConvertToContiguousBuffer(&pMediaBuffer)), mR_InternalError);
+
+    mERROR_IF(iterator->wmf_streamIndex >= iterator->mediaFileInputHandler->streamCount, mR_IndexOutOfBounds);
+    mMediaTypeLookup mediaTypeLookup = iterator->mediaFileInputHandler->pStreamTypeLookup[iterator->wmf_streamIndex];
+
+    if (mediaTypeLookup.mediaType == mMMT_Undefined)
+      mRETURN_RESULT(mR_ResourceIncompatible);
+
+    uint8_t *pSampleData;
+    DWORD sampleDataCurrentLength;
+    DWORD sampleDataMaxLength;
+
+    mERROR_IF(FAILED(hr = pMediaBuffer->Lock(&pSampleData, &sampleDataCurrentLength, &sampleDataMaxLength)), mR_InternalError);
+    mDEFER(pMediaBuffer->Unlock());
+
+    switch (mediaTypeLookup.mediaType)
+    {
+    case mMMT_Video:
+    {
+      if (iterator->mediaFileInputHandler->pProcessVideoDataCallback)
+      {
+        mERROR_IF(iterator->mediaFileInputHandler->videoStreamCount < mediaTypeLookup.streamIndex, mR_IndexOutOfBounds);
+        mVideoStreamType videoStreamType = iterator->mediaFileInputHandler->pVideoStreams[mediaTypeLookup.streamIndex];
+
+        mPtr<mImageBuffer> imageBuffer;
+        mDEFER_DESTRUCTION(&imageBuffer, mImageBuffer_Destroy);
+        mERROR_CHECK(mImageBuffer_Create(&imageBuffer, &mDefaultAllocator, pSampleData, videoStreamType.resolution, videoStreamType.pixelFormat));
+        
+        *pImageBuffer = imageBuffer;
+
+        if (pVideoStreamType != nullptr)
+          *pVideoStreamType = videoStreamType;
+      }
+
+      break;
+    }
+
+    default:
+      mERROR_IF(true, mR_InternalError);
+      break;
+    }}
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mMediaFIleInputIterator_GetNextAudioFrame, mPtr<mMediaFileInputIterator> &iterator, OUT mPtr<uint8_t> *pData, OUT OPTIONAL mAudioStreamType *pAudioStreamType)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(iterator == nullptr || pData == nullptr, mR_ArgumentNull);
+  mERROR_IF(iterator->mediaType != mMediaMajorType::mMMT_Audio, mR_ResourceIncompatible);
+  mERROR_IF(iterator->hasFinished, mR_EndOfStream);
+
+  IMFSample *pSample = nullptr;
+  mDEFER_DESTRUCTION(&pSample, _ReleaseReference);
+
+  LONGLONG timestamp;
+
+  mERROR_CHECK(mMediaFileInputIterator_IterateToStreamIndex(iterator, &pSample, &timestamp));
+
+  {
+    HRESULT hr = S_OK;
+    mUnused(hr);
+
+    IMFMediaBuffer *pMediaBuffer = nullptr;
+    mDEFER_DESTRUCTION(&pMediaBuffer, _ReleaseReference);
+    mERROR_IF(FAILED(hr = pSample->ConvertToContiguousBuffer(&pMediaBuffer)), mR_InternalError);
+
+    mERROR_IF(iterator->wmf_streamIndex >= iterator->mediaFileInputHandler->streamCount, mR_IndexOutOfBounds);
+    mMediaTypeLookup mediaTypeLookup = iterator->mediaFileInputHandler->pStreamTypeLookup[iterator->wmf_streamIndex];
+
+    if (mediaTypeLookup.mediaType == mMMT_Undefined)
+      mRETURN_RESULT(mR_ResourceIncompatible);
+
+    uint8_t *pSampleData;
+    DWORD sampleDataCurrentLength;
+    DWORD sampleDataMaxLength;
+
+    mERROR_IF(FAILED(hr = pMediaBuffer->Lock(&pSampleData, &sampleDataCurrentLength, &sampleDataMaxLength)), mR_InternalError);
+    mDEFER(pMediaBuffer->Unlock());
+
+    switch (mediaTypeLookup.mediaType)
+    {
+    case mMMT_Audio:
+    {
+      mERROR_IF(iterator->mediaFileInputHandler->audioStreamCount < mediaTypeLookup.streamIndex, mR_IndexOutOfBounds);
+      mAudioStreamType audioStreamType = iterator->mediaFileInputHandler->pAudioStreams[mediaTypeLookup.streamIndex];
+      audioStreamType.bufferSize = sampleDataCurrentLength;
+
+      mPtr<uint8_t> buffer;
+      mDEFER_DESTRUCTION(&buffer, mSharedPointer_Destroy);
+      mERROR_CHECK(mSharedPointer_Allocate(&buffer, iterator->mediaFileInputHandler->pAllocator, sampleDataCurrentLength));
+      mERROR_CHECK(mMemcpy(buffer.GetPointer(), pSampleData, sampleDataCurrentLength));
+
+      *pData = buffer;
+
+      if (pAudioStreamType != nullptr)
+        *pAudioStreamType = audioStreamType;
+
+      break;
+    }
+
+    default:
+      mERROR_IF(true, mR_InternalError);
+      break;
+    }}
 
   mRETURN_SUCCESS();
 }
@@ -199,6 +399,7 @@ mFUNCTION(mMediaFileInputHandler_Create_Internal, IN mMediaFileInputHandler *pIn
   mERROR_IF(pInputHandler == nullptr, mR_ArgumentNull);
 
   pInputHandler->pAllocator = pAllocator;
+  pInputHandler->iteratorCreated = false;
 
   HRESULT hr = S_OK;
   mUnused(hr);
@@ -597,6 +798,154 @@ mFUNCTION(mVideoStreamType_Create, IN IMFMediaType *pMediaType, IN mMediaTypeLoo
   pVideoStreamType->resolution.x = resolutionX;
   pVideoStreamType->resolution.y = resolutionY;
   pVideoStreamType->stride = stride;
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mMediaFileInputIterator_Create, OUT mPtr<mMediaFileInputIterator> *pIterator, mPtr<mMediaFileInputHandler> &mediaFileInputHandlerRef, const size_t wmf_streamIndex, const mMediaMajorType mediaType)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pIterator == nullptr || mediaFileInputHandlerRef == nullptr, mR_ArgumentNull);
+
+  if (*pIterator != nullptr)
+  {
+    mERROR_CHECK(mSharedPointer_Destroy(pIterator));
+    *pIterator = nullptr;
+  }
+
+  mMediaFileInputIterator *pIteratorRaw = nullptr;
+  mDEFER_ON_ERROR(mAllocator_FreePtr(mediaFileInputHandlerRef->pAllocator, &pIteratorRaw));
+  mERROR_CHECK(mAllocator_AllocateZero(mediaFileInputHandlerRef->pAllocator, &pIteratorRaw, 1));
+
+  mDEFER_DESTRUCTION_ON_ERROR(pIterator, mSharedPointer_Destroy);
+  mERROR_CHECK(mSharedPointer_Create<mMediaFileInputIterator>(pIterator, pIteratorRaw, [](mMediaFileInputIterator *pData) { mMediaFileInputIterator_Destroy_Internal(pData); }, mediaFileInputHandlerRef->pAllocator));
+  pIteratorRaw = nullptr; // to not be destroyed on error.
+
+  mERROR_CHECK(mMediaFileInputIterator_Create_Internal(pIterator->GetPointer(), mediaFileInputHandlerRef, wmf_streamIndex, mediaType));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mMediaFileInputIterator_Create_Internal, mMediaFileInputIterator *pIterator, mPtr<mMediaFileInputHandler> &mediaFileInputHandlerRef, const size_t wmf_streamIndex, const mMediaMajorType mediaType)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pIterator == nullptr || mediaFileInputHandlerRef == nullptr, mR_ArgumentNull);
+
+  pIterator->mediaFileInputHandler = mediaFileInputHandlerRef;
+  pIterator->wmf_streamIndex = wmf_streamIndex;
+  pIterator->mediaType = mediaType;
+  pIterator->hasFinished = false;
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mMediaFileInputIterator_Destroy_Internal, mMediaFileInputIterator *pIterator)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pIterator == nullptr, mR_ArgumentNull);
+
+  if (pIterator->mediaFileInputHandler != nullptr)
+    mERROR_CHECK(mSharedPointer_Destroy(&pIterator->mediaFileInputHandler));
+
+  pIterator->wmf_streamIndex = 0;
+  pIterator->mediaType = mMMT_Undefined;
+  pIterator->hasFinished = false;
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mMediaFileInputIterator_IterateToStreamIndex, mPtr<mMediaFileInputIterator> &iterator, OUT IMFSample **ppSample, OUT LONGLONG *pTimeStamp)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(iterator == nullptr || ppSample == nullptr || pTimeStamp == nullptr, mR_ArgumentNull);
+
+  HRESULT hr = S_OK;
+  mUnused(hr);
+
+  bool quit = false;
+
+  while (!quit)
+  {
+    DWORD streamIndex, flags;
+
+    mDEFER_DESTRUCTION(ppSample, _ReleaseReference);
+    mERROR_IF(FAILED(hr = iterator->mediaFileInputHandler->pSourceReader->ReadSample((DWORD)iterator->wmf_streamIndex, 0, &streamIndex, &flags, pTimeStamp, ppSample)), mR_InternalError);
+
+    if(streamIndex != iterator->wmf_streamIndex)
+      continue;
+
+    if (flags & MF_SOURCE_READERF_ENDOFSTREAM)
+    {
+      iterator->hasFinished = true;
+      mRETURN_RESULT(mR_EndOfStream);
+      break;
+    }
+
+    mERROR_IF(flags & MF_SOURCE_READERF_ERROR, mR_InternalError);
+    mERROR_IF(flags & MF_SOURCE_READERF_NEWSTREAM, mR_InvalidParameter);
+
+    if (flags & MF_SOURCE_READERF_CURRENTMEDIATYPECHANGED)
+    {
+      mERROR_IF(streamIndex >= iterator->mediaFileInputHandler->streamCount, mR_IndexOutOfBounds);
+      mMediaTypeLookup *pMediaTypeLookup = &iterator->mediaFileInputHandler->pStreamTypeLookup[streamIndex];
+
+      IMFMediaType *pMediaType;
+      mDEFER_DESTRUCTION(&pMediaType, _ReleaseReference);
+      mERROR_IF(FAILED(iterator->mediaFileInputHandler->pSourceReader->GetCurrentMediaType(streamIndex, &pMediaType)), mR_InternalError);
+
+      GUID majorType;
+      mERROR_IF(FAILED(hr = pMediaType->GetGUID(MF_MT_MAJOR_TYPE, &majorType)), mR_InternalError);
+
+      if (majorType == MFMediaType_Audio)
+      {
+        pMediaTypeLookup->mediaType = mMMT_Audio;
+
+        if (pMediaTypeLookup->mediaType != mMMT_Audio)
+          pMediaTypeLookup->streamIndex = iterator->mediaFileInputHandler->audioStreamCount;
+
+        mAudioStreamType audioStreamType;
+        mERROR_CHECK(mAudioStreamType_Create(pMediaType, pMediaTypeLookup, streamIndex, &audioStreamType));
+
+        if (pMediaTypeLookup->mediaType != mMMT_Audio)
+          mERROR_CHECK(mMediaFileInputHandler_AddAudioStream_Internal(iterator->mediaFileInputHandler.GetPointer(), &audioStreamType));
+        else
+          iterator->mediaFileInputHandler->pAudioStreams[pMediaTypeLookup->streamIndex] = audioStreamType;
+      }
+      else if (majorType == MFMediaType_Video)
+      {
+        pMediaTypeLookup->mediaType = mMMT_Video;
+
+        if (pMediaTypeLookup->mediaType != mMMT_Video)
+          pMediaTypeLookup->streamIndex = iterator->mediaFileInputHandler->videoStreamCount;
+
+        mVideoStreamType videoStreamType;
+
+        mERROR_CHECK(mVideoStreamType_Create(pMediaType, pMediaTypeLookup, streamIndex, &videoStreamType));
+
+        if (pMediaTypeLookup->mediaType != mMMT_Video)
+        {
+          mERROR_CHECK(mMediaFileInputHandler_AddVideoStream_Internal(iterator->mediaFileInputHandler.GetPointer(), &videoStreamType));
+        }
+        else
+        {
+          videoStreamType.pixelFormat = iterator->mediaFileInputHandler->pVideoStreams[pMediaTypeLookup->streamIndex].pixelFormat;
+
+          iterator->mediaFileInputHandler->pVideoStreams[pMediaTypeLookup->streamIndex] = videoStreamType;
+        }
+      }
+      else
+      {
+        pMediaTypeLookup[streamIndex].mediaType = mMMT_Undefined;
+      }
+    }
+
+    if (ppSample)
+      mRETURN_SUCCESS();
+  }
 
   mRETURN_SUCCESS();
 }

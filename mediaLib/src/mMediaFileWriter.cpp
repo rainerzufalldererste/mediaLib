@@ -20,6 +20,7 @@ struct mMediaFileWriter
   DWORD videoStreamIndex;
   mMediaFileInformation mediaFileInformation;
   LONGLONG lastFrameTimestamp;
+  bool finalizeCalled;
 };
 
 template <typename T>
@@ -134,7 +135,16 @@ mFUNCTION(mMediaFileWriter_Finalize, mPtr<mMediaFileWriter> &mediaFileWriter)
   mFUNCTION_SETUP();
 
   mERROR_IF(mediaFileWriter == nullptr, mR_ArgumentNull);
-  mERROR_IF(FAILED(mediaFileWriter->pSinkWriter->Finalize()), mR_InternalError);
+
+  if (mediaFileWriter->finalizeCalled == false)
+  {
+    mediaFileWriter->finalizeCalled = true;
+    mERROR_IF(FAILED(mediaFileWriter->pSinkWriter->Finalize()), mR_InternalError);
+  }
+  else
+  {
+    mERROR_IF(true, mR_ResourceStateInvalid);
+  }
 
   mRETURN_SUCCESS();
 }
@@ -153,6 +163,7 @@ mFUNCTION(mMediaFileWriter_Create_Internal, OUT mMediaFileWriter *pMediaFileWrit
 
   pMediaFileWriter->mediaFileInformation = *pMediaFileInformation;
   pMediaFileWriter->lastFrameTimestamp = 0;
+  pMediaFileWriter->finalizeCalled = false;
   mUnused(pAllocator);
 
   HRESULT hr = S_OK;
@@ -247,9 +258,24 @@ mFUNCTION(mMediaFileWriter_Destroy_Internal, IN_OUT mMediaFileWriter *pMediaFile
 
   mERROR_IF(pMediaFileWriter == nullptr, mR_ArgumentNull);
 
+  mResult result = mR_Success;
+
+  if (!pMediaFileWriter->finalizeCalled)
+  {
+    mPtr<mMediaFileWriter> _this;
+    result = mSharedPointer_Create(&_this, pMediaFileWriter, mSHARED_POINTER_FOREIGN_RESOURCE);
+
+    if(mSUCCEEDED(result))
+      result = mMediaFileWriter_Finalize(_this);
+
+    mSharedPointer_Destroy(&_this);
+  }
+
   _ReleaseReference(&pMediaFileWriter->pSinkWriter);
 
   mERROR_CHECK(mMediaFoundation_RemoveReference());
+
+  mERROR_IF(mFAILED(result), result);
 
   mRETURN_SUCCESS();
 }

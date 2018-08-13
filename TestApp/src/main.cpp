@@ -11,7 +11,6 @@ uint32_t *pPixels = nullptr;
 const size_t subScale = 5;
 mPtr<mImageBuffer> bgraImageBuffer = nullptr;
 mPtr<mThreadPool> threadPool = nullptr;
-mPtr<mMediaFileWriter> mediaFileWriter = nullptr;
 
 mFUNCTION(ResizeWindow, const mVec2s &newSize);
 mFUNCTION(OnVideoFramCallback, mPtr<mImageBuffer> &, const mVideoStreamType &videoStreamType);
@@ -34,9 +33,6 @@ int main(int, char **)
   fileInfo.averageBitrate = 60 * 1024 * 1024;
   fileInfo.frameSize = resolution;
 
-  mDEFER_DESTRUCTION(&mediaFileWriter, mMediaFileWriter_Destroy);
-  mERROR_CHECK(mMediaFileWriter_Create(&mediaFileWriter, nullptr, L"C:/Users/cstiller/Videos/Export.mp4", &fileInfo));
-
   mDEFER_DESTRUCTION(pWindow, SDL_DestroyWindow);
   pWindow = SDL_CreateWindow("VideoStream Renderer", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, (int)resolution.x / subScale, (int)resolution.y / subScale, 0);
   mERROR_IF(pWindow == nullptr, mR_ArgumentNull);
@@ -58,8 +54,6 @@ int main(int, char **)
 
   mERROR_CHECK(mMediaFileInputHandler_SetVideoCallback(mediaFileHandler, OnVideoFramCallback));
   mERROR_CHECK(mMediaFileInputHandler_Play(mediaFileHandler));
-
-  mERROR_CHECK(mMediaFileWriter_Finalize(mediaFileWriter));
 
   mRETURN_SUCCESS();
 }
@@ -89,8 +83,6 @@ mFUNCTION(OnVideoFramCallback, mPtr<mImageBuffer> &buffer, const mVideoStreamTyp
 
   mERROR_CHECK(mPixelFormat_TransformBuffer(buffer, bgraImageBuffer, threadPool));
   mPRINT("frame time: %" PRIi32 "\n", clock() - now);
-
-  mERROR_CHECK(mMediaFileWriter_AppendVideoFrame(mediaFileWriter, bgraImageBuffer));
 
   size_t i = 0;
 
