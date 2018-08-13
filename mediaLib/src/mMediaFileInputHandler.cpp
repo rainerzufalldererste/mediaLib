@@ -289,7 +289,7 @@ mFUNCTION(mMediaFileInputHandler_Create_Internal, IN mMediaFileInputHandler *pIn
             else if (SUCCEEDED(hr = pInputHandler->pSourceReader->SetCurrentMediaType(streamIndex, nullptr, pVideoMediaTypeRGB)))
               isYUV = false;
             else
-              mERROR_IF(false, mR_InternalError);
+              mERROR_IF(true, mR_InternalError);
 
             isValid = true;
 
