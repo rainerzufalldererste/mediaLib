@@ -257,6 +257,8 @@ void mThreadPool_WorkerThread(mThreadPool *pThreadPool)
 
   while (pThreadPool->isRunning)
   {
+    mTask *pTask = nullptr;
+
     {
       mASSERT(mSUCCEEDED(mSemaphore_Lock(pThreadPool->pSemaphore)), "Error in " __FUNCTION__ ": Semaphore error.");
       mDEFER_DESTRUCTION(pThreadPool->pSemaphore, mSemaphore_Unlock);
@@ -265,14 +267,13 @@ void mThreadPool_WorkerThread(mThreadPool *pThreadPool)
       mASSERT(mSUCCEEDED(mQueue_GetCount(pThreadPool->queue, &count)), "Error in " __FUNCTION__ ": Could not get task queue length.");
 
       if (count > 0)
-      {
-        mTask *pTask = nullptr;
         mASSERT(mSUCCEEDED(mQueue_PopFront(pThreadPool->queue, &pTask)), "Error in " __FUNCTION__ ": Could not dequeue task.");
-        mASSERT(mSUCCEEDED(mTask_Execute(pTask)), "Error in " __FUNCTION__ ": Failed to execute task.");
-        mASSERT(mSUCCEEDED(mTask_Destroy(&pTask)), "Error in " __FUNCTION__ ": Failed to destroy task.");
+    }
 
-        continue;
-      }
+    if (pTask != nullptr)
+    {
+      mASSERT(mSUCCEEDED(mTask_Execute(pTask)), "Error in " __FUNCTION__ ": Failed to execute task.");
+      mASSERT(mSUCCEEDED(mTask_Destroy(&pTask)), "Error in " __FUNCTION__ ": Failed to destroy task.");
     }
 
     const mResult result = mSemaphore_Sleep(pThreadPool->pSemaphore, 1);
