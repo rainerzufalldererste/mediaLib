@@ -210,14 +210,21 @@ mFUNCTION(mMediaFileInputHandler_Create_Internal, IN mMediaFileInputHandler *pIn
   mERROR_IF(FAILED(MFCreateAttributes(&pAttributes, 1)), mR_InternalError);
   //mERROR_IF(FAILED(pAttributes->SetUINT32(MF_SOURCE_READER_ENABLE_VIDEO_PROCESSING, TRUE)), mR_InternalError);
 
-  IMFMediaType *pVideoMediaType = nullptr;
-  mDEFER_DESTRUCTION(&pVideoMediaType, _ReleaseReference);
+  IMFMediaType *pVideoMediaTypeYUV = nullptr;
+  mDEFER_DESTRUCTION(&pVideoMediaTypeYUV, _ReleaseReference);
+
+  IMFMediaType *pVideoMediaTypeRGB = nullptr;
+  mDEFER_DESTRUCTION(&pVideoMediaTypeRGB, _ReleaseReference);
 
   if (enableVideoProcessing)
   {
-    mERROR_IF(FAILED(MFCreateMediaType(&pVideoMediaType)), mR_InternalError);
-    mERROR_IF(FAILED(pVideoMediaType->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Video)), mR_InternalError);
-    mERROR_IF(FAILED(pVideoMediaType->SetGUID(MF_MT_SUBTYPE, MFVideoFormat_I420)), mR_InternalError);
+    mERROR_IF(FAILED(MFCreateMediaType(&pVideoMediaTypeYUV)), mR_InternalError);
+    mERROR_IF(FAILED(pVideoMediaTypeYUV->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Video)), mR_InternalError);
+    mERROR_IF(FAILED(pVideoMediaTypeYUV->SetGUID(MF_MT_SUBTYPE, MFVideoFormat_I420)), mR_InternalError);
+
+    mERROR_IF(FAILED(MFCreateMediaType(&pVideoMediaTypeRGB)), mR_InternalError);
+    mERROR_IF(FAILED(pVideoMediaTypeRGB->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Video)), mR_InternalError);
+    mERROR_IF(FAILED(pVideoMediaTypeRGB->SetGUID(MF_MT_SUBTYPE, MFVideoFormat_RGB32)), mR_InternalError);
   }
 
   IMFMediaType *pAudioMediaType = nullptr;
@@ -274,7 +281,15 @@ mFUNCTION(mMediaFileInputHandler_Create_Internal, IN mMediaFileInputHandler *pIn
 
             mERROR_IF(FAILED(hr = pInputHandler->pSourceReader->SetStreamSelection(streamIndex, true)), mR_InternalError);
             mERROR_IF(FAILED(hr = pInputHandler->pSourceReader->GetCurrentMediaType(streamIndex, &pType)), mR_InternalError);
-            mERROR_IF(FAILED(hr = pInputHandler->pSourceReader->SetCurrentMediaType(streamIndex, nullptr, pVideoMediaType)), mR_InternalError);
+            
+            bool isYUV = true;
+
+            if (SUCCEEDED(hr = pInputHandler->pSourceReader->SetCurrentMediaType(streamIndex, nullptr, pVideoMediaTypeYUV)))
+              isYUV = true;
+            else if (SUCCEEDED(hr = pInputHandler->pSourceReader->SetCurrentMediaType(streamIndex, nullptr, pVideoMediaTypeRGB)))
+              isYUV = false;
+            else
+              mERROR_IF(false, mR_InternalError);
 
             isValid = true;
 
@@ -287,6 +302,9 @@ mFUNCTION(mMediaFileInputHandler_Create_Internal, IN mMediaFileInputHandler *pIn
 
             mVideoStreamType videoStreamType;
             mERROR_CHECK(mVideoStreamType_Create(pType, &mediaTypeLookup, streamIndex, &videoStreamType));
+
+            videoStreamType.pixelFormat = isYUV ? mPF_YUV420 : mPF_B8G8R8A8;
+
             mERROR_CHECK(mMediaFileInputHandler_AddVideoStream_Internal(pInputHandler, &videoStreamType));
           }
         }
@@ -442,12 +460,19 @@ mFUNCTION(mMediaFileInputHandler_RunSession_Internal, IN mMediaFileInputHandler 
           pMediaTypeLookup->streamIndex = pData->videoStreamCount;
 
         mVideoStreamType videoStreamType;
+
         mERROR_CHECK(mVideoStreamType_Create(pMediaType, pMediaTypeLookup, streamIndex, &videoStreamType));
 
         if (pMediaTypeLookup->mediaType != mMMT_Video)
+        {
           mERROR_CHECK(mMediaFileInputHandler_AddVideoStream_Internal(pData, &videoStreamType));
+        }
         else
+        {
+          videoStreamType.pixelFormat = pData->pVideoStreams[pMediaTypeLookup->streamIndex].pixelFormat;
+
           pData->pVideoStreams[pMediaTypeLookup->streamIndex] = videoStreamType;
+        }
       }
       else
       {
@@ -487,7 +512,7 @@ mFUNCTION(mMediaFileInputHandler_RunSession_Internal, IN mMediaFileInputHandler 
 
           mPtr<mImageBuffer> imageBuffer;
           mDEFER_DESTRUCTION(&imageBuffer, mImageBuffer_Destroy);
-          mERROR_CHECK(mImageBuffer_Create(&imageBuffer, &mDefaultAllocator, pSampleData, videoStreamType.resolution, mPF_YUV420));
+          mERROR_CHECK(mImageBuffer_Create(&imageBuffer, &mDefaultAllocator, pSampleData, videoStreamType.resolution, videoStreamType.pixelFormat));
           mERROR_CHECK((*pData->pProcessVideoDataCallback)(imageBuffer, videoStreamType));
         }
 
@@ -554,10 +579,12 @@ mFUNCTION(mVideoStreamType_Create, IN IMFMediaType *pMediaType, IN mMediaTypeLoo
   mERROR_IF(pMediaType == nullptr || pMediaTypeLookup == nullptr || pVideoStreamType == nullptr, mR_ArgumentNull);
 
   uint32_t resolutionX = 0, resolutionY = 0, stride = 0;
+  UUID format;
   HRESULT hr = S_OK;
   mUnused(hr);
 
   mERROR_IF(FAILED(hr = MFGetAttributeSize(pMediaType, MF_MT_FRAME_SIZE, &resolutionX, &resolutionY)), mR_InternalError);
+  mERROR_IF(FAILED(hr = pMediaType->GetGUID(MF_MT_SUBTYPE, &format)), mR_InternalError);
 
   if (FAILED(hr = pMediaType->GetUINT32(MF_MT_DEFAULT_STRIDE, &stride)))
     stride = resolutionX;

@@ -42,8 +42,7 @@ int main(int, char **)
   mDEFER_DESTRUCTION(pWindow, SDL_DestroyWindow);
   pWindow = SDL_CreateWindow("VideoStream Renderer", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, (int)resolution.x / subScale, (int)resolution.y / subScale, 0);
   mERROR_IF(pWindow == nullptr, mR_ArgumentNull);
-  pPixels = (uint32_t *)SDL_GetWindowSurface(pWindow)->pixels;
-  mERROR_IF(pPixels == nullptr, mR_ArgumentNull);
+  mERROR_CHECK(ResizeWindow(resolution / subScale));
 
   mDEFER_DESTRUCTION(&bgraImageBuffer, mImageBuffer_Destroy);
   mERROR_CHECK(mImageBuffer_Create(&bgraImageBuffer, nullptr, resolution));
