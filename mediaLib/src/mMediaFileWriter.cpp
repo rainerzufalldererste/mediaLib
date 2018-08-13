@@ -12,6 +12,7 @@
 #include <Mferror.h>
 #include <mfreadwrite.h>
 #include <intsafe.h>
+#include "mMediaFoundation.h"
 
 struct mMediaFileWriter
 {
@@ -83,7 +84,7 @@ mFUNCTION(mMediaFileWriter_AppendVideoFrame, mPtr<mMediaFileWriter> &mediaFileWr
 
   IMFMediaBuffer *pBuffer = nullptr;
   mDEFER_DESTRUCTION(&pBuffer, _ReleaseReference);
-  mERROR_IF(FAILED(MFCreateMemoryBuffer(bufferPixels, &pBuffer)), mR_InternalError);
+  mERROR_IF(FAILED(MFCreateMemoryBuffer((DWORD)bufferPixels, &pBuffer)), mR_InternalError);
 
   BYTE *pData;
   mERROR_IF(FAILED(pBuffer->Lock(&pData, nullptr, nullptr)), mR_InternalError);
@@ -91,7 +92,7 @@ mFUNCTION(mMediaFileWriter_AppendVideoFrame, mPtr<mMediaFileWriter> &mediaFileWr
   size_t pixelFormatUnitSize;
   mERROR_CHECK(mPixelFormat_GetUnitSize(imageBuffer->pixelFormat, &pixelFormatUnitSize));
 
-  mERROR_IF(FAILED(MFCopyImage(pData, imageBuffer->currentSize.x * pixelFormatUnitSize, imageBuffer->pPixels, imageBuffer->lineStride * pixelFormatUnitSize, imageBuffer->currentSize.x * pixelFormatUnitSize, imageBuffer->currentSize.y)), mR_InternalError);
+  mERROR_IF(FAILED(MFCopyImage(pData, (DWORD)(imageBuffer->currentSize.x * pixelFormatUnitSize), imageBuffer->pPixels, (DWORD)(imageBuffer->lineStride * pixelFormatUnitSize), (DWORD)(imageBuffer->currentSize.x * pixelFormatUnitSize), (DWORD)imageBuffer->currentSize.y)), mR_InternalError);
   mERROR_IF(FAILED(pBuffer->Unlock()), mR_InternalError);
 
   IMFSample *pSample = nullptr;
@@ -128,14 +129,15 @@ mFUNCTION(mMediaFileWriter_Create_Internal, OUT mMediaFileWriter *pMediaFileWrit
 {
   mFUNCTION_SETUP();
 
-  // TODO: MFInitialize.
-
   mERROR_IF(pMediaFileWriter == nullptr || pMediaFileInformation == nullptr, mR_ArgumentNull);
+
+  mERROR_CHECK(mMediaFoundation_AddReference());
 
   mERROR_IF(pMediaFileInformation->frameSize.x > UINT32_MAX || pMediaFileInformation->frameSize.y > UINT32_MAX || pMediaFileInformation->averageBitrate > UINT32_MAX || pMediaFileInformation->frameRateFraction.x > UINT32_MAX || pMediaFileInformation->frameRateFraction.y > UINT32_MAX || pMediaFileInformation->pixelAspectRatioFraction.x > UINT32_MAX || pMediaFileInformation->pixelAspectRatioFraction.y > UINT32_MAX, mR_IndexOutOfBounds);
 
   pMediaFileWriter->mediaFileInformation = *pMediaFileInformation;
   pMediaFileWriter->lastFrameTimestamp = 0;
+  mUnused(pAllocator);
 
   HRESULT hr;
   mUnused(hr);
@@ -180,9 +182,9 @@ mFUNCTION(mMediaFileWriter_Destroy_Internal, IN_OUT mMediaFileWriter *pMediaFile
 
   mERROR_IF(pMediaFileWriter == nullptr, mR_ArgumentNull);
 
-  _ReleaseReference(&pMediaFileWriter);
+  _ReleaseReference(&pMediaFileWriter->pSinkWriter);
 
-  // TODO: MFShutdown.
+  mERROR_CHECK(mMediaFoundation_RemoveReference());
 
   mRETURN_SUCCESS();
 }

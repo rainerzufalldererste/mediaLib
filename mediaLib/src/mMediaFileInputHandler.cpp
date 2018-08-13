@@ -11,8 +11,7 @@
 #include <Mferror.h>
 #include <mfreadwrite.h>
 #include "mMediaFileInputHandler.h"
-
-static volatile size_t _referenceCount = 0;
+#include "mMediaFoundation.h"
 
 struct mMediaTypeLookup
 {
@@ -204,10 +203,7 @@ mFUNCTION(mMediaFileInputHandler_Create_Internal, IN mMediaFileInputHandler *pIn
   HRESULT hr = S_OK;
   mUnused(hr);
 
-  const int64_t referenceCount = ++_referenceCount;
-
-  if (referenceCount == 1)
-    mERROR_CHECK(mMediaFileInputHandler_InitializeExtenalDependencies());
+  mERROR_CHECK(mMediaFoundation_AddReference());
 
   IMFAttributes *pAttributes = nullptr;
   mDEFER_DESTRUCTION(&pAttributes, _ReleaseReference);
@@ -377,33 +373,8 @@ mFUNCTION(mMediaFileInputHandler_Destroy_Internal, IN mMediaFileInputHandler *pD
 
   pData->audioStreamCount = 0;
 
-  const size_t referenceCount = --_referenceCount;
+  mERROR_CHECK(mMediaFoundation_RemoveReference());
 
-  if (referenceCount == 0)
-    mERROR_CHECK(mMediaFileInputHandler_CleanupExtenalDependencies());
-
-  mRETURN_SUCCESS();
-}
-
-mFUNCTION(mMediaFileInputHandler_InitializeExtenalDependencies)
-{
-  mFUNCTION_SETUP();
-  
-  HRESULT hr = S_OK;
-  mUnused(hr);
-
-  mERROR_IF(FAILED(hr = MFStartup(MF_VERSION, MFSTARTUP_FULL)), mR_InternalError);
-  mRETURN_SUCCESS();
-}
-
-mFUNCTION(mMediaFileInputHandler_CleanupExtenalDependencies)
-{
-  mFUNCTION_SETUP();
-
-  HRESULT hr = S_OK;
-  mUnused(hr);
-
-  mERROR_IF(FAILED(hr = MFShutdown()), mR_InternalError);
   mRETURN_SUCCESS();
 }
 
