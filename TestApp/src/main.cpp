@@ -18,10 +18,14 @@ SDL_Window *pWindow = nullptr;
 SDL_Surface *pSurface = nullptr;
 const size_t subScale = 5;
 mPtr<mImageBuffer> bgraImageBuffer = nullptr;
+mPtr<mImageBuffer> image;
 mPtr<mThreadPool> threadPool = nullptr;
+SDL_GLContext glContext;
 bool is3dEnabled = false;
+GLenum glError = GL_NO_ERROR;
+GLuint texture = 0;
 
-mFUNCTION(OnVideoFramCallback, mPtr<mImageBuffer> &, const mVideoStreamType &videoStreamType);
+mFUNCTION(OnVideoFramCallback, mPtr<mImageBuffer> &, const mVideoStreamType &);
 mFUNCTION(RenderFrame);
 
 int main(int, char **)
@@ -32,44 +36,117 @@ int main(int, char **)
   mDEFER_DESTRUCTION(&threadPool, mThreadPool_Destroy);
   mERROR_CHECK(mThreadPool_Create(&threadPool, nullptr));
 
+  mDEFER_DESTRUCTION(&bgraImageBuffer, mImageBuffer_Destroy);
+  mERROR_CHECK(mImageBuffer_Create(&bgraImageBuffer, nullptr, resolution));
+
+  mDEFER_DESTRUCTION(&image, mImageBuffer_Destroy);
+  mERROR_CHECK(mImageBuffer_CreateFromFile(&image, nullptr, "C:/Users/cstiller/Pictures/avatar.png"));
+
   mPtr<mMediaFileInputHandler> mediaFileHandler;
   mDEFER_DESTRUCTION(&mediaFileHandler, mMediaFileInputHandler_Destroy);
   mERROR_CHECK(mMediaFileInputHandler_Create(&mediaFileHandler, nullptr, L"C:/Users/cstiller/Videos/Converted.mp4", mMediaFileInputHandler_CreateFlags::mMMFIH_CF_VideoEnabled));
 
-  GLenum glError = GL_NO_ERROR;
-  mUnused(glError);
-
   SDL_Init(SDL_INIT_EVERYTHING);
-  mERROR_IF(glewInit() != GL_TRUE, mR_InternalError);
 
   SDL_DisplayMode displayMode;
   SDL_GetCurrentDisplayMode(0, &displayMode);
 
-  resolution.x = displayMode.w;
-  resolution.y = displayMode.h;
+  resolution.x = displayMode.w / 2;
+  resolution.y = displayMode.h / 2;
 
   mDEFER_DESTRUCTION(pWindow, SDL_DestroyWindow);
-  pWindow = SDL_CreateWindow("VideoStream Renderer", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, (int)resolution.x, (int)resolution.y, SDL_WINDOW_FULLSCREEN | SDL_WINDOW_OPENGL);
+  pWindow = SDL_CreateWindow("VideoStream Renderer", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, (int)resolution.x, (int)resolution.y, /*SDL_WINDOW_FULLSCREEN | */SDL_WINDOW_OPENGL);
   mERROR_IF(pWindow == nullptr, mR_ArgumentNull);
 
-  if (SDL_GL_SetAttribute(SDL_GL_STEREO, 1) == 0)
-  {
-    is3dEnabled = true;
-    mPRINT("3d enabled.");
-  }
-
   SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+
+  glContext = SDL_GL_CreateContext(pWindow);
+  glewExperimental = GL_TRUE;
+  mERROR_IF((glError = glewInit()) != GL_NO_ERROR, mR_InternalError);
+
   SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
   SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
+  SDL_GL_SetSwapInterval(1);
 
-  pSurface = SDL_GetWindowSurface(pWindow);
-  mERROR_IF(pSurface == nullptr, mR_ArgumentNull);
+  //if (SDL_GL_SetAttribute(SDL_GL_STEREO, 1) == 0)
+  //{
+  //  is3dEnabled = true;
+  //  mPRINT("3d enabled.");
+  //}
 
-  mDEFER_DESTRUCTION(&bgraImageBuffer, mImageBuffer_Destroy);
-  mERROR_CHECK(mImageBuffer_Create(&bgraImageBuffer, nullptr, resolution));
+  // Prepare GL Rendering
+  {
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_2D, texture);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)image->currentSize.x, (GLsizei)image->currentSize.y, 0, GL_RGBA_INTEGER, GL_UNSIGNED_INT_8_8_8_8, image->pPixels);
 
-  mERROR_CHECK(mMediaFileInputHandler_SetVideoCallback(mediaFileHandler, OnVideoFramCallback));
-  mERROR_CHECK(mMediaFileInputHandler_Play(mediaFileHandler));
+    mVec2f verts[] = { { -0.5f, 0.5f },{ 0.5f, 0.5f },{ -0.5f, -0.5f },{ 0.5f, 0.5f },{ -0.5f, -0.5f },{ 0.5f, -0.5f } };
+
+    GLuint vbo;
+    glGenBuffers(1, &vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
+
+    const char *vertexSource = R"glsl(
+    #version 150 core
+
+    in vec2 position;
+
+    void main()
+    {
+        gl_Position = vec4(position, 0.0, 1.0);
+    }
+)glsl";
+
+    const char *fragmentSource = R"glsl(
+    #version 150 core
+    
+    out vec4 outColor;
+    
+    void main()
+    {
+        outColor = vec4(1.0, 1.0, 1.0, 1.0);
+    }
+)glsl";
+
+    GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(vertexShader, 1, &vertexSource, nullptr);
+    glCompileShader(vertexShader);
+
+    GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(fragmentShader, 1, &fragmentSource, NULL);
+    glCompileShader(fragmentShader);
+
+    GLuint shaderProgram = glCreateProgram();
+    glAttachShader(shaderProgram, vertexShader);
+    glAttachShader(shaderProgram, fragmentShader);
+
+    glBindFragDataLocation(shaderProgram, 0, "outColor");
+    glLinkProgram(shaderProgram);
+    glUseProgram(shaderProgram);
+
+    GLint posAttrib = glGetAttribLocation(shaderProgram, "position");
+    glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE, 0, 0);
+    glEnableVertexAttribArray(posAttrib);
+
+    GLuint vao;
+    glGenVertexArrays(1, &vao);
+    glBindVertexArray(vao);
+
+    mVec2f texCoord[] = { { 0.0f, 0.0f },{ 1.0f, 0.0f },{ 0.0f, 1.0f },{ 1.0f, 0.0f },{ 0.0f, 1.0f },{ 1.0f, 1.0f } };
+  }
+
+  //mERROR_CHECK(mMediaFileInputHandler_SetVideoCallback(mediaFileHandler, OnVideoFramCallback));
+  //mERROR_CHECK(mMediaFileInputHandler_Play(mediaFileHandler));
+
+  while (true)
+  {
+    mERROR_CHECK(RenderFrame());
+  }
 
   mRETURN_SUCCESS();
 }
@@ -100,10 +177,13 @@ mFUNCTION(RenderFrame)
 {
   mFUNCTION_SETUP();
 
-  glClearColor((frame & 0xFF) / 255.0f, 0.0f, 0.0f, 1.0f);
-  glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+  glClearColor((frame++ & 0xFF) / 255.0f, 0.0f, 0.0f, 1.0f);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  glDrawArrays(GL_TRIANGLES, 0, 3);
 
-  SDL_UpdateWindowSurface(pWindow);
+  glError = glGetError();
+
+  SDL_GL_SwapWindow(pWindow);
 
   mRETURN_SUCCESS();
 }
