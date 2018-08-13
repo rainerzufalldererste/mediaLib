@@ -172,12 +172,12 @@ mFUNCTION(mMediaFileInputHandler_GetIterator, mPtr<mMediaFileInputHandler> &ptr,
   switch (mediaType)
   {
   case mMMT_Video:
-    mERROR_IF(ptr->videoStreamCount >= streamIndex, mR_IndexOutOfBounds);
+    mERROR_IF(ptr->videoStreamCount <= streamIndex, mR_IndexOutOfBounds);
     wmf_streamIndex = ptr->pVideoStreams[streamIndex].wmf_streamIndex;
     break;
 
   case mMMT_Audio:
-    mERROR_IF(ptr->audioStreamCount >= streamIndex, mR_IndexOutOfBounds);
+    mERROR_IF(ptr->audioStreamCount <= streamIndex, mR_IndexOutOfBounds);
     wmf_streamIndex = ptr->pAudioStreams[streamIndex].wmf_streamIndex;
     break;
 
@@ -248,20 +248,18 @@ mFUNCTION(mMediaFileInputIterator_GetNextVideoFrame, mPtr<mMediaFileInputIterato
     {
     case mMMT_Video:
     {
-      if (iterator->mediaFileInputHandler->pProcessVideoDataCallback)
-      {
-        mERROR_IF(iterator->mediaFileInputHandler->videoStreamCount < mediaTypeLookup.streamIndex, mR_IndexOutOfBounds);
-        mVideoStreamType videoStreamType = iterator->mediaFileInputHandler->pVideoStreams[mediaTypeLookup.streamIndex];
+      mERROR_IF(iterator->mediaFileInputHandler->videoStreamCount < mediaTypeLookup.streamIndex, mR_IndexOutOfBounds);
+      mVideoStreamType videoStreamType = iterator->mediaFileInputHandler->pVideoStreams[mediaTypeLookup.streamIndex];
 
-        mPtr<mImageBuffer> imageBuffer;
-        mDEFER_DESTRUCTION(&imageBuffer, mImageBuffer_Destroy);
-        mERROR_CHECK(mImageBuffer_Create(&imageBuffer, &mDefaultAllocator, pSampleData, videoStreamType.resolution, videoStreamType.pixelFormat));
-        
-        *pImageBuffer = imageBuffer;
+      mPtr<mImageBuffer> sourceBuffer;
+      mDEFER_DESTRUCTION(&sourceBuffer, mImageBuffer_Destroy);
+      mERROR_CHECK(mImageBuffer_Create(&sourceBuffer, &mDefaultAllocator, pSampleData, videoStreamType.resolution, videoStreamType.pixelFormat));
 
-        if (pVideoStreamType != nullptr)
-          *pVideoStreamType = videoStreamType;
-      }
+      mERROR_CHECK(mImageBuffer_Create(pImageBuffer, &mDefaultAllocator, videoStreamType.resolution, videoStreamType.pixelFormat));
+      mERROR_CHECK(mPixelFormat_TransformBuffer(sourceBuffer, *pImageBuffer));
+
+      if (pVideoStreamType != nullptr)
+        *pVideoStreamType = videoStreamType;
 
       break;
     }
@@ -872,7 +870,6 @@ mFUNCTION(mMediaFileInputIterator_IterateToStreamIndex, mPtr<mMediaFileInputIter
   {
     DWORD streamIndex, flags;
 
-    mDEFER_DESTRUCTION(ppSample, _ReleaseReference);
     mERROR_IF(FAILED(hr = iterator->mediaFileInputHandler->pSourceReader->ReadSample((DWORD)iterator->wmf_streamIndex, 0, &streamIndex, &flags, pTimeStamp, ppSample)), mR_InternalError);
 
     if(streamIndex != iterator->wmf_streamIndex)
@@ -943,7 +940,7 @@ mFUNCTION(mMediaFileInputIterator_IterateToStreamIndex, mPtr<mMediaFileInputIter
       }
     }
 
-    if (ppSample)
+    if (*ppSample)
       mRETURN_SUCCESS();
   }
 

@@ -105,6 +105,7 @@ mFUNCTION(mImageBuffer_Destroy, OUT mPtr<mImageBuffer> *pImageBuffer)
 
   mERROR_IF(pImageBuffer == nullptr, mR_ArgumentNull);
   mERROR_CHECK(mSharedPointer_Destroy(pImageBuffer));
+  *pImageBuffer = nullptr;
 
   mRETURN_SUCCESS();
 }
