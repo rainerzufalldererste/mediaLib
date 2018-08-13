@@ -1,5 +1,6 @@
 #include "default.h"
 #include "mMediaFileInputHandler.h"
+#include "mMediaFileWriter.h"
 #include "mThreadPool.h"
 #include "SDL.h"
 #include <time.h>
@@ -10,6 +11,7 @@ uint32_t *pPixels = nullptr;
 const size_t subScale = 5;
 mPtr<mImageBuffer> bgraImageBuffer = nullptr;
 mPtr<mThreadPool> threadPool = nullptr;
+mPtr<mMediaFileWriter> mediaFileWriter = nullptr;
 
 mFUNCTION(ResizeWindow, const mVec2s &newSize);
 mFUNCTION(OnVideoFramCallback, mPtr<mImageBuffer> &, const mVideoStreamType &videoStreamType);
@@ -27,6 +29,15 @@ int main(int, char **)
   mERROR_CHECK(mMediaFileInputHandler_Create(&mediaFileHandler, nullptr, L"C:/Users/cstiller/Videos/Converted.mp4", mMediaFileInputHandler_CreateFlags::mMMFIH_CF_VideoEnabled));
 
   mERROR_CHECK(mMediaFileInputHandler_GetVideoStreamResolution(mediaFileHandler, &resolution));
+
+  mMediaFileInformation fileInfo = { 0 };
+  fileInfo.averageBitrate = 50 * 1024 * 1024;
+  fileInfo.frameRateFraction = mVec2s(30, 1);
+  fileInfo.frameSize = resolution;
+  fileInfo.pixelAspectRatioFraction = mVec2s(1, 1);
+
+  mDEFER_DESTRUCTION(&mediaFileWriter, mMediaFileWriter_Destroy);
+  mERROR_CHECK(mMediaFileWriter_Create(&mediaFileWriter, nullptr, L"C:/Users/cstiller/Videos/Export.mp4", &fileInfo));
 
   mDEFER_DESTRUCTION(pWindow, SDL_DestroyWindow);
   pWindow = SDL_CreateWindow("VideoStream Renderer", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, (int)resolution.x / subScale, (int)resolution.y / subScale, 0);
@@ -50,6 +61,8 @@ int main(int, char **)
 
   mERROR_CHECK(mMediaFileInputHandler_SetVideoCallback(mediaFileHandler, OnVideoFramCallback));
   mERROR_CHECK(mMediaFileInputHandler_Play(mediaFileHandler));
+
+  mERROR_CHECK(mMediaFileWriter_Finalize(mediaFileWriter));
 
   mRETURN_SUCCESS();
 }
@@ -79,6 +92,8 @@ mFUNCTION(OnVideoFramCallback, mPtr<mImageBuffer> &buffer, const mVideoStreamTyp
 
   mERROR_CHECK(mPixelFormat_TransformBuffer(buffer, bgraImageBuffer, threadPool));
   mPRINT("frame time: %" PRIi32 "\n", clock() - now);
+
+  mERROR_CHECK(mMediaFileWriter_AppendVideoFrame(mediaFileWriter, bgraImageBuffer));
 
   size_t i = 0;
 

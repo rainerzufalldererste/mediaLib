@@ -419,8 +419,13 @@ mFUNCTION(mThreadPool_Destroy_Internal, mThreadPool *pThreadPool)
   if (pThreadPool->ppThreads != nullptr)
   {
     for (size_t i = 0; i < pThreadPool->threadCount; ++i)
+    {
       if (pThreadPool->ppThreads[i] != nullptr)
+      {
+        mERROR_CHECK(mThread_Join(pThreadPool->ppThreads[i]));
         mERROR_CHECK(mThread_Destroy(&pThreadPool->ppThreads[i]));
+      }
+    }
 
     mERROR_CHECK(mAllocator_FreePtr(pThreadPool->pAllocator, &pThreadPool->ppThreads));
   }
