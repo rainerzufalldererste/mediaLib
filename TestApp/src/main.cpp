@@ -30,11 +30,9 @@ int main(int, char **)
 
   mERROR_CHECK(mMediaFileInputHandler_GetVideoStreamResolution(mediaFileHandler, &resolution));
 
-  mMediaFileInformation fileInfo = { 0 };
-  fileInfo.averageBitrate = 50 * 1024 * 1024;
-  fileInfo.frameRateFraction = mVec2s(30, 1);
+  mMediaFileInformation fileInfo;
+  fileInfo.averageBitrate = 60 * 1024 * 1024;
   fileInfo.frameSize = resolution;
-  fileInfo.pixelAspectRatioFraction = mVec2s(1, 1);
 
   mDEFER_DESTRUCTION(&mediaFileWriter, mMediaFileWriter_Destroy);
   mERROR_CHECK(mMediaFileWriter_Create(&mediaFileWriter, nullptr, L"C:/Users/cstiller/Videos/Export.mp4", &fileInfo));
