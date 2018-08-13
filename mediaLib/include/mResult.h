@@ -27,7 +27,9 @@ enum mResult
   mR_OperationNotSupported,
   mR_ResourceNotFound,
   mR_ResourceInvalid,
+  mR_ResourceStateInvalid,
   mR_ResourceIncompatible,
+  mR_EndOfStream,
 
   mResult_Count
 };
