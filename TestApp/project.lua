@@ -24,6 +24,7 @@ project(ProjectName)
 
   includedirs { "../mediaLib/include" }
   includedirs { "3rdParty/SDL2/include" }
+  includedirs { "3rdParty/glew/include" }
 
   filter { "configurations:Release" }
     links { "../mediaLib/lib/mediaLib.lib" }
@@ -34,6 +35,8 @@ project(ProjectName)
 
   links { "3rdParty/SDL2/lib/sdl2.lib" }
   links { "3rdParty/SDL2/lib/sdl2main.lib" }
+  links { "3rdParty/glew/lib/glew32.lib" }
+  links { "3rdParty/glew/lib/glew32s.lib" }
   
   filter { "configurations:Debug", "system:Windows" }
     ignoredefaultlibraries { "libcmt" }
@@ -42,6 +45,7 @@ project(ProjectName)
   configuration { }
 
   postbuildcommands { "{COPY} 3rdParty/SDL2/bin/SDL2.dll bin" } 
+  postbuildcommands { "{COPY} 3rdParty/glew/bin/glew32.dll bin" } 
   
   targetname(ProjectName)
   targetdir "bin"
