@@ -122,7 +122,12 @@ inline mFUNCTION(mQueue_PushBack, mPtr<mQueue<T>> &queue, IN T *pItem)
     mERROR_CHECK(mQueue_Grow_Internal(queue));
 
   const size_t index = (queue->startIndex + queue->count) % queue->size;
-  queue->pData[index] = *pItem;
+
+  if (!std::is_trivially_copy_constructible<T>::value)
+    new (&queue->pData[index]) T(*pItem);
+  else
+    mERROR_CHECK(mAllocator_Copy(queue->pAllocator, &queue->pData[index], pItem, 1));
+
   ++queue->count;
 
   mRETURN_SUCCESS();
@@ -157,7 +162,11 @@ inline mFUNCTION(mQueue_PushFront, mPtr<mQueue<T>>& queue, IN T * pItem)
   else
     index = queue.size - 1;
 
-  queue->pData[index] = *pItem;
+  if (!std::is_trivially_copy_constructible<T>::value)
+    new (&queue->pData[index]) T(*pItem);
+  else
+    mERROR_CHECK(mAllocator_Copy(queue->pAllocator, &queue->pData[index], pItem, 1));
+
   ++queue->count;
   queue->startIndex = index;
 

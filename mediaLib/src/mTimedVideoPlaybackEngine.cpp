@@ -48,9 +48,11 @@ mFUNCTION(mTimedVideoPlaybackEngine_PlaybackThread, mTimedVideoPlaybackEngine *p
 
     size_t count = 0;
     mPtr<mImageBuffer> currentImageBuffer;
+    mDEFER_DESTRUCTION(&currentImageBuffer, mImageBuffer_Destroy);
 
     // Get ImageBuffer.
     {
+      // Try to reuse a buffer.
       {
         mERROR_CHECK(mMutex_Lock(pPlaybackEngine->pQueueMutex));
         mDEFER_DESTRUCTION(pPlaybackEngine->pQueueMutex, mMutex_Unlock);
