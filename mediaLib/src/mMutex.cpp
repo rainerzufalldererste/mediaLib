@@ -57,7 +57,7 @@ mFUNCTION(mMutex_Lock, IN mMutex *pMutex)
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mMutex_Release, IN mMutex *pMutex)
+mFUNCTION(mMutex_Unlock, IN mMutex *pMutex)
 {
   mFUNCTION_SETUP();
 

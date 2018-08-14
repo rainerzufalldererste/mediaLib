@@ -110,6 +110,22 @@ inline mFUNCTION(mSharedPointer_Allocate, OUT mSharedPointer<T> *pOutSharedPoint
 }
 
 template <typename T>
+inline mFUNCTION(mSharedPointer_Allocate, OUT mSharedPointer<T> *pOutSharedPointer, IN mAllocator *pAllocator, const std::function<void(T *)> &function, const size_t count)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pOutSharedPointer == nullptr, mR_ArgumentNull);
+
+  T *pData = nullptr;
+  mDEFER(mAllocator_FreePtr(pAllocator, &pData));
+  mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &pData, count));
+  mERROR_CHECK(mSharedPointer_Create(pOutSharedPointer, pData, function, pAllocator));
+  pData = nullptr; // to not get released on destruction.
+
+  mRETURN_SUCCESS();
+}
+
+template <typename T>
 inline mFUNCTION(mSharedPointer_Destroy, IN_OUT mSharedPointer<T> *pPointer)
 {
   mFUNCTION_SETUP();

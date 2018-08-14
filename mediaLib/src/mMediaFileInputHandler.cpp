@@ -158,7 +158,53 @@ mFUNCTION(mMediaFileInputHandler_SetAudioCallback, mPtr<mMediaFileInputHandler> 
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mMediaFileInputHandler_GetIterator, mPtr<mMediaFileInputHandler> &ptr, OUT mPtr<mMediaFileInputIterator> *pIterator, const mMediaMajorType mediaType, const size_t streamIndex)
+mFUNCTION(mMediaFileInputHandler_GetVideoStreamCount, mPtr<mMediaFileInputHandler> &ptr, OUT size_t *pCount)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(ptr == nullptr || pCount == nullptr, mR_ArgumentNull);
+
+  *pCount = ptr->videoStreamCount;
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mMediaFileInputHandler_GetAudioStreamCount, mPtr<mMediaFileInputHandler>& ptr, OUT size_t * pCount)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(ptr == nullptr || pCount == nullptr, mR_ArgumentNull);
+
+  *pCount = ptr->audioStreamCount;
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mMediaFileInputHandler_GetVideoStreamType, mPtr<mMediaFileInputHandler>& ptr, const size_t index, OUT mVideoStreamType * pStreamType)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(ptr == nullptr || pStreamType == nullptr, mR_ArgumentNull);
+  mERROR_IF(ptr->videoStreamCount <= index, mR_IndexOutOfBounds);
+
+  *pStreamType = ptr->pVideoStreams[index];
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mMediaFileInputHandler_GetAudioStreamType, mPtr<mMediaFileInputHandler>& ptr, const size_t index, OUT mAudioStreamType * pStreamType)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(ptr == nullptr || pStreamType == nullptr, mR_ArgumentNull);
+  mERROR_IF(ptr->audioStreamCount <= index, mR_IndexOutOfBounds);
+
+  *pStreamType = ptr->pAudioStreams[index];
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mMediaFileInputHandler_GetIterator, mPtr<mMediaFileInputHandler> &ptr, OUT mPtr<mMediaFileInputIterator> *pIterator, const mMediaMajorType mediaType, const size_t streamIndex /* = 0 */)
 {
   mFUNCTION_SETUP();
 
@@ -777,16 +823,17 @@ mFUNCTION(mVideoStreamType_Create, IN IMFMediaType *pMediaType, IN mMediaTypeLoo
 
   mERROR_IF(pMediaType == nullptr || pMediaTypeLookup == nullptr || pVideoStreamType == nullptr, mR_ArgumentNull);
 
-  uint32_t resolutionX = 0, resolutionY = 0, stride = 0;
-  UUID format;
+  uint32_t resolutionX = 0, resolutionY = 0, stride = 0, frameRateRatioX, frameRateRatioY;
+
   HRESULT hr = S_OK;
   mUnused(hr);
 
   mERROR_IF(FAILED(hr = MFGetAttributeSize(pMediaType, MF_MT_FRAME_SIZE, &resolutionX, &resolutionY)), mR_InternalError);
-  mERROR_IF(FAILED(hr = pMediaType->GetGUID(MF_MT_SUBTYPE, &format)), mR_InternalError);
 
   if (FAILED(hr = pMediaType->GetUINT32(MF_MT_DEFAULT_STRIDE, &stride)))
     stride = resolutionX;
+
+  mERROR_IF(FAILED(hr = MFGetAttributeRatio(pMediaType, MF_MT_FRAME_RATE, &frameRateRatioX, &frameRateRatioY)), mR_InternalError);
 
   mERROR_CHECK(mMemset(pVideoStreamType, 1));
   pVideoStreamType->mediaType = pMediaTypeLookup->mediaType;
@@ -796,6 +843,7 @@ mFUNCTION(mVideoStreamType_Create, IN IMFMediaType *pMediaType, IN mMediaTypeLoo
   pVideoStreamType->resolution.x = resolutionX;
   pVideoStreamType->resolution.y = resolutionY;
   pVideoStreamType->stride = stride;
+  pVideoStreamType->frameRate = frameRateRatioX / (double_t)frameRateRatioY;
 
   mRETURN_SUCCESS();
 }
