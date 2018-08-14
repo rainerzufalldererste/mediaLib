@@ -212,7 +212,7 @@ mFUNCTION(mVideoPlaybackEngine_GetCurrentFrame, mPtr<mVideoPlaybackEngine> &play
 
         if (now - playbackEngine->startTimeStamp > playbackEngine->displayTime)
         {
-          playbackEngine->displayTime = playbackEngine->updateTimeStamp;
+          playbackEngine->displayTime += playbackEngine->frameTime;
           mERROR_CHECK(mQueue_PopFront(playbackEngine->imageQueue, &imageBuffer));
           mERROR_CHECK(mQueue_PushBack(playbackEngine->freeImageBuffers, &imageBuffer));
         }
@@ -224,6 +224,7 @@ mFUNCTION(mVideoPlaybackEngine_GetCurrentFrame, mPtr<mVideoPlaybackEngine> &play
       }
 
       mERROR_CHECK(mQueue_PeekFront(playbackEngine->imageQueue, pImageBuffer));
+      playbackEngine->displayTime = playbackEngine->updateTimeStamp;
     }
 
   break_all_loops:
