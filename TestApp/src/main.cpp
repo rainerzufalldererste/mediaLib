@@ -21,7 +21,7 @@ int main(int, char **)
   mDEFER_DESTRUCTION(&playbackEngine, mVideoPlaybackEngine_Destroy);
   mERROR_CHECK(mVideoPlaybackEngine_Create(&playbackEngine, nullptr, L"C:/Users/cstiller/Videos/Converted.mp4", threadPool));
 
-  mVec2s resolution(512, 512);
+  mVec2s resolution(1024, 1024);
   const size_t subScale = 5;
   mDEFER_DESTRUCTION(pWindow, SDL_DestroyWindow);
   pWindow = SDL_CreateWindow("VideoStream Renderer", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, (int)resolution.x / subScale, (int)resolution.y / subScale, 0);
