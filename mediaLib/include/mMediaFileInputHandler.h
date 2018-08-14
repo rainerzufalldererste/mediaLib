@@ -10,6 +10,7 @@
 #include <string>
 #include "mPixelFormat.h"
 #include "mImageBuffer.h"
+#include "mTimeStamp.h"
 
 #pragma comment(lib, "dxva2.lib")
 #pragma comment(lib, "evr.lib")
@@ -35,6 +36,7 @@ struct mMediaType
   size_t streamIndex;
   mMediaMajorType mediaType;
   size_t wmf_streamIndex;
+  mTimeStamp timePoint;
 };
 
 struct mVideoStreamType : mMediaType
@@ -87,3 +89,8 @@ mFUNCTION(mMediaFileInputIterator_GetNextVideoFrame, mPtr<mMediaFileInputIterato
 
 // Returns 'mR_EndOfStream' on end of stream.
 mFUNCTION(mMediaFileInputIterator_GetNextAudioFrame, mPtr<mMediaFileInputIterator> &iterator, OUT mPtr<uint8_t> *pData, OUT OPTIONAL mAudioStreamType *pAudioStreamType);
+
+mFUNCTION(mMediaFileInputIterator_SeekTo, mPtr<mMediaFileInputIterator> &iterator, const mTimeStamp &timeStamp);
+
+// Returns 'mR_EndOfStream' on end of stream.
+mFUNCTION(mMediaFileInputIterator_SkipFrame, mPtr<mMediaFileInputIterator> &iterator);

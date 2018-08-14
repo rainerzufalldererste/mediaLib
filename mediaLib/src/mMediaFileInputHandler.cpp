@@ -296,6 +296,7 @@ mFUNCTION(mMediaFileInputIterator_GetNextVideoFrame, mPtr<mMediaFileInputIterato
     {
       mERROR_IF(iterator->mediaFileInputHandler->videoStreamCount < mediaTypeLookup.streamIndex, mR_IndexOutOfBounds);
       mVideoStreamType videoStreamType = iterator->mediaFileInputHandler->pVideoStreams[mediaTypeLookup.streamIndex];
+      mERROR_CHECK(mTimeStamp_FromSeconds(&videoStreamType.timePoint, timestamp / (double_t)(10 * 1000 * 1000)));
 
       mPtr<mImageBuffer> sourceBuffer;
       mDEFER_DESTRUCTION(&sourceBuffer, mImageBuffer_Destroy);
@@ -361,6 +362,7 @@ mFUNCTION(mMediaFileInputIterator_GetNextAudioFrame, mPtr<mMediaFileInputIterato
       mERROR_IF(iterator->mediaFileInputHandler->audioStreamCount < mediaTypeLookup.streamIndex, mR_IndexOutOfBounds);
       mAudioStreamType audioStreamType = iterator->mediaFileInputHandler->pAudioStreams[mediaTypeLookup.streamIndex];
       audioStreamType.bufferSize = sampleDataCurrentLength;
+      mERROR_CHECK(mTimeStamp_FromSeconds(&audioStreamType.timePoint, timestamp / (double_t)(10 * 1000 * 1000)));
 
       mPtr<uint8_t> buffer;
       mDEFER_DESTRUCTION(&buffer, mSharedPointer_Destroy);
@@ -379,6 +381,45 @@ mFUNCTION(mMediaFileInputIterator_GetNextAudioFrame, mPtr<mMediaFileInputIterato
       mERROR_IF(true, mR_InternalError);
       break;
     }}
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mMediaFileInputIterator_SkipFrame, mPtr<mMediaFileInputIterator> &iterator)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(iterator == nullptr, mR_ArgumentNull);
+  mERROR_IF(iterator->hasFinished, mR_EndOfStream);
+
+  IMFSample *pSample = nullptr;
+  mDEFER_DESTRUCTION(&pSample, _ReleaseReference);
+
+  LONGLONG timestamp;
+
+  mERROR_CHECK(mMediaFileInputIterator_IterateToStreamIndex(iterator, &pSample, &timestamp));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mMediaFileInputIterator_SeekTo, mPtr<mMediaFileInputIterator> &iterator, const mTimeStamp &timeStamp)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(iterator == nullptr, mR_ArgumentNull);
+  mERROR_IF(timeStamp.timePoint < 0.0, mR_IndexOutOfBounds);
+  iterator->hasFinished = false;
+
+  HRESULT hr = S_OK;
+  mUnused(hr);
+
+  PROPVARIANT var;
+  PropVariantInit(&var);
+
+  var.vt = VT_I8;
+  var.hVal.QuadPart = (LONGLONG)(timeStamp.timePoint * 1000 * 1000 * 10);
+
+  mERROR_IF(FAILED(hr = iterator->mediaFileInputHandler->pSourceReader->SetCurrentPosition(GUID_NULL, var)), mR_InternalError);
 
   mRETURN_SUCCESS();
 }
@@ -754,6 +795,7 @@ mFUNCTION(mMediaFileInputHandler_RunSession_Internal, IN mMediaFileInputHandler 
         {
           mERROR_IF(pData->videoStreamCount < mediaTypeLookup.streamIndex, mR_IndexOutOfBounds);
           mVideoStreamType videoStreamType = pData->pVideoStreams[mediaTypeLookup.streamIndex];
+          mERROR_CHECK(mTimeStamp_FromSeconds(&videoStreamType.timePoint, timeStamp / (double_t)(10 * 1000 * 1000)));
 
           mPtr<mImageBuffer> imageBuffer;
           mDEFER_DESTRUCTION(&imageBuffer, mImageBuffer_Destroy);
@@ -771,6 +813,7 @@ mFUNCTION(mMediaFileInputHandler_RunSession_Internal, IN mMediaFileInputHandler 
           mERROR_IF(pData->audioStreamCount < mediaTypeLookup.streamIndex, mR_IndexOutOfBounds);
           mAudioStreamType audioStreamType = pData->pAudioStreams[mediaTypeLookup.streamIndex];
           audioStreamType.bufferSize = sampleDataCurrentLength;
+          mERROR_CHECK(mTimeStamp_FromSeconds(&audioStreamType.timePoint, timeStamp / (double_t)(10 * 1000 * 1000)));
 
           mERROR_CHECK((*pData->pProcessAudioDataCallback)(pSampleData, audioStreamType));
         }
