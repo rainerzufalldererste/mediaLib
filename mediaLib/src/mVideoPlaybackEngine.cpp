@@ -6,12 +6,12 @@
 // 
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-#include "mTimedVideoPlaybackEngine.h"
+#include "mVideoPlaybackEngine.h"
 #include "mQueue.h"
 #include "mMediaFileInputHandler.h"
 #include "mTimeStamp.h"
 
-struct mTimedVideoPlaybackEngine
+struct mVideoPlaybackEngine
 {
   mThread *pPlaybackThread;
   mPtr<mThreadPool> threadPool;
@@ -31,10 +31,10 @@ struct mTimedVideoPlaybackEngine
   size_t maxQueuedFrames;
 };
 
-mFUNCTION(mTimedVideoPlaybackEngine_Create_Internal, IN mTimedVideoPlaybackEngine *pPlaybackEngine, IN mAllocator *pAllocator, const std::wstring &fileName, mPtr<mThreadPool> &threadPool, const size_t videoStreamIndex, const mPixelFormat outputPixelFormat);
-mFUNCTION(mTimedVideoPlaybackEngine_Destroy_Internal, IN_OUT mTimedVideoPlaybackEngine *pPlaybackEngine);
+mFUNCTION(mVideoPlaybackEngine_Create_Internal, IN mVideoPlaybackEngine *pPlaybackEngine, IN mAllocator *pAllocator, const std::wstring &fileName, mPtr<mThreadPool> &threadPool, const size_t videoStreamIndex, const mPixelFormat outputPixelFormat);
+mFUNCTION(mVideoPlaybackEngine_Destroy_Internal, IN_OUT mVideoPlaybackEngine *pPlaybackEngine);
 
-mFUNCTION(mTimedVideoPlaybackEngine_PlaybackThread, mTimedVideoPlaybackEngine *pPlaybackEngine)
+mFUNCTION(mVideoPlaybackEngine_PlaybackThread, mVideoPlaybackEngine *pPlaybackEngine)
 {
   mFUNCTION_SETUP();
 
@@ -47,8 +47,12 @@ mFUNCTION(mTimedVideoPlaybackEngine_PlaybackThread, mTimedVideoPlaybackEngine *p
     mERROR_CHECK(mTimeStamp_Now(&now));
 
     size_t count = 0;
+
     mPtr<mImageBuffer> currentImageBuffer;
     mDEFER_DESTRUCTION(&currentImageBuffer, mImageBuffer_Destroy);
+
+    mPtr<mImageBuffer> rawImageBuffer;
+    mDEFER_DESTRUCTION(&rawImageBuffer, mImageBuffer_Destroy);
 
     // Get ImageBuffer.
     {
@@ -57,13 +61,15 @@ mFUNCTION(mTimedVideoPlaybackEngine_PlaybackThread, mTimedVideoPlaybackEngine *p
         mERROR_CHECK(mMutex_Lock(pPlaybackEngine->pQueueMutex));
         mDEFER_DESTRUCTION(pPlaybackEngine->pQueueMutex, mMutex_Unlock);
 
-        mERROR_CHECK(mQueue_GetCount(pPlaybackEngine->freeImageBuffers, &count));
+        size_t queuedCount = 0;
+        mERROR_CHECK(mQueue_GetCount(pPlaybackEngine->imageQueue, &queuedCount));
 
-        if (count > pPlaybackEngine->maxQueuedFrames)
+        if (queuedCount > pPlaybackEngine->maxQueuedFrames)
         {
-          mERROR_CHECK(mSleep(1));
-          continue;
+          goto sleep;
         }
+
+        mERROR_CHECK(mQueue_GetCount(pPlaybackEngine->freeImageBuffers, &count));
 
         if (count > 0)
           mERROR_CHECK(mQueue_PopFront(pPlaybackEngine->freeImageBuffers, &currentImageBuffer));
@@ -73,7 +79,6 @@ mFUNCTION(mTimedVideoPlaybackEngine_PlaybackThread, mTimedVideoPlaybackEngine *p
         mERROR_CHECK(mImageBuffer_Create(&currentImageBuffer, pPlaybackEngine->pAllocator));
     }
 
-    mPtr<mImageBuffer> rawImageBuffer;
     mERROR_CHECK(mMediaFileInputIterator_GetNextVideoFrame(pPlaybackEngine->iterator, &rawImageBuffer, nullptr));
 
     mERROR_CHECK(mImageBuffer_AllocateBuffer(currentImageBuffer, rawImageBuffer->currentSize, pPlaybackEngine->targetPixelFormat));
@@ -86,6 +91,11 @@ mFUNCTION(mTimedVideoPlaybackEngine_PlaybackThread, mTimedVideoPlaybackEngine *p
 
       mERROR_CHECK(mQueue_PushBack(pPlaybackEngine->imageQueue, &currentImageBuffer));
     }
+
+    continue;
+
+  sleep:
+    mSleep(1);
   }
 
   mRETURN_SUCCESS();
@@ -93,18 +103,18 @@ mFUNCTION(mTimedVideoPlaybackEngine_PlaybackThread, mTimedVideoPlaybackEngine *p
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mTimedVideoPlaybackEngine_Create, OUT mPtr<mTimedVideoPlaybackEngine> *pPlaybackEngine, IN mAllocator *pAllocator, const std::wstring & fileName, mPtr<mThreadPool> &threadPool, const size_t videoStreamIndex /* = 0 */, const mPixelFormat outputPixelFormat /* = mPF_B8G8R8A8 */)
+mFUNCTION(mVideoPlaybackEngine_Create, OUT mPtr<mVideoPlaybackEngine> *pPlaybackEngine, IN mAllocator *pAllocator, const std::wstring & fileName, mPtr<mThreadPool> &threadPool, const size_t videoStreamIndex /* = 0 */, const mPixelFormat outputPixelFormat /* = mPF_B8G8R8A8 */)
 {
   mFUNCTION_SETUP();
 
-  mERROR_CHECK(mSharedPointer_Allocate(pPlaybackEngine, pAllocator, (std::function<void(mTimedVideoPlaybackEngine *)>)[](mTimedVideoPlaybackEngine *pData) { mTimedVideoPlaybackEngine_Destroy_Internal(pData); }, 1));
+  mERROR_CHECK(mSharedPointer_Allocate(pPlaybackEngine, pAllocator, (std::function<void(mVideoPlaybackEngine *)>)[](mVideoPlaybackEngine *pData) { mVideoPlaybackEngine_Destroy_Internal(pData); }, 1));
 
-  mERROR_CHECK(mTimedVideoPlaybackEngine_Create_Internal(pPlaybackEngine->GetPointer(), pAllocator, fileName, threadPool, videoStreamIndex, outputPixelFormat));
+  mERROR_CHECK(mVideoPlaybackEngine_Create_Internal(pPlaybackEngine->GetPointer(), pAllocator, fileName, threadPool, videoStreamIndex, outputPixelFormat));
 
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mTimedVideoPlaybackEngine_Destroy, IN_OUT mPtr<mTimedVideoPlaybackEngine> *pPlaybackEngine)
+mFUNCTION(mVideoPlaybackEngine_Destroy, IN_OUT mPtr<mVideoPlaybackEngine> *pPlaybackEngine)
 {
   mFUNCTION_SETUP();
 
@@ -116,7 +126,7 @@ mFUNCTION(mTimedVideoPlaybackEngine_Destroy, IN_OUT mPtr<mTimedVideoPlaybackEngi
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mTimedVideoPlaybackEngine_GetCurrentFrame, mPtr<mTimedVideoPlaybackEngine> &playbackEngine, OUT mPtr<mImageBuffer> *pImageBuffer)
+mFUNCTION(mVideoPlaybackEngine_GetCurrentFrame, mPtr<mVideoPlaybackEngine> &playbackEngine, OUT mPtr<mImageBuffer> *pImageBuffer)
 {
   mFUNCTION_SETUP();
 
@@ -132,7 +142,7 @@ mFUNCTION(mTimedVideoPlaybackEngine_GetCurrentFrame, mPtr<mTimedVideoPlaybackEng
     mDEFER_ON_ERROR(playbackEngine->isRunning = false);
 
     mDEFER_DESTRUCTION_ON_ERROR(&playbackEngine->pPlaybackThread, mSetToNullptr);
-    mERROR_CHECK(mThread_Create(&playbackEngine->pPlaybackThread, playbackEngine->pAllocator, mTimedVideoPlaybackEngine_PlaybackThread, playbackEngine.GetPointer()));
+    mERROR_CHECK(mThread_Create(&playbackEngine->pPlaybackThread, playbackEngine->pAllocator, mVideoPlaybackEngine_PlaybackThread, playbackEngine.GetPointer()));
     
     mVec2s resolution;
     mERROR_CHECK(mMediaFileInputHandler_GetVideoStreamResolution(playbackEngine->mediaFileInputHandler, &resolution, playbackEngine->videoStreamIndex));
@@ -140,7 +150,7 @@ mFUNCTION(mTimedVideoPlaybackEngine_GetCurrentFrame, mPtr<mTimedVideoPlaybackEng
 
   size_t count = 0;
 
-  while (count == 0)
+  while (true)
   {
     {
       mERROR_CHECK(mMutex_Lock(playbackEngine->pQueueMutex));
@@ -153,26 +163,32 @@ mFUNCTION(mTimedVideoPlaybackEngine_GetCurrentFrame, mPtr<mTimedVideoPlaybackEng
 
       mTimeStamp now;
       mERROR_CHECK(mTimeStamp_Now(&now));
+
       mPtr<mImageBuffer> imageBuffer;
       mDEFER_DESTRUCTION(&imageBuffer, mImageBuffer_Destroy);
 
-      while (count > 1)
+      for (size_t i = 0; i < count - 1; ++i)
       {
+        mERROR_CHECK(mQueue_PeekFront(playbackEngine->imageQueue, &imageBuffer));
+
         if (now - playbackEngine->startTimeStamp > playbackEngine->displayTime)
         {
+          playbackEngine->displayTime += playbackEngine->frameTime;
           mERROR_CHECK(mQueue_PopFront(playbackEngine->imageQueue, &imageBuffer));
           mERROR_CHECK(mQueue_PushBack(playbackEngine->freeImageBuffers, &imageBuffer));
-          playbackEngine->displayTime += playbackEngine->frameTime;
         }
         else
         {
           *pImageBuffer = imageBuffer;
-          break;
+          goto break_all_loops;
         }
       }
 
       mERROR_CHECK(mQueue_PeekFront(playbackEngine->imageQueue, pImageBuffer));
     }
+
+  break_all_loops:
+    break;
 
   sleep:
     mERROR_CHECK(mSleep(1));
@@ -190,7 +206,7 @@ mFUNCTION(mTimedVideoPlaybackEngine_GetCurrentFrame, mPtr<mTimedVideoPlaybackEng
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mTimedVideoPlaybackEngine_Create_Internal, IN mTimedVideoPlaybackEngine *pPlaybackEngine, IN mAllocator *pAllocator, const std::wstring &fileName, mPtr<mThreadPool> &threadPool, const size_t videoStreamIndex, const mPixelFormat outputPixelFormat)
+mFUNCTION(mVideoPlaybackEngine_Create_Internal, IN mVideoPlaybackEngine *pPlaybackEngine, IN mAllocator *pAllocator, const std::wstring &fileName, mPtr<mThreadPool> &threadPool, const size_t videoStreamIndex, const mPixelFormat outputPixelFormat)
 {
   mFUNCTION_SETUP();
 
@@ -206,7 +222,7 @@ mFUNCTION(mTimedVideoPlaybackEngine_Create_Internal, IN mTimedVideoPlaybackEngin
 
   mVideoStreamType videoStreamType;
   mERROR_CHECK(mMediaFileInputHandler_GetVideoStreamType(pPlaybackEngine->mediaFileInputHandler, videoStreamIndex, &videoStreamType));
-  mERROR_CHECK(mTimeStamp_FromSeconds(&pPlaybackEngine->frameTime, videoStreamType.frameRate));
+  mERROR_CHECK(mTimeStamp_FromSeconds(&pPlaybackEngine->frameTime, 1.0 / videoStreamType.frameRate));
 
   mERROR_CHECK(mMutex_Create(&pPlaybackEngine->pQueueMutex, pAllocator));
   mERROR_CHECK(mQueue_Create(&pPlaybackEngine->imageQueue, pAllocator));
@@ -215,7 +231,7 @@ mFUNCTION(mTimedVideoPlaybackEngine_Create_Internal, IN mTimedVideoPlaybackEngin
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mTimedVideoPlaybackEngine_Destroy_Internal, IN_OUT mTimedVideoPlaybackEngine * pPlaybackEngine)
+mFUNCTION(mVideoPlaybackEngine_Destroy_Internal, IN_OUT mVideoPlaybackEngine * pPlaybackEngine)
 {
   mFUNCTION_SETUP();
 

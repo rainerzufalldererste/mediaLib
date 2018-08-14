@@ -1,5 +1,5 @@
 #include "default.h"
-#include "mTimedVideoPlaybackEngine.h"
+#include "mVideoPlaybackEngine.h"
 #include "mThreadPool.h"
 #include "SDL.h"
 
@@ -17,9 +17,9 @@ int main(int, char **)
   mDEFER_DESTRUCTION(&threadPool, mThreadPool_Destroy);
   mERROR_CHECK(mThreadPool_Create(&threadPool, nullptr));
 
-  mPtr<mTimedVideoPlaybackEngine> playbackEngine;
-  mDEFER_DESTRUCTION(&playbackEngine, mTimedVideoPlaybackEngine_Destroy);
-  mERROR_CHECK(mTimedVideoPlaybackEngine_Create(&playbackEngine, nullptr, L"C:/Users/cstiller/Videos/Converted.mp4", threadPool));
+  mPtr<mVideoPlaybackEngine> playbackEngine;
+  mDEFER_DESTRUCTION(&playbackEngine, mVideoPlaybackEngine_Destroy);
+  mERROR_CHECK(mVideoPlaybackEngine_Create(&playbackEngine, nullptr, L"C:/Users/cstiller/Videos/Converted.mp4", threadPool));
 
   mVec2s resolution(512, 512);
   const size_t subScale = 5;
@@ -33,7 +33,7 @@ int main(int, char **)
     mPtr<mImageBuffer> imageBuffer;
     mDEFER_DESTRUCTION(&imageBuffer, mImageBuffer_Destroy);
 
-    const mResult result = mTimedVideoPlaybackEngine_GetCurrentFrame(playbackEngine, &imageBuffer);
+    const mResult result = mVideoPlaybackEngine_GetCurrentFrame(playbackEngine, &imageBuffer);
 
     if(result == mR_EndOfStream)
       break;
