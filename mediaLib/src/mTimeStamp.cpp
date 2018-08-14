@@ -17,7 +17,7 @@ mFUNCTION(mTimeStamp_Now, OUT mTimeStamp *pTimeStamp)
 
   mERROR_IF(pTimeStamp == nullptr, mR_ArgumentNull);
 
-  pTimeStamp->timePoint = (std::chrono::duration<double_t, std::micro>(std::chrono::high_resolution_clock::now() - _mTimePoint_StartTime)).count() / 1000.0 * 1000.0;
+  pTimeStamp->timePoint = (std::chrono::duration<double_t, std::micro>(std::chrono::high_resolution_clock::now() - _mTimePoint_StartTime)).count() / (1000.0 * 1000.0);
 
   mRETURN_SUCCESS();
 }
@@ -28,7 +28,7 @@ mFUNCTION(mTimeStamp_FromSeconds, OUT mTimeStamp *pTimeStamp, const double_t sec
 
   mERROR_IF(pTimeStamp == nullptr, mR_ArgumentNull);
 
-  pTimeStamp->timePoint = std::chrono::duration<double_t, std::micro>(seconds * 1000.0 * 1000.0).count() / 1000.0 * 1000.0;
+  pTimeStamp->timePoint = std::chrono::duration<double_t, std::micro>(seconds * 1000.0 * 1000.0).count() / (1000.0 * 1000.0);
 
   mRETURN_SUCCESS();
 }
