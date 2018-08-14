@@ -33,7 +33,14 @@ int main(int, char **)
     mPtr<mImageBuffer> imageBuffer;
     mDEFER_DESTRUCTION(&imageBuffer, mImageBuffer_Destroy);
 
-    const mResult result = mVideoPlaybackEngine_GetCurrentFrame(playbackEngine, &imageBuffer);
+    bool isNewFrame = false;
+    const mResult result = mVideoPlaybackEngine_GetCurrentFrame(playbackEngine, &imageBuffer, &isNewFrame);
+
+    if (!isNewFrame)
+    {
+      mERROR_CHECK(mSleep(5));
+      continue;
+    }
 
     if(result == mR_EndOfStream)
       break;
