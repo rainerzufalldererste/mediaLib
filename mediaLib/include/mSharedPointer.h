@@ -202,10 +202,10 @@ inline mSharedPointer<T>::~mSharedPointer()
 
     m_pParams->~PointerParams();
     mAllocator_FreePtr(pAllocator, &m_pParams);
-
-    m_pParams = nullptr;
-    m_pData = nullptr;
   }
+
+  m_pParams = nullptr;
+  m_pData = nullptr;
 }
 
 template<typename T>
