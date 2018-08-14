@@ -6,17 +6,29 @@
 // 
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-#ifndef mMutex_h__
-#define mMutex_h__
+#ifndef mTimeStamp_h__
+#define mTimeStamp_h__
 
 #include "default.h"
 
-struct mMutex;
+struct mTimeStamp
+{
+  double_t timePoint;
 
-mFUNCTION(mMutex_Create, OUT mMutex **ppMutex, IN OPTIONAL mAllocator *pAllocator);
-mFUNCTION(mMutex_Destroy, IN_OUT mMutex **ppMutex);
+  mTimeStamp operator +(const mTimeStamp t) const;
+  mTimeStamp operator -(const mTimeStamp t) const;
+  mTimeStamp& operator +=(const mTimeStamp t);
+  mTimeStamp& operator -=(const mTimeStamp t);
+  bool operator <(const mTimeStamp t) const;
+  bool operator <=(const mTimeStamp t) const;
+  bool operator >(const mTimeStamp t) const;
+  bool operator >=(const mTimeStamp t) const;
+  bool operator ==(const mTimeStamp t) const;
+  bool operator !=(const mTimeStamp t) const;
+};
 
-mFUNCTION(mMutex_Lock, IN mMutex *pMutex);
-mFUNCTION(mMutex_Unlock, IN mMutex *pMutex);
+mFUNCTION(mTimeStamp_Now, OUT mTimeStamp *pTimeStamp);
+mFUNCTION(mTimeStamp_FromSeconds, OUT mTimeStamp *pTimeStamp, const double_t seconds);
 
-#endif // mMutex_h__
+
+#endif // mTimeStamp_h__

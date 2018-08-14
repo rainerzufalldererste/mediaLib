@@ -25,6 +25,7 @@ struct mThread
   mAllocator *pAllocator;
   std::thread handle;
   std::atomic<mThread_ThreadState> threadState;
+  mResult result;
 };
 
 template<size_t ...>
@@ -39,10 +40,32 @@ struct _mThread_ThreadInternalIntegerSequenceGenerator<0, TCountArgs...>
   typedef _mThread_ThreadInternalSequence<TCountArgs...> type;
 };
 
-template<class TFunction, class Args, size_t ...TCountArgs>
-void _mThread_ThreadInternal_CallFunctionUnpack(TFunction function, Args params, _mThread_ThreadInternalSequence<TCountArgs...>)
+template<class TFunctionDecay>
+struct _mThread_ThreadInternal_Decay
 {
-  function(std::get<TCountArgs>(params) ...);
+  template <typename TFunction, typename ...Args>
+  static mResult CallFunction(TFunction function, Args&&...args)
+  {
+    function(std::forward<Args>(args)...);
+
+    return mR_Success;
+  }
+};
+
+template <>
+struct _mThread_ThreadInternal_Decay<mResult>
+{
+  template <typename TFunction, typename ...Args>
+  static mResult CallFunction(TFunction function, Args&&...args)
+  {
+    return function(std::forward<Args>(args)...);
+  }
+};
+
+template<class TFunction, class Args, size_t ...TCountArgs>
+void _mThread_ThreadInternal_CallFunctionUnpack(mThread *pThread, TFunction function, Args params, _mThread_ThreadInternalSequence<TCountArgs...>)
+{
+  pThread->result = _mThread_ThreadInternal_Decay<std::decay<TFunction>::type>::CallFunction(function, std::get<TCountArgs>(params) ...);
 }
 
 template<class TFunction, class Args>
@@ -52,7 +75,7 @@ void _mThread_ThreadInternalFunc(mThread *pThread, TFunction *pFunction, Args ar
 
   pThread->threadState = mT_TS_Running;
 
-  _mThread_ThreadInternal_CallFunctionUnpack(*pFunction, args, typename _mThread_ThreadInternalIntegerSequenceGenerator<std::tuple_size<Args>::value>::type());
+  _mThread_ThreadInternal_CallFunctionUnpack(pThread, *pFunction, args, typename _mThread_ThreadInternalIntegerSequenceGenerator<std::tuple_size<Args>::value>::type());
 
   pThread->threadState = mT_TS_Stopped;
 }
@@ -70,6 +93,7 @@ mFUNCTION(mThread_Create, OUT mThread **ppThread, IN OPTIONAL mAllocator *pAlloc
   mERROR_CHECK(mAllocator_AllocateZero(pAllocator, ppThread, 1));
 
   (*ppThread)->pAllocator = pAllocator;
+  (*ppThread)->result = mR_Success;
 
   new (&(*ppThread)->threadState) std::atomic<mThread_ThreadState>(mT_TS_NotStarted);
 
