@@ -4,14 +4,7 @@
 #include "mThreadPool.h"
 #include "SDL.h"
 #include <time.h>
-
-#include "GL/glew.h"
-#include "GL/wglew.h"
-
-#pragma warning(push)
-#pragma warning(disable: 4505)
-#include "GL/freeglut.h"
-#pragma warning(pop)
+#include "GL\glew.h"
 
 mVec2s resolution;
 SDL_Window *pWindow = nullptr;
@@ -24,9 +17,9 @@ SDL_GLContext glContext;
 bool is3dEnabled = false;
 GLenum glError = GL_NO_ERROR;
 GLuint texture = 0;
+GLuint shaderProgram;
 
 mFUNCTION(OnVideoFramCallback, mPtr<mImageBuffer> &, const mVideoStreamType &);
-mFUNCTION(RenderFrame);
 
 int main(int, char **)
 {
@@ -64,8 +57,8 @@ int main(int, char **)
   glewExperimental = GL_TRUE;
   mERROR_IF((glError = glewInit()) != GL_NO_ERROR, mR_InternalError);
 
-  SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
-  SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
+  //SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
+  //SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
   SDL_GL_SetSwapInterval(1);
 
   //if (SDL_GL_SetAttribute(SDL_GL_STEREO, 1) == 0)
@@ -75,7 +68,7 @@ int main(int, char **)
   //}
 
   // Prepare GL Rendering
-  {
+  //{
     glGenTextures(1, &texture);
     glBindTexture(GL_TEXTURE_2D, texture);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -121,7 +114,7 @@ int main(int, char **)
     glShaderSource(fragmentShader, 1, &fragmentSource, NULL);
     glCompileShader(fragmentShader);
 
-    GLuint shaderProgram = glCreateProgram();
+    shaderProgram = glCreateProgram();
     glAttachShader(shaderProgram, vertexShader);
     glAttachShader(shaderProgram, fragmentShader);
 
@@ -138,14 +131,26 @@ int main(int, char **)
     glBindVertexArray(vao);
 
     mVec2f texCoord[] = { { 0.0f, 0.0f },{ 1.0f, 0.0f },{ 0.0f, 1.0f },{ 1.0f, 0.0f },{ 0.0f, 1.0f },{ 1.0f, 1.0f } };
-  }
+  //}
 
   //mERROR_CHECK(mMediaFileInputHandler_SetVideoCallback(mediaFileHandler, OnVideoFramCallback));
   //mERROR_CHECK(mMediaFileInputHandler_Play(mediaFileHandler));
 
+
+  size_t frame = 0;
+
   while (true)
   {
-    mERROR_CHECK(RenderFrame());
+    glClearColor((frame++ & 0xFF) / 255.0f, 0.0f, 0.0f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    glDrawArrays(GL_TRIANGLES, 0, 3);
+
+    glError = glGetError();
+
+    SDL_GL_SwapWindow(pWindow);
+
+    //mERROR_CHECK(RenderFrame());
   }
 
   mRETURN_SUCCESS();
@@ -165,25 +170,6 @@ mFUNCTION(OnVideoFramCallback, mPtr<mImageBuffer> &buffer, const mVideoStreamTyp
   SDL_Event sdl_event;
   while (SDL_PollEvent(&sdl_event))
     ; // We don't care.
-
-  mERROR_CHECK(RenderFrame());
-
-  mRETURN_SUCCESS();
-}
-
-size_t frame = 0;
-
-mFUNCTION(RenderFrame)
-{
-  mFUNCTION_SETUP();
-
-  glClearColor((frame++ & 0xFF) / 255.0f, 0.0f, 0.0f, 1.0f);
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  glDrawArrays(GL_TRIANGLES, 0, 3);
-
-  glError = glGetError();
-
-  SDL_GL_SwapWindow(pWindow);
 
   mRETURN_SUCCESS();
 }
