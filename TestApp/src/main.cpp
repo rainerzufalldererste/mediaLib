@@ -65,11 +65,13 @@ int main(int, char **)
     const char* vertexSource = GLSL(
       in vec2 position;
       in vec2 texcoord;
+      uniform vec2 screenSize;
+      uniform vec2 scale;
       out vec2 Texcoord;
 
     void main() {
       Texcoord = texcoord;
-      gl_Position = vec4(position, 0.0, 1.0);
+      gl_Position = vec4(position / screenSize * scale, 0.0, 1.0);
     }
     );
 
@@ -96,6 +98,7 @@ int main(int, char **)
       outColor = texture(tex0, Texcoord);
     }
     );
+
     GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
     glShaderSource(fragmentShader, 1, &fragmentSource, NULL);
     glCompileShader(fragmentShader);
@@ -142,13 +145,21 @@ int main(int, char **)
     glEnableVertexAttribArray(texAttrib);
     glVertexAttribPointer(texAttrib, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(mVec2f), (void*)(sizeof(mVec2f)));
     mGL_ERROR_CHECK();
+
+    GLint screenSizeAttrib = glGetUniformLocation(shaderProgram, "screenSize");
+    glUniform2f(screenSizeAttrib, (float)mRendererParams_CurrentRenderSize.x, (float)mRendererParams_CurrentRenderSize.y);
+    mGL_ERROR_CHECK();
+
+    GLint scaleAttrib = glGetUniformLocation(shaderProgram, "scale");
+    glUniform2f(scaleAttrib, (float)image->currentSize.x, (float)image->currentSize.y);
+    mGL_ERROR_CHECK();
   }
 
   size_t frame = 0;
 
   while (true)
   {
-    glClearColor((frame++ & 0xFF) / 255.0f, 0.0f, 0.0f, 1.0f);
+    glClearColor(mSin((frame++) / 255.0f) / 4.0f + 0.25f, mSin((frame++) / 255.0f) / 4.0f + 0.25f, mSin((frame++) / 255.0f) / 4.0f + 0.25f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
