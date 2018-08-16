@@ -4,3 +4,9 @@
 [submodule "mediaLib/3rdParty/stb"]
 	path = mediaLib/3rdParty/stb
 	url = https://github.com/nothings/stb
+[submodule "mediaLib/3rdParty/SDL2"]
+	path = mediaLib/3rdParty/SDL2
+	url = https://github.com/rainerzufalldererste/SDL2build.git
+[submodule "mediaLib/3rdParty/glew"]
+	path = mediaLib/3rdParty/glew
+	url = https://github.com/rainerzufalldererste/glewBuild.git
