@@ -7,15 +7,17 @@
 #include "mRenderParams.h"
 #include "mHardwareWindow.h"
 
-mVec2s mRendererParams_CurrentRenderSize = mVec2s(1, 1);
-mRenderContextId mRenderParams_CurrentRenderResolution = (mRenderContextId)-1;
+mVec2s mRenderParams_CurrentRenderResolution;
+mVec2f mRenderParams_CurrentRenderResolutionF;
 
-mRenderContext *mRenderParams_pRenderContexts = nullptr;
-size_t mRenderParams_RenderContextCount = 0;
+mRenderContextId mRenderParams_CurrentRenderContext;
 
 #if defined(mRENDERER_OPENGL)
 GLenum mRenderParams_GLError;
 #endif
+
+mRenderContext *mRenderParams_pRenderContexts;
+size_t mRenderParams_RenderContextCount;
 
 mFUNCTION(mRenderParams_CreateRenderContext, OUT mRenderContextId *pRenderContextId, mPtr<mHardwareWindow> &window)
 {
@@ -70,7 +72,7 @@ mFUNCTION(mRenderParams_ActivateRenderContext, mPtr<mHardwareWindow> &window, co
 
   int result = 0;
   mERROR_IF(0 != (result = SDL_GL_MakeCurrent(pWindow, mRenderParams_pRenderContexts[renderContextId].glContext)), mR_RenderingError);
-  mRenderParams_CurrentRenderResolution = renderContextId;
+  mRenderParams_CurrentRenderContext = renderContextId;
 #else
   mRETURN_RESULT(mR_NotImplemented);
 #endif
@@ -98,6 +100,16 @@ mFUNCTION(mRenderParams_DestroyRenderContext, IN_OUT mRenderContextId *pRenderCo
   }
 
   *pRenderContextId = (mRenderContextId)-1;
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mRenderParams_SetCurrentRenderResolution, const mVec2s &resolution)
+{
+  mFUNCTION_SETUP();
+
+  mRenderParams_CurrentRenderResolution = resolution;
+  mRenderParams_CurrentRenderResolutionF = (mVec2f)resolution;
 
   mRETURN_SUCCESS();
 }

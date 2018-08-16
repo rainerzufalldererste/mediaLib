@@ -17,7 +17,7 @@ project(ProjectName)
   
   filter { }
   
-  defines { "_CRT_SECURE_NO_WARNINGS", "SSE2" }
+  defines { "_CRT_SECURE_NO_WARNINGS", "SSE2", "GLEW_STATIC" }
   
   objdir "intermediate/obj"
 

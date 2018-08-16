@@ -18,10 +18,11 @@
 #include "SDL_opengl.h"
 #endif
 
-extern mVec2s mRendererParams_CurrentRenderSize;
+extern mVec2s mRenderParams_CurrentRenderResolution;
+extern mVec2f mRenderParams_CurrentRenderResolutionF;
 
 typedef size_t mRenderContextId;
-extern mRenderContextId mRenderParams_CurrentRenderResolution;
+extern mRenderContextId mRenderParams_CurrentRenderContext;
 
 struct mRenderContext
 {
@@ -59,8 +60,19 @@ struct mHardwareWindow;
 mFUNCTION(mRenderParams_CreateRenderContext, OUT mRenderContextId *pRenderContextId, mPtr<mHardwareWindow> &window);
 mFUNCTION(mRenderParams_ActivateRenderContext, mPtr<mHardwareWindow> &window, const mRenderContextId renderContextId);
 mFUNCTION(mRenderParams_DestroyRenderContext, IN_OUT mRenderContextId *pRenderContextId);
+
+mFUNCTION(mRenderParams_SetCurrentRenderResolution, const mVec2s &resolution);
+
 mFUNCTION(mRenderParams_SetVsync, const bool vsync);
 mFUNCTION(mRenderParams_SetDoubleBuffering, const bool doubleBuffering);
 mFUNCTION(mRenderParams_SetMultisampling, const size_t count);
+
+enum mRendererParams_UploadState
+{
+  mRP_US_NotInitialized,
+  mRP_US_NotUploaded,
+  mRP_US_Uploading,
+  mRP_US_Ready
+};
 
 #endif // mRenderParams_h__
