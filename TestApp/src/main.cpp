@@ -5,19 +5,13 @@
 #include "SDL.h"
 #include <time.h>
 #include "GL\glew.h"
+#include "mHardwareWindow.h"
 
-mVec2s resolution;
-SDL_Window *pWindow = nullptr;
-SDL_Surface *pSurface = nullptr;
-const size_t subScale = 5;
-mPtr<mImageBuffer> bgraImageBuffer = nullptr;
+mPtr<mHardwareWindow> window = nullptr;
 mPtr<mImageBuffer> image;
 mPtr<mThreadPool> threadPool = nullptr;
-SDL_GLContext glContext;
 bool is3dEnabled = false;
 GLenum glError = GL_NO_ERROR;
-
-mFUNCTION(OnVideoFramCallback, mPtr<mImageBuffer> &, const mVideoStreamType &);
 
 int main(int, char **)
 {
@@ -27,37 +21,24 @@ int main(int, char **)
   mDEFER_DESTRUCTION(&threadPool, mThreadPool_Destroy);
   mERROR_CHECK(mThreadPool_Create(&threadPool, nullptr));
 
-  mDEFER_DESTRUCTION(&bgraImageBuffer, mImageBuffer_Destroy);
-  mERROR_CHECK(mImageBuffer_Create(&bgraImageBuffer, nullptr, resolution));
-
   mDEFER_DESTRUCTION(&image, mImageBuffer_Destroy);
   mERROR_CHECK(mImageBuffer_CreateFromFile(&image, nullptr, "C:/Users/cstiller/Pictures/avatar.png"));
-
-  mPtr<mMediaFileInputHandler> mediaFileHandler;
-  mDEFER_DESTRUCTION(&mediaFileHandler, mMediaFileInputHandler_Destroy);
-  mERROR_CHECK(mMediaFileInputHandler_Create(&mediaFileHandler, nullptr, L"C:/Users/cstiller/Videos/Converted.mp4", mMediaFileInputHandler_CreateFlags::mMMFIH_CF_VideoEnabled));
 
   SDL_Init(SDL_INIT_EVERYTHING);
 
   SDL_DisplayMode displayMode;
   SDL_GetCurrentDisplayMode(0, &displayMode);
 
+  mVec2s resolution;
   resolution.x = displayMode.w / 2;
   resolution.y = displayMode.h / 2;
 
-  mDEFER_DESTRUCTION(pWindow, SDL_DestroyWindow);
-  pWindow = SDL_CreateWindow("VideoStream Renderer", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, (int)resolution.x, (int)resolution.y, /*SDL_WINDOW_FULLSCREEN | */SDL_WINDOW_OPENGL);
-  mERROR_IF(pWindow == nullptr, mR_ArgumentNull);
+  mDEFER_DESTRUCTION(&window, mHardwareWindow_Destroy);
+  mERROR_CHECK(mHardwareWindow_Create(&window, nullptr, "OpenGl Window", resolution));
 
-  SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-
-  glContext = SDL_GL_CreateContext(pWindow);
-  glewExperimental = GL_TRUE;
-  mERROR_IF((glError = glewInit()) != GL_NO_ERROR, mR_InternalError);
-
-  SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
-  SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
-  SDL_GL_SetSwapInterval(1);
+  mERROR_CHECK(mRenderParams_SetDoubleBuffering(true));
+  mERROR_CHECK(mRenderParams_SetMultisampling(4));
+  mERROR_CHECK(mRenderParams_SetVsync(true));
 
   //if (SDL_GL_SetAttribute(SDL_GL_STEREO, 1) == 0)
   //{
@@ -128,46 +109,40 @@ int main(int, char **)
       mPRINT(buffer);
     }
 
-
-    // Link the vertex and fragment shader into a shader program
     GLuint shaderProgram = glCreateProgram();
     glAttachShader(shaderProgram, vertexShader);
     glAttachShader(shaderProgram, fragmentShader);
     glBindFragDataLocation(shaderProgram, 0, "outColor");
     glLinkProgram(shaderProgram);
     glUseProgram(shaderProgram);
-    mASSERT((glError = glGetError()) == GL_NO_ERROR, "GL ERROR.");
+    mGL_ERROR_CHECK();
 
     glActiveTexture(GL_TEXTURE0);
     GLuint texture;
     glGenTextures(1, &texture);
     glBindTexture(GL_TEXTURE_2D, texture);
-    mASSERT((glError = glGetError()) == GL_NO_ERROR, "GL ERROR.");
+    mGL_ERROR_CHECK();
     
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)image->currentSize.x, (GLsizei)image->currentSize.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, image->pPixels);
     glUniform1i(glGetUniformLocation(shaderProgram, "tex0"), 0);
-    mASSERT((glError = glGetError()) == GL_NO_ERROR, "GL ERROR.");
+    mGL_ERROR_CHECK();
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    mASSERT((glError = glGetError()) == GL_NO_ERROR, "GL ERROR.");
+    mGL_ERROR_CHECK();
 
     GLint posAttrib = glGetAttribLocation(shaderProgram, "position");
     glEnableVertexAttribArray(posAttrib);
     glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(mVec2f), 0);
-    mASSERT((glError = glGetError()) == GL_NO_ERROR, "GL ERROR.");
+    mGL_ERROR_CHECK();
 
     GLint texAttrib = glGetAttribLocation(shaderProgram, "texcoord");
     glEnableVertexAttribArray(texAttrib);
     glVertexAttribPointer(texAttrib, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(mVec2f), (void*)(sizeof(mVec2f)));
-    mASSERT((glError = glGetError()) == GL_NO_ERROR, "GL ERROR.");
+    mGL_ERROR_CHECK();
   }
-
-  //mERROR_CHECK(mMediaFileInputHandler_SetVideoCallback(mediaFileHandler, OnVideoFramCallback));
-  //mERROR_CHECK(mMediaFileInputHandler_Play(mediaFileHandler));
-
 
   size_t frame = 0;
 
@@ -178,30 +153,10 @@ int main(int, char **)
 
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-    mASSERT((glError = glGetError()) == GL_NO_ERROR, "GL ERROR.");
+    mGL_ERROR_CHECK();
 
-    SDL_GL_SwapWindow(pWindow);
-
-    //mERROR_CHECK(RenderFrame());
+    mERROR_CHECK(mHardwareWindow_Swap(window));
   }
-
-  mRETURN_SUCCESS();
-}
-
-mFUNCTION(OnVideoFramCallback, mPtr<mImageBuffer> &buffer, const mVideoStreamType &videoStreamType)
-{
-  mFUNCTION_SETUP();
-
-  mUnused(videoStreamType);
-
-  if (buffer->currentSize != bgraImageBuffer->currentSize)
-    mERROR_CHECK(mImageBuffer_AllocateBuffer(bgraImageBuffer, buffer->currentSize, bgraImageBuffer->pixelFormat));
-
-  mERROR_CHECK(mPixelFormat_TransformBuffer(buffer, bgraImageBuffer, threadPool));
-
-  SDL_Event sdl_event;
-  while (SDL_PollEvent(&sdl_event))
-    ; // We don't care.
 
   mRETURN_SUCCESS();
 }

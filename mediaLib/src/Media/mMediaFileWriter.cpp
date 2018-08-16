@@ -120,9 +120,9 @@ mFUNCTION(mMediaFileWriter_AppendVideoFrame, mPtr<mMediaFileWriter> &mediaFileWr
 
   const size_t duration = (10 * 1000 * mediaFileWriter->mediaFileInformation.frameRateFraction.x) / mediaFileWriter->mediaFileInformation.frameRateFraction.y;
   mediaFileWriter->lastFrameTimestamp += duration;
-  mERROR_IF(mediaFileWriter->lastFrameTimestamp > LONGLONG_MAX, mR_IndexOutOfBounds);
+  mERROR_IF(mediaFileWriter->lastFrameTimestamp > LONGLONG_MAX, mR_ArgumentOutOfBounds);
 
-  mERROR_IF(duration > LONGLONG_MAX, mR_IndexOutOfBounds);
+  mERROR_IF(duration > LONGLONG_MAX, mR_ArgumentOutOfBounds);
   mERROR_IF(FAILED(hr = pSample->SetSampleDuration((LONGLONG)duration)), mR_InternalError);
 
   mERROR_IF(FAILED(hr = mediaFileWriter->pSinkWriter->WriteSample(mediaFileWriter->videoStreamIndex, pSample)), mR_InternalError);
@@ -159,7 +159,7 @@ mFUNCTION(mMediaFileWriter_Create_Internal, OUT mMediaFileWriter *pMediaFileWrit
 
   mERROR_CHECK(mMediaFoundation_AddReference());
 
-  mERROR_IF(pMediaFileInformation->frameSize.x > UINT32_MAX || pMediaFileInformation->frameSize.y > UINT32_MAX || pMediaFileInformation->averageBitrate > UINT32_MAX || pMediaFileInformation->frameRateFraction.x > UINT32_MAX || pMediaFileInformation->frameRateFraction.y > UINT32_MAX || pMediaFileInformation->pixelAspectRatioFraction.x > UINT32_MAX || pMediaFileInformation->pixelAspectRatioFraction.y > UINT32_MAX, mR_IndexOutOfBounds);
+  mERROR_IF(pMediaFileInformation->frameSize.x > UINT32_MAX || pMediaFileInformation->frameSize.y > UINT32_MAX || pMediaFileInformation->averageBitrate > UINT32_MAX || pMediaFileInformation->frameRateFraction.x > UINT32_MAX || pMediaFileInformation->frameRateFraction.y > UINT32_MAX || pMediaFileInformation->pixelAspectRatioFraction.x > UINT32_MAX || pMediaFileInformation->pixelAspectRatioFraction.y > UINT32_MAX, mR_ArgumentOutOfBounds);
 
   pMediaFileWriter->mediaFileInformation = *pMediaFileInformation;
   pMediaFileWriter->lastFrameTimestamp = 0;
