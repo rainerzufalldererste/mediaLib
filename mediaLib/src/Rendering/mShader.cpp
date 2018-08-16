@@ -20,6 +20,7 @@ mFUNCTION(mShader_Create, OUT mShader *pShader, const std::string & vertexShader
 
   const char *vertexSource = vertexShader.c_str();
   GLuint vertexShaderHandle = glCreateShader(GL_VERTEX_SHADER);
+  mDEFER(glDeleteShader(vertexShaderHandle));
   glShaderSource(vertexShaderHandle, 1, &vertexSource, NULL);
   glCompileShader(vertexShaderHandle);
 
@@ -36,6 +37,7 @@ mFUNCTION(mShader_Create, OUT mShader *pShader, const std::string & vertexShader
 
   const char *fragmentSource = fragmentShader.c_str();
   GLuint fragmentShaderHandle = glCreateShader(GL_FRAGMENT_SHADER);
+  mDEFER(glDeleteShader(fragmentShaderHandle));
   glShaderSource(fragmentShaderHandle, 1, &fragmentSource, NULL);
   glCompileShader(fragmentShaderHandle);
 
@@ -114,7 +116,7 @@ mFUNCTION(mShader_Destroy, IN_OUT mShader *pShader)
 #if defined(mRENDERER_OPENGL)
 
   if (pShader->initialized)
-    glDeleteShader(pShader->shaderProgram);
+    glDeleteProgram(pShader->shaderProgram);
 
 #else
   mRETURN_RESULT(mR_NotImplemented);
