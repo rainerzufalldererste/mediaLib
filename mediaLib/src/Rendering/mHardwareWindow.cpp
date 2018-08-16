@@ -27,6 +27,8 @@ mFUNCTION(mHardwareWindow_Create, OUT mPtr<mHardwareWindow>* pWindow, IN mAlloca
 
   mERROR_CHECK(mRenderParams_CreateRenderContext(&(*pWindow)->renderContextID, *pWindow));
 
+  mERROR_CHECK(mHardwareWindow_SetToActiveRenderTarget(*pWindow));
+
   mRETURN_SUCCESS();
 }
 

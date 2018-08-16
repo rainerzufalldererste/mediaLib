@@ -7,7 +7,7 @@
 #include "mRenderParams.h"
 #include "mHardwareWindow.h"
 
-mVec2s mRendererParams_CurrentRenderSize = mVec2s(0, 0);
+mVec2s mRendererParams_CurrentRenderSize = mVec2s(1, 1);
 mRenderContextId mRenderParams_CurrentRenderResolution = (mRenderContextId)-1;
 
 mRenderContext *mRenderParams_pRenderContexts = nullptr;
@@ -68,9 +68,9 @@ mFUNCTION(mRenderParams_ActivateRenderContext, mPtr<mHardwareWindow> &window, co
   SDL_Window *pWindow;
   mERROR_CHECK(mHardwareWindow_GetSdlWindowPtr(window, &pWindow));
 
-  mERROR_IF(0 == SDL_GL_MakeCurrent(pWindow, mRenderParams_pRenderContexts[renderContextId].glContext), mR_RenderingError);
+  int result = 0;
+  mERROR_IF(0 != (result = SDL_GL_MakeCurrent(pWindow, mRenderParams_pRenderContexts[renderContextId].glContext)), mR_RenderingError);
   mRenderParams_CurrentRenderResolution = renderContextId;
-
 #else
   mRETURN_RESULT(mR_NotImplemented);
 #endif
@@ -106,8 +106,12 @@ mFUNCTION(mRenderParams_SetVsync, const bool vsync)
 {
   mFUNCTION_SETUP();
 
-  mERROR_IF(0 != SDL_GL_SetSwapInterval(vsync ? 1 : 0), mR_OperationNotSupported);
-
+#if defined(mRENDERER_OPENGL)
+  int result = 0;
+  mERROR_IF(0 != (result = SDL_GL_SetSwapInterval(vsync ? 1 : 0)), mR_OperationNotSupported);
+#else
+  mRETURN_RESULT(mR_NotImplemented);
+#endif
   mRETURN_SUCCESS();
 }
 
@@ -115,7 +119,12 @@ mFUNCTION(mRenderParams_SetDoubleBuffering, const bool doubleBuffering)
 {
   mFUNCTION_SETUP();
 
-  mERROR_IF(0 != SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, doubleBuffering ? 1 : 0), mR_OperationNotSupported);
+#if defined(mRENDERER_OPENGL)
+  int result = 0;
+  mERROR_IF(0 != (result = SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, doubleBuffering ? 1 : 0)), mR_OperationNotSupported);
+#else
+  mRETURN_RESULT(mR_NotImplemented);
+#endif
 
   mRETURN_SUCCESS();
 }
@@ -126,15 +135,25 @@ mFUNCTION(mRenderParams_SetMultisampling, const size_t count)
 
   mERROR_IF(count > INT_MAX, mR_ArgumentOutOfBounds);
 
+  int result = 0;
+
   if (count > 0)
   {
-    mERROR_IF(0 != SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1), mR_OperationNotSupported);
-    mERROR_IF(0 != SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, (int)count), mR_OperationNotSupported);
+#if defined(mRENDERER_OPENGL)
+    mERROR_IF(0 != (result = SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1)), mR_OperationNotSupported);
+    mERROR_IF(0 != (result = SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, (int)count)), mR_OperationNotSupported);
+#else
+    mRETURN_RESULT(mR_NotImplemented);
+#endif
   }
   else
   {
-    mERROR_IF(0 != SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 0), mR_OperationNotSupported);
-    mERROR_IF(0 != SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 0), mR_OperationNotSupported);
+#if defined(mRENDERER_OPENGL)
+    mERROR_IF(0 != (result = SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 0)), mR_OperationNotSupported);
+    mERROR_IF(0 != (result = SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 0)), mR_OperationNotSupported);
+#else
+    mRETURN_RESULT(mR_NotImplemented);
+#endif
   }
 
   mRETURN_SUCCESS();
