@@ -6,6 +6,7 @@
 #include <time.h>
 #include "GL\glew.h"
 #include "mHardwareWindow.h"
+#include "mShader.h"
 
 mPtr<mHardwareWindow> window = nullptr;
 mPtr<mImageBuffer> image;
@@ -60,9 +61,9 @@ int main(int, char **)
 
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-#define GLSL(src) "#version 150 core\n" #src
+    mShader shader;
 
-    const char* vertexSource = GLSL(
+    const char* vertexSource = mGLSL(
       in vec2 position;
       in vec2 texcoord;
       uniform vec2 screenSize;
@@ -75,21 +76,7 @@ int main(int, char **)
     }
     );
 
-    GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertexShader, 1, &vertexSource, NULL);
-    glCompileShader(vertexShader);
-
-    GLint status;
-    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &status);
-    
-    if (status != GL_TRUE)
-    {
-      char buffer[512];
-      glGetShaderInfoLog(vertexShader, 512, NULL, buffer);
-      mPRINT(buffer);
-    }
-
-    const char* fragmentSource = GLSL(
+    const char* fragmentSource = mGLSL(
       out vec4 outColor;
       in vec2 Texcoord;
       uniform sampler2D tex0;
@@ -99,26 +86,8 @@ int main(int, char **)
     }
     );
 
-    GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragmentShader, 1, &fragmentSource, NULL);
-    glCompileShader(fragmentShader);
-
-    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &status);
-
-    if (status != GL_TRUE)
-    {
-      char buffer[512];
-      glGetShaderInfoLog(fragmentShader, 512, NULL, buffer);
-      mPRINT(buffer);
-    }
-
-    GLuint shaderProgram = glCreateProgram();
-    glAttachShader(shaderProgram, vertexShader);
-    glAttachShader(shaderProgram, fragmentShader);
-    glBindFragDataLocation(shaderProgram, 0, "outColor");
-    glLinkProgram(shaderProgram);
-    glUseProgram(shaderProgram);
-    mGL_ERROR_CHECK();
+    mERROR_CHECK(mShader_Create(&shader, vertexSource, fragmentSource));
+    mERROR_CHECK(mShader_Bind(shader));
 
     glActiveTexture(GL_TEXTURE0);
     GLuint texture;
@@ -127,7 +96,7 @@ int main(int, char **)
     mGL_ERROR_CHECK();
     
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)image->currentSize.x, (GLsizei)image->currentSize.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, image->pPixels);
-    glUniform1i(glGetUniformLocation(shaderProgram, "tex0"), 0);
+    glUniform1i(glGetUniformLocation(shader.shaderProgram, "tex0"), 0);
     mGL_ERROR_CHECK();
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -136,21 +105,21 @@ int main(int, char **)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     mGL_ERROR_CHECK();
 
-    GLint posAttrib = glGetAttribLocation(shaderProgram, "position");
+    GLint posAttrib = glGetAttribLocation(shader.shaderProgram, "position");
     glEnableVertexAttribArray(posAttrib);
     glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(mVec2f), 0);
     mGL_ERROR_CHECK();
 
-    GLint texAttrib = glGetAttribLocation(shaderProgram, "texcoord");
+    GLint texAttrib = glGetAttribLocation(shader.shaderProgram, "texcoord");
     glEnableVertexAttribArray(texAttrib);
     glVertexAttribPointer(texAttrib, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(mVec2f), (void*)(sizeof(mVec2f)));
     mGL_ERROR_CHECK();
 
-    GLint screenSizeAttrib = glGetUniformLocation(shaderProgram, "screenSize");
+    GLint screenSizeAttrib = glGetUniformLocation(shader.shaderProgram, "screenSize");
     glUniform2f(screenSizeAttrib, (float)mRendererParams_CurrentRenderSize.x, (float)mRendererParams_CurrentRenderSize.y);
     mGL_ERROR_CHECK();
 
-    GLint scaleAttrib = glGetUniformLocation(shaderProgram, "scale");
+    GLint scaleAttrib = glGetUniformLocation(shader.shaderProgram, "scale");
     glUniform2f(scaleAttrib, (float)image->currentSize.x, (float)image->currentSize.y);
     mGL_ERROR_CHECK();
   }

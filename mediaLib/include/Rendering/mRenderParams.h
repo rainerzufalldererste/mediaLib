@@ -43,8 +43,15 @@ extern GLenum mRenderParams_GLError;
 
 #define mGL_ERROR_CHECK() mOPENGL_ERROR_CHECK()
 
+#if defined(_DEBUG)
+#define mGL_DEBUG_ERROR_CHECK() mOPENGL_ERROR_CHECK()
+#else
+#define mGL_DEBUG_ERROR_CHECK()
+#endif
+
 #else
 #define mGL_ERROR_CHECK()
+#define mGL_DEBUG_ERROR_CHECK()
 #endif
 
 struct mHardwareWindow;
