@@ -33,6 +33,10 @@ project(ProjectName)
     links { "../mediaLib/lib/mediaLibD.lib" }
   
   filter { }
+  
+  links { "../mediaLib/3rdParty/SDL2/lib/sdl2.lib" }
+  links { "../mediaLib/3rdParty/SDL2/lib/sdl2main.lib" }
+  links { "../mediaLib/3rdParty/glew/lib/libglew32.lib" }
   links { "opengl32.lib", "glu32.lib" }
   
   filter { "configurations:Debug", "system:Windows" }

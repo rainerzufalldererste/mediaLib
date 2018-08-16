@@ -407,7 +407,7 @@ mFUNCTION(mMediaFileInputIterator_SeekTo, mPtr<mMediaFileInputIterator> &iterato
   mFUNCTION_SETUP();
 
   mERROR_IF(iterator == nullptr, mR_ArgumentNull);
-  mERROR_IF(timeStamp.timePoint < 0.0, mR_IndexOutOfBounds);
+  mERROR_IF(timeStamp.timePoint < 0.0, mR_ArgumentOutOfBounds);
   iterator->hasFinished = false;
 
   HRESULT hr = S_OK;

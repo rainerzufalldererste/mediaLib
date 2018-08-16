@@ -31,10 +31,6 @@ project(ProjectName)
   includedirs { "3rdParty/stb" }
   includedirs { "3rdParty/SDL2/include" }
   includedirs { "3rdParty/glew/include" }
-  
-  links { "3rdParty/SDL2/lib/sdl2.lib" }
-  links { "3rdParty/SDL2/lib/sdl2main.lib" }
-  links { "3rdParty/glew/lib/libglew32.lib" }
 
   filter { "configurations:Debug", "system:Windows" }
     ignoredefaultlibraries { "libcmt" }

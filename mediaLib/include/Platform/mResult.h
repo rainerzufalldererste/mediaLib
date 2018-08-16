@@ -23,6 +23,7 @@ enum mResult
   mR_NotImplemented,
   mR_NotInitialized,
   mR_IndexOutOfBounds,
+  mR_ArgumentOutOfBounds,
   mR_Timeout,
   mR_OperationNotSupported,
   mR_ResourceNotFound,
@@ -30,6 +31,7 @@ enum mResult
   mR_ResourceStateInvalid,
   mR_ResourceIncompatible,
   mR_EndOfStream,
+  mR_RenderingError,
 
   mResult_Count
 };
