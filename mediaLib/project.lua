@@ -8,6 +8,8 @@ project(ProjectName)
 
   buildoptions { '/Gm-' }
   buildoptions { '/MP' }
+  linkoptions { '/ignore:4006' } -- ignore multiple libraries defining the same symbol
+
   ignoredefaultlibraries { "msvcrt" }
   
   filter { "configurations:Release" }
@@ -27,11 +29,12 @@ project(ProjectName)
   includedirs { "3rdParty/DirectXMath/Inc" }
   includedirs { "3rdParty/DirectXMath/Extensions" }
   includedirs { "3rdParty/stb" }
+  includedirs { "3rdParty/SDL2/include" }
+  includedirs { "3rdParty/glew/include" }
   
   links { "3rdParty/SDL2/lib/sdl2.lib" }
   links { "3rdParty/SDL2/lib/sdl2main.lib" }
   links { "3rdParty/glew/lib/libglew32.lib" }
-  links { "opengl32.lib", "glu32.lib" }
 
   filter { "configurations:Debug", "system:Windows" }
     ignoredefaultlibraries { "libcmt" }
