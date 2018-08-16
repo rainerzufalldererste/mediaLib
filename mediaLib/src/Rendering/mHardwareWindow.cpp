@@ -91,7 +91,10 @@ mFUNCTION(mHardwareWindow_SetToActiveRenderTarget, mPtr<mHardwareWindow>& window
   mERROR_IF(window == nullptr, mR_ArgumentNull);
 
   mERROR_CHECK(mRenderParams_ActivateRenderContext(window, window->renderContextID));
-  mERROR_CHECK(mHardwareWindow_GetSize(window, &mRendererParams_CurrentRenderSize));
+
+  mVec2s resolution;
+  mERROR_CHECK(mHardwareWindow_GetSize(window, &resolution));
+  mERROR_CHECK(mRenderParams_SetCurrentRenderResolution(resolution));
 
   mRETURN_SUCCESS();
 }

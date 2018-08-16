@@ -7,12 +7,11 @@
 #include "GL\glew.h"
 #include "mHardwareWindow.h"
 #include "mShader.h"
+#include "mTexture.h"
 
 mPtr<mHardwareWindow> window = nullptr;
 mPtr<mImageBuffer> image;
 mPtr<mThreadPool> threadPool = nullptr;
-bool is3dEnabled = false;
-GLenum glError = GL_NO_ERROR;
 
 int main(int, char **)
 {
@@ -23,7 +22,7 @@ int main(int, char **)
   mERROR_CHECK(mThreadPool_Create(&threadPool, nullptr));
 
   mDEFER_DESTRUCTION(&image, mImageBuffer_Destroy);
-  mERROR_CHECK(mImageBuffer_CreateFromFile(&image, nullptr, "C:/Users/cstiller/Pictures/avatar.png"));
+  mERROR_CHECK(mImageBuffer_CreateFromFile(&image, nullptr, "C:/data/avatar.jpg"));
 
   SDL_Init(SDL_INIT_EVERYTHING);
 
@@ -41,88 +40,71 @@ int main(int, char **)
   mERROR_CHECK(mRenderParams_SetMultisampling(4));
   mERROR_CHECK(mRenderParams_SetVsync(true));
 
-  //if (SDL_GL_SetAttribute(SDL_GL_STEREO, 1) == 0)
-  //{
-  //  is3dEnabled = true;
-  //  mPRINT("3d enabled.");
-  //}
+  GLuint vao;
+  glGenVertexArrays(1, &vao);
+  glBindVertexArray(vao);
 
-  // Prepare GL Rendering
-  {
-    GLuint vao;
-    glGenVertexArrays(1, &vao);
-    glBindVertexArray(vao);
+  GLuint vbo;
+  glGenBuffers(1, &vbo);
+  glBindBuffer(GL_ARRAY_BUFFER, vbo);
 
-    GLuint vbo;
-    glGenBuffers(1, &vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+  mVec2f vertices[] = { { -1, -1 },{ 0, 1 },{ -1, 1 },{ 0, 0 },{ 1, -1 },{ 1, 1 },{ 1, 1 },{ 1, 0 } };
 
-    mVec2f vertices[] = { { -1, -1 },{ 0, 1 },{ -1, 1 },{ 0, 0 },{ 1, -1 },{ 1, 1 },{ 1, 1 },{ 1, 0 } };
+  glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+  const char* vertexSource = mGLSL(
+    in vec2 position;
+  in vec2 texcoord;
+  uniform vec2 screenSize;
+  uniform vec2 scale;
+  out vec2 Texcoord;
 
-    mShader shader;
-
-    const char* vertexSource = mGLSL(
-      in vec2 position;
-      in vec2 texcoord;
-      uniform vec2 screenSize;
-      uniform vec2 scale;
-      out vec2 Texcoord;
-
-    void main() {
-      Texcoord = texcoord;
-      gl_Position = vec4(position / screenSize * scale, 0.0, 1.0);
-    }
-    );
-
-    const char* fragmentSource = mGLSL(
-      out vec4 outColor;
-      in vec2 Texcoord;
-      uniform sampler2D tex0;
-
-    void main() {
-      outColor = texture(tex0, Texcoord);
-    }
-    );
-
-    mERROR_CHECK(mShader_Create(&shader, vertexSource, fragmentSource));
-    mERROR_CHECK(mShader_Bind(shader));
-
-    glActiveTexture(GL_TEXTURE0);
-    GLuint texture;
-    glGenTextures(1, &texture);
-    glBindTexture(GL_TEXTURE_2D, texture);
-    mGL_ERROR_CHECK();
-    
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)image->currentSize.x, (GLsizei)image->currentSize.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, image->pPixels);
-    glUniform1i(glGetUniformLocation(shader.shaderProgram, "tex0"), 0);
-    mGL_ERROR_CHECK();
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    mGL_ERROR_CHECK();
-
-    GLint posAttrib = glGetAttribLocation(shader.shaderProgram, "position");
-    glEnableVertexAttribArray(posAttrib);
-    glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(mVec2f), 0);
-    mGL_ERROR_CHECK();
-
-    GLint texAttrib = glGetAttribLocation(shader.shaderProgram, "texcoord");
-    glEnableVertexAttribArray(texAttrib);
-    glVertexAttribPointer(texAttrib, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(mVec2f), (void*)(sizeof(mVec2f)));
-    mGL_ERROR_CHECK();
-
-    GLint screenSizeAttrib = glGetUniformLocation(shader.shaderProgram, "screenSize");
-    glUniform2f(screenSizeAttrib, (float)mRendererParams_CurrentRenderSize.x, (float)mRendererParams_CurrentRenderSize.y);
-    mGL_ERROR_CHECK();
-
-    GLint scaleAttrib = glGetUniformLocation(shader.shaderProgram, "scale");
-    glUniform2f(scaleAttrib, (float)image->currentSize.x, (float)image->currentSize.y);
-    mGL_ERROR_CHECK();
+  void main() {
+    Texcoord = texcoord;
+    gl_Position = vec4((position / screenSize) * scale, 0.0, 1.0);
   }
+  );
+
+  const char* fragmentSource = mGLSL(
+    out vec4 outColor;
+  in vec2 Texcoord;
+  uniform sampler2D tex0;
+
+  void main() {
+    outColor = texture(tex0, Texcoord);
+  }
+  );
+
+  mShader shader;
+  mDEFER_DESTRUCTION(&shader, mShader_Destroy);
+  mERROR_CHECK(mShader_Create(&shader, vertexSource, fragmentSource));
+  mERROR_CHECK(mShader_Bind(shader));
+
+  mTexture texture;
+  mDEFER_DESTRUCTION(&texture, mTexture_Destroy);
+  mERROR_CHECK(mTexture_Create(&texture, image));
+
+  mERROR_CHECK(mTexture_Bind(texture));
+
+  glUniform1i(glGetUniformLocation(shader.shaderProgram, "tex0"), 0);
+
+  GLint posAttrib = glGetAttribLocation(shader.shaderProgram, "position");
+  glEnableVertexAttribArray(posAttrib);
+  glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(mVec2f), 0);
+  mGL_ERROR_CHECK();
+
+  GLint texAttrib = glGetAttribLocation(shader.shaderProgram, "texcoord");
+  glEnableVertexAttribArray(texAttrib);
+  glVertexAttribPointer(texAttrib, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(mVec2f), (void*)(sizeof(mVec2f)));
+  mGL_ERROR_CHECK();
+
+  GLint screenSizeAttrib = glGetUniformLocation(shader.shaderProgram, "screenSize");
+  glUniform2f(screenSizeAttrib, mRenderParams_CurrentRenderResolutionF.x, mRenderParams_CurrentRenderResolutionF.y);
+  mGL_ERROR_CHECK();
+
+  GLint scaleAttrib = glGetUniformLocation(shader.shaderProgram, "scale");
+  glUniform2f(scaleAttrib, (float)image->currentSize.x, (float)image->currentSize.y);
+  mGL_ERROR_CHECK();
 
   size_t frame = 0;
 
@@ -136,7 +118,14 @@ int main(int, char **)
     mGL_ERROR_CHECK();
 
     mERROR_CHECK(mHardwareWindow_Swap(window));
+
+    SDL_Event _event;
+    while (SDL_PollEvent(&_event))
+      if (_event.type == SDL_QUIT || (_event.type == SDL_KEYDOWN && _event.key.keysym.sym == SDLK_ESCAPE))
+        goto end;
   }
+
+end:
 
   mRETURN_SUCCESS();
 }

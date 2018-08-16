@@ -4,29 +4,29 @@
 // 
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-#ifndef mShader_h__
-#define mShader_h__
+#ifndef mTexture_h__
+#define mTexture_h__
 
 #include "mRenderParams.h"
+#include "mImageBuffer.h"
 
-struct mShader
+struct mTexture
 {
-  bool initialized = false;
+  mVec2s resolution;
+  mVec2f resolutionF;
+  mRendererParams_UploadState uploadState = mRendererParams_UploadState::mRP_US_NotInitialized;
+  mPtr<mImageBuffer> imageBuffer;
 
 #if defined(mRENDERER_OPENGL)
-  GLuint shaderProgram;
+  GLuint textureId;
 #endif
 };
 
-#if defined(mRENDERER_OPENGL)
-#define mGLSL(src) "#version 150 core\n" #src
-#endif
+mFUNCTION(mTexture_Create, OUT mTexture *pTexture, mPtr<mImageBuffer> &imageBuffer, const bool upload = true);
+mFUNCTION(mTexture_Destroy, IN_OUT mTexture *pTexture);
 
-mFUNCTION(mShader_Create, OUT mShader *pShader, const std::string &vertexShader, const std::string &fragmentShader, IN OPTIONAL const char *fragDataLocation = nullptr);
-mFUNCTION(mShader_CreateFromFile, OUT mShader *pShader, const std::wstring &filename, IN OPTIONAL const char *fragDataLocation = nullptr);
-mFUNCTION(mShader_CreateFromFile, OUT mShader *pShader, const std::wstring &vertexShaderPath, const std::wstring &fragmentShaderPath, IN OPTIONAL const char *fragDataLocation = nullptr);
-mFUNCTION(mShader_Destroy, IN_OUT mShader *pShader);
+mFUNCTION(mTexture_GetUploadState, mTexture &texture, OUT mRendererParams_UploadState *pUploadState);
+mFUNCTION(mTexture_Upload, mTexture &texture);
+mFUNCTION(mTexture_Bind, mTexture &texture);
 
-mFUNCTION(mShader_Bind, mShader &pShader);
-
-#endif // mShader_h__
+#endif // mTexture_h__
