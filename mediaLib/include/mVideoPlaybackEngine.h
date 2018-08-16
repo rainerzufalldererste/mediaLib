@@ -6,17 +6,24 @@
 // 
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-#ifndef mMutex_h__
-#define mMutex_h__
+#ifndef mVideoPlaybackEngine_h__
+#define mVideoPlaybackEngine_h__
 
 #include "default.h"
+#include "mImageBuffer.h"
 
-struct mMutex;
+struct mVideoPlaybackEngine;
 
-mFUNCTION(mMutex_Create, OUT mMutex **ppMutex, IN OPTIONAL mAllocator *pAllocator);
-mFUNCTION(mMutex_Destroy, IN_OUT mMutex **ppMutex);
+enum mVideoPlaybackEngine_PlaybackFlags : size_t
+{
+  mVPE_PF_None = 0,
+  mVPE_PF_SeekingInVideoAllowed = 1 << 0,
+  mVPE_PF_DroppingFramesOnProducerOverloadEnabled = 1 << 1,
+};
 
-mFUNCTION(mMutex_Lock, IN mMutex *pMutex);
-mFUNCTION(mMutex_Unlock, IN mMutex *pMutex);
+mFUNCTION(mVideoPlaybackEngine_Create, OUT mPtr<mVideoPlaybackEngine> *pPlaybackEngine, IN mAllocator *pAllocator, const std::wstring &fileName, mPtr<mThreadPool> &threadPool, const size_t videoStreamIndex = 0, const mPixelFormat outputPixelFormat = mPF_B8G8R8A8, const size_t playbackFlags = mVideoPlaybackEngine_PlaybackFlags::mVPE_PF_None);
+mFUNCTION(mVideoPlaybackEngine_Destroy, IN_OUT mPtr<mVideoPlaybackEngine> *pPlaybackEngine);
 
-#endif // mMutex_h__
+mFUNCTION(mVideoPlaybackEngine_GetCurrentFrame, mPtr<mVideoPlaybackEngine> &playbackEngine, OUT mPtr<mImageBuffer> *pImageBuffer, OUT OPTIONAL bool *pIsNewFrame = nullptr);
+
+#endif // mVideoPlaybackEngine_h__

@@ -8,10 +8,13 @@
 
 // See: https://baptiste-wicht.com/posts/2015/07/simulate-static_if-with-c11c14.html
 
+#ifndef mStaticIf_h__
+#define mStaticIf_h__
+
 struct mStaticIfIdentity 
 {
   template<typename T>
-  T operator()(T&& x) const 
+  inline T operator()(T&& x) const 
   {
     return std::forward<T>(x);
   }
@@ -21,13 +24,13 @@ template<bool conditional>
 struct mStaticIfStatement 
 {
   template<typename TFunction>
-  void Then(const TFunction& f) 
+  inline void Then(const TFunction& f)
   {
     f(mStaticIfIdentity());
   }
 
   template<typename TFunction>
-  void Else(const TFunction&) 
+  inline void Else(const TFunction&)
   {
   }
 };
@@ -35,22 +38,24 @@ struct mStaticIfStatement
 template<>
 struct mStaticIfStatement<false> {
   template<typename TFunction>
-  void Then(const TFunction&) 
+  inline void Then(const TFunction&)
   {
   }
 
   template<typename TFunction>
-  void Else(const TFunction& f) 
+  inline void Else(const TFunction& f)
   {
     f(mStaticIfIdentity());
   }
 };
 
 template<bool conditional, typename TFunction>
-mStaticIfStatement<conditional> mStaticIf(TFunction const& f) 
+inline mStaticIfStatement<conditional> mStaticIf(TFunction const& f)
 {
   mStaticIfStatement<conditional> if_;
   if_.Then(f);
 
   return if_;
 }
+
+#endif // mStaticIf_h__

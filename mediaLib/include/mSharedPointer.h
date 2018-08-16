@@ -89,7 +89,39 @@ template <typename T>
 inline mFUNCTION(mSharedPointer_Create, OUT mSharedPointer<T> *pOutSharedPointer, IN T *pData, IN mAllocator *pAllocator)
 {
   mFUNCTION_SETUP();
-  mERROR_CHECK(mSharedPointer_Create(pOutSharedPointer, pData, std::function<void(T *pData)>(nullptr), allocationType));
+  mERROR_CHECK(mSharedPointer_Create(pOutSharedPointer, pData, std::function<void(T *pData)>(nullptr), pAllocator));
+  mRETURN_SUCCESS();
+}
+
+template <typename T>
+inline mFUNCTION(mSharedPointer_Allocate, OUT mSharedPointer<T> *pOutSharedPointer, IN mAllocator *pAllocator, const size_t count = 1)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pOutSharedPointer == nullptr, mR_ArgumentNull);
+
+  T *pData = nullptr;
+  mDEFER(mAllocator_FreePtr(pAllocator, &pData));
+  mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &pData, count));
+  mERROR_CHECK(mSharedPointer_Create(pOutSharedPointer, pData, pAllocator));
+  pData = nullptr; // to not get released on destruction.
+
+  mRETURN_SUCCESS();
+}
+
+template <typename T>
+inline mFUNCTION(mSharedPointer_Allocate, OUT mSharedPointer<T> *pOutSharedPointer, IN mAllocator *pAllocator, const std::function<void(T *)> &function, const size_t count)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pOutSharedPointer == nullptr, mR_ArgumentNull);
+
+  T *pData = nullptr;
+  mDEFER(mAllocator_FreePtr(pAllocator, &pData));
+  mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &pData, count));
+  mERROR_CHECK(mSharedPointer_Create(pOutSharedPointer, pData, function, pAllocator));
+  pData = nullptr; // to not get released on destruction.
+
   mRETURN_SUCCESS();
 }
 
@@ -170,10 +202,10 @@ inline mSharedPointer<T>::~mSharedPointer()
 
     m_pParams->~PointerParams();
     mAllocator_FreePtr(pAllocator, &m_pParams);
-
-    m_pParams = nullptr;
-    m_pData = nullptr;
   }
+
+  m_pParams = nullptr;
+  m_pData = nullptr;
 }
 
 template<typename T>
