@@ -17,7 +17,6 @@ SDL_GLContext glContext;
 bool is3dEnabled = false;
 GLenum glError = GL_NO_ERROR;
 GLuint texture = 0;
-GLuint shaderProgram;
 
 mFUNCTION(OnVideoFramCallback, mPtr<mImageBuffer> &, const mVideoStreamType &);
 
@@ -57,8 +56,8 @@ int main(int, char **)
   glewExperimental = GL_TRUE;
   mERROR_IF((glError = glewInit()) != GL_NO_ERROR, mR_InternalError);
 
-  //SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
-  //SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
+  SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
+  SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
   SDL_GL_SetSwapInterval(1);
 
   //if (SDL_GL_SetAttribute(SDL_GL_STEREO, 1) == 0)
@@ -68,85 +67,87 @@ int main(int, char **)
   //}
 
   // Prepare GL Rendering
-  //{
-    glGenTextures(1, &texture);
-    glBindTexture(GL_TEXTURE_2D, texture);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)image->currentSize.x, (GLsizei)image->currentSize.y, 0, GL_RGBA_INTEGER, GL_UNSIGNED_INT_8_8_8_8, image->pPixels);
-
-    mVec2f verts[] = { { -0.5f, 0.5f },{ 0.5f, 0.5f },{ -0.5f, -0.5f },{ 0.5f, 0.5f },{ -0.5f, -0.5f },{ 0.5f, -0.5f } };
+  {
+    GLuint vao;
+    glGenVertexArrays(1, &vao);
+    glBindVertexArray(vao);
 
     GLuint vbo;
     glGenBuffers(1, &vbo);
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
 
-    const char *vertexSource = R"glsl(
-    #version 150 core
+    mVec2f vertices[] = { {-1, -1}, {-1, 1}, {1, -1}, {1, 1} };
 
-    in vec2 position;
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-    void main()
-    {
-        gl_Position = vec4(position, 0.0, 1.0);
+#define GLSL(src) "#version 150 core\n" #src
+
+    const char* vertexSource = GLSL(
+      in vec2 position;
+      out vec2 position2d;
+
+    void main() {
+      position2d = position;
+      gl_Position = vec4(position, 0.0, 1.0);
     }
-)glsl";
-
-    const char *fragmentSource = R"glsl(
-    #version 150 core
-    
-    out vec4 outColor;
-    
-    void main()
-    {
-        outColor = vec4(1.0, 1.0, 1.0, 1.0);
-    }
-)glsl";
+    );
 
     GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertexShader, 1, &vertexSource, nullptr);
+    glShaderSource(vertexShader, 1, &vertexSource, NULL);
     glCompileShader(vertexShader);
+
+    const char* fragmentSource = GLSL(
+      out vec4 outColor;
+      in vec2 position2d;
+
+    void main() {
+      outColor = vec4(1.0f, position2d.x / 2.0f + 0.5f, position2d.y / 2.0f + 0.5f, 1.0f);
+    }
+    );
 
     GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
     glShaderSource(fragmentShader, 1, &fragmentSource, NULL);
     glCompileShader(fragmentShader);
 
-    shaderProgram = glCreateProgram();
+    // Link the vertex and fragment shader into a shader program
+    GLuint shaderProgram = glCreateProgram();
     glAttachShader(shaderProgram, vertexShader);
     glAttachShader(shaderProgram, fragmentShader);
-
     glBindFragDataLocation(shaderProgram, 0, "outColor");
     glLinkProgram(shaderProgram);
     glUseProgram(shaderProgram);
 
+    // Specify the layout of the vertex data
     GLint posAttrib = glGetAttribLocation(shaderProgram, "position");
-    glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE, 0, 0);
     glEnableVertexAttribArray(posAttrib);
+    glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE, 0, 0);
 
-    GLuint vao;
-    glGenVertexArrays(1, &vao);
-    glBindVertexArray(vao);
-
-    mVec2f texCoord[] = { { 0.0f, 0.0f },{ 1.0f, 0.0f },{ 0.0f, 1.0f },{ 1.0f, 0.0f },{ 0.0f, 1.0f },{ 1.0f, 1.0f } };
-  //}
+    //glGenTextures(1, &texture);
+    //glBindTexture(GL_TEXTURE_2D, texture);
+    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)image->currentSize.x, (GLsizei)image->currentSize.y, 0, GL_RGBA_INTEGER, GL_UNSIGNED_INT_8_8_8_8, image->pPixels);
+    //
+    //mVec2f texCoord[] = { { 0.0f, 0.0f },{ 1.0f, 0.0f },{ 0.0f, 1.0f },{ 1.0f, 0.0f },{ 0.0f, 1.0f },{ 1.0f, 1.0f } };
+  }
 
   //mERROR_CHECK(mMediaFileInputHandler_SetVideoCallback(mediaFileHandler, OnVideoFramCallback));
   //mERROR_CHECK(mMediaFileInputHandler_Play(mediaFileHandler));
 
 
-  size_t frame = 0;
+  //size_t frame = 0;
 
   while (true)
   {
-    glClearColor((frame++ & 0xFF) / 255.0f, 0.0f, 0.0f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    //glClearColor((frame++ & 0xFF) / 255.0f, 0.0f, 0.0f, 1.0f);
+    //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    glDrawArrays(GL_TRIANGLES, 0, 3);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
     glError = glGetError();
+    mASSERT(glError == GL_NO_ERROR, "GL ERROR.");
 
     SDL_GL_SwapWindow(pWindow);
 
