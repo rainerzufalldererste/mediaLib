@@ -66,6 +66,9 @@ mFUNCTION(mQueue_Destroy_Internal, IN mQueue<T> *pQueue);
 template<typename T>
 mFUNCTION(mQueue_Grow_Internal, mPtr<mQueue<T>> &queue);
 
+template <typename T>
+mFUNCTION(mQueue_PopAt_Internal, mPtr<mQueue<T>> &queue, const size_t index, OUT T *pItem);
+
 //////////////////////////////////////////////////////////////////////////
 
 template<typename T>
@@ -119,7 +122,12 @@ inline mFUNCTION(mQueue_PushBack, mPtr<mQueue<T>> &queue, IN T *pItem)
     mERROR_CHECK(mQueue_Grow_Internal(queue));
 
   const size_t index = (queue->startIndex + queue->count) % queue->size;
-  mERROR_CHECK(mAllocator_Copy(queue->pAllocator, &queue->pData[index], pItem, 1));
+
+  if (!std::is_trivially_copy_constructible<T>::value)
+    new (&queue->pData[index]) T(*pItem);
+  else
+    mERROR_CHECK(mAllocator_Copy(queue->pAllocator, &queue->pData[index], pItem, 1));
+
   ++queue->count;
 
   mRETURN_SUCCESS();
@@ -154,7 +162,11 @@ inline mFUNCTION(mQueue_PushFront, mPtr<mQueue<T>>& queue, IN T * pItem)
   else
     index = queue.size - 1;
 
-  mERROR_CHECK(mAllocator_Copy(queue->pAllocator, &queue->pData[index], pItem, 1));
+  if (!std::is_trivially_copy_constructible<T>::value)
+    new (&queue->pData[index]) T(*pItem);
+  else
+    mERROR_CHECK(mAllocator_Copy(queue->pAllocator, &queue->pData[index], pItem, 1));
+
   ++queue->count;
   queue->startIndex = index;
 
@@ -176,7 +188,7 @@ inline mFUNCTION(mQueue_PopFront, mPtr<mQueue<T>> &queue, OUT T *pItem)
 {
   mFUNCTION_SETUP();
 
-  mERROR_CHECK(mQueue_PeekFront(queue, pItem));
+  mERROR_CHECK(mQueue_PopAt_Internal(queue, 0, pItem));
 
   ++queue->startIndex;
   --queue->count;
@@ -212,7 +224,7 @@ inline mFUNCTION(mQueue_PopBack, mPtr<mQueue<T>> &queue, OUT T *pItem)
 {
   mFUNCTION_SETUP();
 
-  mERROR_CHECK(mQueue_PeekBack(queue, pItem));
+  mERROR_CHECK(mQueue_PopAt_Internal(queue, queue->count - 1, pItem));
 
   --queue->count;
 
@@ -311,6 +323,23 @@ inline mFUNCTION(mQueue_Grow_Internal, mPtr<mQueue<T>> &queue)
     const size_t wrappedCount = queue->count - (originalSize - queue->startIndex);
     mERROR_CHECK(mAllocator_Move(queue->pAllocator, &queue->pData[originalSize], &queue->pData[0], wrappedCount));
   }
+
+  mRETURN_SUCCESS();
+}
+
+template<typename T>
+inline mFUNCTION(mQueue_PopAt_Internal, mPtr<mQueue<T>>& queue, const size_t index, OUT T * pItem)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(queue == nullptr || pItem == nullptr, mR_ArgumentNull);
+
+  if (queue->count < index)
+    mRETURN_RESULT(mR_IndexOutOfBounds);
+
+  const size_t queueIndex = (queue->startIndex + index) % queue->size;
+
+  *pItem = std::move(queue->pData[queueIndex]);
 
   mRETURN_SUCCESS();
 }

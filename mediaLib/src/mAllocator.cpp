@@ -60,7 +60,12 @@ mFUNCTION(mDefaultAllocator_Copy, IN_OUT uint8_t *pDestimation, IN uint8_t *pSou
 {
   mFUNCTION_SETUP();
 
-  mERROR_CHECK(mMemcpy(pDestimation, pSource, size * count));
+  //mERROR_CHECK(mMemcpy(pDestimation, pSource, size * count));
+
+  for (size_t i = 0; i < size * count; i++)
+  {
+    pDestimation[i] = pSource[i];
+  }
 
   mRETURN_SUCCESS();
 }

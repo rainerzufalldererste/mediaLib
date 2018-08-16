@@ -1068,7 +1068,11 @@ mFUNCTION(mPixelFormat_TransformBuffer, mPtr<mImageBuffer> &source, mPtr<mImageB
   mERROR_IF(source->pPixels == nullptr || target->pPixels == nullptr, mR_NotInitialized);
 
   if (source->pixelFormat == target->pixelFormat)
+  {
     mERROR_CHECK(mImageBuffer_CopyTo(source, target, mImageBuffer_CopyFlags::mIB_CF_None));
+
+    mRETURN_SUCCESS();
+  }
 
   mERROR_IF(source->currentSize != target->currentSize, mR_InvalidParameter);
 

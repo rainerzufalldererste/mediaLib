@@ -12,12 +12,28 @@
 #include "default.h"
 #include "mImageBuffer.h"
 
+enum mMediaFileVideoFormat
+{
+  mMFVF_H264,
+  mMFVF_H264_ES,
+  mMFVF_H263,
+  mMFVF_WMV1,
+  mMFVF_WMV2,
+  mMFVF_WMV3,
+  mMFVF_RGB32,
+  mMFVF_RGB24,
+  mMFVF_YUV420,
+  mMFVF_HEVC,
+  mMFVF_HEVC_ES,
+};
+
 struct mMediaFileInformation
 {
-  size_t averageBitrate;
-  mVec2s frameSize;
-  mVec2s frameRateFraction;
-  mVec2s pixelAspectRatioFraction;
+  size_t averageBitrate = 25 * 1024;
+  mVec2s frameSize = mVec2s(1920, 1080);
+  mVec2s frameRateFraction = mVec2s(30, 1);
+  mVec2s pixelAspectRatioFraction = mVec2s(1, 1);
+  mMediaFileVideoFormat videoFormat = mMFVF_H264;
 };
 
 struct mMediaFileWriter;
