@@ -876,7 +876,11 @@ mFUNCTION(mVideoStreamType_Create, IN IMFMediaType *pMediaType, IN mMediaTypeLoo
   if (FAILED(hr = pMediaType->GetUINT32(MF_MT_DEFAULT_STRIDE, &stride)))
     stride = resolutionX;
 
-  mERROR_IF(FAILED(hr = MFGetAttributeRatio(pMediaType, MF_MT_FRAME_RATE, &frameRateRatioX, &frameRateRatioY)), mR_InternalError);
+  if (FAILED(hr = MFGetAttributeRatio(pMediaType, MF_MT_FRAME_RATE, &frameRateRatioX, &frameRateRatioY)), mR_InternalError)
+  {
+    frameRateRatioX = 30;
+    frameRateRatioY = 1;
+  }
 
   mERROR_CHECK(mMemset(pVideoStreamType, 1));
   pVideoStreamType->mediaType = pMediaTypeLookup->mediaType;
