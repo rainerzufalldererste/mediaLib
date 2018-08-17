@@ -51,28 +51,6 @@
 #define mVECTORCALL __vectorcall
 #define mINLINE __forceinline
 
-#define mPI M_PI
-#define mTWOPI 6.283185307179586476925286766559
-#define mHALFPI M_PI_2
-#define mQUARTERPI M_PI_4
-#define mSQRT2 M_SQRT2
-#define mINVSQRT2 M_SQRT1_2
-#define mSQRT3 1.414213562373095048801688724209698
-#define mINV_SQRT3 0.5773502691896257645091487805019574556
-#define mPIf 3.141592653589793f
-#define mTWOPIf 6.283185307179586f
-#define mHALFPIf ((float)M_PI_2)
-#define mQUARTERPIf ((float)M_PI_4)
-#define mSQRT2f 1.414213562373095f
-#define mINVSQRT2f 0.7071067811865475f
-#define mSQRT3f 1.414213562373095f
-#define mINVSQRT3f 0.57735026918962576f
-
-#define mDEG2RAD (mPI / 180.0)
-#define mDEG2RADf (mPIf / 180.0f)
-#define mRAD2DEG (180.0 / mPI)
-#define mRAD2DEGf (180.0f / mPIf)
-
 #define mARRAYSIZE(arrayName) (sizeof(arrayName) / sizeof(arrayName[0]))
 
 #define mASSERT(expression, text) do { if(!(expression)) { mPRINT("Assertion Failed: %s\n'%s'\n\nIn File '%s' : Line '%" PRIi32 "' (Function '%s')\n", #expression, text, __FILE__, __LINE__, __FUNCTION__); assert(expression); } } while (0)
