@@ -170,3 +170,38 @@ mFUNCTION(mRenderParams_SetMultisampling, const size_t count)
 
   mRETURN_SUCCESS();
 }
+
+mFUNCTION(mRenderParams_ClearTargetColour, const mVector & colour)
+{
+  mFUNCTION_SETUP();
+#if defined(mRENDERER_OPENGL)
+  glClearColor(colour.x, colour.y, colour.z, colour.w);
+  glClear(GL_COLOR_BUFFER_BIT);
+#else
+  mRETURN_RESULT(mR_NotImplemented);
+#endif
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mRenderParams_ClearDepth)
+{
+  mFUNCTION_SETUP();
+#if defined(mRENDERER_OPENGL)
+  glClear(GL_DEPTH_BUFFER_BIT);
+#else
+  mRETURN_RESULT(mR_NotImplemented);
+#endif
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mRenderParams_ClearTargetDepthAndColour, const mVector & colour)
+{
+  mFUNCTION_SETUP();
+#if defined(mRENDERER_OPENGL)
+  glClearColor(colour.x, colour.y, colour.z, colour.w);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+#else
+  mRETURN_RESULT(mR_NotImplemented);
+#endif
+  mRETURN_SUCCESS();
+}

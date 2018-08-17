@@ -84,6 +84,9 @@ inline mFUNCTION(mArray_Resize, mArray<T>& arrayRef, const size_t newCount)
 
   mERROR_CHECK(mAllocator_Reallocate(arrayRef->pAllocator, &arrayRef->pData, newCount));
 
+  if (newCount > count)
+    mERROR_CHECK(mMemset(&arrayRef.pData[arrayRef.count], newCount - count));
+
   arrayRef.count = newCount;
 
   mRETURN_SUCCESS();

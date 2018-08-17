@@ -15,7 +15,7 @@ struct mHardwareWindow
 mFUNCTION(mHardwareWindow_Create_Internal, IN mHardwareWindow *pWindow, const std::string & title, const mVec2s & size, const mHardwareWindow_DisplayMode displaymode);
 mFUNCTION(mHardwareWindow_Destroy_Internal, IN mHardwareWindow *pWindow);
 
-mFUNCTION(mHardwareWindow_Create, OUT mPtr<mHardwareWindow>* pWindow, IN mAllocator * pAllocator, const std::string & title, const mVec2s & size, const mHardwareWindow_DisplayMode displaymode)
+mFUNCTION(mHardwareWindow_Create, OUT mPtr<mHardwareWindow>* pWindow, IN mAllocator * pAllocator, const std::string & title, const mVec2s & size, const mHardwareWindow_DisplayMode displaymode /* = mHW_DM_Windowed */)
 {
   mFUNCTION_SETUP();
 
@@ -27,7 +27,7 @@ mFUNCTION(mHardwareWindow_Create, OUT mPtr<mHardwareWindow>* pWindow, IN mAlloca
 
   mERROR_CHECK(mRenderParams_CreateRenderContext(&(*pWindow)->renderContextID, *pWindow));
 
-  mERROR_CHECK(mHardwareWindow_SetToActiveRenderTarget(*pWindow));
+  mERROR_CHECK(mHardwareWindow_SetAsActiveRenderTarget(*pWindow));
 
   mRETURN_SUCCESS();
 }
@@ -84,7 +84,7 @@ mFUNCTION(mHardwareWindow_SetSize, mPtr<mHardwareWindow>& window, const mVec2s &
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mHardwareWindow_SetToActiveRenderTarget, mPtr<mHardwareWindow>& window)
+mFUNCTION(mHardwareWindow_SetAsActiveRenderTarget, mPtr<mHardwareWindow>& window)
 {
   mFUNCTION_SETUP();
 
