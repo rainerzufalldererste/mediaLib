@@ -117,6 +117,12 @@ struct mVec2t
   __host__ __device__ inline T LengthSquared() const { return x * x + y * y; };
 };
 
+template <typename T>
+__host__ __device__ inline mVec2t<T>  operator *  (const T a, const mVec2t<T> b) { return mVec2t<T>(b.x * a, b.y * a); };
+
+template <typename T>
+__host__ __device__ inline mVec2t<T>  operator /  (const T a, const mVec2t<T> b) { return mVec2t<T>(b.x / a, b.y / a); };
+
 typedef mVec2t<size_t> mVec2s;
 typedef mVec2t<int64_t> mVec2i;
 typedef mVec2t<uint64_t> mVec2u;
@@ -275,12 +281,6 @@ inline mVec4t<U> mBarycentricInterpolationFactors(const mVec3t<T> &p, const mVec
   const U wr = -(q.x*val2 + p.x*(s.y*(x.z - q.z) + q.y*(s.z - x.z) + (q.z - s.z)*x.y) + s.x*(q.y*(x.z - p.z) + p.y*(q.z - x.z) + (p.z - q.z)*x.y) + (p.y*(s.z - q.z) + q.y*(p.z - s.z) + (q.z - p.z)*s.y)*x.x) / divisor;
 
   return mVec4t<U>(wp, wq, wr, 1 - wp - wq - wr)
-}
-
-template <typename T, typename U>
-T mInterpolateQuad(const T pos1, const T pos2, const T pos3, const T pos4, const U factor1, const U factor2)
-{
-  return mLerp(pos1 + (pos2 - pos1) * factor1 + (pos3 - pos1) * factor2, pos4 + (pos3 - pos4) * ((U)1 - factor1) + (pos2 - pos4) * ((U)1 - factor2), mVec2t<U>(factor1, factor2));
 }
 
 #endif // mMath_h__

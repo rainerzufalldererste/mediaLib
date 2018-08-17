@@ -22,57 +22,36 @@ int main(int, char **)
   mERROR_CHECK(mVideoPlaybackEngine_Create(&playbackEngine, nullptr, L"C:/Users/cstiller/Videos/Converted.mp4", threadPool));
 
   mVec2s resolution(1024, 1024);
-  const size_t subScale = 5;
   mDEFER_DESTRUCTION(pWindow, SDL_DestroyWindow);
-  pWindow = SDL_CreateWindow("VideoStream Renderer", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, (int)resolution.x / subScale, (int)resolution.y / subScale, 0);
+  pWindow = SDL_CreateWindow("VideoStream Renderer", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, (int)resolution.x, (int)resolution.y, 0);
   mERROR_IF(pWindow == nullptr, mR_ArgumentNull);
-  mERROR_CHECK(ResizeWindow(resolution / subScale));
+  mERROR_CHECK(ResizeWindow(resolution));
+
+  mPtr<mImageBuffer> imageBuffer;
+  mDEFER_DESTRUCTION(&imageBuffer, mImageBuffer_Destroy);
+  mERROR_CHECK(mImageBuffer_CreateFromFile(&imageBuffer, nullptr, "C:/Users/cstiller/Pictures/blom.png"));
+
+  bool ppp = 0;
 
   while (true)
   {
-    mPtr<mImageBuffer> imageBuffer;
-    mDEFER_DESTRUCTION(&imageBuffer, mImageBuffer_Destroy);
+    mERROR_CHECK(mMemset(pPixels, resolution.x * resolution.y, ppp * 0xFF));
 
-    bool isNewFrame = false;
-    const mResult result = mVideoPlaybackEngine_GetCurrentFrame(playbackEngine, &imageBuffer, &isNewFrame);
-
-    if (!isNewFrame)
-    {
-      mERROR_CHECK(mSleep(5));
-      continue;
-    }
-
-    if(result == mR_EndOfStream)
-      break;
-    
-    mERROR_IF(mFAILED(result), result);
-
-    if (resolution != imageBuffer->currentSize)
-    {
-      resolution = imageBuffer->currentSize;
-      ResizeWindow(imageBuffer->currentSize / subScale);
-    }
-
-    size_t i = 0;
-    size_t height = 0;
-
-    mVec2f corner0(20, 14), corner2(11, 712), corner1(720, 11), corner3(600, 600);
-    mVec2s res = resolution / subScale;
-    mVec2f resf = (mVec2f)res;
+    mVec2f corner0(200, 200), corner2(11, 912), corner1(920, 11), corner3(200, 800);
+    mVec2f resf = (mVec2f)resolution;
 
     for (float_t y = 0; y < 1; y += 1.0f / resf.y)
     {
       for (float_t x = 0; x < 1; x += 1.0f / resf.x)
       {
-        const mVec2s pos = (mVec2s)(mInterpolateQuad(corner0, corner1, corner2, corner3, x, y));
+        const mVec2s pos = (mVec2s)(mBiLerp(corner0, corner1, corner2, corner3, x, y));
 
-        if(pos.x < res.x && pos.y < res.y)
-          pPixels[pos.x + (res.x * pos.y)] = ((uint32_t *)(imageBuffer->pPixels))[height + (i += subScale)];
+        if(pos.x < resolution.x && pos.y < resolution.y)
+          pPixels[pos.x + (resolution.x * pos.y)] = ((uint32_t *)(imageBuffer->pPixels))[(size_t)(x * imageBuffer->currentSize.x) + imageBuffer->currentSize.x * (size_t)(y * imageBuffer->currentSize.y)];
       }
-
-      height += subScale * res.x;
-      i = 0;
     }
+
+    ppp = !ppp;
 
     SDL_UpdateWindowSurface(pWindow);
 
