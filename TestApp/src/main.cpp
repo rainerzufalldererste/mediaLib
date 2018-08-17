@@ -8,6 +8,7 @@
 #include "mHardwareWindow.h"
 #include "mShader.h"
 #include "mTexture.h"
+#include "mMesh.h"
 
 mPtr<mHardwareWindow> window = nullptr;
 mPtr<mImageBuffer> image;
@@ -22,7 +23,7 @@ int main(int, char **)
   mERROR_CHECK(mThreadPool_Create(&threadPool, nullptr));
 
   mDEFER_DESTRUCTION(&image, mImageBuffer_Destroy);
-  mERROR_CHECK(mImageBuffer_CreateFromFile(&image, nullptr, "C:/data/avatar.jpg"));
+  mERROR_CHECK(mImageBuffer_CreateFromFile(&image, nullptr, "C:/Users/cstiller/Pictures/avatar.png"));
 
   SDL_Init(SDL_INIT_EVERYTHING);
 
@@ -40,9 +41,9 @@ int main(int, char **)
   mERROR_CHECK(mRenderParams_SetMultisampling(4));
   mERROR_CHECK(mRenderParams_SetVsync(true));
 
-  GLuint vao;
-  glGenVertexArrays(1, &vao);
-  glBindVertexArray(vao);
+  mPtr<mMeshFactory<mRenderObjectParam_2dPosition, mRenderObjectParam_Texcoord>> meshFactory;
+  mDEFER_DESTRUCTION(&meshFactory, mMeshFactory_Destroy);
+  mERROR_CHECK(mMeshFactory_Create(&meshFactory, nullptr));
 
   GLuint vbo;
   glGenBuffers(1, &vbo);
@@ -110,8 +111,7 @@ int main(int, char **)
 
   while (true)
   {
-    glClearColor(mSin((frame++) / 255.0f) / 4.0f + 0.25f, mSin((frame++) / 255.0f) / 4.0f + 0.25f, mSin((frame++) / 255.0f) / 4.0f + 0.25f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    mRenderParams_ClearTargetDepthAndColour(mVector(mSin((frame++) / 255.0f) / 4.0f + 0.25f, mSin((frame++) / 255.0f) / 4.0f + 0.25f, mSin((frame++) / 255.0f) / 4.0f + 0.25f, 1.0f));
 
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
@@ -125,7 +125,7 @@ int main(int, char **)
         goto end;
   }
 
-end:
+end:;
 
   mRETURN_SUCCESS();
 }

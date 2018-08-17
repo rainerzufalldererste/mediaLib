@@ -12,19 +12,19 @@
 
 enum mHardwareWindow_DisplayMode
 {
-  mSW_DM_Windowed = 0,
-  mSW_DM_Fullscreen = SDL_WINDOW_FULLSCREEN,
-  mSW_DM_FullscreenDesktop = SDL_WINDOW_FULLSCREEN_DESKTOP,
+  mHW_DM_Windowed = 0,
+  mHW_DM_Fullscreen = SDL_WINDOW_FULLSCREEN,
+  mHW_DM_FullscreenDesktop = SDL_WINDOW_FULLSCREEN_DESKTOP,
 };
 
 struct mHardwareWindow;
 
-mFUNCTION(mHardwareWindow_Create, OUT mPtr<mHardwareWindow> *pWindow, IN mAllocator *pAllocator, const std::string &title, const mVec2s &size, const mHardwareWindow_DisplayMode displaymode = mSW_DM_Windowed);
+mFUNCTION(mHardwareWindow_Create, OUT mPtr<mHardwareWindow> *pWindow, IN mAllocator *pAllocator, const std::string &title, const mVec2s &size, const mHardwareWindow_DisplayMode displaymode = mHW_DM_Windowed);
 mFUNCTION(mHardwareWindow_Destroy, IN_OUT mPtr<mHardwareWindow> *pWindow);
 mFUNCTION(mHardwareWindow_GetSize, mPtr<mHardwareWindow> &window, OUT mVec2s *pSize);
 mFUNCTION(mHardwareWindow_Swap, mPtr<mHardwareWindow> &window);
 mFUNCTION(mHardwareWindow_SetSize, mPtr<mHardwareWindow> &window, const mVec2s &size);
-mFUNCTION(mHardwareWindow_SetToActiveRenderTarget, mPtr<mHardwareWindow> &window);
+mFUNCTION(mHardwareWindow_SetAsActiveRenderTarget, mPtr<mHardwareWindow> &window);
 mFUNCTION(mHardwareWindow_GetSdlWindowPtr, mPtr<mHardwareWindow> &window, OUT SDL_Window **ppSdlWindow);
 
 #endif // mHardwareWindow_h__

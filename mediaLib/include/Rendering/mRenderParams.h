@@ -67,6 +67,10 @@ mFUNCTION(mRenderParams_SetVsync, const bool vsync);
 mFUNCTION(mRenderParams_SetDoubleBuffering, const bool doubleBuffering);
 mFUNCTION(mRenderParams_SetMultisampling, const size_t count);
 
+mFUNCTION(mRenderParams_ClearTargetColour, const mVector &colour = mVector(0, 0, 0, 1));
+mFUNCTION(mRenderParams_ClearDepth);
+mFUNCTION(mRenderParams_ClearTargetDepthAndColour, const mVector &colour = mVector(0, 0, 0, 1));
+
 enum mRendererParams_UploadState
 {
   mRP_US_NotInitialized,

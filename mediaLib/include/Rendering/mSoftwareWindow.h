@@ -9,9 +9,8 @@
 #ifndef mSoftwareWindow_h__
 #define mSoftwareWindow_h__
 
-#include "default.h"
-#include "mImageBuffer.h"
 #include "mRenderParams.h"
+#include "mImageBuffer.h"
 
 enum mSoftwareWindow_DisplayMode
 {

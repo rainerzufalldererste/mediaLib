@@ -13,7 +13,7 @@ mFUNCTION(mShader_Create, OUT mShader *pShader, const std::string & vertexShader
 
   mERROR_IF(pShader == nullptr, mR_ArgumentNull);
 
-  *pShader = { 0 };
+  mERROR_CHECK(mMemset(pShader, 1));
   pShader->initialized = false;
 
 #if defined(mRENDERER_OPENGL)
