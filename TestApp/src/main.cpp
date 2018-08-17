@@ -54,10 +54,25 @@ int main(int, char **)
     }
 
     size_t i = 0;
+    size_t height = 0;
 
-    for (size_t y = 0; y < imageBuffer->currentSize.y; y += subScale)
-      for (size_t x = 0; x < imageBuffer->currentSize.x; x += subScale)
-        pPixels[i++] = ((uint32_t *)(imageBuffer->pPixels))[x + y * imageBuffer->lineStride];
+    mVec2f corner0(20, 14), corner2(11, 712), corner1(720, 11), corner3(600, 600);
+    mVec2s res = resolution / subScale;
+    mVec2f resf = (mVec2f)res;
+
+    for (float_t y = 0; y < 1; y += 1.0f / resf.y)
+    {
+      for (float_t x = 0; x < 1; x += 1.0f / resf.x)
+      {
+        const mVec2s pos = (mVec2s)(mInterpolateQuad(corner0, corner1, corner2, corner3, x, y));
+
+        if(pos.x < res.x && pos.y < res.y)
+          pPixels[pos.x + (res.x * pos.y)] = ((uint32_t *)(imageBuffer->pPixels))[height + (i += subScale)];
+      }
+
+      height += subScale * res.x;
+      i = 0;
+    }
 
     SDL_UpdateWindowSurface(pWindow);
 
