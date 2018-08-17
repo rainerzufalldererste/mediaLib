@@ -8,6 +8,7 @@
 #define __device__
 #endif // !__CUDA_ARCH__
 
+template <typename T> constexpr T mAbs(const T value) { return value >= 0 ? value : -value; }
 template <typename T> auto mSqrt(const T value)->decltype(sqrt(value)) { return sqrt(value); }
 template <typename T> auto mSin(const T value)->decltype(sin(value)) { return sin(value); }
 template <typename T> auto mCos(const T value)->decltype(cos(value)) { return cos(value); }
@@ -215,5 +216,20 @@ uint32_t mColor_PackVec3dToBgra(const mVec3d rgbVector);
 uint32_t mColor_PackVec4fToBgra(const mVec4f rgbaVector);
 uint32_t mColor_PackVec4dToBgra(const mVec4d rgbaVector);
 uint32_t mColor_PackVectorToBgra(const mVector rgbaVector);
+
+__host__ __device__ inline mVec3f mColor_HueToVec3f(const float_t hue)
+{
+  const float_t h = hue * 6;
+  const float_t r = mAbs(h - 3) - 1;
+  const float_t g = 2 - mAbs(h - 2);
+  const float_t b = 2 - mAbs(h - 4);
+
+  return mVec3f(mClamp(r, 0.0f, 1.0f), mClamp(g, 0.0f, 1.0f), mClamp(b, 0.0f, 1.0f));
+}
+
+__host__ __device__ inline uint32_t mColor_HueToBgra(const float_t hue)
+{
+  return mColor_PackVec3fToBgra(mColor_HueToVec3f(hue));
+}
 
 #endif // mMath_h__
