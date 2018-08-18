@@ -12,6 +12,8 @@
 #include "mRenderParams.h"
 #include "mShader.h"
 #include "mBinaryChunk.h"
+#include "mArray.h"
+#include "mTexture.h"
 
 enum mRenderObjectParamType
 {
@@ -163,6 +165,7 @@ enum mMeshFactory_AttributeInformationType
 {
   mMF_AIT_Attribute,
   mMF_AIT_Uniform,
+  mMF_AIT_Flag,
 };
 
 struct mMeshFactory_AttributeInformation
@@ -170,9 +173,17 @@ struct mMeshFactory_AttributeInformation
   size_t size;
   size_t offset;
   mMeshFactory_AttributeInformationType type;
+  size_t individualSubTypeSize;
+
+#if defined(mRENDERER_OPENGL)
+  GLenum dataType;
+
+  inline mMeshFactory_AttributeInformation(const size_t size, const size_t offset, const mMeshFactory_AttributeInformationType type, const GLenum dataType, const size_t individualSubTypeSize) : size(size), offset(offset), type(type), dataType(dataType), individualSubTypeSize(individualSubTypeSize) {}
+#else
+  inline mMeshFactory_AttributeInformation(const size_t size, const size_t offset, const mMeshFactory_AttributeInformationType type, const size_t individualSubTypeSize) : size(size), offset(offset), type(type), individualSubTypeSize(individualSubTypeSize) {}
+#endif
 
   inline mMeshFactory_AttributeInformation() = default;
-  inline mMeshFactory_AttributeInformation(const size_t size, const size_t offset, const mMeshFactory_AttributeInformationType type) : size(size), offset(offset), type(type) {}
 };
 
 struct mMeshFactory_Internal
@@ -206,6 +217,7 @@ struct mMeshFactory
 {
   mMeshFactory_Internal meshFactoryInternal;
   mPtr<mBinaryChunk> values;
+  mRenderParams_TriangleRenderMode triangleRenderMode;
 };
 
 struct mMesh
@@ -213,6 +225,9 @@ struct mMesh
   mPtr<mShader> shader;
   size_t length;
   mRenderParams_UploadState uploadState;
+  mArray<mPtr<mTexture>> textures;
+  mRenderParams_TriangleRenderMode triangleRenderMode;
+  size_t primitiveCount;
 #if defined (mRENDERER_OPENGL)
   bool hasVbo;
   GLuint vbo;
@@ -223,13 +238,13 @@ template <typename ...Args>
 mFUNCTION(mMeshFactory_Destroy_Internal, mMeshFactory<Args...> *pFactory);
 
 template <typename ...Args>
-mFUNCTION(mMeshFactory_Create, OUT mPtr<mMeshFactory<Args...>> *pFactory, IN mAllocator *pAllocator);
+mFUNCTION(mMeshFactory_Create, OUT mPtr<mMeshFactory<Args...>> *pFactory, IN mAllocator *pAllocator, const mRenderParams_TriangleRenderMode triangleRenderMode = mRP_RM_TriangleList);
 
 template <typename ...Args>
 mFUNCTION(mMeshFactory_Destroy, IN_OUT mPtr<mMeshFactory<Args...>> *pFactory);
 
-template <typename ...Args>
-mFUNCTION(mMeshFactory_CreateMesh, mPtr<mMeshFactory<Args...>> &factory, OUT mPtr<mMesh> *pMesh, IN mAllocator *pAllocator);
+template<typename ...Args, typename ...TTextures>
+mFUNCTION(mMeshFactory_CreateMesh, mPtr<mMeshFactory<Args...>> &factory, OUT mPtr<mMesh> *pMesh, IN mAllocator *pAllocator, TTextures... textures);
 
 template <typename ...Args>
 mFUNCTION(mMeshFactory_AppendData, mPtr<mMeshFactory<Args...>> &factory, Args&&... args);
@@ -241,11 +256,18 @@ mFUNCTION(mMesh_Destroy, IN_OUT mPtr<mMesh> *pMesh);
 
 mFUNCTION(mMesh_Destroy_Internal, mMesh *pMesh);
 
+mFUNCTION(mMesh_Upload, mPtr<mMesh> &data);
+
+mFUNCTION(mMesh_GetUploadState, mPtr<mMesh> &data, OUT mRenderParams_UploadState *pUploadState);
+
+mFUNCTION(mMesh_Render, mPtr<mMesh> &data);
+
+mFUNCTION(mMesh_Render, mPtr<mMesh> &data, mMatrix &matrix);
+
 //////////////////////////////////////////////////////////////////////////
 
-
 template <typename ...Args>
-mFUNCTION(mMeshFactory_Create, OUT mPtr<mMeshFactory<Args...>> *pFactory, IN mAllocator *pAllocator)
+mFUNCTION(mMeshFactory_Create, OUT mPtr<mMeshFactory<Args...>> *pFactory, IN mAllocator *pAllocator, const mRenderParams_TriangleRenderMode triangleRenderMode /* = mRP_RM_TriangleList */)
 {
   mFUNCTION_SETUP();
 
@@ -255,6 +277,8 @@ mFUNCTION(mMeshFactory_Create, OUT mPtr<mMeshFactory<Args...>> *pFactory, IN mAl
   mERROR_CHECK(mQueue_Create(&(*pFactory)->meshFactoryInternal.information, pAllocator));
 
   mERROR_CHECK(mMeshFactory_Internal_Build<Args...>(&(*pFactory)->meshFactoryInternal));
+
+  (*pFactory)->triangleRenderMode = triangleRenderMode;
 
   mRETURN_SUCCESS();
 }
@@ -269,28 +293,171 @@ mFUNCTION(mMeshFactory_Destroy, IN_OUT mPtr<mMeshFactory<Args...>> *pFactory)
   mRETURN_SUCCESS();
 }
 
-template<typename ...Args>
-inline mFUNCTION(mMeshFactory_CreateMesh, mPtr<mMeshFactory<Args...>> &factory, OUT mPtr<mMesh> *pMesh, IN mAllocator *pAllocator)
+template <typename ...MeshArgs>
+struct mMeshFactory_Internal_TextureParameterUnpacker;
+
+template <>
+struct mMeshFactory_Internal_TextureParameterUnpacker <>
+{
+  static mFUNCTION(Unpack, mArray<mPtr<mTexture>> *pTextureArray, const size_t index)
+  {
+    mFUNCTION_SETUP();
+
+    mUnused(index, pTextureArray);
+    mASSERT(false, "Missing Parameter List.");
+
+    mRETURN_SUCCESS();
+  }
+};
+
+template <>
+struct mMeshFactory_Internal_TextureParameterUnpacker <mPtr<mImageBuffer>&>
+{
+  static mFUNCTION(Unpack, mArray<mPtr<mTexture>> *pTextureArray, const size_t index, mPtr<mImageBuffer> &imageBuffer)
+  {
+    mFUNCTION_SETUP();
+
+    mPtr<mTexture> texture;
+    mDEFER_DESTRUCTION(&texture, mSharedPointer_Destroy);
+    mERROR_CHECK(mSharedPointer_Allocate(&texture, nullptr, (std::function<void(mTexture *)>)[](mTexture *pData) {mTexture_Destroy(pData); }, 1));
+    mERROR_CHECK(mTexture_Create(texture.GetPointer(), imageBuffer, false, index));
+
+    mERROR_CHECK(mArray_PutDataAt(*pTextureArray, index, texture));
+
+    mRETURN_SUCCESS();
+  }
+};
+
+template <>
+struct mMeshFactory_Internal_TextureParameterUnpacker <mPtr<mTexture>&>
+{
+  static mFUNCTION(Unpack, mArray<mPtr<mTexture>> *pTextureArray, const size_t index, mPtr<mTexture> &texture)
+  {
+    mFUNCTION_SETUP();
+
+    mERROR_CHECK(mArray_PutDataAt(*pTextureArray, index, texture));
+
+    mRETURN_SUCCESS();
+  }
+};
+
+template <>
+struct mMeshFactory_Internal_TextureParameterUnpacker <mPtr<mImageBuffer>>
+{
+  static mFUNCTION(Unpack, mArray<mPtr<mTexture>> *pTextureArray, const size_t index, mPtr<mImageBuffer> imageBuffer)
+  {
+    mFUNCTION_SETUP();
+
+    mPtr<mTexture> texture;
+    mDEFER_DESTRUCTION(&texture, mSharedPointer_Destroy);
+    mERROR_CHECK(mSharedPointer_Allocate(&texture, nullptr, (std::function<void(mTexture *)>)[](mTexture *pData) {mTexture_Destroy(pData); }, 1));
+    mERROR_CHECK(mTexture_Create(texture.GetPointer(), imageBuffer, false, index));
+
+    mERROR_CHECK(mArray_PutDataAt(*pTextureArray, index, texture));
+
+    mRETURN_SUCCESS();
+  }
+};
+
+template <>
+struct mMeshFactory_Internal_TextureParameterUnpacker <mPtr<mTexture>>
+{
+  static mFUNCTION(Unpack, mArray<mPtr<mTexture>> *pTextureArray, const size_t index, mPtr<mTexture> texture)
+  {
+    mFUNCTION_SETUP();
+
+    mERROR_CHECK(mArray_PutDataAt(*pTextureArray, index, texture));
+
+    mRETURN_SUCCESS();
+  }
+};
+
+template <typename T, typename ...Args>
+struct mMeshFactory_Internal_TextureParameterUnpacker <T, Args...>
+{
+  static mFUNCTION(Unpack, mArray<mPtr<mTexture>> *pTextureArray, const size_t index, T t, Args&&... args)
+  {
+    mFUNCTION_SETUP();
+
+    mERROR_CHECK(mMeshFactory_Internal_TextureParameterUnpacker<T>::Unpack(pTextureArray, index, t));
+    mERROR_CHECK(mMeshFactory_Internal_TextureParameterUnpacker<Args...>::Unpack(pTextureArray, index + 1, std::forward<Args>(args)...));
+
+    mRETURN_SUCCESS();
+  }
+};
+
+template<typename ...Args, typename ...TTextures>
+inline mFUNCTION(mMeshFactory_CreateMesh, mPtr<mMeshFactory<Args...>> &factory, OUT mPtr<mMesh> *pMesh, IN mAllocator *pAllocator, TTextures... textures)
 {
   mFUNCTION_SETUP();
 
   mERROR_IF(factory == nullptr || pMesh == nullptr, mR_ArgumentNull);
 
+  mPRINT(factory->meshFactoryInternal.vertShader);
+  mPRINT("\n\n");
+  mPRINT(factory->meshFactoryInternal.fragShader);
+
   mPtr<mShader> shader;
   mDEFER_DESTRUCTION(&shader, mSharedPointer_Destroy);
   mERROR_CHECK(mSharedPointer_Allocate(&shader, pAllocator, (std::function<void(mShader *)>)[](mShader *pShader) { mShader_Destroy(pShader); }, 1));
   mERROR_CHECK(mShader_Create(shader.GetPointer(), factory->meshFactoryInternal.vertShader, factory->meshFactoryInternal.fragShader));
+  mERROR_CHECK(mShader_Bind(*shader.GetPointer()));
 
   mERROR_CHECK(mSharedPointer_Allocate(pMesh, pAllocator, (std::function<void(mMesh *)>)[](mMesh *pData) { mMesh_Destroy_Internal(pData); }, 1));
 
-#if defined (mRENDERER_OPENGL)
+  (*pMesh)->uploadState = mRP_US_NotInitialized;
+  (*pMesh)->triangleRenderMode = factory->triangleRenderMode;
   (*pMesh)->shader = shader;
+
+  switch (factory->triangleRenderMode)
+  {
+  case mRP_RM_TriangleList:
+  case mRP_RM_TriangleStrip:
+  case mRP_RM_TriangleFan:
+    (*pMesh)->triangleRenderMode = factory->triangleRenderMode;
+    (*pMesh)->primitiveCount = factory->values->writeCount;
+    break;
+
+  default:
+    mRETURN_RESULT(mR_OperationNotSupported);
+    break;
+  }
+
+#if defined (mRENDERER_OPENGL)
   (*pMesh)->hasVbo = true;
   glGenBuffers(1, &(*pMesh)->vbo);
   glBindBuffer(GL_ARRAY_BUFFER, (*pMesh)->vbo);
   glBufferData(GL_ARRAY_BUFFER, factory->values->writeCount, factory->values->pData, GL_STATIC_DRAW);
 
-  mGL_DEBUG_ERROR_CHECK();
+  size_t informationCount;
+  mERROR_CHECK(mQueue_GetCount(factory->meshFactoryInternal.information, &informationCount));
+
+  GLuint index = 0;
+
+  for (size_t i = 0; i < informationCount; ++i)
+  {
+    mMeshFactory_AttributeInformation info;
+    mERROR_CHECK(mQueue_PeekAt(factory->meshFactoryInternal.information, i, &info));
+
+    if (info.size > 0 && info.type == mMF_AIT_Attribute)
+    {
+      glEnableVertexAttribArray((GLuint)index);
+      glVertexAttribPointer((GLuint)index, (GLint)(info.size / info.individualSubTypeSize), info.dataType, GL_FALSE, (GLsizei)sizeof...(Args), (const void *)info.offset);
+      ++index;
+    }
+
+    mGL_DEBUG_ERROR_CHECK();
+  }
+
+  mERROR_CHECK(mArray_Create(&(*pMesh)->textures, nullptr, factory->meshFactoryInternal.textureCoordCount));
+
+  mERROR_CHECK(mMeshFactory_Internal_TextureParameterUnpacker<TTextures...>::Unpack(&(*pMesh)->textures, 0, std::forward<TTextures>(textures)...));
+
+  if ((*pMesh)->textures.count > 0)
+    (*pMesh)->uploadState = mRP_US_NotUploaded;
+  else
+    (*pMesh)->uploadState = mRP_US_Ready;
+
 #else
   mRETURN_RESULT(mR_NotImplemented);
 #endif
@@ -306,6 +473,17 @@ inline mFUNCTION(mMeshFactory_Destroy_Internal, mMeshFactory<Args...> *pFactory)
   mERROR_IF(pFactory == nullptr, mR_ArgumentNull);
 
   mERROR_CHECK(mBinaryChunk_Destroy(&pFactory->values));
+
+  size_t informationCount;
+  mERROR_CHECK(mQueue_GetCount(pFactory->meshFactoryInternal.information, &informationCount));
+
+  for (size_t i = 0; i < informationCount; ++i)
+  {
+    mMeshFactory_AttributeInformation info;
+    mERROR_CHECK(mQueue_PopFront(pFactory->meshFactoryInternal.information, &info));
+    // Destroy info if applicable later.
+  }
+
   mERROR_CHECK(mQueue_Destroy(&pFactory->meshFactoryInternal.information));
 
   mRETURN_SUCCESS();
@@ -367,8 +545,6 @@ struct mMeshFactory_Internal_Unpacker <T>
   {
     mFUNCTION_SETUP();
 
-    mERROR_CHECK(mQueue_PushBack(pMeshFactory->information, mMeshFactory_AttributeInformation(T::size, pMeshFactory->information, mMF_AIT_Attribute)));
-
     switch (T::type)
     {
     case mROPT_Position:
@@ -392,6 +568,8 @@ struct mMeshFactory_Internal_Unpacker <T>
         break;
       }
 
+      mERROR_CHECK(mQueue_PushBack(pMeshFactory->information, mMeshFactory_AttributeInformation(T::size, pMeshFactory->information, mMF_AIT_Attribute, GL_FLOAT, sizeof(float_t))));
+
       break;
 
     case mROPT_TexCoord:
@@ -410,6 +588,8 @@ struct mMeshFactory_Internal_Unpacker <T>
         mRETURN_RESULT(mR_OperationNotSupported);
         break;
       }
+
+      mERROR_CHECK(mQueue_PushBack(pMeshFactory->information, mMeshFactory_AttributeInformation(T::size, pMeshFactory->information, mMF_AIT_Attribute, GL_FLOAT, sizeof(float_t))));
 
       break;
 
@@ -430,6 +610,8 @@ struct mMeshFactory_Internal_Unpacker <T>
         break;
       }
 
+      mERROR_CHECK(mQueue_PushBack(pMeshFactory->information, mMeshFactory_AttributeInformation(T::size, pMeshFactory->information, mMF_AIT_Attribute, GL_FLOAT, sizeof(float_t))));
+
       break;
 
     case mROPT_TextureBlendFactor:
@@ -449,6 +631,8 @@ struct mMeshFactory_Internal_Unpacker <T>
         break;
       }
 
+      mERROR_CHECK(mQueue_PushBack(pMeshFactory->information, mMeshFactory_AttributeInformation(T::size, pMeshFactory->information, mMF_AIT_Attribute, GL_FLOAT, sizeof(float_t))));
+
       break;
 
     case mROPT_NormalDirection:
@@ -456,6 +640,8 @@ struct mMeshFactory_Internal_Unpacker <T>
       pMeshFactory->normal = 1;
 
       // TODO: implement.
+
+      mERROR_CHECK(mQueue_PushBack(pMeshFactory->information, mMeshFactory_AttributeInformation(T::size, pMeshFactory->information, mMF_AIT_Attribute, GL_FLOAT, sizeof(float_t))));
 
       break;
 
@@ -469,19 +655,22 @@ struct mMeshFactory_Internal_Unpacker <T>
         mERROR_IF(0 > sprintf_s(pMeshFactory->vertShader, "%s\nin float " mMeshAlphaChannel_AttributeName "0;\nout float _" mMeshAlphaChannel_AttributeName "0;", pMeshFactory->vertShader), mR_InternalError);
         mERROR_IF(0 > sprintf_s(pMeshFactory->vertShaderImpl, "%s\n\t_" mMeshAlphaChannel_AttributeName "0 = " mMeshAlphaChannel_AttributeName "0;", pMeshFactory->vertShaderImpl), mR_InternalError);
         mERROR_IF(0 > sprintf_s(pMeshFactory->fragShader, "%s\nin vec3 _" mMeshAlphaChannel_AttributeName "0;", pMeshFactory->fragShader), mR_InternalError);
+        break;
 
       default:
         mRETURN_RESULT(mR_OperationNotSupported);
         break;
       }
 
-      // TODO: implement.
+      mERROR_CHECK(mQueue_PushBack(pMeshFactory->information, mMeshFactory_AttributeInformation(T::size, pMeshFactory->information, mMF_AIT_Attribute, GL_FLOAT, sizeof(float_t))));
 
       break;
 
     case mROPT_TextureAlphaFlag:
       // mERROR_IF(pMeshFactory->useTextureAlpha != 0, mR_InvalidParameter); // will be ignored anyways.
       pMeshFactory->useTextureAlpha = 1;
+
+      mERROR_CHECK(mQueue_PushBack(pMeshFactory->information, mMeshFactory_AttributeInformation(T::size, pMeshFactory->information, mMF_AIT_Flag, GL_FALSE, 1)));
 
       break;
 
@@ -491,10 +680,9 @@ struct mMeshFactory_Internal_Unpacker <T>
       pMeshFactory->scaleUniform = 1;
 
       // TODO: implement.
-      mMeshFactory_AttributeInformation info;
-      mERROR_CHECK(mQueue_PopBack(pMeshFactory->information, &info));
-      info.type = mMF_AIT_Uniform;
-      mERROR_CHECK(mQueue_PushBack(pMeshFactory->information, &info));
+
+      mERROR_CHECK(mQueue_PushBack(pMeshFactory->information, mMeshFactory_AttributeInformation(T::size, pMeshFactory->information, mMF_AIT_Uniform, GL_FLOAT, sizeof(float_t))));
+
       break;
 
     default:

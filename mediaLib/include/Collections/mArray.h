@@ -20,7 +20,7 @@ struct mArray
   size_t count = 0;
   mAllocator *pAllocator = nullptr;
 
-  T operator [](const size_t index);
+  T& operator [](const size_t index);
 };
 
 template <typename T>
@@ -42,7 +42,7 @@ template <typename T>
 mFUNCTION(mArray_PutAt, mArray<T> &arrayRef, const size_t index, IN T *pData);
 
 template <typename T>
-mFUNCTION(mArray_PutAt, mArray<T> &arrayRef, const size_t index, T pData);
+mFUNCTION(mArray_PutDataAt, mArray<T> &arrayRef, const size_t index, T pData);
 
 template <typename T>
 mFUNCTION(mArray_GetPointer, mArray<T> &arrayRef, OUT T **ppData);
@@ -56,7 +56,7 @@ inline mFUNCTION(mArray_Create, OUT mArray<T>* pArray, mAllocator * pAllocator, 
 
   mERROR_IF(pArray == nullptr, mR_ArgumentNull);
 
-  mERROR_CHECK(mAllocator_AllocateZero(pAllocator, pArray->pData, count));
+  mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &pArray->pData, count));
 
   pArray->count = count;
   pArray->pAllocator = pAllocator;
@@ -134,11 +134,11 @@ inline mFUNCTION(mArray_PutAt, mArray<T>& arrayRef, const size_t index, IN T *pD
 }
 
 template<typename T>
-inline mFUNCTION(mArray_PutAt, mArray<T>& arrayRef, const size_t index, T pData)
+inline mFUNCTION(mArray_PutDataAt, mArray<T>& arrayRef, const size_t index, T pData)
 {
   mFUNCTION_SETUP();
 
-  mERROR_CHECK(mArray_PutAt, index, std::forward<T>(pData));
+  mERROR_CHECK(mArray_PutAt(arrayRef, index, &pData));
 
   mRETURN_SUCCESS();
 }
@@ -156,7 +156,7 @@ inline mFUNCTION(mArray_GetPointer, mArray<T>& arrayRef, OUT T **ppData)
 }
 
 template<typename T>
-inline T mArray<T>::operator[](const size_t index)
+inline T& mArray<T>::operator[](const size_t index)
 {
   return pData[index];
 }

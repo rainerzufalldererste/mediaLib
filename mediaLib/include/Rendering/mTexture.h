@@ -30,6 +30,6 @@ mFUNCTION(mTexture_Destroy, IN_OUT mTexture *pTexture);
 
 mFUNCTION(mTexture_GetUploadState, mTexture &texture, OUT mRenderParams_UploadState *pUploadState);
 mFUNCTION(mTexture_Upload, mTexture &texture);
-mFUNCTION(mTexture_Bind, mTexture &texture);
+mFUNCTION(mTexture_Bind, mTexture &texture, const size_t textureUnit = 0);
 
 #endif // mTexture_h__
