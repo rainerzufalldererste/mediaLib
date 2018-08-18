@@ -23,7 +23,7 @@ int main(int, char **)
   mERROR_CHECK(mThreadPool_Create(&threadPool, nullptr));
 
   mDEFER_DESTRUCTION(&image, mImageBuffer_Destroy);
-  mERROR_CHECK(mImageBuffer_CreateFromFile(&image, nullptr, "C:/Users/cstiller/Pictures/avatar.png"));
+  mERROR_CHECK(mImageBuffer_CreateFromFile(&image, nullptr, "C:/data/avatar.jpg"));
 
   SDL_Init(SDL_INIT_EVERYTHING);
 
@@ -35,15 +35,25 @@ int main(int, char **)
   resolution.y = displayMode.h / 2;
 
   mDEFER_DESTRUCTION(&window, mHardwareWindow_Destroy);
-  mERROR_CHECK(mHardwareWindow_Create(&window, nullptr, "OpenGl Window", resolution));
+  mERROR_CHECK(mHardwareWindow_Create(&window, nullptr, "OpenGL Window", resolution));
 
   mERROR_CHECK(mRenderParams_SetDoubleBuffering(true));
   mERROR_CHECK(mRenderParams_SetMultisampling(4));
   mERROR_CHECK(mRenderParams_SetVsync(true));
 
-  mPtr<mMeshFactory<mRenderObjectParam_2dPosition, mRenderObjectParam_Texcoord>> meshFactory;
+  mPtr<mMeshFactory<mMesh2dPosition, mMeshTexcoord, mMeshScaleUniform>> meshFactory;
   mDEFER_DESTRUCTION(&meshFactory, mMeshFactory_Destroy);
   mERROR_CHECK(mMeshFactory_Create(&meshFactory, nullptr));
+
+  mERROR_CHECK(mMeshFactory_GrowBack(meshFactory, 4));
+  mERROR_CHECK(mMeshFactory_AppendData(meshFactory, mMesh2dPosition(-1, -1), mMeshTexcoord(0, 1), mMeshScaleUniform()));
+  mERROR_CHECK(mMeshFactory_AppendData(meshFactory, mMesh2dPosition(-1,  1), mMeshTexcoord(0, 0), mMeshScaleUniform()));
+  mERROR_CHECK(mMeshFactory_AppendData(meshFactory, mMesh2dPosition( 1, -1), mMeshTexcoord(1, 1), mMeshScaleUniform()));
+  mERROR_CHECK(mMeshFactory_AppendData(meshFactory, mMesh2dPosition( 1,  1), mMeshTexcoord(1, 0), mMeshScaleUniform()));
+
+  mPtr<mMesh> mesh;
+  mDEFER_DESTRUCTION(&mesh, mMesh_Destroy);
+  mERROR_CHECK(mMeshFactory_CreateMesh(meshFactory, &mesh, nullptr));
 
   GLuint vbo;
   glGenBuffers(1, &vbo);

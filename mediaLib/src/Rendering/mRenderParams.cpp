@@ -1,3 +1,5 @@
+// Copyright 2018 Christoph Stiller
+// 
 // Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 // 
 // The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
@@ -203,5 +205,31 @@ mFUNCTION(mRenderParams_ClearTargetDepthAndColour, const mVector & colour)
 #else
   mRETURN_RESULT(mR_NotImplemented);
 #endif
+  mRETURN_SUCCESS();
+}
+
+bool mRenderParams_BlendingEnabled = false;
+
+mFUNCTION(mRenderParams_SetBlendingEnabled, const bool enabled /*= true*/)
+{
+  mFUNCTION_SETUP();
+
+  if (mRenderParams_BlendingEnabled == enabled)
+    mRETURN_SUCCESS();
+
+#if defined(mRENDERER_OPENGL)
+  if (enabled)
+    glEnable(GL_BLEND);
+  else
+    glDisable(GL_BLEND);
+
+  mGL_DEBUG_ERROR_CHECK();
+
+  mRenderParams_BlendingEnabled = enabled;
+
+#else
+  mRETURN_RESULT(mR_NotImplemented);
+#endif
+
   mRETURN_SUCCESS();
 }

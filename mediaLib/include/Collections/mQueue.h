@@ -52,6 +52,10 @@ mFUNCTION(mQueue_PopBack, mPtr<mQueue<T>> &queue, OUT T *pItem);
 template <typename T>
 mFUNCTION(mQueue_PeekAt, mPtr<mQueue<T>> &queue, const size_t index, OUT T *pItem);
 
+// Handle with care. This will only be valid until the queue grows.
+template <typename T>
+mFUNCTION(mQueue_PointerAt, mPtr<mQueue<T>> &queue, const size_t index, OUT T **ppItem);
+
 template <typename T>
 mFUNCTION(mQueue_GetCount, mPtr<mQueue<T>> &queue, OUT size_t *pCount);
 
@@ -244,6 +248,23 @@ inline mFUNCTION(mQueue_PeekAt, mPtr<mQueue<T>> &queue, const size_t index, OUT 
   const size_t queueIndex = (queue->startIndex + index) % queue->size;
 
   *pItem = queue->pData[queueIndex];
+
+  mRETURN_SUCCESS();
+}
+
+template<typename T>
+inline mFUNCTION(mQueue_PointerAt, mPtr<mQueue<T>> &queue, const size_t index, OUT T **ppItem)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(queue == nullptr || ppItem == nullptr, mR_ArgumentNull);
+
+  if (queue->count < index)
+    mRETURN_RESULT(mR_IndexOutOfBounds);
+
+  const size_t queueIndex = (queue->startIndex + index) % queue->size;
+
+  *ppItem = &queue->pData[queueIndex];
 
   mRETURN_SUCCESS();
 }

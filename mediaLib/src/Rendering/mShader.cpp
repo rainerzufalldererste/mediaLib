@@ -1,3 +1,5 @@
+// Copyright 2018 Christoph Stiller
+// 
 // Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 // 
 // The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
@@ -29,6 +31,9 @@ mFUNCTION(mShader_Create, OUT mShader *pShader, const std::string & vertexShader
 
   if (status != GL_TRUE)
   {
+    mPRINT("Error compiling vertex shader:\n");
+    mPRINT(vertexSource);
+    mPRINT("\n\nThe following error occured:\n");
     char buffer[1024];
     glGetShaderInfoLog(vertexShaderHandle, sizeof(buffer), nullptr, buffer);
     mPRINT(buffer);
@@ -46,6 +51,9 @@ mFUNCTION(mShader_Create, OUT mShader *pShader, const std::string & vertexShader
 
   if (status != GL_TRUE)
   {
+    mPRINT("Error compiling fragment shader:\n");
+    mPRINT(fragmentSource);
+    mPRINT("\n\nThe following error occured:\n");
     char buffer[1024];
     glGetShaderInfoLog(fragmentShaderHandle, sizeof(buffer), nullptr, buffer);
     mPRINT(buffer);

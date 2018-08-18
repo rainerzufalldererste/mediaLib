@@ -6,28 +6,31 @@
 // 
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+#include "mMesh.h"
 
-#ifndef mHardwareWindow_h__
-#define mHardwareWindow_h__
-
-#include "default.h"
-#include "mRenderParams.h"
-
-enum mHardwareWindow_DisplayMode
+mFUNCTION(mMesh_Destroy, IN_OUT mPtr<mMesh> *pMesh)
 {
-  mHW_DM_Windowed = 0,
-  mHW_DM_Fullscreen = SDL_WINDOW_FULLSCREEN,
-  mHW_DM_FullscreenDesktop = SDL_WINDOW_FULLSCREEN_DESKTOP,
-};
+  mFUNCTION_SETUP();
 
-struct mHardwareWindow;
+  mERROR_IF(pMesh == nullptr, mR_ArgumentNull);
+  mERROR_CHECK(mSharedPointer_Destroy(pMesh));
 
-mFUNCTION(mHardwareWindow_Create, OUT mPtr<mHardwareWindow> *pWindow, IN mAllocator *pAllocator, const std::string &title, const mVec2s &size, const mHardwareWindow_DisplayMode displaymode = mHW_DM_Windowed);
-mFUNCTION(mHardwareWindow_Destroy, IN_OUT mPtr<mHardwareWindow> *pWindow);
-mFUNCTION(mHardwareWindow_GetSize, mPtr<mHardwareWindow> &window, OUT mVec2s *pSize);
-mFUNCTION(mHardwareWindow_Swap, mPtr<mHardwareWindow> &window);
-mFUNCTION(mHardwareWindow_SetSize, mPtr<mHardwareWindow> &window, const mVec2s &size);
-mFUNCTION(mHardwareWindow_SetAsActiveRenderTarget, mPtr<mHardwareWindow> &window);
-mFUNCTION(mHardwareWindow_GetSdlWindowPtr, mPtr<mHardwareWindow> &window, OUT SDL_Window **ppSdlWindow);
+  mRETURN_SUCCESS();
+}
 
-#endif // mHardwareWindow_h__
+mFUNCTION(mMesh_Destroy_Internal, mMesh * pMesh)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pMesh == nullptr, mR_ArgumentNull);
+
+#if defined (mRENDERER_OPENGL)
+  if (pMesh->hasVbo)
+  {
+    glDeleteBuffers(1, &pMesh->vbo);
+    pMesh->hasVbo = false;
+  }
+#endif
+
+  mRETURN_SUCCESS();
+}

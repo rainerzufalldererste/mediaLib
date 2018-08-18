@@ -1,3 +1,5 @@
+// Copyright 2018 Christoph Stiller
+// 
 // Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 // 
 // The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
@@ -36,7 +38,6 @@ struct mRenderContext
 extern mRenderContext *mRenderParams_pRenderContexts;
 extern size_t mRenderParams_RenderContextCount;
 
-
 #if defined(mRENDERER_OPENGL)
 extern GLenum mRenderParams_GLError;
 
@@ -71,7 +72,9 @@ mFUNCTION(mRenderParams_ClearTargetColour, const mVector &colour = mVector(0, 0,
 mFUNCTION(mRenderParams_ClearDepth);
 mFUNCTION(mRenderParams_ClearTargetDepthAndColour, const mVector &colour = mVector(0, 0, 0, 1));
 
-enum mRendererParams_UploadState
+mFUNCTION(mRenderParams_SetBlendingEnabled, const bool enabled = true);
+
+enum mRenderParams_UploadState
 {
   mRP_US_NotInitialized,
   mRP_US_NotUploaded,

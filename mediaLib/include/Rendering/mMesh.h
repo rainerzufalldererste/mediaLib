@@ -1,3 +1,5 @@
+// Copyright 2018 Christoph Stiller
+// 
 // Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
 // 
 // The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
@@ -9,6 +11,7 @@
 
 #include "mRenderParams.h"
 #include "mShader.h"
+#include "mBinaryChunk.h"
 
 enum mRenderObjectParamType
 {
@@ -44,103 +47,112 @@ struct mRenderObjectParam
 
 #define mRenderObjectParam_Position_AttributeName "position"
 #define mRenderObjectParam_MatrixAttributeName "matrix"
-#define mRenderObjectParam_Texcoord_AttributeName "texcoord"
-#define mRenderObjectParam_Colour_AttributeName "colour"
-#define mRenderObjectParam_TextureBlendFactor_AttributeName "textureMix"
+#define mMeshTexcoord_AttributeName "texcoord"
+#define mMeshColour_AttributeName "colour"
+#define mMeshTextureBlendFactor_AttributeName "textureMix"
 #define mRenderObjectParam_TextureAttributeName "texture"
-#define mRenderObjectParam_NormalPosition_AttributeName "normal"
-#define mRenderObjectParam_AlphaChannel_AttributeName "alpha"
-#define mRenderObjectParam_ScaleUniform_AttributeName "scale"
+#define mMeshNormalPosition_AttributeName "normal"
+#define mMeshAlphaChannel_AttributeName "alpha"
+#define mMeshScaleUniform_AttributeName "scale"
+#define mMeshScreenSize_AttributeName "screenSize"
+#define mMeshOutColour_AttributeName "outColour"
 
-struct mRenderObjectParam_2dPosition : mRenderObjectParam
+struct mMesh2dPosition : mRenderObjectParam
 {
   mVec2f position;
 
-  mRenderObjectParam_2dPosition(const mVec2f &position) : position(position) {}
+  mMesh2dPosition(const mVec2f &position) : position(position) {}
+  mMesh2dPosition(const float_t x, const float_t y) : position(mVec2f(x, y)) {}
 
   static const mRenderObjectParamType type = mROPT_Position;
   static const mRenderObjectParamSubType subType = mROPST_2dPosition;
   static const size_t size = sizeof(mVec2f);
 };
 
-struct mRenderObjectParam_3dPosition : mRenderObjectParam
+struct mMesh3dPosition : mRenderObjectParam
 {
   mVec3f position;
 
-  mRenderObjectParam_3dPosition(const mVec3f &position) : position(position) {}
+  mMesh3dPosition(const mVec3f &position) : position(position) {}
+  mMesh3dPosition(const float_t x, const float_t y, const float_t z) : position(mVec3f(x, y, z)) {}
 
   static const mRenderObjectParamType type = mROPT_Position;
   static const mRenderObjectParamSubType subType = mROPST_3dPosition;
   static const size_t size = sizeof(mVec3f);
 };
 
-struct mRenderObjectParam_Texcoord : mRenderObjectParam
+struct mMeshTexcoord : mRenderObjectParam
 {
   mVec2f position;
 
-  mRenderObjectParam_Texcoord(const mVec2f &position) : position(position) {}
+  mMeshTexcoord(const mVec2f &position) : position(position) {}
+  mMeshTexcoord(const float_t x, const float_t y) : position(mVec2f(x, y)) {}
 
   static const mRenderObjectParamType type = mROPT_TexCoord;
   static const mRenderObjectParamSubType subType = mROPST_2dTextureCoordinate;
   static const size_t size = sizeof(mVec2f);
 };
 
-struct mRenderObjectParam_Colour : mRenderObjectParam
+struct mMeshColour : mRenderObjectParam
 {
   mVec3f colour;
 
-  mRenderObjectParam_Colour(const mVec3f &colour) : colour(colour) {}
+  mMeshColour(const mVec3f &colour) : colour(colour) {}
+  mMeshColour(const float_t r, const float_t g, const float_t b) : colour(mVec3f(r, g, b)) {}
 
   static const mRenderObjectParamType type = mROPT_Colour;
   static const mRenderObjectParamSubType subType = mROPST_Colour;
   static const size_t size = sizeof(mVec3f);
 };
 
-struct mRenderObjectParam_TextureBlendFactor : mRenderObjectParam
+struct mMeshTextureBlendFactor : mRenderObjectParam
 {
   float_t blendFactor;
 
-  mRenderObjectParam_TextureBlendFactor(const float_t blendFactor) : blendFactor(blendFactor) {}
+  mMeshTextureBlendFactor(const float_t blendFactor) : blendFactor(blendFactor) {}
 
   static const mRenderObjectParamType type = mROPT_TextureBlendFactor;
   static const mRenderObjectParamSubType subType = mROPST_TextureBlendFactor;
   static const size_t size = sizeof(float_t);
 };
 
-struct mRenderObjectParam_NormalPosition : mRenderObjectParam
+struct mMeshNormalPosition : mRenderObjectParam
 {
   mVec3f direction;
 
-  mRenderObjectParam_NormalPosition(const mVec3f &direction) : direction(direction) {}
+  mMeshNormalPosition(const mVec3f &direction) : direction(direction) {}
+  mMeshNormalPosition(const float_t x, const float_t y, const float_t z) : direction(mVec3f(x, y, z)) {}
 
   static const mRenderObjectParamType type = mROPT_NormalDirection;
   static const mRenderObjectParamSubType subType = mROPST_3dNormalDirection;
   static const size_t size = sizeof(mVec3f);
 };
 
-struct mRenderObjectParam_AlphaChannel : mRenderObjectParam
+struct mMeshAlphaChannel : mRenderObjectParam
 {
   float_t alpha;
 
-  mRenderObjectParam_AlphaChannel(const float_t alpha) : alpha(alpha) {}
+  mMeshAlphaChannel(const float_t alpha) : alpha(alpha) {}
 
   static const mRenderObjectParamType type = mROPT_AlphaChannel;
   static const mRenderObjectParamSubType subType = mROPST_AlphaChannel;
   static const size_t size = sizeof(float_t);
 };
 
-struct mRenderObjectParam_ScaleUniform : mRenderObjectParam
+struct mMeshScaleUniform : mRenderObjectParam
 {
-  mRenderObjectParam_ScaleUniform() {}
+  mMeshScaleUniform() {}
+  mMeshScaleUniform(nullptr_t) {}
 
   static const mRenderObjectParamType type = mROPT_Scale;
   static const mRenderObjectParamSubType subType = mROPST_ScaleUniform;
   static const size_t size = 0;
 };
 
-struct mRenderObjectParam_TextureAlphaFlag : mRenderObjectParam
+struct mMeshTextureAlphaFlag : mRenderObjectParam
 {
-  mRenderObjectParam_TextureAlphaFlag() {}
+  mMeshTextureAlphaFlag() {}
+  mMeshTextureAlphaFlag(nullptr_t) {}
 
   static const mRenderObjectParamType type = mROPT_TextureAlphaFlag;
   static const mRenderObjectParamSubType subType = mROPST_TextureAlphaFlag;
@@ -193,37 +205,53 @@ template <typename ...Args>
 struct mMeshFactory
 {
   mMeshFactory_Internal meshFactoryInternal;
-  mPtr<mQueue<uint8_t *>> values;
+  mPtr<mBinaryChunk> values;
 };
 
+struct mMesh
+{
+  mPtr<mShader> shader;
+  size_t length;
+  mRenderParams_UploadState uploadState;
+#if defined (mRENDERER_OPENGL)
+  bool hasVbo;
+  GLuint vbo;
+#endif
+};
 
 template <typename ...Args>
 mFUNCTION(mMeshFactory_Destroy_Internal, mMeshFactory<Args...> *pFactory);
 
 template <typename ...Args>
-mFUNCTION(mMeshFactory_Create, mPtr<mMeshFactory<Args...>> *pFactory, mAllocator *pAllocator);
+mFUNCTION(mMeshFactory_Create, OUT mPtr<mMeshFactory<Args...>> *pFactory, IN mAllocator *pAllocator);
 
 template <typename ...Args>
-mFUNCTION(mMeshFactory_Destroy, mPtr<mMeshFactory<Args...>> *pFactory);
+mFUNCTION(mMeshFactory_Destroy, IN_OUT mPtr<mMeshFactory<Args...>> *pFactory);
 
-struct mMesh
-{
-  mShader shader;
-  void *pData;
-  size_t length;
-};
+template <typename ...Args>
+mFUNCTION(mMeshFactory_CreateMesh, mPtr<mMeshFactory<Args...>> &factory, OUT mPtr<mMesh> *pMesh, IN mAllocator *pAllocator);
+
+template <typename ...Args>
+mFUNCTION(mMeshFactory_AppendData, mPtr<mMeshFactory<Args...>> &factory, Args&&... args);
+
+template <typename ...Args>
+mFUNCTION(mMeshFactory_GrowBack, mPtr<mMeshFactory<Args...>> &factory, const size_t items);
+
+mFUNCTION(mMesh_Destroy, IN_OUT mPtr<mMesh> *pMesh);
+
+mFUNCTION(mMesh_Destroy_Internal, mMesh *pMesh);
 
 //////////////////////////////////////////////////////////////////////////
 
 
 template <typename ...Args>
-mFUNCTION(mMeshFactory_Create, mPtr<mMeshFactory<Args...>> *pFactory, mAllocator *pAllocator)
+mFUNCTION(mMeshFactory_Create, OUT mPtr<mMeshFactory<Args...>> *pFactory, IN mAllocator *pAllocator)
 {
   mFUNCTION_SETUP();
 
   mERROR_CHECK(mSharedPointer_Allocate(pFactory, pAllocator, (std::function<void(mMeshFactory<Args...> *)>)[](mMeshFactory<Args...> *pData) {mMeshFactory_Destroy_Internal(pData);}, 1));
 
-  mERROR_CHECK(mQueue_Create(&(*pFactory)->values, pAllocator));
+  mERROR_CHECK(mBinaryChunk_Create(&(*pFactory)->values, pAllocator));
   mERROR_CHECK(mQueue_Create(&(*pFactory)->meshFactoryInternal.information, pAllocator));
 
   mERROR_CHECK(mMeshFactory_Internal_Build<Args...>(&(*pFactory)->meshFactoryInternal));
@@ -232,7 +260,7 @@ mFUNCTION(mMeshFactory_Create, mPtr<mMeshFactory<Args...>> *pFactory, mAllocator
 }
 
 template <typename ...Args>
-mFUNCTION(mMeshFactory_Destroy, mPtr<mMeshFactory<Args...>> *pFactory)
+mFUNCTION(mMeshFactory_Destroy, IN_OUT mPtr<mMeshFactory<Args...>> *pFactory)
 {
   mFUNCTION_SETUP();
 
@@ -242,21 +270,92 @@ mFUNCTION(mMeshFactory_Destroy, mPtr<mMeshFactory<Args...>> *pFactory)
 }
 
 template<typename ...Args>
-inline mFUNCTION(mMeshFactory_Destroy_Internal, mMeshFactory<Args...>* pFactory)
+inline mFUNCTION(mMeshFactory_CreateMesh, mPtr<mMeshFactory<Args...>> &factory, OUT mPtr<mMesh> *pMesh, IN mAllocator *pAllocator)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(factory == nullptr || pMesh == nullptr, mR_ArgumentNull);
+
+  mPtr<mShader> shader;
+  mDEFER_DESTRUCTION(&shader, mSharedPointer_Destroy);
+  mERROR_CHECK(mSharedPointer_Allocate(&shader, pAllocator, (std::function<void(mShader *)>)[](mShader *pShader) { mShader_Destroy(pShader); }, 1));
+  mERROR_CHECK(mShader_Create(shader.GetPointer(), factory->meshFactoryInternal.vertShader, factory->meshFactoryInternal.fragShader));
+
+  mERROR_CHECK(mSharedPointer_Allocate(pMesh, pAllocator, (std::function<void(mMesh *)>)[](mMesh *pData) { mMesh_Destroy_Internal(pData); }, 1));
+
+#if defined (mRENDERER_OPENGL)
+  (*pMesh)->shader = shader;
+  (*pMesh)->hasVbo = true;
+  glGenBuffers(1, &(*pMesh)->vbo);
+  glBindBuffer(GL_ARRAY_BUFFER, (*pMesh)->vbo);
+  glBufferData(GL_ARRAY_BUFFER, factory->values->writeCount, factory->values->pData, GL_STATIC_DRAW);
+
+  mGL_DEBUG_ERROR_CHECK();
+#else
+  mRETURN_RESULT(mR_NotImplemented);
+#endif
+
+  mRETURN_SUCCESS();
+}
+
+template<typename ...Args>
+inline mFUNCTION(mMeshFactory_Destroy_Internal, mMeshFactory<Args...> *pFactory)
 {
   mFUNCTION_SETUP();
 
   mERROR_IF(pFactory == nullptr, mR_ArgumentNull);
 
-  printf(pFactory->meshFactoryInternal.vertShader);
-  printf("\n");
-  printf(pFactory->meshFactoryInternal.vertShaderImpl);
-  printf("\n");
-  printf(pFactory->meshFactoryInternal.fragShader);
-  printf("\n");
+  mERROR_CHECK(mBinaryChunk_Destroy(&pFactory->values));
+  mERROR_CHECK(mQueue_Destroy(&pFactory->meshFactoryInternal.information));
 
-  // TODO:
-  mASSERT(false, "NOT IMPL");
+  mRETURN_SUCCESS();
+}
+
+template <typename ...Args, typename T>
+mFUNCTION(mMeshFactory_Append_Internal_Unpack, mPtr<mMeshFactory<Args...>> &factory, const size_t index, const size_t offset, T param)
+{
+  mFUNCTION_SETUP();
+
+#pragma warning(push)
+#pragma warning(disable: 4127)
+  if (sizeof(T) == 0)
+    mRETURN_SUCCESS();
+#pragma warning(pop)
+
+  mUnused(index, offset);
+
+  mERROR_CHECK(mBinaryChunk_WriteData(factory->values, param));
+
+  mRETURN_SUCCESS();
+}
+
+template <typename ...Args, typename T, typename ...RenderArgs>
+mFUNCTION(mMeshFactory_Append_Internal_Unpack, mPtr<mMeshFactory<Args...>> &factory, const size_t index, const size_t offset, T&& param, RenderArgs&&... renderArgs)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_CHECK(mMeshFactory_Append_Internal_Unpack(factory, index, offset, param));
+  mERROR_CHECK(mMeshFactory_Append_Internal_Unpack(factory, index + 1, offset + T::size, std::forward<RenderArgs>(renderArgs)...));
+
+  mRETURN_SUCCESS();
+}
+
+template <typename ...Args>
+mFUNCTION(mMeshFactory_AppendData, mPtr<mMeshFactory<Args...>> &factory, Args&&... args)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_CHECK(mMeshFactory_Append_Internal_Unpack(factory, 0, 0, std::forward<Args>(args)...));
+
+  mRETURN_SUCCESS();
+}
+
+template<typename ...Args>
+inline mFUNCTION(mMeshFactory_GrowBack, mPtr<mMeshFactory<Args...>>& factory, const size_t items)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_CHECK(mBinaryChunk_GrowBack(factory->values, sizeof...(Args) * items));
 
   mRETURN_SUCCESS();
 }
@@ -302,9 +401,9 @@ struct mMeshFactory_Internal_Unpacker <T>
       switch (T::subType)
       {
       case mROPST_2dTextureCoordinate:
-        mERROR_IF(0 > sprintf_s(pMeshFactory->vertShader, "%s\nin vec2 " mRenderObjectParam_Texcoord_AttributeName "%" PRIu64 ";\nout vec2 _" mRenderObjectParam_Texcoord_AttributeName "%" PRIu64 ";", pMeshFactory->vertShader, pMeshFactory->textureCoordCount - 1, pMeshFactory->textureCoordCount - 1), mR_InternalError);
-        mERROR_IF(0 > sprintf_s(pMeshFactory->vertShaderImpl, "%s\n\t_" mRenderObjectParam_Texcoord_AttributeName "%" PRIu64 " = " mRenderObjectParam_Texcoord_AttributeName "%" PRIu64 ";", pMeshFactory->vertShaderImpl, pMeshFactory->textureCoordCount - 1, pMeshFactory->textureCoordCount - 1), mR_InternalError);
-        mERROR_IF(0 > sprintf_s(pMeshFactory->fragShader, "%s\nin vec2 _" mRenderObjectParam_Texcoord_AttributeName "%" PRIu64 ";\nuniform sampler2D _" mRenderObjectParam_TextureAttributeName "%" PRIu64 ";", pMeshFactory->fragShader, pMeshFactory->textureCoordCount - 1, pMeshFactory->textureCoordCount - 1), mR_InternalError);
+        mERROR_IF(0 > sprintf_s(pMeshFactory->vertShader, "%s\nin vec2 " mMeshTexcoord_AttributeName "%" PRIu64 ";\nout vec2 _" mMeshTexcoord_AttributeName "%" PRIu64 ";", pMeshFactory->vertShader, pMeshFactory->textureCoordCount - 1, pMeshFactory->textureCoordCount - 1), mR_InternalError);
+        mERROR_IF(0 > sprintf_s(pMeshFactory->vertShaderImpl, "%s\n\t_" mMeshTexcoord_AttributeName "%" PRIu64 " = " mMeshTexcoord_AttributeName "%" PRIu64 ";", pMeshFactory->vertShaderImpl, pMeshFactory->textureCoordCount - 1, pMeshFactory->textureCoordCount - 1), mR_InternalError);
+        mERROR_IF(0 > sprintf_s(pMeshFactory->fragShader, "%s\nin vec2 _" mMeshTexcoord_AttributeName "%" PRIu64 ";\nuniform sampler2D _" mRenderObjectParam_TextureAttributeName "%" PRIu64 ";", pMeshFactory->fragShader, pMeshFactory->textureCoordCount - 1, pMeshFactory->textureCoordCount - 1), mR_InternalError);
         break;
 
       default:
@@ -321,9 +420,9 @@ struct mMeshFactory_Internal_Unpacker <T>
       switch (T::subType)
       {
       case mROPST_Colour:
-        mERROR_IF(0 > sprintf_s(pMeshFactory->vertShader, "%s\nin vec3 " mRenderObjectParam_Colour_AttributeName "0;\nout vec3 _" mRenderObjectParam_Colour_AttributeName "0;", pMeshFactory->vertShader), mR_InternalError);
-        mERROR_IF(0 > sprintf_s(pMeshFactory->vertShaderImpl, "%s\n\t_" mRenderObjectParam_Colour_AttributeName "0 = " mRenderObjectParam_Colour_AttributeName "0;", pMeshFactory->vertShaderImpl), mR_InternalError);
-        mERROR_IF(0 > sprintf_s(pMeshFactory->fragShader, "%s\nin vec3 _" mRenderObjectParam_Colour_AttributeName "0;", pMeshFactory->fragShader), mR_InternalError);
+        mERROR_IF(0 > sprintf_s(pMeshFactory->vertShader, "%s\nin vec3 " mMeshColour_AttributeName "0;\nout vec3 _" mMeshColour_AttributeName "0;", pMeshFactory->vertShader), mR_InternalError);
+        mERROR_IF(0 > sprintf_s(pMeshFactory->vertShaderImpl, "%s\n\t_" mMeshColour_AttributeName "0 = " mMeshColour_AttributeName "0;", pMeshFactory->vertShaderImpl), mR_InternalError);
+        mERROR_IF(0 > sprintf_s(pMeshFactory->fragShader, "%s\nin vec3 _" mMeshColour_AttributeName "0;", pMeshFactory->fragShader), mR_InternalError);
         break;
 
       default:
@@ -340,9 +439,9 @@ struct mMeshFactory_Internal_Unpacker <T>
       switch (T::subType)
       {
       case mROPST_TextureBlendFactor:
-        mERROR_IF(0 > sprintf_s(pMeshFactory->vertShader, "%s\nin float " mRenderObjectParam_TextureBlendFactor_AttributeName "0;\nout float _" mRenderObjectParam_Colour_AttributeName "0;", pMeshFactory->vertShader), mR_InternalError);
-        mERROR_IF(0 > sprintf_s(pMeshFactory->vertShaderImpl, "%s\n\t_" mRenderObjectParam_Colour_AttributeName "0 = " mRenderObjectParam_Colour_AttributeName "0;", pMeshFactory->vertShaderImpl), mR_InternalError);
-        mERROR_IF(0 > sprintf_s(pMeshFactory->fragShader, "%s\nin vec3 _" mRenderObjectParam_Colour_AttributeName "0;", pMeshFactory->fragShader), mR_InternalError);
+        mERROR_IF(0 > sprintf_s(pMeshFactory->vertShader, "%s\nin float " mMeshTextureBlendFactor_AttributeName "0;\nout float _" mMeshColour_AttributeName "0;", pMeshFactory->vertShader), mR_InternalError);
+        mERROR_IF(0 > sprintf_s(pMeshFactory->vertShaderImpl, "%s\n\t_" mMeshColour_AttributeName "0 = " mMeshColour_AttributeName "0;", pMeshFactory->vertShaderImpl), mR_InternalError);
+        mERROR_IF(0 > sprintf_s(pMeshFactory->fragShader, "%s\nin vec3 _" mMeshColour_AttributeName "0;", pMeshFactory->fragShader), mR_InternalError);
         break;
 
       default:
@@ -362,7 +461,19 @@ struct mMeshFactory_Internal_Unpacker <T>
 
     case mROPT_AlphaChannel:
       mERROR_IF(pMeshFactory->alpha != 0, mR_InvalidParameter);
-      pMeshFactory->alpha = 1;
+
+      switch (T::subType)
+      {
+      case mROPST_AlphaChannel:
+        pMeshFactory->alpha = 1;
+        mERROR_IF(0 > sprintf_s(pMeshFactory->vertShader, "%s\nin float " mMeshAlphaChannel_AttributeName "0;\nout float _" mMeshAlphaChannel_AttributeName "0;", pMeshFactory->vertShader), mR_InternalError);
+        mERROR_IF(0 > sprintf_s(pMeshFactory->vertShaderImpl, "%s\n\t_" mMeshAlphaChannel_AttributeName "0 = " mMeshAlphaChannel_AttributeName "0;", pMeshFactory->vertShaderImpl), mR_InternalError);
+        mERROR_IF(0 > sprintf_s(pMeshFactory->fragShader, "%s\nin vec3 _" mMeshAlphaChannel_AttributeName "0;", pMeshFactory->fragShader), mR_InternalError);
+
+      default:
+        mRETURN_RESULT(mR_OperationNotSupported);
+        break;
+      }
 
       // TODO: implement.
 
@@ -372,11 +483,10 @@ struct mMeshFactory_Internal_Unpacker <T>
       // mERROR_IF(pMeshFactory->useTextureAlpha != 0, mR_InvalidParameter); // will be ignored anyways.
       pMeshFactory->useTextureAlpha = 1;
 
-      // TODO: implement.
-
       break;
 
     case mROPT_Scale:
+      mERROR_IF(0 > sprintf_s(pMeshFactory->vertShader, "%s\nin float " mMeshScaleUniform_AttributeName "0;", pMeshFactory->vertShader), mR_InternalError);
       // mERROR_IF(pMeshFactory->scaleUniform != 0, mR_InvalidParameter); // will be ignored anyways.
       pMeshFactory->scaleUniform = 1;
 
@@ -423,9 +533,9 @@ mFUNCTION(mMeshFactory_Internal_Build, mMeshFactory_Internal *pMeshFactory)
 
   mERROR_CHECK(mQueue_Create(&pMeshFactory->information, nullptr));
 
-  mERROR_IF(0 > sprintf_s(pMeshFactory->vertShader, "#version 150 core\nuniform vec2f screenSize0;"), mR_InternalError);
+  mERROR_IF(0 > sprintf_s(pMeshFactory->vertShader, "#version 150 core\nuniform vec2 screenSize0;"), mR_InternalError);
   mERROR_IF(0 > sprintf_s(pMeshFactory->vertShaderImpl, "void main()\n{"), mR_InternalError);
-  mERROR_IF(0 > sprintf_s(pMeshFactory->fragShader, "#version 150 core\n\nout vec4 outColour;\nuniform vec2f screenSize0;"), mR_InternalError);
+  mERROR_IF(0 > sprintf_s(pMeshFactory->fragShader, "#version 150 core\n\nout vec4 " mMeshOutColour_AttributeName ";\nuniform vec2 screenSize0;"), mR_InternalError);
 
   mERROR_CHECK(mMeshFactory_Internal_Unpacker<Args...>().Unpack(pMeshFactory));
 
@@ -438,7 +548,8 @@ mFUNCTION(mMeshFactory_Internal_Build, mMeshFactory_Internal *pMeshFactory)
   else
     mERROR_IF(0 > sprintf_s(pMeshFactory->vertShaderImpl, "%s\n\tgl_Position = matrix0 * vec4(position0, 1.0);", pMeshFactory->vertShaderImpl), mR_InternalError);
 
-  mERROR_IF(0 > sprintf_s(pMeshFactory->vertShaderImpl, "%s\n\tgl_Position *= " mRenderObjectParam_ScaleUniform_AttributeName ";", pMeshFactory->vertShaderImpl), mR_InternalError);
+  if (pMeshFactory->scaleUniform)
+    mERROR_IF(0 > sprintf_s(pMeshFactory->vertShaderImpl, "%s\n\tgl_Position *= " mMeshScaleUniform_AttributeName "0;", pMeshFactory->vertShaderImpl), mR_InternalError);
 
   mERROR_IF(0 > sprintf_s(pMeshFactory->vertShaderImpl, "%s\n}", pMeshFactory->vertShaderImpl), mR_InternalError);
 
@@ -447,12 +558,12 @@ mFUNCTION(mMeshFactory_Internal_Build, mMeshFactory_Internal *pMeshFactory)
   if (pMeshFactory->textureCoordCount > 0)
   {
     if (pMeshFactory->textureBlendFactor)
-      mERROR_IF(0 > sprintf_s(pMeshFactory->fragShader, "%s\n\tvec4 ret = mix(texture(" mRenderObjectParam_TextureAttributeName "0, " mRenderObjectParam_Texcoord_AttributeName "0), texture(" mRenderObjectParam_TextureAttributeName "1, " mRenderObjectParam_Texcoord_AttributeName "1), " mRenderObjectParam_TextureBlendFactor_AttributeName ");", pMeshFactory->fragShader), mR_InternalError);
+      mERROR_IF(0 > sprintf_s(pMeshFactory->fragShader, "%s\n\tvec4 ret = mix(texture(" mRenderObjectParam_TextureAttributeName "0, " mMeshTexcoord_AttributeName "0), texture(" mRenderObjectParam_TextureAttributeName "1, " mMeshTexcoord_AttributeName "1), " mMeshTextureBlendFactor_AttributeName ");", pMeshFactory->fragShader), mR_InternalError);
     else
-      mERROR_IF(0 > sprintf_s(pMeshFactory->fragShader, "%s\n\tvec4 ret = texture(" mRenderObjectParam_TextureAttributeName "0, " mRenderObjectParam_Texcoord_AttributeName "0);", pMeshFactory->fragShader), mR_InternalError);
+      mERROR_IF(0 > sprintf_s(pMeshFactory->fragShader, "%s\n\tvec4 ret = texture(_" mRenderObjectParam_TextureAttributeName "0, _" mMeshTexcoord_AttributeName "0);", pMeshFactory->fragShader), mR_InternalError);
 
     if (!pMeshFactory->useTextureAlpha)
-      mERROR_IF(0 > sprintf_s(pMeshFactory->fragShader, "%s\n\tret.a = 1;", pMeshFactory->fragShader), mR_InternalError);
+      mERROR_IF(0 > sprintf_s(pMeshFactory->fragShader, "%s\n\tret.a = 1.0;", pMeshFactory->fragShader), mR_InternalError);
   }
   else
   {
@@ -460,12 +571,15 @@ mFUNCTION(mMeshFactory_Internal_Build, mMeshFactory_Internal *pMeshFactory)
   }
 
   if (pMeshFactory->colour)
-    mERROR_IF(0 > sprintf_s(pMeshFactory->fragShader, "%s\n\tret *= vec4(" mRenderObjectParam_Colour_AttributeName "0, 1);", pMeshFactory->fragShader), mR_InternalError);
+    mERROR_IF(0 > sprintf_s(pMeshFactory->fragShader, "%s\n\tret *= vec4(" mMeshColour_AttributeName "0, 1);", pMeshFactory->fragShader), mR_InternalError);
 
   if (pMeshFactory->alpha)
-    mERROR_IF(0 > sprintf_s(pMeshFactory->fragShader, "%s\n\tret.a *= " mRenderObjectParam_AlphaChannel_AttributeName "0);", pMeshFactory->fragShader), mR_InternalError);
+    mERROR_IF(0 > sprintf_s(pMeshFactory->fragShader, "%s\n\tret.a *= _" mMeshAlphaChannel_AttributeName "0);", pMeshFactory->fragShader), mR_InternalError);
 
-  mERROR_IF(0 > sprintf_s(pMeshFactory->fragShader, "%s\n\toutColor = ret;\n}", pMeshFactory->fragShader), mR_InternalError);
+  mERROR_IF(0 > sprintf_s(pMeshFactory->fragShader, "%s\n\t" mMeshOutColour_AttributeName " = ret;\n}", pMeshFactory->fragShader), mR_InternalError);
+
+  mERROR_IF(0 > sprintf_s(pMeshFactory->vertShader, "%s\n\n%s", pMeshFactory->vertShader, pMeshFactory->vertShaderImpl), mR_InternalError);
+  pMeshFactory->vertShaderImpl[0] = 0;
 
   mRETURN_SUCCESS();
 }
