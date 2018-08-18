@@ -46,8 +46,8 @@ int main(int, char **)
   mERROR_CHECK(mMeshFactory_Create(&meshFactory, nullptr, mRP_RM_TriangleStrip));
 
   mERROR_CHECK(mMeshFactory_GrowBack(meshFactory, 4));
-  mERROR_CHECK(mMeshFactory_AppendData(meshFactory, mMesh2dPosition(-0.1, -1), mMeshTexcoord(0, 1)));//, mMeshScaleUniform()));
-  mERROR_CHECK(mMeshFactory_AppendData(meshFactory, mMesh2dPosition(-0.1, 1), mMeshTexcoord(0, 0)));//, mMeshScaleUniform()));
+  mERROR_CHECK(mMeshFactory_AppendData(meshFactory, mMesh2dPosition(-1, -1), mMeshTexcoord(0, 1)));//, mMeshScaleUniform()));
+  mERROR_CHECK(mMeshFactory_AppendData(meshFactory, mMesh2dPosition(-1,  1), mMeshTexcoord(0, 0)));//, mMeshScaleUniform()));
   mERROR_CHECK(mMeshFactory_AppendData(meshFactory, mMesh2dPosition( 1, -1), mMeshTexcoord(1, 1)));//, mMeshScaleUniform()));
   mERROR_CHECK(mMeshFactory_AppendData(meshFactory, mMesh2dPosition( 1,  1), mMeshTexcoord(1, 0)));//, mMeshScaleUniform()));
 
@@ -119,7 +119,6 @@ int main(int, char **)
     mRenderParams_ClearTargetDepthAndColour(mVector(mSin((frame++) / 255.0f) / 4.0f + 0.25f, mSin((frame++) / 255.0f) / 4.0f + 0.25f, mSin((frame++) / 255.0f) / 4.0f + 0.25f, 1.0f));
 
     mERROR_CHECK(mShader_SetUniform(mesh->shader, "scale", mVec2f(image->currentSize) + 100 * mSin(frame / 1000.0f)));
-    //glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     mERROR_CHECK(mMesh_Render(mesh));
 
     mGL_ERROR_CHECK();

@@ -42,13 +42,14 @@ mFUNCTION(mBinaryChunk_GrowBack, mPtr<mBinaryChunk> &binaryChunk, const size_t s
   if (binaryChunk->pData == nullptr)
   {
     mERROR_CHECK(mAllocator_AllocateZero(binaryChunk->pAllocator, &binaryChunk->pData, sizeToGrow));
+    binaryChunk->size = sizeToGrow;
   }
-  else if (binaryChunk->writeCount + sizeToGrow > binaryChunk->size)
+  else if (binaryChunk->writeBytes + sizeToGrow > binaryChunk->size)
   {
     size_t newSize;
 
-    if (binaryChunk->writeCount + sizeToGrow > binaryChunk->size * 2)
-      newSize = binaryChunk->writeCount + sizeToGrow;
+    if (binaryChunk->writeBytes + sizeToGrow > binaryChunk->size * 2)
+      newSize = binaryChunk->writeBytes + sizeToGrow;
     else
       newSize = binaryChunk->size * 2;
 
