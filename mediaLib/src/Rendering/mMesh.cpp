@@ -30,7 +30,115 @@ mFUNCTION(mMesh_Destroy_Internal, mMesh * pMesh)
     glDeleteBuffers(1, &pMesh->vbo);
     pMesh->hasVbo = false;
   }
+
+  for (size_t i = 0; i < pMesh->textures.count; ++i)
+  {
+    mPtr<mTexture> texture;
+    mERROR_CHECK(mArray_PopAt(pMesh->textures, i, &texture));
+    mERROR_CHECK(mSharedPointer_Destroy(&texture));
+  }
+
+  mERROR_CHECK(mArray_Destroy(&pMesh->textures));
 #endif
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mMesh_Upload, mPtr<mMesh> &data)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(data == nullptr, mR_ArgumentNull);
+  mERROR_IF(data->uploadState == mRP_US_NotInitialized, mR_NotInitialized);
+
+  if (data->uploadState == mRP_US_Ready)
+    mRETURN_SUCCESS();
+
+#if defined (mRENDERER_OPENGL)
+
+  for (size_t i = 0; i < data->textures.count; ++i)
+  {
+    mPtr<mTexture> texture;
+    mDEFER_DESTRUCTION(&texture, mSharedPointer_Destroy);
+    mERROR_CHECK(mArray_PeekAt(data->textures, i, &texture));
+    mERROR_CHECK(mTexture_Upload(*texture.GetPointer()));
+  }
+
+#else
+  mRETURN_SUCCESS(mR_NotImplemented);
+#endif
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mMesh_GetUploadState, mPtr<mMesh>& data, OUT mRenderParams_UploadState * pUploadState)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(data == nullptr || pUploadState == nullptr, mR_ArgumentNull);
+
+  *pUploadState = data->uploadState;
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mMesh_Render, mPtr<mMesh>& data)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(data == nullptr, mR_ArgumentNull);
+
+  if (data->uploadState != mRP_US_Ready)
+    mERROR_CHECK(mMesh_Upload(data));
+
+#if defined (mRENDERER_OPENGL)
+
+  for (size_t i = 0; i < data->textures.count; ++i)
+  {
+    mPtr<mTexture> texture;
+    mDEFER_DESTRUCTION(&texture, mSharedPointer_Destroy);
+    mERROR_CHECK(mArray_PeekAt(data->textures, i, &texture));
+    mERROR_CHECK(mTexture_Bind(*texture.GetPointer(), i));
+  }
+
+  if (data->hasVbo)
+    glBindBuffer(GL_ARRAY_BUFFER, data->vbo);
+
+  switch (data->triangleRenderMode)
+  {
+  case mRP_RM_TriangleList:
+    glDrawArrays(GL_TRIANGLES, 0, (GLuint)data->primitiveCount);
+    break;
+
+  case mRP_RM_TriangleStrip:
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, (GLuint)data->primitiveCount);
+    break;
+
+  case mRP_RM_TriangleFan:
+    glDrawArrays(GL_TRIANGLE_FAN, 0, (GLuint)data->primitiveCount);
+    break;
+
+  default:
+    mRETURN_RESULT(mR_OperationNotSupported);
+    break;
+  }
+
+#else
+  mRETURN_SUCCESS(mR_NotImplemented);
+#endif
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mMesh_Render, mPtr<mMesh>& data, mMatrix & matrix)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(data == nullptr, mR_ArgumentNull);
+
+  mERROR_CHECK(mShader_SetUniform(data->shader, "matrix0", matrix));
+
+  mERROR_CHECK(mMesh_Render(data));
 
   mRETURN_SUCCESS();
 }

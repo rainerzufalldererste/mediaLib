@@ -82,4 +82,11 @@ enum mRenderParams_UploadState
   mRP_US_Ready
 };
 
+enum mRenderParams_TriangleRenderMode
+{
+  mRP_RM_TriangleList,
+  mRP_RM_TriangleStrip,
+  mRP_RM_TriangleFan,
+};
+
 #endif // mRenderParams_h__
