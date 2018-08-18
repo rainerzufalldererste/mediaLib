@@ -21,10 +21,11 @@ struct mTexture
 
 #if defined(mRENDERER_OPENGL)
   GLuint textureId;
+  GLuint textureUnit;
 #endif
 };
 
-mFUNCTION(mTexture_Create, OUT mTexture *pTexture, mPtr<mImageBuffer> &imageBuffer, const bool upload = true);
+mFUNCTION(mTexture_Create, OUT mTexture *pTexture, mPtr<mImageBuffer> &imageBuffer, const bool upload = true, const size_t textureUnit = 0);
 mFUNCTION(mTexture_Destroy, IN_OUT mTexture *pTexture);
 
 mFUNCTION(mTexture_GetUploadState, mTexture &texture, OUT mRenderParams_UploadState *pUploadState);

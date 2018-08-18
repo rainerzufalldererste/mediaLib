@@ -9,7 +9,7 @@
 #include "mRenderParams.h"
 #include "mTexture.h"
 
-mFUNCTION(mTexture_Create, OUT mTexture * pTexture, mPtr<mImageBuffer>& imageBuffer, const bool upload /* = true */)
+mFUNCTION(mTexture_Create, OUT mTexture * pTexture, mPtr<mImageBuffer>& imageBuffer, const bool upload /* = true */, const size_t textureUnit /* = 0 */)
 {
   mFUNCTION_SETUP();
 
@@ -20,9 +20,11 @@ mFUNCTION(mTexture_Create, OUT mTexture * pTexture, mPtr<mImageBuffer>& imageBuf
   pTexture->resolutionF = (mVec2f)pTexture->resolution;
 
 #if defined(mRENDERER_OPENGL)
-  glActiveTexture(GL_TEXTURE0);
+  mERROR_IF(textureUnit >= 32, mR_IndexOutOfBounds);
+  pTexture->textureUnit = (GLuint)textureUnit;
+
+  glActiveTexture(GL_TEXTURE0 + (GLuint)pTexture->textureUnit);
   glGenTextures(1, &pTexture->textureId);
-  glBindTexture(GL_TEXTURE_2D, pTexture->textureId);
 
   pTexture->imageBuffer = imageBuffer;
 #else
@@ -33,6 +35,8 @@ mFUNCTION(mTexture_Create, OUT mTexture * pTexture, mPtr<mImageBuffer>& imageBuf
 
   if (upload)
     mERROR_CHECK(mTexture_Upload(*pTexture));
+
+  mGL_DEBUG_ERROR_CHECK();
 
   mRETURN_SUCCESS();
 }
@@ -76,9 +80,10 @@ mFUNCTION(mTexture_Upload, mTexture &texture)
   mERROR_IF(texture.uploadState == mRP_US_NotInitialized, mR_NotInitialized);
   mERROR_IF(texture.imageBuffer == nullptr, mR_NotInitialized);
 
-
   texture.uploadState = mRP_US_Uploading;
 
+#if defined (mRENDERER_OPENGL)
+  glBindTexture(GL_TEXTURE_2D, texture.textureId);
   if (texture.imageBuffer->pixelFormat == mPF_R8G8B8A8)
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)texture.imageBuffer->currentSize.x, (GLsizei)texture.imageBuffer->currentSize.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, texture.imageBuffer->pPixels);
   else if (texture.imageBuffer->pixelFormat == mPF_R8G8B8)
@@ -101,6 +106,9 @@ mFUNCTION(mTexture_Upload, mTexture &texture)
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+#else
+  mRETURN_RESULT(mR_NotImplemented)
+#endif
 
   mGL_DEBUG_ERROR_CHECK();
 
