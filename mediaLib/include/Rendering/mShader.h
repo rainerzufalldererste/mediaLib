@@ -10,6 +10,7 @@
 #define mShader_h__
 
 #include "mRenderParams.h"
+#include "mTexture.h"
 
 struct mShader
 {
@@ -29,6 +30,61 @@ mFUNCTION(mShader_CreateFromFile, OUT mShader *pShader, const std::wstring &file
 mFUNCTION(mShader_CreateFromFile, OUT mShader *pShader, const std::wstring &vertexShaderPath, const std::wstring &fragmentShaderPath, IN OPTIONAL const char *fragDataLocation = nullptr);
 mFUNCTION(mShader_Destroy, IN_OUT mShader *pShader);
 
-mFUNCTION(mShader_Bind, mShader &pShader);
+mFUNCTION(mShader_Bind, mShader &shader);
+
+#if defined(mRENDERER_OPENGL)
+typedef GLuint shaderAttributeIndex_t;
+#else
+typedef size_t shaderAttributeIndex_t;
+#endif
+
+mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex_t index, const float_t v);
+mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex_t index, const mVec2f &v);
+mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex_t index, const mVec3f &v);
+mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex_t index, const mVec4f &v);
+mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex_t index, const mVector &v);
+mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex_t index, const mMatrix &v);
+mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex_t index, mTexture &v);
+mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex_t index, mPtr<mTexture> &v);
+
+template <typename T>
+mFUNCTION(mShader_SetUniform, mShader &shader, const char *uniformName, T v)
+{
+  mFUNCTION_SETUP();
+
+  const shaderAttributeIndex_t uniformLocation =
+#if defined (mRENDERER_OPENGL)
+    glGetUniformLocation(shader.shaderProgram, uniformName);
+#else
+    0;
+  mRETURN_RESULT(mR_NotImplemented);
+#endif
+
+  mERROR_CHECK(mShader_SetUniformAtIndex(shader, uniformLocation, v));
+
+  mGL_DEBUG_ERROR_CHECK();
+
+  mRETURN_SUCCESS();
+}
+
+template <typename T>
+mFUNCTION(mShader_SetUniform, mPtr<mShader> &shader, const char *uniformName, T v)
+{
+  mFUNCTION_SETUP();
+
+  const shaderAttributeIndex_t uniformLocation =
+#if defined (mRENDERER_OPENGL)
+    glGetUniformLocation(shader->shaderProgram, uniformName);
+#else
+    0;
+  mRETURN_RESULT(mR_NotImplemented);
+#endif
+
+  mERROR_CHECK(mShader_SetUniformAtIndex(*shader.GetPointer(), uniformLocation, v));
+
+  mGL_DEBUG_ERROR_CHECK();
+
+  mRETURN_SUCCESS();
+}
 
 #endif // mShader_h__

@@ -94,10 +94,9 @@ int main(int, char **)
   mTexture texture;
   mDEFER_DESTRUCTION(&texture, mTexture_Destroy);
   mERROR_CHECK(mTexture_Create(&texture, image));
-
   mERROR_CHECK(mTexture_Bind(texture));
 
-  glUniform1i(glGetUniformLocation(shader.shaderProgram, "tex0"), 0);
+  mERROR_CHECK(mShader_SetUniform(shader, "tex0", texture));
 
   GLint posAttrib = glGetAttribLocation(shader.shaderProgram, "position");
   glEnableVertexAttribArray(posAttrib);
@@ -113,16 +112,13 @@ int main(int, char **)
   glUniform2f(screenSizeAttrib, mRenderParams_CurrentRenderResolutionF.x, mRenderParams_CurrentRenderResolutionF.y);
   mGL_ERROR_CHECK();
 
-  GLint scaleAttrib = glGetUniformLocation(shader.shaderProgram, "scale");
-  glUniform2f(scaleAttrib, (float)image->currentSize.x, (float)image->currentSize.y);
-  mGL_ERROR_CHECK();
-
   size_t frame = 0;
 
   while (true)
   {
     mRenderParams_ClearTargetDepthAndColour(mVector(mSin((frame++) / 255.0f) / 4.0f + 0.25f, mSin((frame++) / 255.0f) / 4.0f + 0.25f, mSin((frame++) / 255.0f) / 4.0f + 0.25f, 1.0f));
 
+    mERROR_CHECK(mShader_SetUniform(shader, "scale", mVec2f(image->currentSize) + 100 * mSin(frame / 1000.0f)));
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
     mGL_ERROR_CHECK();
