@@ -396,6 +396,7 @@ inline mFUNCTION(mMeshFactory_CreateMesh, mPtr<mMeshFactory<Args...>> &factory, 
   mPRINT(factory->meshFactoryInternal.vertShader);
   mPRINT("\n\n");
   mPRINT(factory->meshFactoryInternal.fragShader);
+  mPRINT("\n\n");
 
   mPtr<mShader> shader;
   mDEFER_DESTRUCTION(&shader, mSharedPointer_Destroy);
@@ -415,7 +416,7 @@ inline mFUNCTION(mMeshFactory_CreateMesh, mPtr<mMeshFactory<Args...>> &factory, 
   case mRP_RM_TriangleStrip:
   case mRP_RM_TriangleFan:
     (*pMesh)->triangleRenderMode = factory->triangleRenderMode;
-    (*pMesh)->primitiveCount = factory->values->writeCount;
+    (*pMesh)->primitiveCount = factory->values->writeBytes / factory->meshFactoryInternal.size;
     break;
 
   default:
@@ -427,7 +428,7 @@ inline mFUNCTION(mMeshFactory_CreateMesh, mPtr<mMeshFactory<Args...>> &factory, 
   (*pMesh)->hasVbo = true;
   glGenBuffers(1, &(*pMesh)->vbo);
   glBindBuffer(GL_ARRAY_BUFFER, (*pMesh)->vbo);
-  glBufferData(GL_ARRAY_BUFFER, factory->values->writeCount, factory->values->pData, GL_STATIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, factory->values->writeBytes, factory->values->pData, GL_STATIC_DRAW);
 
   size_t informationCount;
   mERROR_CHECK(mQueue_GetCount(factory->meshFactoryInternal.information, &informationCount));
@@ -441,16 +442,18 @@ inline mFUNCTION(mMeshFactory_CreateMesh, mPtr<mMeshFactory<Args...>> &factory, 
 
     if (info.size > 0 && info.type == mMF_AIT_Attribute)
     {
+      printf("glEnableVertexAttribArray((GLuint)%" PRIu64 "); \n", (uint64_t)index);
       glEnableVertexAttribArray((GLuint)index);
-      glVertexAttribPointer((GLuint)index, (GLint)(info.size / info.individualSubTypeSize), info.dataType, GL_FALSE, (GLsizei)sizeof...(Args), (const void *)info.offset);
+      printf("glVertexAttribPointer((GLuint)%" PRIu64 ", (GLint)(%" PRIu64 " / %" PRIu64 "), %" PRIu64 ", GL_FALSE, (GLsizei)%" PRIu64 ", (const void *)%" PRIu64 "); \n", (uint64_t)index, info.size, info.individualSubTypeSize, (uint64_t)info.dataType, factory->meshFactoryInternal.size, info.offset);
+      glVertexAttribPointer((GLuint)index, (GLint)(info.size / info.individualSubTypeSize), info.dataType, GL_FALSE, (GLsizei)factory->meshFactoryInternal.size, (const void *)info.offset);
       ++index;
     }
 
     mGL_DEBUG_ERROR_CHECK();
   }
 
+  mERROR_IF(factory->meshFactoryInternal.textureCoordCount != sizeof...(TTextures), mR_InvalidParameter);
   mERROR_CHECK(mArray_Create(&(*pMesh)->textures, nullptr, factory->meshFactoryInternal.textureCoordCount));
-
   mERROR_CHECK(mMeshFactory_Internal_TextureParameterUnpacker<TTextures...>::Unpack(&(*pMesh)->textures, 0, std::forward<TTextures>(textures)...));
 
   if ((*pMesh)->textures.count > 0)
@@ -533,7 +536,7 @@ inline mFUNCTION(mMeshFactory_GrowBack, mPtr<mMeshFactory<Args...>>& factory, co
 {
   mFUNCTION_SETUP();
 
-  mERROR_CHECK(mBinaryChunk_GrowBack(factory->values, sizeof...(Args) * items));
+  mERROR_CHECK(mBinaryChunk_GrowBack(factory->values, factory->meshFactoryInternal.size * items));
 
   mRETURN_SUCCESS();
 }
@@ -568,7 +571,7 @@ struct mMeshFactory_Internal_Unpacker <T>
         break;
       }
 
-      mERROR_CHECK(mQueue_PushBack(pMeshFactory->information, mMeshFactory_AttributeInformation(T::size, pMeshFactory->information, mMF_AIT_Attribute, GL_FLOAT, sizeof(float_t))));
+      mERROR_CHECK(mQueue_PushBack(pMeshFactory->information, mMeshFactory_AttributeInformation(T::size, pMeshFactory->size, mMF_AIT_Attribute, GL_FLOAT, sizeof(float_t))));
 
       break;
 
@@ -589,7 +592,7 @@ struct mMeshFactory_Internal_Unpacker <T>
         break;
       }
 
-      mERROR_CHECK(mQueue_PushBack(pMeshFactory->information, mMeshFactory_AttributeInformation(T::size, pMeshFactory->information, mMF_AIT_Attribute, GL_FLOAT, sizeof(float_t))));
+      mERROR_CHECK(mQueue_PushBack(pMeshFactory->information, mMeshFactory_AttributeInformation(T::size, pMeshFactory->size, mMF_AIT_Attribute, GL_FLOAT, sizeof(float_t))));
 
       break;
 
@@ -610,7 +613,7 @@ struct mMeshFactory_Internal_Unpacker <T>
         break;
       }
 
-      mERROR_CHECK(mQueue_PushBack(pMeshFactory->information, mMeshFactory_AttributeInformation(T::size, pMeshFactory->information, mMF_AIT_Attribute, GL_FLOAT, sizeof(float_t))));
+      mERROR_CHECK(mQueue_PushBack(pMeshFactory->information, mMeshFactory_AttributeInformation(T::size, pMeshFactory->size, mMF_AIT_Attribute, GL_FLOAT, sizeof(float_t))));
 
       break;
 
@@ -631,7 +634,7 @@ struct mMeshFactory_Internal_Unpacker <T>
         break;
       }
 
-      mERROR_CHECK(mQueue_PushBack(pMeshFactory->information, mMeshFactory_AttributeInformation(T::size, pMeshFactory->information, mMF_AIT_Attribute, GL_FLOAT, sizeof(float_t))));
+      mERROR_CHECK(mQueue_PushBack(pMeshFactory->information, mMeshFactory_AttributeInformation(T::size, pMeshFactory->size, mMF_AIT_Attribute, GL_FLOAT, sizeof(float_t))));
 
       break;
 
@@ -641,7 +644,7 @@ struct mMeshFactory_Internal_Unpacker <T>
 
       // TODO: implement.
 
-      mERROR_CHECK(mQueue_PushBack(pMeshFactory->information, mMeshFactory_AttributeInformation(T::size, pMeshFactory->information, mMF_AIT_Attribute, GL_FLOAT, sizeof(float_t))));
+      mERROR_CHECK(mQueue_PushBack(pMeshFactory->information, mMeshFactory_AttributeInformation(T::size, pMeshFactory->size, mMF_AIT_Attribute, GL_FLOAT, sizeof(float_t))));
 
       break;
 
@@ -662,7 +665,7 @@ struct mMeshFactory_Internal_Unpacker <T>
         break;
       }
 
-      mERROR_CHECK(mQueue_PushBack(pMeshFactory->information, mMeshFactory_AttributeInformation(T::size, pMeshFactory->information, mMF_AIT_Attribute, GL_FLOAT, sizeof(float_t))));
+      mERROR_CHECK(mQueue_PushBack(pMeshFactory->information, mMeshFactory_AttributeInformation(T::size, pMeshFactory->size, mMF_AIT_Attribute, GL_FLOAT, sizeof(float_t))));
 
       break;
 
@@ -670,7 +673,7 @@ struct mMeshFactory_Internal_Unpacker <T>
       // mERROR_IF(pMeshFactory->useTextureAlpha != 0, mR_InvalidParameter); // will be ignored anyways.
       pMeshFactory->useTextureAlpha = 1;
 
-      mERROR_CHECK(mQueue_PushBack(pMeshFactory->information, mMeshFactory_AttributeInformation(T::size, pMeshFactory->information, mMF_AIT_Flag, GL_FALSE, 1)));
+      mERROR_CHECK(mQueue_PushBack(pMeshFactory->information, mMeshFactory_AttributeInformation(T::size, pMeshFactory->size, mMF_AIT_Flag, GL_FALSE, 1)));
 
       break;
 
@@ -681,7 +684,7 @@ struct mMeshFactory_Internal_Unpacker <T>
 
       // TODO: implement.
 
-      mERROR_CHECK(mQueue_PushBack(pMeshFactory->information, mMeshFactory_AttributeInformation(T::size, pMeshFactory->information, mMF_AIT_Uniform, GL_FLOAT, sizeof(float_t))));
+      mERROR_CHECK(mQueue_PushBack(pMeshFactory->information, mMeshFactory_AttributeInformation(T::size, pMeshFactory->size, mMF_AIT_Uniform, GL_FLOAT, sizeof(float_t))));
 
       break;
 

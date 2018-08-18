@@ -15,8 +15,8 @@ struct mBinaryChunk
 {
   uint8_t *pData;
   size_t size;
-  size_t writeCount;
-  size_t readCount;
+  size_t writeBytes;
+  size_t readBytes;
   mAllocator *pAllocator;
 };
 
@@ -44,7 +44,7 @@ inline mFUNCTION(mBinaryChunk_Write, mPtr<mBinaryChunk>& binaryChunk, T *pItem)
 
   mERROR_CHECK(mBinaryChunk_GrowBack(binaryChunk, sizeof(T)));
 
-  uint8_t *pData = &binaryChunk->pData[binaryChunk->writeCount];
+  uint8_t *pData = &binaryChunk->pData[binaryChunk->writeBytes];
   size_t writtenSize = 0;
   uint8_t *pItemData = (uint8_t *)pItem;
 
@@ -74,6 +74,8 @@ inline mFUNCTION(mBinaryChunk_Write, mPtr<mBinaryChunk>& binaryChunk, T *pItem)
     ++pItemData;
   }
 
+  binaryChunk->writeBytes += sizeof(T);
+
   mRETURN_SUCCESS();
 }
 
@@ -95,7 +97,7 @@ inline mFUNCTION(mBinaryChunk_Read, mPtr<mBinaryChunk>& binaryChunk, T *pItem)
   mERROR_IF(binaryChunk == nullptr || pItem == nullptr, mR_ArgumentNull);
   mERROR_IF(writeCount + sizeof(T) > readCount, mR_IndexOutOfBounds);
 
-  uint8_t *pData = &binaryChunk->pData[binaryChunk->writeCount];
+  uint8_t *pData = &binaryChunk->pData[binaryChunk->writeBytes];
   size_t writtenSize = 0;
   uint8_t *pItemData = (uint8_t *)pItem;
 
@@ -124,6 +126,8 @@ inline mFUNCTION(mBinaryChunk_Read, mPtr<mBinaryChunk>& binaryChunk, T *pItem)
     ++pData;
     ++pItemData;
   }
+
+  binaryChunk->readBytes += sizeof(T);
 
   mRETURN_SUCCESS();
 }
