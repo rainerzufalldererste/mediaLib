@@ -118,7 +118,7 @@ int main(int, char **)
   {
     mRenderParams_ClearTargetDepthAndColour(mVector(mSin((frame++) / 255.0f) / 4.0f + 0.25f, mSin((frame++) / 255.0f) / 4.0f + 0.25f, mSin((frame++) / 255.0f) / 4.0f + 0.25f, 1.0f));
 
-    mERROR_CHECK(mShader_SetUniform(mesh->shader, "scale2d0", 1.0f / mRenderParams_CurrentRenderResolutionF));
+    mERROR_CHECK(mShader_SetUniform(mesh->shader, mMeshScale2dUniform::uniformName().c_str(), mesh->textures[0]->resolutionF / mRenderParams_CurrentRenderResolutionF));
     mERROR_CHECK(mMesh_Render(mesh));
 
     mGL_ERROR_CHECK();
