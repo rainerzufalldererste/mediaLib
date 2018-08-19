@@ -498,8 +498,8 @@ mFUNCTION(mMeshFactory_Append_Internal_Unpack, mPtr<mMeshFactory<Args...>> &fact
   mFUNCTION_SETUP();
 
 #pragma warning(push)
-#pragma warning(disable: 4127)
-  if (sizeof(T) == 0)
+#pragma warning(disable: 4127) // constant expression.
+  if (T::size == 0)
     mRETURN_SUCCESS();
 #pragma warning(pop)
 
@@ -678,7 +678,7 @@ struct mMeshFactory_Internal_Unpacker <T>
       break;
 
     case mROPT_Scale:
-      mERROR_IF(0 > sprintf_s(pMeshFactory->vertShader, "%s\nin float " mMeshScaleUniform_AttributeName "0;", pMeshFactory->vertShader), mR_InternalError);
+      mERROR_IF(0 > sprintf_s(pMeshFactory->vertShader, "%s\nuniform float " mMeshScaleUniform_AttributeName "0;", pMeshFactory->vertShader), mR_InternalError);
       // mERROR_IF(pMeshFactory->scaleUniform != 0, mR_InvalidParameter); // will be ignored anyways.
       pMeshFactory->scaleUniform = 1;
 
@@ -740,7 +740,7 @@ mFUNCTION(mMeshFactory_Internal_Build, mMeshFactory_Internal *pMeshFactory)
     mERROR_IF(0 > sprintf_s(pMeshFactory->vertShaderImpl, "%s\n\tgl_Position = matrix0 * vec4(position0, 1.0);", pMeshFactory->vertShaderImpl), mR_InternalError);
 
   if (pMeshFactory->scaleUniform)
-    mERROR_IF(0 > sprintf_s(pMeshFactory->vertShaderImpl, "%s\n\tgl_Position *= " mMeshScaleUniform_AttributeName "0;", pMeshFactory->vertShaderImpl), mR_InternalError);
+    mERROR_IF(0 > sprintf_s(pMeshFactory->vertShaderImpl, "%s\n\tgl_Position.xyz *= " mMeshScaleUniform_AttributeName "0;", pMeshFactory->vertShaderImpl), mR_InternalError);
 
   mERROR_IF(0 > sprintf_s(pMeshFactory->vertShaderImpl, "%s\n}", pMeshFactory->vertShaderImpl), mR_InternalError);
 
