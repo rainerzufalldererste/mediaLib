@@ -101,6 +101,8 @@ mFUNCTION(mMesh_Render, mPtr<mMesh>& data)
     mERROR_CHECK(mTexture_Bind(*texture.GetPointer(), i));
   }
 
+  mERROR_CHECK(mShader_Bind(*data->shader.GetPointer()));
+
   if (data->hasVbo)
     glBindBuffer(GL_ARRAY_BUFFER, data->vbo);
 

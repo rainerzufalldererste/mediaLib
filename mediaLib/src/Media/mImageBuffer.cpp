@@ -426,7 +426,7 @@ mFUNCTION(mImageBuffer_Destroy_Iternal, mImageBuffer *pImageBuffer)
   pImageBuffer->ownedResource = false;
   pImageBuffer->pPixels = nullptr;
   pImageBuffer->allocatedSize = 0;
-  pImageBuffer->currentSize = 0;
+  pImageBuffer->currentSize = mVec2s(0);
   pImageBuffer->lineStride = 0;
 
   mERROR_IF(mFAILED(mSTDRESULT), mSTDRESULT);

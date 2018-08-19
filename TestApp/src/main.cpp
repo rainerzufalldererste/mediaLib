@@ -55,71 +55,32 @@ int main(int, char **)
   mDEFER_DESTRUCTION(&mesh, mMesh_Destroy);
   mERROR_CHECK(mMeshFactory_CreateMesh(meshFactory, &mesh, nullptr, image));
 
-  //GLuint vbo;
-  //glGenBuffers(1, &vbo);
-  //glBindBuffer(GL_ARRAY_BUFFER, vbo);
-  //
-  //mVec2f vertices[] = { { -1, -1 },{ 0, 1 },{ -1, 1 },{ 0, 0 },{ 1, -1 },{ 1, 1 },{ 1, 1 },{ 1, 0 } };
-  //
-  //glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-  //
-  //const char* vertexSource = mGLSL(
-  //  in vec2 position;
-  //in vec2 texcoord;
-  //uniform vec2 screenSize;
-  //uniform vec2 scale;
-  //out vec2 Texcoord;
-  //
-  //void main() {
-  //  Texcoord = texcoord;
-  //  gl_Position = vec4((position / screenSize) * scale, 0.0, 1.0);
-  //}
-  //);
-  //
-  //const char* fragmentSource = mGLSL(
-  //  out vec4 outColor;
-  //in vec2 Texcoord;
-  //uniform sampler2D tex0;
-  //
-  //void main() {
-  //  outColor = texture(tex0, Texcoord);
-  //}
-  //);
-  //
-  //mShader shader;
-  //mDEFER_DESTRUCTION(&shader, mShader_Destroy);
-  //mERROR_CHECK(mShader_Create(&shader, vertexSource, fragmentSource));
-  //mERROR_CHECK(mShader_Bind(shader));
-  //
-  //mTexture texture;
-  //mDEFER_DESTRUCTION(&texture, mTexture_Destroy);
-  //mERROR_CHECK(mTexture_Create(&texture, image));
-  //mERROR_CHECK(mTexture_Bind(texture));
-  //
-  //mERROR_CHECK(mShader_SetUniform(shader, "tex0", texture));
-  //
-  //GLint posAttrib = glGetAttribLocation(shader.shaderProgram, "position");
-  //glEnableVertexAttribArray(posAttrib);
-  //glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(mVec2f), 0);
-  //mGL_ERROR_CHECK();
-  //
-  //GLint texAttrib = glGetAttribLocation(shader.shaderProgram, "texcoord");
-  //glEnableVertexAttribArray(texAttrib);
-  //glVertexAttribPointer(texAttrib, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(mVec2f), (void*)(sizeof(mVec2f)));
-  //mGL_ERROR_CHECK();
-  //
-  //GLint screenSizeAttrib = glGetUniformLocation(shader.shaderProgram, "screenSize");
-  //glUniform2f(screenSizeAttrib, mRenderParams_CurrentRenderResolutionF.x, mRenderParams_CurrentRenderResolutionF.y);
-  //mGL_ERROR_CHECK();
+  mPtr<mMeshFactory<mMesh2dPosition, mMeshTexcoord, mMeshScale2dUniform>> meshFactory2;
+  mDEFER_DESTRUCTION(&meshFactory2, mMeshFactory_Destroy);
+  mERROR_CHECK(mMeshFactory_Create(&meshFactory2, nullptr, mRP_RM_TriangleStrip));
+
+  mERROR_CHECK(mMeshFactory_GrowBack(meshFactory2, 4));
+  mERROR_CHECK(mMeshFactory_AppendData(meshFactory2, mMesh2dPosition(0, 0), mMeshTexcoord(0, 1), mMeshScale2dUniform()));
+  mERROR_CHECK(mMeshFactory_AppendData(meshFactory2, mMesh2dPosition(0, 4), mMeshTexcoord(0, 0), mMeshScale2dUniform()));
+  mERROR_CHECK(mMeshFactory_AppendData(meshFactory2, mMesh2dPosition(2, 0), mMeshTexcoord(1, 1), mMeshScale2dUniform()));
+  mERROR_CHECK(mMeshFactory_AppendData(meshFactory2, mMesh2dPosition(2, 2), mMeshTexcoord(1, 0), mMeshScale2dUniform()));
+
+  mPtr<mMesh> mesh2;
+  mDEFER_DESTRUCTION(&mesh2, mMesh_Destroy);
+  mERROR_CHECK(mMeshFactory_CreateMesh(meshFactory2, &mesh2, nullptr, image));
 
   size_t frame = 0;
 
+  mERROR_CHECK(mShader_SetUniform(mesh->shader, mMeshScale2dUniform::uniformName(), 1.5f * mesh->textures[0]->resolutionF / mRenderParams_CurrentRenderResolutionF));
+  mERROR_CHECK(mShader_SetUniform(mesh2->shader, mMeshScale2dUniform::uniformName(), mesh->textures[0]->resolutionF / mRenderParams_CurrentRenderResolutionF));
+
   while (true)
   {
-    mRenderParams_ClearTargetDepthAndColour(mVector(mSin((frame++) / 255.0f) / 4.0f + 0.25f, mSin((frame++) / 255.0f) / 4.0f + 0.25f, mSin((frame++) / 255.0f) / 4.0f + 0.25f, 1.0f));
+    frame++;
+    mRenderParams_ClearTargetDepthAndColour(mVector(mSin((frame) / 255.0f) / 4.0f + 0.25f, mSin((frame) / 255.0f) / 4.0f + 0.25f, mSin((frame) / 255.0f) / 4.0f + 0.25f, 1.0f));
 
-    mERROR_CHECK(mShader_SetUniform(mesh->shader, mMeshScale2dUniform::uniformName().c_str(), mesh->textures[0]->resolutionF / mRenderParams_CurrentRenderResolutionF));
     mERROR_CHECK(mMesh_Render(mesh));
+    mERROR_CHECK(mMesh_Render(mesh2));
 
     mGL_ERROR_CHECK();
 
