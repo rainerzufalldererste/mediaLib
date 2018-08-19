@@ -339,6 +339,9 @@ mFUNCTION(mMeshFactory_AppendData, mPtr<mMeshFactory<Args...>> &factory, Args&&.
 template <typename ...Args>
 mFUNCTION(mMeshFactory_GrowBack, mPtr<mMeshFactory<Args...>> &factory, const size_t items);
 
+template <typename ...Args>
+mFUNCTION(mMeshFactory_Clear, mPtr<mMeshFactory<Args...>> &factory);
+
 mFUNCTION(mMesh_Destroy, IN_OUT mPtr<mMesh> *pMesh);
 
 mFUNCTION(mMesh_Destroy_Internal, mMesh *pMesh);
@@ -480,11 +483,6 @@ inline mFUNCTION(mMeshFactory_CreateMesh, mPtr<mMeshFactory<Args...>> &factory, 
 
   mERROR_IF(factory == nullptr || pMesh == nullptr, mR_ArgumentNull);
 
-  mPRINT(factory->meshFactoryInternal.vertShader);
-  mPRINT("\n\n");
-  mPRINT(factory->meshFactoryInternal.fragShader);
-  mPRINT("\n\n");
-
   mPtr<mShader> shader;
   mDEFER_DESTRUCTION(&shader, mSharedPointer_Destroy);
   mERROR_CHECK(mSharedPointer_Allocate(&shader, pAllocator, (std::function<void(mShader *)>)[](mShader *pShader) { mShader_Destroy(pShader); }, 1));
@@ -613,6 +611,16 @@ inline mFUNCTION(mMeshFactory_GrowBack, mPtr<mMeshFactory<Args...>>& factory, co
   mFUNCTION_SETUP();
 
   mERROR_CHECK(mBinaryChunk_GrowBack(factory->values, factory->meshFactoryInternal.size * items));
+
+  mRETURN_SUCCESS();
+}
+
+template<typename ...Args>
+inline mFUNCTION(mMeshFactory_Clear, mPtr<mMeshFactory<Args...>>& factory)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_CHECK(mBinaryChunk_ResetWrite(factory->values));
 
   mRETURN_SUCCESS();
 }
