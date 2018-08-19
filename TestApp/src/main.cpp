@@ -41,15 +41,15 @@ int main(int, char **)
   mERROR_CHECK(mRenderParams_SetMultisampling(4));
   mERROR_CHECK(mRenderParams_SetVsync(true));
 
-  mPtr<mMeshFactory<mMesh2dPosition, mMeshTexcoord, mMeshScaleUniform>> meshFactory;
+  mPtr<mMeshFactory<mMesh2dPosition, mMeshTexcoord, mMeshScale2dUniform>> meshFactory;
   mDEFER_DESTRUCTION(&meshFactory, mMeshFactory_Destroy);
   mERROR_CHECK(mMeshFactory_Create(&meshFactory, nullptr, mRP_RM_TriangleStrip));
 
   mERROR_CHECK(mMeshFactory_GrowBack(meshFactory, 4));
-  mERROR_CHECK(mMeshFactory_AppendData(meshFactory, mMesh2dPosition(-1, -1), mMeshTexcoord(0, 1), mMeshScaleUniform()));
-  mERROR_CHECK(mMeshFactory_AppendData(meshFactory, mMesh2dPosition(-1,  1), mMeshTexcoord(0, 0), mMeshScaleUniform()));
-  mERROR_CHECK(mMeshFactory_AppendData(meshFactory, mMesh2dPosition( 1, -1), mMeshTexcoord(1, 1), mMeshScaleUniform()));
-  mERROR_CHECK(mMeshFactory_AppendData(meshFactory, mMesh2dPosition( 1,  1), mMeshTexcoord(1, 0), mMeshScaleUniform()));
+  mERROR_CHECK(mMeshFactory_AppendData(meshFactory, mMesh2dPosition(-1, -1), mMeshTexcoord(0, 1), mMeshScale2dUniform()));
+  mERROR_CHECK(mMeshFactory_AppendData(meshFactory, mMesh2dPosition(-1,  1), mMeshTexcoord(0, 0), mMeshScale2dUniform()));
+  mERROR_CHECK(mMeshFactory_AppendData(meshFactory, mMesh2dPosition( 1, -1), mMeshTexcoord(1, 1), mMeshScale2dUniform()));
+  mERROR_CHECK(mMeshFactory_AppendData(meshFactory, mMesh2dPosition( 1,  1), mMeshTexcoord(1, 0), mMeshScale2dUniform()));
 
   mPtr<mMesh> mesh;
   mDEFER_DESTRUCTION(&mesh, mMesh_Destroy);
@@ -118,7 +118,7 @@ int main(int, char **)
   {
     mRenderParams_ClearTargetDepthAndColour(mVector(mSin((frame++) / 255.0f) / 4.0f + 0.25f, mSin((frame++) / 255.0f) / 4.0f + 0.25f, mSin((frame++) / 255.0f) / 4.0f + 0.25f, 1.0f));
 
-    mERROR_CHECK(mShader_SetUniform(mesh->shader, "scale0", mSin(frame / 100.0f) + 1.0f));
+    mERROR_CHECK(mShader_SetUniform(mesh->shader, "scale2d0", 1.0f / mRenderParams_CurrentRenderResolutionF));
     mERROR_CHECK(mMesh_Render(mesh));
 
     mGL_ERROR_CHECK();
