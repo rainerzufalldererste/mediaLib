@@ -126,10 +126,10 @@ struct mVec2t
 };
 
 template <typename T>
-__host__ __device__ inline mVec2t<T>  operator *  (const T a, const mVec2t<T> b) { return mVec2t<T>(b.x * a, b.y * a); };
+__host__ __device__ inline mVec2t<T>  operator *  (const T a, const mVec2t<T> b) { return mVec2t<T>(a * b.x, a * b.y); };
 
 template <typename T>
-__host__ __device__ inline mVec2t<T>  operator /  (const T a, const mVec2t<T> b) { return mVec2t<T>(b.x / a, b.y / a); };
+__host__ __device__ inline mVec2t<T>  operator /  (const T a, const mVec2t<T> b) { return mVec2t<T>(a / b.x, a / b.y); };
 
 typedef mVec2t<size_t> mVec2s;
 typedef mVec2t<int64_t> mVec2i;
@@ -173,6 +173,12 @@ struct mVec3t
   __host__ __device__ inline mVec2t<T> ToVector2() const { return mVec2t<T>(x, y) };
 };
 
+template <typename T>
+__host__ __device__ inline mVec3t<T>  operator *  (const T a, const mVec3t<T> b) { return mVec3t<T>(a * b.x, a * b.y, a * b.z); };
+
+template <typename T>
+__host__ __device__ inline mVec3t<T>  operator /  (const T a, const mVec3t<T> b) { return mVec3t<T>(a / b.x, a / b.y, a / b.z); };
+
 typedef mVec3t<size_t> mVec3s;
 typedef mVec3t<int64_t> mVec3i;
 typedef mVec3t<uint64_t> mVec3u;
@@ -215,6 +221,12 @@ struct mVec4t
   __host__ __device__ inline mVec2t<T> ToVector2() const { return mVec2t<T>(x, y) };
   __host__ __device__ inline mVec3t<T> ToVector3() const { return mVec3t<T>(x, y, z) };
 };
+
+template <typename T>
+__host__ __device__ inline mVec4t<T>  operator *  (const T a, const mVec4t<T> b) { return mVec4t<T>(a * b.x, a * b.y, a * b.z, a * b.w); };
+
+template <typename T>
+__host__ __device__ inline mVec4t<T>  operator /  (const T a, const mVec4t<T> b) { return mVec4t<T>(a / b.x, a / b.y, a / b.z, a / b.w); };
 
 typedef mVec4t<size_t> mVec4s;
 typedef mVec4t<int64_t> mVec4i;

@@ -79,7 +79,13 @@ struct mMesh2dPosition : mRenderObjectParam
   static const mRenderObjectParamSubType subType = mROPST_2dPosition;
   static const size_t size = sizeof(mVec2f);
   static const mMeshFactory_AttributeInformationType attributeInformationType = mMF_AIT_Attribute;
-  static inline const char * attributeName() { return mRenderObjectParam_Position_AttributeName; };
+
+  static inline const std::string attributeName(const size_t index = 0) 
+  {
+    char text[1024];
+    sprintf_s(text, "%s%" PRIu64, mRenderObjectParam_Position_AttributeName, index);
+    return std::string(text);
+  };
 };
 
 struct mMesh3dPosition : mRenderObjectParam
@@ -93,7 +99,13 @@ struct mMesh3dPosition : mRenderObjectParam
   static const mRenderObjectParamSubType subType = mROPST_3dPosition;
   static const size_t size = sizeof(mVec3f);
   static const mMeshFactory_AttributeInformationType attributeInformationType = mMF_AIT_Attribute;
-  static inline const char * attributeName() { return mRenderObjectParam_Position_AttributeName; };
+
+  static inline const std::string attributeName(const size_t index = 0)
+  {
+    char text[1024];
+    sprintf_s(text, "%s%" PRIu64, mRenderObjectParam_Position_AttributeName, index);
+    return std::string(text);
+  };
 };
 
 struct mMeshTexcoord : mRenderObjectParam
@@ -107,7 +119,13 @@ struct mMeshTexcoord : mRenderObjectParam
   static const mRenderObjectParamSubType subType = mROPST_2dTextureCoordinate;
   static const size_t size = sizeof(mVec2f);
   static const mMeshFactory_AttributeInformationType attributeInformationType = mMF_AIT_Attribute;
-  static inline const char * attributeName() { return mMeshTexcoord_AttributeName; };
+
+  static inline const std::string attributeName(const size_t index = 0)
+  {
+    char text[1024];
+    sprintf_s(text, "%s%" PRIu64, mMeshTexcoord_AttributeName, index);
+    return std::string(text);
+  };
 };
 
 struct mMeshColour : mRenderObjectParam
@@ -121,7 +139,13 @@ struct mMeshColour : mRenderObjectParam
   static const mRenderObjectParamSubType subType = mROPST_Colour;
   static const size_t size = sizeof(mVec3f);
   static const mMeshFactory_AttributeInformationType attributeInformationType = mMF_AIT_Attribute;
-  static inline const char * attributeName() { return mMeshColour_AttributeName; };
+
+  static inline const std::string attributeName(const size_t index = 0)
+  {
+    char text[1024];
+    sprintf_s(text, "%s%" PRIu64, mMeshColour_AttributeName, index);
+    return std::string(text);
+  };
 };
 
 struct mMeshTextureBlendFactor : mRenderObjectParam
@@ -134,7 +158,13 @@ struct mMeshTextureBlendFactor : mRenderObjectParam
   static const mRenderObjectParamSubType subType = mROPST_TextureBlendFactor;
   static const size_t size = sizeof(float_t);
   static const mMeshFactory_AttributeInformationType attributeInformationType = mMF_AIT_Attribute;
-  static inline const char * attributeName() { return mMeshTextureBlendFactor_AttributeName; };
+
+  static inline const std::string attributeName(const size_t index = 0)
+  {
+    char text[1024];
+    sprintf_s(text, "%s%" PRIu64, mMeshTextureBlendFactor_AttributeName, index);
+    return std::string(text);
+  };
 };
 
 struct mMeshNormalPosition : mRenderObjectParam
@@ -148,7 +178,13 @@ struct mMeshNormalPosition : mRenderObjectParam
   static const mRenderObjectParamSubType subType = mROPST_3dNormalDirection;
   static const size_t size = sizeof(mVec3f);
   static const mMeshFactory_AttributeInformationType attributeInformationType = mMF_AIT_Attribute;
-  static inline const char * attributeName() { return mMeshNormalPosition_AttributeName; };
+
+  static inline const std::string attributeName(const size_t index = 0)
+  {
+    char text[1024];
+    sprintf_s(text, "%s%" PRIu64, mMeshNormalPosition_AttributeName, index);
+    return std::string(text);
+  };
 };
 
 struct mMeshAlphaChannel : mRenderObjectParam
@@ -161,7 +197,13 @@ struct mMeshAlphaChannel : mRenderObjectParam
   static const mRenderObjectParamSubType subType = mROPST_AlphaChannel;
   static const size_t size = sizeof(float_t);
   static const mMeshFactory_AttributeInformationType attributeInformationType = mMF_AIT_Attribute;
-  static inline const char * attributeName() { return mMeshAlphaChannel_AttributeName; };
+
+  static inline const std::string attributeName(const size_t index = 0)
+  {
+    char text[1024];
+    sprintf_s(text, "%s%" PRIu64, mMeshAlphaChannel_AttributeName, index);
+    return std::string(text);
+  };
 };
 
 struct mMeshScaleUniform : mRenderObjectParam
@@ -173,7 +215,13 @@ struct mMeshScaleUniform : mRenderObjectParam
   static const mRenderObjectParamSubType subType = mROPST_ScaleUniform;
   static const size_t size = 0;
   static const mMeshFactory_AttributeInformationType attributeInformationType = mMF_AIT_Uniform;
-  static inline const char * uniformName() { return mMeshScaleUniform_AttributeName; };
+
+  static inline const std::string uniformName(const size_t index = 0)
+  {
+    char text[1024];
+    sprintf_s(text, "%s%" PRIu64, mMeshScaleUniform_AttributeName, index);
+    return std::string(text);
+  };
 };
 
 struct mMeshScale2dUniform : mRenderObjectParam
@@ -185,7 +233,13 @@ struct mMeshScale2dUniform : mRenderObjectParam
   static const mRenderObjectParamSubType subType = mROPST_Scale2dUniform;
   static const size_t size = 0;
   static const mMeshFactory_AttributeInformationType attributeInformationType = mMF_AIT_Uniform;
-  static inline const char * uniformName() { return mMeshScale2dUniform_AttributeName; };
+
+  static inline const std::string uniformName(const size_t index = 0)
+  {
+    char text[1024];
+    sprintf_s(text, "%s%" PRIu64, mMeshScale2dUniform_AttributeName, index);
+    return std::string(text);
+  };
 };
 
 struct mMeshTextureAlphaFlag : mRenderObjectParam
