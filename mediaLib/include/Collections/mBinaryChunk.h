@@ -109,8 +109,7 @@ inline mFUNCTION(mBinaryChunk_Read, mPtr<mBinaryChunk>& binaryChunk, T *pItem)
     pData += sizeof(__m128i);
     pItemData += sizeof(__m128i);
   }
-#endif
-
+#else
   while (writtenSize + sizeof(size_t) <= sizeof(T))
   {
     *(size_t *)pItemData = *((size_t *)pData);
@@ -118,6 +117,7 @@ inline mFUNCTION(mBinaryChunk_Read, mPtr<mBinaryChunk>& binaryChunk, T *pItem)
     pData += sizeof(size_t);
     pItemData += sizeof(size_t);
   }
+#endif
 
   while (writtenSize < sizeof(T))
   {
