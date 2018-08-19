@@ -309,10 +309,11 @@ struct mMeshFactory
 struct mMesh
 {
   mPtr<mShader> shader;
-  size_t length;
+  size_t dataSize;
   mRenderParams_UploadState uploadState;
   mArray<mPtr<mTexture>> textures;
   mRenderParams_TriangleRenderMode triangleRenderMode;
+  mPtr<mQueue<mMeshFactory_AttributeInformation>> information;
   size_t primitiveCount;
 #if defined (mRENDERER_OPENGL)
   bool hasVbo;
@@ -512,6 +513,8 @@ inline mFUNCTION(mMeshFactory_CreateMesh, mPtr<mMeshFactory<Args...>> &factory, 
 
 #if defined (mRENDERER_OPENGL)
   (*pMesh)->hasVbo = true;
+  (*pMesh)->information = factory->meshFactoryInternal.information;
+  (*pMesh)->dataSize = factory->meshFactoryInternal.size;
   glGenBuffers(1, &(*pMesh)->vbo);
   glBindBuffer(GL_ARRAY_BUFFER, (*pMesh)->vbo);
   glBufferData(GL_ARRAY_BUFFER, factory->values->writeBytes, factory->values->pData, GL_STATIC_DRAW);
@@ -528,9 +531,7 @@ inline mFUNCTION(mMeshFactory_CreateMesh, mPtr<mMeshFactory<Args...>> &factory, 
 
     if (info.size > 0 && info.type == mMF_AIT_Attribute)
     {
-      printf("glEnableVertexAttribArray((GLuint)%" PRIu64 "); \n", (uint64_t)index);
       glEnableVertexAttribArray((GLuint)index);
-      printf("glVertexAttribPointer((GLuint)%" PRIu64 ", (GLint)(%" PRIu64 " / %" PRIu64 "), %" PRIu64 ", GL_FALSE, (GLsizei)%" PRIu64 ", (const void *)%" PRIu64 "); \n", (uint64_t)index, info.size, info.individualSubTypeSize, (uint64_t)info.dataType, factory->meshFactoryInternal.size, info.offset);
       glVertexAttribPointer((GLuint)index, (GLint)(info.size / info.individualSubTypeSize), info.dataType, GL_FALSE, (GLsizei)factory->meshFactoryInternal.size, (const void *)info.offset);
       ++index;
     }
@@ -562,17 +563,6 @@ inline mFUNCTION(mMeshFactory_Destroy_Internal, mMeshFactory<Args...> *pFactory)
   mERROR_IF(pFactory == nullptr, mR_ArgumentNull);
 
   mERROR_CHECK(mBinaryChunk_Destroy(&pFactory->values));
-
-  size_t informationCount;
-  mERROR_CHECK(mQueue_GetCount(pFactory->meshFactoryInternal.information, &informationCount));
-
-  for (size_t i = 0; i < informationCount; ++i)
-  {
-    mMeshFactory_AttributeInformation info;
-    mERROR_CHECK(mQueue_PopFront(pFactory->meshFactoryInternal.information, &info));
-    // Destroy info if applicable later.
-  }
-
   mERROR_CHECK(mQueue_Destroy(&pFactory->meshFactoryInternal.information));
 
   mRETURN_SUCCESS();
