@@ -39,7 +39,7 @@ int main(int, char **)
 
   mERROR_CHECK(mRenderParams_SetDoubleBuffering(true));
   mERROR_CHECK(mRenderParams_SetMultisampling(4));
-  mERROR_CHECK(mRenderParams_SetVsync(true));
+  mERROR_CHECK(mRenderParams_SetVsync(false));
 
   mPtr<mMeshFactory<mMesh2dPosition, mMeshTexcoord, mMeshScale2dUniform>> meshFactory;
   mDEFER_DESTRUCTION(&meshFactory, mMeshFactory_Destroy);
@@ -54,38 +54,42 @@ int main(int, char **)
   mPtr<mMesh> mesh;
   mDEFER_DESTRUCTION(&mesh, mMesh_Destroy);
   mERROR_CHECK(mMeshFactory_CreateMesh(meshFactory, &mesh, nullptr, image));
+  mERROR_CHECK(mMeshFactory_Clear(meshFactory));
 
-  mPtr<mMeshFactory<mMesh2dPosition, mMeshTexcoord, mMeshScale2dUniform>> meshFactory2;
-  mDEFER_DESTRUCTION(&meshFactory2, mMeshFactory_Destroy);
-  mERROR_CHECK(mMeshFactory_Create(&meshFactory2, nullptr, mRP_RM_TriangleStrip));
-
-  mERROR_CHECK(mMeshFactory_GrowBack(meshFactory2, 5));
-  mERROR_CHECK(mMeshFactory_AppendData(meshFactory2, mMesh2dPosition(0, 0), mMeshTexcoord(1, 0), mMeshScale2dUniform()));
-  mERROR_CHECK(mMeshFactory_AppendData(meshFactory2, mMesh2dPosition(0, 4), mMeshTexcoord(1, 1), mMeshScale2dUniform()));
-  mERROR_CHECK(mMeshFactory_AppendData(meshFactory2, mMesh2dPosition(2, 0), mMeshTexcoord(0, 0), mMeshScale2dUniform()));
-  mERROR_CHECK(mMeshFactory_AppendData(meshFactory2, mMesh2dPosition(2, 2), mMeshTexcoord(0, 1), mMeshScale2dUniform()));
-  mERROR_CHECK(mMeshFactory_AppendData(meshFactory2, mMesh2dPosition(3, 3), mMeshTexcoord(1, 0), mMeshScale2dUniform()));
+  mERROR_CHECK(mMeshFactory_GrowBack(meshFactory, 5));
+  mERROR_CHECK(mMeshFactory_AppendData(meshFactory, mMesh2dPosition(0, 0), mMeshTexcoord(1, 0), mMeshScale2dUniform()));
+  mERROR_CHECK(mMeshFactory_AppendData(meshFactory, mMesh2dPosition(0, 4), mMeshTexcoord(1, 1), mMeshScale2dUniform()));
+  mERROR_CHECK(mMeshFactory_AppendData(meshFactory, mMesh2dPosition(2, 0), mMeshTexcoord(0, 0), mMeshScale2dUniform()));
+  mERROR_CHECK(mMeshFactory_AppendData(meshFactory, mMesh2dPosition(2, 2), mMeshTexcoord(0, 1), mMeshScale2dUniform()));
+  mERROR_CHECK(mMeshFactory_AppendData(meshFactory, mMesh2dPosition(3, 3), mMeshTexcoord(1, 0), mMeshScale2dUniform()));
 
   mPtr<mMesh> mesh2;
   mDEFER_DESTRUCTION(&mesh2, mMesh_Destroy);
-  mERROR_CHECK(mMeshFactory_CreateMesh(meshFactory2, &mesh2, nullptr, image));
+  mERROR_CHECK(mMeshFactory_CreateMesh(meshFactory, &mesh2, nullptr, image));
 
   size_t frame = 0;
-
-  mERROR_CHECK(mShader_SetUniform(mesh->shader, mMeshScale2dUniform::uniformName(), 1.5f * mesh->textures[0]->resolutionF / mRenderParams_CurrentRenderResolutionF));
-  mERROR_CHECK(mShader_SetUniform(mesh2->shader, mMeshScale2dUniform::uniformName(), mesh->textures[0]->resolutionF / mRenderParams_CurrentRenderResolutionF));
 
   while (true)
   {
     frame++;
     mRenderParams_ClearTargetDepthAndColour(mVector(mSin((frame) / 255.0f) / 4.0f + 0.25f, mSin((frame) / 255.0f) / 4.0f + 0.25f, mSin((frame) / 255.0f) / 4.0f + 0.25f, 1.0f));
 
+    mTimeStamp before;
+    mERROR_CHECK(mTimeStamp_Now(&before));
+
+    mERROR_CHECK(mShader_SetUniform(mesh->shader, mMeshScale2dUniform::uniformName(), 1.5f * mesh->textures[0]->resolutionF / mRenderParams_CurrentRenderResolutionF));
     mERROR_CHECK(mMesh_Render(mesh));
+    mERROR_CHECK(mShader_SetUniform(mesh2->shader, mMeshScale2dUniform::uniformName(), mesh->textures[0]->resolutionF / mRenderParams_CurrentRenderResolutionF));
     mERROR_CHECK(mMesh_Render(mesh2));
 
     mGL_ERROR_CHECK();
 
     mERROR_CHECK(mHardwareWindow_Swap(window));
+
+    mTimeStamp after;
+    mERROR_CHECK(mTimeStamp_Now(&after));
+
+    mPRINT("\rframes per second: %f, frame time: %f ms   ", (1.0 / (after - before).timePoint), (after - before).timePoint * 1000.0);
 
     SDL_Event _event;
     while (SDL_PollEvent(&_event))

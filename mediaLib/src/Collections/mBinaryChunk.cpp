@@ -62,6 +62,28 @@ mFUNCTION(mBinaryChunk_GrowBack, mPtr<mBinaryChunk> &binaryChunk, const size_t s
   mRETURN_SUCCESS();
 }
 
+mFUNCTION(mBinaryChunk_ResetWrite, mPtr<mBinaryChunk>& binaryChunk)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(binaryChunk == nullptr, mR_ArgumentNull);
+
+  binaryChunk->writeBytes = 0;
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mBinaryChunk_ResetRead, mPtr<mBinaryChunk>& binaryChunk)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(binaryChunk == nullptr, mR_ArgumentNull);
+
+  binaryChunk->readBytes = 0;
+
+  mRETURN_SUCCESS();
+}
+
 //////////////////////////////////////////////////////////////////////////
 
 mFUNCTION(mBinaryChunk_Destroy_Internal, mBinaryChunk *pBinaryChunk)
