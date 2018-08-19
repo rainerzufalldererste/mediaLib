@@ -39,6 +39,7 @@ mFUNCTION(mMesh_Destroy_Internal, mMesh * pMesh)
   }
 
   mERROR_CHECK(mArray_Destroy(&pMesh->textures));
+  mERROR_CHECK(mQueue_Destroy(&pMesh->information));
 #endif
 
   mRETURN_SUCCESS();
@@ -103,8 +104,30 @@ mFUNCTION(mMesh_Render, mPtr<mMesh>& data)
 
   mERROR_CHECK(mShader_Bind(*data->shader.GetPointer()));
 
+  mGL_DEBUG_ERROR_CHECK();
+
   if (data->hasVbo)
     glBindBuffer(GL_ARRAY_BUFFER, data->vbo);
+
+  size_t informationCount;
+  mERROR_CHECK(mQueue_GetCount(data->information, &informationCount));
+
+  GLuint index = 0;
+
+  for (size_t i = 0; i < informationCount; ++i)
+  {
+    mMeshFactory_AttributeInformation info;
+    mERROR_CHECK(mQueue_PeekAt(data->information, i, &info));
+
+    if (info.size > 0 && info.type == mMF_AIT_Attribute)
+    {
+      glEnableVertexAttribArray((GLuint)index);
+      glVertexAttribPointer((GLuint)index, (GLint)(info.size / info.individualSubTypeSize), info.dataType, GL_FALSE, (GLsizei)data->dataSize, (const void *)info.offset);
+      ++index;
+    }
+
+    mGL_DEBUG_ERROR_CHECK();
+  }
 
   switch (data->triangleRenderMode)
   {
@@ -124,6 +147,8 @@ mFUNCTION(mMesh_Render, mPtr<mMesh>& data)
     mRETURN_RESULT(mR_OperationNotSupported);
     break;
   }
+
+  glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 #else
   mRETURN_SUCCESS(mR_NotImplemented);

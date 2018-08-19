@@ -59,11 +59,12 @@ int main(int, char **)
   mDEFER_DESTRUCTION(&meshFactory2, mMeshFactory_Destroy);
   mERROR_CHECK(mMeshFactory_Create(&meshFactory2, nullptr, mRP_RM_TriangleStrip));
 
-  mERROR_CHECK(mMeshFactory_GrowBack(meshFactory2, 4));
-  mERROR_CHECK(mMeshFactory_AppendData(meshFactory2, mMesh2dPosition(0, 0), mMeshTexcoord(0, 1), mMeshScale2dUniform()));
-  mERROR_CHECK(mMeshFactory_AppendData(meshFactory2, mMesh2dPosition(0, 4), mMeshTexcoord(0, 0), mMeshScale2dUniform()));
-  mERROR_CHECK(mMeshFactory_AppendData(meshFactory2, mMesh2dPosition(2, 0), mMeshTexcoord(1, 1), mMeshScale2dUniform()));
-  mERROR_CHECK(mMeshFactory_AppendData(meshFactory2, mMesh2dPosition(2, 2), mMeshTexcoord(1, 0), mMeshScale2dUniform()));
+  mERROR_CHECK(mMeshFactory_GrowBack(meshFactory2, 5));
+  mERROR_CHECK(mMeshFactory_AppendData(meshFactory2, mMesh2dPosition(0, 0), mMeshTexcoord(1, 0), mMeshScale2dUniform()));
+  mERROR_CHECK(mMeshFactory_AppendData(meshFactory2, mMesh2dPosition(0, 4), mMeshTexcoord(1, 1), mMeshScale2dUniform()));
+  mERROR_CHECK(mMeshFactory_AppendData(meshFactory2, mMesh2dPosition(2, 0), mMeshTexcoord(0, 0), mMeshScale2dUniform()));
+  mERROR_CHECK(mMeshFactory_AppendData(meshFactory2, mMesh2dPosition(2, 2), mMeshTexcoord(0, 1), mMeshScale2dUniform()));
+  mERROR_CHECK(mMeshFactory_AppendData(meshFactory2, mMesh2dPosition(3, 3), mMeshTexcoord(1, 0), mMeshScale2dUniform()));
 
   mPtr<mMesh> mesh2;
   mDEFER_DESTRUCTION(&mesh2, mMesh_Destroy);
