@@ -94,7 +94,7 @@ struct mVec2t
   T x, y;
 
   __host__ __device__ inline mVec2t() : x(0), y(0) {}
-  __host__ __device__ inline mVec2t(T _v) : x(_v), y(_v) {}
+  __host__ __device__ inline explicit mVec2t(T _v) : x(_v), y(_v) {}
   __host__ __device__ inline mVec2t(T _x, T _y) : x(_x), y(_y) {}
 
   template <typename T2> __host__ __device__ inline explicit mVec2t(const mVec2t<T2> &cast) : x((T)cast.x), y((T)cast.y) { }
@@ -143,9 +143,9 @@ struct mVec3t
   T x, y, z;
 
   __host__ __device__ inline mVec3t() : x(0), y(0), z(0) {}
-  __host__ __device__ inline mVec3t(T _v) : x(_v), y(_v), z(_v) {}
+  __host__ __device__ inline explicit mVec3t(T _v) : x(_v), y(_v), z(_v) {}
   __host__ __device__ inline mVec3t(T _x, T _y, T _z) : x(_x), y(_y), z(_z) {}
-  __host__ __device__ inline mVec3t(mVec2t<T> vector2, T _z) : x(vector2.x), y(vector2.y), z(_z) {}
+  __host__ __device__ inline explicit mVec3t(mVec2t<T> vector2, T _z) : x(vector2.x), y(vector2.y), z(_z) {}
 
   template <typename T2> __host__ __device__ inline explicit mVec3t(const mVec3t<T2> &cast) : x((T)cast.x), y((T)cast.y), z((T)cast.z) {}
 
@@ -191,9 +191,9 @@ struct mVec4t
   T x, y, z, w;
 
   __host__ __device__ inline mVec4t() : x(0), y(0), z(0), w(0) {}
-  __host__ __device__ inline mVec4t(T _v) : x(_v), y(_v), z(_v), w(_v) {}
+  __host__ __device__ inline explicit mVec4t(T _v) : x(_v), y(_v), z(_v), w(_v) {}
   __host__ __device__ inline mVec4t(T _x, T _y, T _z, T _w) : x(_x), y(_y), z(_z), w(_w) {}
-  __host__ __device__ inline mVec4t(mVec3t<T> vector3, T _w) : x(vector3.x), y(vector3.y), z(vector3.z), w(_w) {}
+  __host__ __device__ inline explicit mVec4t(mVec3t<T> vector3, T _w) : x(vector3.x), y(vector3.y), z(vector3.z), w(_w) {}
 
   template <typename T2> __host__ __device__ inline explicit mVec4t(const mVec4t<T2> &cast) : x((T)cast.x), y((T)cast.y), z((T)cast.z), w((T)cast.w) {}
 

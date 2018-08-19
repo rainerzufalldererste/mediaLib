@@ -86,5 +86,44 @@ mFUNCTION(mShader_SetUniform, mPtr<mShader> &shader, const char *uniformName, T 
 
   mRETURN_SUCCESS();
 }
+template <typename T>
+mFUNCTION(mShader_SetUniform, mShader &shader, const std::string &uniformName, T v)
+{
+  mFUNCTION_SETUP();
+
+  const shaderAttributeIndex_t uniformLocation =
+#if defined (mRENDERER_OPENGL)
+    glGetUniformLocation(shader.shaderProgram, uniformName.c_str());
+#else
+    0;
+  mRETURN_RESULT(mR_NotImplemented);
+#endif
+
+  mERROR_CHECK(mShader_SetUniformAtIndex(shader, uniformLocation, v));
+
+  mGL_DEBUG_ERROR_CHECK();
+
+  mRETURN_SUCCESS();
+}
+
+template <typename T>
+mFUNCTION(mShader_SetUniform, mPtr<mShader> &shader, const std::string &uniformName, T v)
+{
+  mFUNCTION_SETUP();
+
+  const shaderAttributeIndex_t uniformLocation =
+#if defined (mRENDERER_OPENGL)
+    glGetUniformLocation(shader->shaderProgram, uniformName.c_str());
+#else
+    0;
+  mRETURN_RESULT(mR_NotImplemented);
+#endif
+
+  mERROR_CHECK(mShader_SetUniformAtIndex(*shader.GetPointer(), uniformLocation, v));
+
+  mGL_DEBUG_ERROR_CHECK();
+
+  mRETURN_SUCCESS();
+}
 
 #endif // mShader_h__
