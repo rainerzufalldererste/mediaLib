@@ -40,6 +40,7 @@ enum mRenderObjectParamSubType
 
   // uniforms
   mROPST_ScaleUniform,
+  mROPST_Scale2dUniform,
 };
 
 struct mRenderObjectParam
@@ -56,8 +57,16 @@ struct mRenderObjectParam
 #define mMeshNormalPosition_AttributeName "normal"
 #define mMeshAlphaChannel_AttributeName "alpha"
 #define mMeshScaleUniform_AttributeName "scale"
+#define mMeshScale2dUniform_AttributeName "scale2d"
 #define mMeshScreenSize_AttributeName "screenSize"
 #define mMeshOutColour_AttributeName "outColour"
+
+enum mMeshFactory_AttributeInformationType
+{
+  mMF_AIT_Attribute,
+  mMF_AIT_Uniform,
+  mMF_AIT_Flag,
+};
 
 struct mMesh2dPosition : mRenderObjectParam
 {
@@ -69,6 +78,8 @@ struct mMesh2dPosition : mRenderObjectParam
   static const mRenderObjectParamType type = mROPT_Position;
   static const mRenderObjectParamSubType subType = mROPST_2dPosition;
   static const size_t size = sizeof(mVec2f);
+  static const mMeshFactory_AttributeInformationType attributeInformationType = mMF_AIT_Attribute;
+  static inline const char * attributeName() { return mRenderObjectParam_Position_AttributeName; };
 };
 
 struct mMesh3dPosition : mRenderObjectParam
@@ -81,6 +92,8 @@ struct mMesh3dPosition : mRenderObjectParam
   static const mRenderObjectParamType type = mROPT_Position;
   static const mRenderObjectParamSubType subType = mROPST_3dPosition;
   static const size_t size = sizeof(mVec3f);
+  static const mMeshFactory_AttributeInformationType attributeInformationType = mMF_AIT_Attribute;
+  static inline const char * attributeName() { return mRenderObjectParam_Position_AttributeName; };
 };
 
 struct mMeshTexcoord : mRenderObjectParam
@@ -93,6 +106,8 @@ struct mMeshTexcoord : mRenderObjectParam
   static const mRenderObjectParamType type = mROPT_TexCoord;
   static const mRenderObjectParamSubType subType = mROPST_2dTextureCoordinate;
   static const size_t size = sizeof(mVec2f);
+  static const mMeshFactory_AttributeInformationType attributeInformationType = mMF_AIT_Attribute;
+  static inline const char * attributeName() { return mMeshTexcoord_AttributeName; };
 };
 
 struct mMeshColour : mRenderObjectParam
@@ -105,6 +120,8 @@ struct mMeshColour : mRenderObjectParam
   static const mRenderObjectParamType type = mROPT_Colour;
   static const mRenderObjectParamSubType subType = mROPST_Colour;
   static const size_t size = sizeof(mVec3f);
+  static const mMeshFactory_AttributeInformationType attributeInformationType = mMF_AIT_Attribute;
+  static inline const char * attributeName() { return mMeshColour_AttributeName; };
 };
 
 struct mMeshTextureBlendFactor : mRenderObjectParam
@@ -116,6 +133,8 @@ struct mMeshTextureBlendFactor : mRenderObjectParam
   static const mRenderObjectParamType type = mROPT_TextureBlendFactor;
   static const mRenderObjectParamSubType subType = mROPST_TextureBlendFactor;
   static const size_t size = sizeof(float_t);
+  static const mMeshFactory_AttributeInformationType attributeInformationType = mMF_AIT_Attribute;
+  static inline const char * attributeName() { return mMeshTextureBlendFactor_AttributeName; };
 };
 
 struct mMeshNormalPosition : mRenderObjectParam
@@ -128,6 +147,8 @@ struct mMeshNormalPosition : mRenderObjectParam
   static const mRenderObjectParamType type = mROPT_NormalDirection;
   static const mRenderObjectParamSubType subType = mROPST_3dNormalDirection;
   static const size_t size = sizeof(mVec3f);
+  static const mMeshFactory_AttributeInformationType attributeInformationType = mMF_AIT_Attribute;
+  static inline const char * attributeName() { return mMeshNormalPosition_AttributeName; };
 };
 
 struct mMeshAlphaChannel : mRenderObjectParam
@@ -139,6 +160,8 @@ struct mMeshAlphaChannel : mRenderObjectParam
   static const mRenderObjectParamType type = mROPT_AlphaChannel;
   static const mRenderObjectParamSubType subType = mROPST_AlphaChannel;
   static const size_t size = sizeof(float_t);
+  static const mMeshFactory_AttributeInformationType attributeInformationType = mMF_AIT_Attribute;
+  static inline const char * attributeName() { return mMeshAlphaChannel_AttributeName; };
 };
 
 struct mMeshScaleUniform : mRenderObjectParam
@@ -149,6 +172,20 @@ struct mMeshScaleUniform : mRenderObjectParam
   static const mRenderObjectParamType type = mROPT_Scale;
   static const mRenderObjectParamSubType subType = mROPST_ScaleUniform;
   static const size_t size = 0;
+  static const mMeshFactory_AttributeInformationType attributeInformationType = mMF_AIT_Uniform;
+  static inline const char * uniformName() { return mMeshScaleUniform_AttributeName; };
+};
+
+struct mMeshScale2dUniform : mRenderObjectParam
+{
+  mMeshScale2dUniform() {}
+  mMeshScale2dUniform(nullptr_t) {}
+
+  static const mRenderObjectParamType type = mROPT_Scale;
+  static const mRenderObjectParamSubType subType = mROPST_Scale2dUniform;
+  static const size_t size = 0;
+  static const mMeshFactory_AttributeInformationType attributeInformationType = mMF_AIT_Uniform;
+  static inline const char * uniformName() { return mMeshScale2dUniform_AttributeName; };
 };
 
 struct mMeshTextureAlphaFlag : mRenderObjectParam
@@ -159,13 +196,7 @@ struct mMeshTextureAlphaFlag : mRenderObjectParam
   static const mRenderObjectParamType type = mROPT_TextureAlphaFlag;
   static const mRenderObjectParamSubType subType = mROPST_TextureAlphaFlag;
   static const size_t size = 0;
-};
-
-enum mMeshFactory_AttributeInformationType
-{
-  mMF_AIT_Attribute,
-  mMF_AIT_Uniform,
-  mMF_AIT_Flag,
+  static const mMeshFactory_AttributeInformationType attributeInformationType = mMF_AIT_Flag;
 };
 
 struct mMeshFactory_AttributeInformation
@@ -196,6 +227,7 @@ struct mMeshFactory_Internal
   uint8_t useTextureAlpha : 1;
   uint8_t normal : 1;
   uint8_t scaleUniform : 1;
+  uint8_t scale2dUniform : 1;
   size_t textureCoordCount;
   size_t size;
 
@@ -678,11 +710,25 @@ struct mMeshFactory_Internal_Unpacker <T>
       break;
 
     case mROPT_Scale:
-      mERROR_IF(0 > sprintf_s(pMeshFactory->vertShader, "%s\nuniform float " mMeshScaleUniform_AttributeName "0;", pMeshFactory->vertShader), mR_InternalError);
-      // mERROR_IF(pMeshFactory->scaleUniform != 0, mR_InvalidParameter); // will be ignored anyways.
-      pMeshFactory->scaleUniform = 1;
 
-      // TODO: implement.
+      switch (T::subType)
+      {
+      case mROPST_ScaleUniform:
+        mERROR_IF(0 > sprintf_s(pMeshFactory->vertShader, "%s\nuniform float " mMeshScaleUniform_AttributeName "0;", pMeshFactory->vertShader), mR_InternalError);
+        // mERROR_IF(pMeshFactory->scaleUniform != 0, mR_InvalidParameter); // will be ignored anyways.
+        pMeshFactory->scaleUniform = 1;
+        break;
+
+      case mROPST_Scale2dUniform:
+        mERROR_IF(0 > sprintf_s(pMeshFactory->vertShader, "%s\nuniform vec2 " mMeshScale2dUniform_AttributeName "0;", pMeshFactory->vertShader), mR_InternalError);
+        // mERROR_IF(pMeshFactory->scale2dUniform != 0, mR_InvalidParameter); // will be ignored anyways.
+        pMeshFactory->scale2dUniform = 1;
+        break;
+
+      default:
+        mRETURN_RESULT(mR_OperationNotSupported);
+        break;
+      }
 
       mERROR_CHECK(mQueue_PushBack(pMeshFactory->information, mMeshFactory_AttributeInformation(T::size, pMeshFactory->size, mMF_AIT_Uniform, GL_FLOAT, sizeof(float_t))));
 
@@ -741,6 +787,9 @@ mFUNCTION(mMeshFactory_Internal_Build, mMeshFactory_Internal *pMeshFactory)
 
   if (pMeshFactory->scaleUniform)
     mERROR_IF(0 > sprintf_s(pMeshFactory->vertShaderImpl, "%s\n\tgl_Position.xyz *= " mMeshScaleUniform_AttributeName "0;", pMeshFactory->vertShaderImpl), mR_InternalError);
+
+  if (pMeshFactory->scale2dUniform)
+    mERROR_IF(0 > sprintf_s(pMeshFactory->vertShaderImpl, "%s\n\tgl_Position.xy *= " mMeshScale2dUniform_AttributeName "0;", pMeshFactory->vertShaderImpl), mR_InternalError);
 
   mERROR_IF(0 > sprintf_s(pMeshFactory->vertShaderImpl, "%s\n}", pMeshFactory->vertShaderImpl), mR_InternalError);
 
