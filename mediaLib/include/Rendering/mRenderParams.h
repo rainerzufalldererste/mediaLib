@@ -84,9 +84,16 @@ enum mRenderParams_UploadState
 
 enum mRenderParams_TriangleRenderMode
 {
+  mRP_RM_Points,
+  mRP_PM_LineList,
+  mRP_PM_LineStrip,
+  mRP_PM_LineLoop,
   mRP_RM_TriangleList,
   mRP_RM_TriangleStrip,
   mRP_RM_TriangleFan,
+  mRP_PM_QuadList,
+  mRP_PM_QuadStrip,
+  mRP_PM_Polygon,
 };
 
 #endif // mRenderParams_h__
