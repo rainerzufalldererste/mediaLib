@@ -131,6 +131,22 @@ mFUNCTION(mMesh_Render, mPtr<mMesh>& data)
 
   switch (data->triangleRenderMode)
   {
+  case mRP_RM_Points:
+    glDrawArrays(GL_POINTS, 0, (GLuint)data->primitiveCount);
+    break;
+
+  case mRP_PM_LineList:
+    glDrawArrays(GL_LINES, 0, (GLuint)data->primitiveCount);
+    break;
+
+  case mRP_PM_LineStrip:
+    glDrawArrays(GL_LINE_STRIP, 0, (GLuint)data->primitiveCount);
+    break;
+
+  case mRP_PM_LineLoop:
+    glDrawArrays(GL_LINE_LOOP, 0, (GLuint)data->primitiveCount);
+    break;
+
   case mRP_RM_TriangleList:
     glDrawArrays(GL_TRIANGLES, 0, (GLuint)data->primitiveCount);
     break;
@@ -141,6 +157,18 @@ mFUNCTION(mMesh_Render, mPtr<mMesh>& data)
 
   case mRP_RM_TriangleFan:
     glDrawArrays(GL_TRIANGLE_FAN, 0, (GLuint)data->primitiveCount);
+    break;
+
+  case mRP_PM_QuadList:
+    glDrawArrays(GL_QUADS, 0, (GLuint)data->primitiveCount);
+    break;
+
+  case mRP_PM_QuadStrip:
+    glDrawArrays(GL_QUAD_STRIP, 0, (GLuint)data->primitiveCount);
+    break;
+
+  case mRP_PM_Polygon:
+    glDrawArrays(GL_POLYGON, 0, (GLuint)data->primitiveCount);
     break;
 
   default:

@@ -9,6 +9,7 @@
 #include "mShader.h"
 #include "mTexture.h"
 #include "mMesh.h"
+#include "mSpriteBatch.h"
 
 mPtr<mHardwareWindow> window = nullptr;
 mPtr<mImageBuffer> image;
@@ -66,6 +67,10 @@ int main(int, char **)
   mPtr<mMesh> mesh2;
   mDEFER_DESTRUCTION(&mesh2, mMesh_Destroy);
   mERROR_CHECK(mMeshFactory_CreateMesh(meshFactory, &mesh2, nullptr, image));
+
+  mPtr<mSpriteBatch<mSBEColour>> spriteBatch;
+  mDEFER_DESTRUCTION(&spriteBatch, mSpriteBatch_Destroy);
+  mERROR_CHECK(mSpriteBatch_Create(&spriteBatch, nullptr));
 
   size_t frame = 0;
 
