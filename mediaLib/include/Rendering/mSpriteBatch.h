@@ -47,15 +47,10 @@ struct mSpriteBatch_Internal_RenderObject
 struct mSpriteBatch_ShaderParams
 {
   uint8_t textureCrop : 1;
-  uint8_t textureCropIndex;
   uint8_t colour : 1;
-  uint8_t colourIndex;
   uint8_t rotation : 1;
-  uint8_t rotationIndex;
   uint8_t matrixTransform : 1;
-  uint8_t matrixTransformIndex;
   uint8_t textureFlip : 1;
-  uint8_t textureFlipIndex;
 };
 
 template <typename ...Args>

@@ -1,4 +1,3 @@
-#include "mSpriteBatch.h"
 // Copyright 2018 Christoph Stiller
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
@@ -6,6 +5,9 @@
 // The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 // 
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+#include "mSpriteBatch.h"
+#include "mForwardTuple.h"
 
 template <typename ...Args>
 mFUNCTION(mSpriteBatch_Create_Internal, IN_OUT mSpriteBatch<Args...> *pSpriteBatch);
@@ -91,6 +93,9 @@ inline mFUNCTION(mSpriteBatch_End, mPtr<mSpriteBatch<Args...>> &spriteBatch)
 {
   mFUNCTION_SETUP();
 
+  mERROR_IF(!spriteBatch->isStarted, mR_ResourceStateInvalid);
+  spriteBatch->isStarted = false;
+
   if (spriteBatch->spriteSortMode != mSB_SSM_None && spriteBatch->alphaMode != mSB_AM_Additive)
   {
     mERROR_CHECK(mSpriteBatch_Internal_BindMesh(spriteBatch));
@@ -132,7 +137,7 @@ struct mSpriteBatch_GenerateShader;
 template<typename T>
 struct mSpriteBatch_GenerateShader <T>
 {
-  static mFUNCTION(UnpackParams, mSpriteBatch_ShaderParams *pParams, size_t index)
+  static mFUNCTION(UnpackParams, mSpriteBatch_ShaderParams *pParams)
   {
     mFUNCTION_SETUP();
 
@@ -143,31 +148,26 @@ struct mSpriteBatch_GenerateShader <T>
     case mSBE_T_Colour:
       mERROR_IF(pParams->colour != 0, mR_InvalidParameter); // Colour parameter cannot be set twice.
       pParams->colour = 1;
-      pParams->colourIndex = (uint8_t)index;
       break;
 
     case mSBE_T_TextureCrop:
       mERROR_IF(pParams->textureCrop != 0, mR_InvalidParameter); // TextureCrop parameter cannot be set twice.
       pParams->textureCrop = 1;
-      pParams->textureCropIndex = (uint8_t)index;
       break;
 
     case mSBE_T_Rotation:
       mERROR_IF(pParams->rotation != 0, mR_InvalidParameter); // Rotation parameter cannot be set twice.
       pParams->rotation = 1;
-      pParams->rotationIndex = (uint8_t)index;
       break;
 
     case mSBE_T_MatrixTransform:
       mERROR_IF(pParams->matrixTransform != 0, mR_InvalidParameter); // MatrixTransform parameter cannot be set twice.
       pParams->matrixTransform = 1;
-      pParams->matrixTransformIndex = (uint8_t)index;
       break;
 
     case mSBE_T_TextureFlip:
       mERROR_IF(pParams->textureFlip != 0, mR_InvalidParameter); // TextureFlip parameter cannot be set twice.
       pParams->textureFlip = 1;
-      pParams->textureFlipIndex = (uint8_t)index;
       break;
 
     default:
@@ -182,12 +182,12 @@ struct mSpriteBatch_GenerateShader <T>
 template<typename T, typename ...Args>
 struct mSpriteBatch_GenerateShader <T, Args...>
 {
-  static mFUNCTION(UnpackParams, mSpriteBatch_ShaderParams *pParams, size_t index)
+  static mFUNCTION(UnpackParams, mSpriteBatch_ShaderParams *pParams)
   {
     mFUNCTION_SETUP();
 
-    mERROR_CHECK(mSpriteBatch_GenerateShader<T>::UnpackParams(pParams, index));
-    mERROR_CHECK(mSpriteBatch_GenerateShader<Args...>::UnpackParams(pParams, index + 1));
+    mERROR_CHECK(mSpriteBatch_GenerateShader<T>::UnpackParams(pParams));
+    mERROR_CHECK(mSpriteBatch_GenerateShader<Args...>::UnpackParams(pParams));
 
     mRETURN_SUCCESS();
   }
@@ -208,7 +208,7 @@ inline mFUNCTION(mSpriteBatch_Create_Internal, IN_OUT mSpriteBatch<Args...>* pSp
   pSpriteBatch->textureSampleMode = mSpriteBatch_TextureSampleMode::mSB_TSM_LinearFiltering;
 
   pSpriteBatch->shaderParams = { 0 };
-  mERROR_CHECK(mSpriteBatch_GenerateShader<Args...>::UnpackParams(&pSpriteBatch->shaderParams, 0));
+  mERROR_CHECK(mSpriteBatch_GenerateShader<Args...>::UnpackParams(&pSpriteBatch->shaderParams));
 
   // Vertex Shader.
   char vertexShader[1024] = "";
@@ -391,36 +391,36 @@ mFUNCTION(mSpriteBatch_Internal_RenderObject_Destroy, IN_OUT mSpriteBatch_Intern
   mRETURN_SUCCESS();
 }
 
-template<typename TTuple, typename ...Args>
+template<typename ...Args>
 struct mSpriteBatch_Internal_RenderObject_Render_Unpacker;
 
-template<typename TTuple, typename T>
-struct mSpriteBatch_Internal_RenderObject_Render_Unpacker<TTuple, T>
+template<typename T>
+struct mSpriteBatch_Internal_RenderObject_Render_Unpacker<T>
 {
-  static mFUNCTION(Unpack, TTuple tuple, const size_t index, mShader &shader)
+  static mFUNCTION(Unpack, mShader &shader, T t)
   {
     mFUNCTION_SETUP();
 
     switch (T::type)
     {
     case mSBE_T_Colour:
-      mERROR_CHECK(mShader_SetUniform(shader, mSBEColour_UniformName, std::get<index>(tuple)));
+      mERROR_CHECK(mShader_SetUniform(shader, mSBEColour_UniformName, t));
       break;
 
     case mSBE_T_TextureCrop:
-      mERROR_CHECK(mShader_SetUniform(shader, mSBETextureCrop_UniformName, std::get<index>(tuple)));
+      mERROR_CHECK(mShader_SetUniform(shader, mSBETextureCrop_UniformName, t));
       break;
 
     case mSBE_T_Rotation:
-      mERROR_CHECK(mShader_SetUniform(shader, mSBERotation_UniformName, std::get<index>(tuple)));
+      mERROR_CHECK(mShader_SetUniform(shader, mSBERotation_UniformName, t));
       break;
 
     case mSBE_T_MatrixTransform:
-      mERROR_CHECK(mShader_SetUniform(shader, mSBEMatrixTransform_UniformName, std::get<index>(tuple)));
+      mERROR_CHECK(mShader_SetUniform(shader, mSBEMatrixTransform_UniformName, t));
       break;
 
     case mSBE_T_TextureFlip:
-      mERROR_CHECK(mShader_SetUniform(shader, mSBETextureFlip_UniformName, std::get<index>(tuple)));
+      mERROR_CHECK(mShader_SetUniform(shader, mSBETextureFlip_UniformName, t));
       break;
 
     default:
@@ -432,15 +432,15 @@ struct mSpriteBatch_Internal_RenderObject_Render_Unpacker<TTuple, T>
   }
 };
 
-template<typename TTuple, typename T, typename ...Args>
-struct mSpriteBatch_Internal_RenderObject_Render_Unpacker<TTuple, T, Args...>
+template<typename T, typename ...Args>
+struct mSpriteBatch_Internal_RenderObject_Render_Unpacker<T, Args...>
 {
-  static mFUNCTION(Unpack, TTuple tuple, const size_t index, mShader &shader)
+  static mFUNCTION(Unpack, mShader &shader, T t, Args... args)
   {
     mFUNCTION_SETUP();
 
-    mERROR_CHECK(mSpriteBatch_Internal_RenderObject_Render_Unpacker<TTuple, T>::Unpack(tuple, index, shader));
-    mERROR_CHECK(mSpriteBatch_Internal_RenderObject_Render_Unpacker<TTuple, Args...>::Unpack(tuple, index + 1, shader));
+    mERROR_CHECK(mSpriteBatch_Internal_RenderObject_Render_Unpacker<T>::Unpack(shader, t));
+    mERROR_CHECK(mSpriteBatch_Internal_RenderObject_Render_Unpacker<Args...>::Unpack(shader, std::forward<Args>(args)...));
 
     mRETURN_SUCCESS();
   }
@@ -456,8 +456,9 @@ inline mFUNCTION(mSpriteBatch_Internal_RenderObject_Render, mSpriteBatch_Interna
   mERROR_CHECK(mShader_SetUniform(spriteBatch->shader, "screenSize0", mRenderParams_CurrentRenderResolutionF));
   mERROR_CHECK(mShader_SetUniform(spriteBatch->shader, "scale0", renderObject.size));
   mERROR_CHECK(mShader_SetUniform(spriteBatch->shader, "startOffset0", renderObject.position));
-  mSpriteBatch_Internal_RenderObject_Render_Unpacker<decltype(renderObject.args), Args...>::Unpack(renderObject.args, 0, *spriteBatch->shader.GetPointer());
-  //mERROR_CHECK();
+
+  // Set uniforms.
+  mERROR_CHECK(mForwardTuple(mSpriteBatch_Internal_RenderObject_Render_Unpacker<Args...>::Unpack, *spriteBatch->shader.GetPointer(), renderObject.args));
 
   glDrawArrays(GL_QUADS, 0, 4);
 
