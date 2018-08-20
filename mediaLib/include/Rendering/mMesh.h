@@ -822,9 +822,9 @@ mFUNCTION(mMeshFactory_Internal_Build, mMeshFactory_Internal *pMeshFactory)
 
   mERROR_CHECK(mQueue_Create(&pMeshFactory->information, nullptr));
 
-  mERROR_IF(0 > sprintf_s(pMeshFactory->vertShader, "#version 150 core\n\nuniform vec2 screenSize0;"), mR_InternalError);
+  mERROR_IF(0 > sprintf_s(pMeshFactory->vertShader, "#version 150 core\n\n"), mR_InternalError);
   mERROR_IF(0 > sprintf_s(pMeshFactory->vertShaderImpl, "void main()\n{"), mR_InternalError);
-  mERROR_IF(0 > sprintf_s(pMeshFactory->fragShader, "#version 150 core\n\nout vec4 " mMeshOutColour_AttributeName ";\nuniform vec2 screenSize0;"), mR_InternalError);
+  mERROR_IF(0 > sprintf_s(pMeshFactory->fragShader, "#version 150 core\n\nout vec4 " mMeshOutColour_AttributeName ";\n"), mR_InternalError);
 
   mERROR_CHECK(mMeshFactory_Internal_Unpacker<Args...>().Unpack(pMeshFactory));
 

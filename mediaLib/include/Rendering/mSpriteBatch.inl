@@ -22,6 +22,9 @@ template <typename ...Args>
 mFUNCTION(mSpriteBatch_Internal_SetDrawOrder, mPtr<mSpriteBatch<Args...>> &spriteBatch);
 
 template <typename ...Args>
+mFUNCTION(mSpriteBatch_Internal_SetTextureFilterMode, mPtr<mSpriteBatch<Args...>> &spriteBatch);
+
+template <typename ...Args>
 mFUNCTION(mSpriteBatch_Internal_InitializeMesh, mPtr<mSpriteBatch<Args...>> &spriteBatch);
 
 template <typename ...Args>
@@ -70,6 +73,7 @@ inline mFUNCTION(mSpriteBatch_Begin, mPtr<mSpriteBatch<Args...>>& spriteBatch)
     mERROR_CHECK(mShader_Bind(*spriteBatch->shader.GetPointer()));
     mERROR_CHECK(mSpriteBatch_Internal_SetAlphaBlending(spriteBatch));
     mERROR_CHECK(mSpriteBatch_Internal_SetDrawOrder(spriteBatch));
+    mERROR_CHECK(mSpriteBatch_Internal_SetTextureFilterMode(spriteBatch));
   }
 
   mRETURN_SUCCESS();
@@ -158,6 +162,7 @@ inline mFUNCTION(mSpriteBatch_End, mPtr<mSpriteBatch<Args...>> &spriteBatch)
     mERROR_CHECK(mShader_Bind(*spriteBatch->shader.GetPointer()));
     mERROR_CHECK(mSpriteBatch_Internal_SetAlphaBlending(spriteBatch));
     mERROR_CHECK(mSpriteBatch_Internal_SetDrawOrder(spriteBatch));
+    mERROR_CHECK(mSpriteBatch_Internal_SetTextureFilterMode(spriteBatch));
 
     size_t count;
     mERROR_CHECK(mQueue_GetCount(spriteBatch->enqueuedRenderObjects, &count));
@@ -281,52 +286,52 @@ inline mFUNCTION(mSpriteBatch_Create_Internal, IN_OUT mSpriteBatch<Args...>* pSp
   char vertexShader[1024] = "";
 
   mERROR_IF(0 > sprintf_s(vertexShader, "#version 150 core\n\nin vec2 position0;\nin vec2 texCoord0;\nout vec2 _texCoord0;\n\nuniform vec2 screenSize0;\nuniform vec3 startOffset0;\nuniform vec2 scale0;\n"), mR_InternalError);
-
+  
   if (pSpriteBatch->shaderParams.rotation)
     mERROR_IF(0 > sprintf_s(vertexShader, "%s\nuniform float " mSBERotation_UniformName ";", vertexShader), mR_InternalError);
-
+  
   if (pSpriteBatch->shaderParams.matrixTransform)
     mERROR_IF(0 > sprintf_s(vertexShader, "%s\nuniform mat4 " mSBEMatrixTransform_UniformName ";", vertexShader), mR_InternalError);
-
+  
   mERROR_IF(0 > sprintf_s(vertexShader, "%s\n\nvoid main()\n{\n\t_texCoord0 = texCoord0;\n\tvec4 position = vec4(position0, 0.0, 1.0);\n", vertexShader), mR_InternalError);
-
+  
   if (pSpriteBatch->shaderParams.rotation)
     mERROR_IF(0 > sprintf_s(vertexShader, "%s\n\tposition.xy -= 0.5;\n\tvec2 oldPos = position.xy;\n\tposition.x = sin(" mSBERotation_UniformName ") * oldPos.y + cos(" mSBERotation_UniformName ") * oldPos.x;\n\tposition.y = sin(" mSBERotation_UniformName ") * oldPos.x + cos(" mSBERotation_UniformName ") * oldPos.y;\n\tposition.xy += 0.5;", vertexShader), mR_InternalError);
-
+  
   mERROR_IF(0 > sprintf_s(vertexShader, "%s\n\tposition.xy = ((position.xy * scale0) + startOffset0.xy);", vertexShader), mR_InternalError);
-
+  
   if (pSpriteBatch->shaderParams.matrixTransform)
     mERROR_IF(0 > sprintf_s(vertexShader, "%s\n\tposition *= " mSBEMatrixTransform_UniformName ";", vertexShader), mR_InternalError);
-
-  mERROR_IF(0 > sprintf_s(vertexShader, "%s\n\tposition.xy /= screenSize0;\n\tposition.z = startOffset0.z;\n\n\tgl_Position = position;\n}\n", vertexShader), mR_InternalError);
+  
+  mERROR_IF(0 > sprintf_s(vertexShader, "%s\n\tposition.xy = position.xy / screenSize0 - vec2(1);\n\tposition.y = -position.y;\n\tposition.z = startOffset0.z;\n\n\tgl_Position = position;\n}\n", vertexShader), mR_InternalError);
 
   // Fragment Shader.
   char fragmentShader[1024] = "";
 
   mERROR_IF(0 > sprintf_s(fragmentShader, "#version 150 core\n\nout vec4 fragColour0;\n\nin vec2 _texCoord0;\nuniform sampler2D texture0;\n"), mR_InternalError);
-
+  
   if (pSpriteBatch->shaderParams.colour)
     mERROR_IF(0 > sprintf_s(fragmentShader, "%s\nuniform vec4 " mSBEColour_UniformName ";", fragmentShader), mR_InternalError);
-
+  
   if (pSpriteBatch->shaderParams.textureFlip)
     mERROR_IF(0 > sprintf_s(fragmentShader, "%s\nuniform vec2 " mSBETextureFlip_UniformName ";", fragmentShader), mR_InternalError);
-
+  
   if (pSpriteBatch->shaderParams.textureCrop)
     mERROR_IF(0 > sprintf_s(fragmentShader, "%s\nuniform vec4 " mSBETextureCrop_UniformName ";", fragmentShader), mR_InternalError);
-
+  
   mERROR_IF(0 > sprintf_s(fragmentShader, "%s\n\nvoid main()\n{\n\tvec2 texturePosition = _texCoord0;", fragmentShader), mR_InternalError);
-
+  
   if (pSpriteBatch->shaderParams.textureFlip)
     mERROR_IF(0 > sprintf_s(fragmentShader, "%s\n\ttexturePosition = texturePosition * (1 - 2 * " mSBETextureFlip_UniformName ") + " mSBETextureFlip_UniformName ";", fragmentShader), mR_InternalError);
-
+  
   if (pSpriteBatch->shaderParams.textureCrop)
     mERROR_IF(0 > sprintf_s(fragmentShader, "%s\n\ttexturePosition *= (" mSBETextureCrop_UniformName ".zw - " mSBETextureCrop_UniformName ".xy);\n\ttexturePosition += " mSBETextureCrop_UniformName ".xy;", fragmentShader), mR_InternalError);
-
+  
   mERROR_IF(0 > sprintf_s(fragmentShader, "%s\n\tfragColour0 = texture(texture0, texturePosition);", fragmentShader), mR_InternalError);
-
+  
   if (pSpriteBatch->shaderParams.colour)
     mERROR_IF(0 > sprintf_s(fragmentShader, "%s\n\tfragColour0 *= " mSBEColour_UniformName ";", fragmentShader), mR_InternalError);
-
+  
   mERROR_IF(0 > sprintf_s(fragmentShader, "%s\n}\n", fragmentShader), mR_InternalError);
 
   printf(vertexShader);
@@ -397,7 +402,7 @@ inline mFUNCTION(mSpriteBatch_Internal_SetAlphaBlending, mPtr<mSpriteBatch<Args.
 }
 
 template<typename ...Args>
-inline mFUNCTION(mSpriteBatch_Internal_SetDrawOrder, mPtr<mSpriteBatch<Args...>>& spriteBatch)
+inline mFUNCTION(mSpriteBatch_Internal_SetDrawOrder, mPtr<mSpriteBatch<Args...>> &spriteBatch)
 {
   mFUNCTION_SETUP();
 
@@ -413,6 +418,39 @@ inline mFUNCTION(mSpriteBatch_Internal_SetDrawOrder, mPtr<mSpriteBatch<Args...>>
 
   case mSB_SSM_FrontToBack:
     glDepthFunc(GL_LESS);
+    break;
+
+  default:
+    mRETURN_RESULT(mR_OperationNotSupported);
+    break;
+  }
+
+  mRETURN_SUCCESS();
+}
+
+template<typename ...Args>
+inline mFUNCTION(mSpriteBatch_Internal_SetTextureFilterMode, mPtr<mSpriteBatch<Args...>> &spriteBatch)
+{
+  mFUNCTION_SETUP();
+
+  switch (spriteBatch->textureSampleMode)
+  {
+  case mSB_TSM_NearestNeighbor:
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    break;
+
+  case mSB_TSM_LinearFiltering:
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    break;
+
+  default:
+    mRETURN_RESULT(mR_OperationNotSupported);
     break;
   }
 
@@ -439,14 +477,15 @@ template<typename ...Args>
 inline mFUNCTION(mSpriteBatch_Internal_BindMesh, mPtr<mSpriteBatch<Args...>> &spriteBatch)
 {
   mFUNCTION_SETUP();
+  mUnused(spriteBatch);
 
   glBindBuffer(GL_ARRAY_BUFFER, spriteBatch->vbo);
 
   glEnableVertexAttribArray((GLuint)0);
-  glVertexAttribPointer((GLuint)0, (GLint)2, GL_FLOAT, GL_FALSE, (GLsizei)sizeof(mVec2f) * 8, (const void *)0);
+  glVertexAttribPointer((GLuint)0, (GLint)2, GL_FLOAT, GL_FALSE, (GLsizei)sizeof(mVec2f) * 2, (const void *)0);
 
   glEnableVertexAttribArray((GLuint)1);
-  glVertexAttribPointer((GLuint)1, (GLint)2, GL_FLOAT, GL_FALSE, (GLsizei)sizeof(mVec2f) * 8, (const void *)sizeof(mVec2f));
+  glVertexAttribPointer((GLuint)1, (GLint)2, GL_FLOAT, GL_FALSE, (GLsizei)sizeof(mVec2f) * 2, (const void *)sizeof(mVec2f));
 
   mRETURN_SUCCESS();
 }
@@ -551,8 +590,9 @@ inline mFUNCTION(mSpriteBatch_Internal_RenderObject_Render, mSpriteBatch_Interna
 {
   mFUNCTION_SETUP();
 
-  mERROR_CHECK(mTexture_Bind(*renderObject.texture.GetPointer()));
   mERROR_CHECK(mShader_Bind(*spriteBatch->shader.GetPointer()));
+  mERROR_CHECK(mTexture_Bind(*renderObject.texture.GetPointer()));
+  mERROR_CHECK(mShader_SetUniform(spriteBatch->shader, "texture0", renderObject.texture));
   mERROR_CHECK(mShader_SetUniform(spriteBatch->shader, "screenSize0", mRenderParams_CurrentRenderResolutionF));
   mERROR_CHECK(mShader_SetUniform(spriteBatch->shader, "scale0", renderObject.size));
   mERROR_CHECK(mShader_SetUniform(spriteBatch->shader, "startOffset0", renderObject.position));
@@ -560,7 +600,7 @@ inline mFUNCTION(mSpriteBatch_Internal_RenderObject_Render, mSpriteBatch_Interna
   // Set uniforms.
   mERROR_CHECK(mForwardTuple(mSpriteBatch_Internal_RenderObject_Render_Unpacker<Args...>::Unpack, *spriteBatch->shader.GetPointer(), renderObject.args));
 
-  glDrawArrays(GL_QUADS, 0, 4);
+  glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
   mRETURN_SUCCESS();
 }
