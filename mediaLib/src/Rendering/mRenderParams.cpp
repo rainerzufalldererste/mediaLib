@@ -21,6 +21,18 @@ GLenum mRenderParams_GLError;
 mRenderContext *mRenderParams_pRenderContexts;
 size_t mRenderParams_RenderContextCount;
 
+mFUNCTION(mRenderParams_InitializeToDefault)
+{
+  mFUNCTION_SETUP();
+
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+  mRETURN_SUCCESS();
+}
+
 mFUNCTION(mRenderParams_CreateRenderContext, OUT mRenderContextId *pRenderContextId, mPtr<mHardwareWindow> &window)
 {
   mFUNCTION_SETUP();

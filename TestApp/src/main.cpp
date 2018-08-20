@@ -37,6 +37,7 @@ int main(int, char **)
 
   mDEFER_DESTRUCTION(&window, mHardwareWindow_Destroy);
   mERROR_CHECK(mHardwareWindow_Create(&window, nullptr, "OpenGL Window", resolution));
+  mERROR_CHECK(mRenderParams_InitializeToDefault());
 
   mERROR_CHECK(mRenderParams_SetDoubleBuffering(true));
   mERROR_CHECK(mRenderParams_SetMultisampling(4));
@@ -82,13 +83,13 @@ int main(int, char **)
     mTimeStamp before;
     mERROR_CHECK(mTimeStamp_Now(&before));
 
-    //mERROR_CHECK(mShader_SetUniform(mesh->shader, mMeshScale2dUniform::uniformName(), 1.5f * mesh->textures[0]->resolutionF / mRenderParams_CurrentRenderResolutionF));
-    //mERROR_CHECK(mMesh_Render(mesh));
-    //mERROR_CHECK(mShader_SetUniform(mesh2->shader, mMeshScale2dUniform::uniformName(), mesh->textures[0]->resolutionF / mRenderParams_CurrentRenderResolutionF));
-    //mERROR_CHECK(mMesh_Render(mesh2));
+    mERROR_CHECK(mShader_SetUniform(mesh->shader, mMeshScale2dUniform::uniformName(), 1.5f * mesh->textures[0]->resolutionF / mRenderParams_CurrentRenderResolutionF));
+    mERROR_CHECK(mMesh_Render(mesh));
+    mERROR_CHECK(mShader_SetUniform(mesh2->shader, mMeshScale2dUniform::uniformName(), mesh->textures[0]->resolutionF / mRenderParams_CurrentRenderResolutionF));
+    mERROR_CHECK(mMesh_Render(mesh2));
 
     mERROR_CHECK(mSpriteBatch_Begin(spriteBatch, mSB_SSM_None, mSB_AM_NoAlpha));
-    mERROR_CHECK(mSpriteBatch_Draw(spriteBatch, mesh->textures[0], mVec2f(0)));
+    mERROR_CHECK(mSpriteBatch_Draw(spriteBatch, mesh->textures[0], mRectangle2D<float_t>(100.0f, 100.0f, 300.0f, 200.0f)));
     mERROR_CHECK(mSpriteBatch_End(spriteBatch));
 
     mGL_ERROR_CHECK();

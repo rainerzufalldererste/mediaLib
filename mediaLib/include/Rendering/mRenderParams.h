@@ -58,6 +58,8 @@ extern GLenum mRenderParams_GLError;
 
 struct mHardwareWindow;
 
+mFUNCTION(mRenderParams_InitializeToDefault);
+
 mFUNCTION(mRenderParams_CreateRenderContext, OUT mRenderContextId *pRenderContextId, mPtr<mHardwareWindow> &window);
 mFUNCTION(mRenderParams_ActivateRenderContext, mPtr<mHardwareWindow> &window, const mRenderContextId renderContextId);
 mFUNCTION(mRenderParams_DestroyRenderContext, IN_OUT mRenderContextId *pRenderContextId);
