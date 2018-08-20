@@ -9,6 +9,9 @@
 #ifndef mForwardTuple_h__
 #define mForwardTuple_h__
 
+#pragma warning(push)
+#pragma warning(disable: 4100) // unreferenced formal parameter.
+
 template <typename TFunction, typename T, typename Tuple, bool Done, int Total, int... N>
 struct mTupleForwarder_Internal
 {
@@ -33,5 +36,7 @@ mResult mForwardTuple(TFunction f, T &parameter, Tuple && t)
   typedef typename std::decay<Tuple>::type ttype;
   return mTupleForwarder_Internal<TFunction, T, Tuple, 0 == std::tuple_size<ttype>::value, std::tuple_size<ttype>::value>::Unpack(f, parameter, std::forward<Tuple>(t));
 }
+
+#pragma warning(pop)
 
 #endif // mForwardTuple_h__

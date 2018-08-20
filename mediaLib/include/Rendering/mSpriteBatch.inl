@@ -19,6 +19,9 @@ template <typename ...Args>
 mFUNCTION(mSpriteBatch_Internal_SetAlphaBlending, mPtr<mSpriteBatch<Args...>> &spriteBatch);
 
 template <typename ...Args>
+mFUNCTION(mSpriteBatch_Internal_SetDrawOrder, mPtr<mSpriteBatch<Args...>> &spriteBatch);
+
+template <typename ...Args>
 mFUNCTION(mSpriteBatch_Internal_InitializeMesh, mPtr<mSpriteBatch<Args...>> &spriteBatch);
 
 template <typename ...Args>
@@ -61,11 +64,12 @@ inline mFUNCTION(mSpriteBatch_Begin, mPtr<mSpriteBatch<Args...>>& spriteBatch)
 
   spriteBatch->isStarted = true;
 
-  if (spriteBatch->spriteSortMode == mSB_SSM_None || spriteBatch->alphaMode == mSB_AM_Additive)
+  if (spriteBatch->spriteSortMode == mSB_SSM_None || spriteBatch->alphaMode == mSB_AM_Additive || spriteBatch->alphaMode == mSB_AM_NoAlpha) // Draw immediately
   {
     mERROR_CHECK(mSpriteBatch_Internal_BindMesh(spriteBatch));
     mERROR_CHECK(mShader_Bind(*spriteBatch->shader.GetPointer()));
     mERROR_CHECK(mSpriteBatch_Internal_SetAlphaBlending(spriteBatch));
+    mERROR_CHECK(mSpriteBatch_Internal_SetDrawOrder(spriteBatch));
   }
 
   mRETURN_SUCCESS();
@@ -89,6 +93,58 @@ inline mFUNCTION(mSpriteBatch_Begin, mPtr<mSpriteBatch<Args...>>& spriteBatch, c
 }
 
 template<typename ...Args>
+inline mFUNCTION(mSpriteBatch_DrawWithDepth, mPtr<mSpriteBatch<Args...>>& spriteBatch, mPtr<mTexture>& texture, const mVec2f & position, const float_t depth, Args && ...args)
+{
+  mFUNCTION_SETUP();
+
+  mSpriteBatch_Internal_RenderObject<Args...> renderObject;
+  mERROR_CHECK(mSpriteBatch_Internal_RenderObject_Create(&renderObject, texture, position, texture->resolutionF, depth, std::forward<Args>(args)...));
+
+  if (spriteBatch->spriteSortMode == mSB_SSM_None || spriteBatch->alphaMode == mSB_AM_Additive || spriteBatch->alphaMode == mSB_AM_NoAlpha) // Draw immediately
+    mERROR_CHECK(mSpriteBatch_Internal_RenderObject_Render(renderObject, spriteBatch));
+  else
+    mERROR_CHECK(mQueue_PushBack(spriteBatch->enqueuedRenderObjects, renderObject));
+
+  mRETURN_SUCCESS();
+}
+
+template<typename ...Args>
+inline mFUNCTION(mSpriteBatch_DrawWithDepth, mPtr<mSpriteBatch<Args...>>& spriteBatch, mPtr<mTexture>& texture, const mRectangle2D<float_t>& rect, const float_t depth, Args && ...args)
+{
+  mFUNCTION_SETUP();
+
+  mSpriteBatch_Internal_RenderObject<Args...> renderObject;
+  mERROR_CHECK(mSpriteBatch_Internal_RenderObject_Create(&renderObject, texture, mVec2f(rect.x, rect.y), mVec2f(rect.w, rect.h), depth, std::forward<Args>(args)...));
+
+  if (spriteBatch->spriteSortMode == mSB_SSM_None || spriteBatch->alphaMode == mSB_AM_Additive || spriteBatch->alphaMode == mSB_AM_NoAlpha) // Draw immediately
+    mERROR_CHECK(mSpriteBatch_Internal_RenderObject_Render(renderObject, spriteBatch));
+  else
+    mERROR_CHECK(mQueue_PushBack(spriteBatch->enqueuedRenderObjects, renderObject));
+
+  mRETURN_SUCCESS();
+}
+
+template<typename ...Args>
+inline mFUNCTION(mSpriteBatch_Draw, mPtr<mSpriteBatch<Args...>>& spriteBatch, mPtr<mTexture> &texture, const mVec2f & position, Args && ...args)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_CHECK(mSpriteBatch_DrawWithDepth(spriteBatch, texture, position, 0, std::forward<Args>(args)...));
+
+  mRETURN_SUCCESS();
+}
+
+template<typename ...Args>
+inline mFUNCTION(mSpriteBatch_Draw, mPtr<mSpriteBatch<Args...>>& spriteBatch, mPtr<mTexture>& texture, const mRectangle2D<float_t>& rect, Args && ...args)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_CHECK(mSpriteBatch_DrawWithDepth(spriteBatch, texture, rect, 0, std::forward<Args>(args)...));
+
+  mRETURN_SUCCESS();
+}
+
+template<typename ...Args>
 inline mFUNCTION(mSpriteBatch_End, mPtr<mSpriteBatch<Args...>> &spriteBatch)
 {
   mFUNCTION_SETUP();
@@ -101,6 +157,7 @@ inline mFUNCTION(mSpriteBatch_End, mPtr<mSpriteBatch<Args...>> &spriteBatch)
     mERROR_CHECK(mSpriteBatch_Internal_BindMesh(spriteBatch));
     mERROR_CHECK(mShader_Bind(*spriteBatch->shader.GetPointer()));
     mERROR_CHECK(mSpriteBatch_Internal_SetAlphaBlending(spriteBatch));
+    mERROR_CHECK(mSpriteBatch_Internal_SetDrawOrder(spriteBatch));
 
     size_t count;
     mERROR_CHECK(mQueue_GetCount(spriteBatch->enqueuedRenderObjects, &count));
@@ -133,6 +190,16 @@ inline mFUNCTION(mSpriteBatch_End, mPtr<mSpriteBatch<Args...>> &spriteBatch)
 
 template<typename ...Args>
 struct mSpriteBatch_GenerateShader;
+
+template<>
+struct mSpriteBatch_GenerateShader <>
+{
+  static mFUNCTION(UnpackParams, mSpriteBatch_ShaderParams *)
+  {
+    mFUNCTION_SETUP();
+    mRETURN_SUCCESS();
+  }
+};
 
 template<typename T>
 struct mSpriteBatch_GenerateShader <T>
@@ -330,6 +397,29 @@ inline mFUNCTION(mSpriteBatch_Internal_SetAlphaBlending, mPtr<mSpriteBatch<Args.
 }
 
 template<typename ...Args>
+inline mFUNCTION(mSpriteBatch_Internal_SetDrawOrder, mPtr<mSpriteBatch<Args...>>& spriteBatch)
+{
+  mFUNCTION_SETUP();
+
+  switch (spriteBatch->spriteSortMode)
+  {
+  case mSB_SSM_None:
+    glDepthFunc(GL_ALWAYS);
+    break;
+
+  case mSB_SSM_BackToFront:
+    glDepthFunc(GL_GREATER);
+    break;
+
+  case mSB_SSM_FrontToBack:
+    glDepthFunc(GL_LESS);
+    break;
+  }
+
+  mRETURN_SUCCESS();
+}
+
+template<typename ...Args>
 inline mFUNCTION(mSpriteBatch_Internal_InitializeMesh, mPtr<mSpriteBatch<Args...>> &spriteBatch)
 {
   mFUNCTION_SETUP();
@@ -393,6 +483,16 @@ mFUNCTION(mSpriteBatch_Internal_RenderObject_Destroy, IN_OUT mSpriteBatch_Intern
 
 template<typename ...Args>
 struct mSpriteBatch_Internal_RenderObject_Render_Unpacker;
+
+template<>
+struct mSpriteBatch_Internal_RenderObject_Render_Unpacker<>
+{
+  static mFUNCTION(Unpack, mShader &)
+  {
+    mFUNCTION_SETUP();
+    mRETURN_SUCCESS();
+  }
+};
 
 template<typename T>
 struct mSpriteBatch_Internal_RenderObject_Render_Unpacker<T>
