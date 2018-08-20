@@ -68,7 +68,7 @@ int main(int, char **)
   mDEFER_DESTRUCTION(&mesh2, mMesh_Destroy);
   mERROR_CHECK(mMeshFactory_CreateMesh(meshFactory, &mesh2, nullptr, image));
 
-  mPtr<mSpriteBatch<mSBEColour>> spriteBatch;
+  mPtr<mSpriteBatch<mSBEColour, mSBERotation>> spriteBatch;
   mDEFER_DESTRUCTION(&spriteBatch, mSpriteBatch_Destroy);
   mERROR_CHECK(mSpriteBatch_Create(&spriteBatch, nullptr));
 
@@ -86,6 +86,9 @@ int main(int, char **)
     mERROR_CHECK(mMesh_Render(mesh));
     mERROR_CHECK(mShader_SetUniform(mesh2->shader, mMeshScale2dUniform::uniformName(), mesh->textures[0]->resolutionF / mRenderParams_CurrentRenderResolutionF));
     mERROR_CHECK(mMesh_Render(mesh2));
+
+    mERROR_CHECK(mSpriteBatch_Begin(spriteBatch));
+    mERROR_CHECK(mSpriteBatch_End(spriteBatch));
 
     mGL_ERROR_CHECK();
 
