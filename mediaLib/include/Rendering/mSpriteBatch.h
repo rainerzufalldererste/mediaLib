@@ -90,16 +90,16 @@ template <typename ...Args>
 mFUNCTION(mSpriteBatch_Begin, mPtr<mSpriteBatch<Args...>> &spriteBatch, const mSpriteBatch_SpriteSortMode spriteSortMode, const mSpriteBatch_AlphaMode alphaMode, const mSpriteBatch_TextureSampleMode sampleMode = mSB_TSM_LinearFiltering);
 
 template <typename ...Args>
-mFUNCTION(mSpriteBatch_DrawWithDepth, mPtr<mSpriteBatch<Args...>> &spriteBatch, const mVec2f &position, const mPtr<mTexture> &texture, const float_t depth, Args&&... args);
+mFUNCTION(mSpriteBatch_DrawWithDepth, mPtr<mSpriteBatch<Args...>> &spriteBatch, mPtr<mTexture> &texture, const mVec2f &position, const float_t depth, Args&&... args);
 
 template <typename ...Args>
-mFUNCTION(mSpriteBatch_DrawWithDepth, mPtr<mSpriteBatch<Args...>> &spriteBatch, const mRectangle2D<float_t> &rect, const mPtr<mTexture> &texture, const float_t depth, Args&&... args);
+mFUNCTION(mSpriteBatch_DrawWithDepth, mPtr<mSpriteBatch<Args...>> &spriteBatch, mPtr<mTexture> &texture, const mRectangle2D<float_t> &rect, const float_t depth, Args&&... args);
 
 template <typename ...Args>
-mFUNCTION(mSpriteBatch_Draw, mPtr<mSpriteBatch<Args...>> &spriteBatch, const mVec2f &position, const mPtr<mTexture> &texture, Args&&... args);
+mFUNCTION(mSpriteBatch_Draw, mPtr<mSpriteBatch<Args...>> &spriteBatch, mPtr<mTexture> &texture, const mVec2f &position, Args&&... args);
 
 template <typename ...Args>
-mFUNCTION(mSpriteBatch_Draw, mPtr<mSpriteBatch<Args...>> &spriteBatch, const mRectangle2D<float_t> &rect, const mPtr<mTexture> &texture, Args&&... args);
+mFUNCTION(mSpriteBatch_Draw, mPtr<mSpriteBatch<Args...>> &spriteBatch, mPtr<mTexture> &texture, const mRectangle2D<float_t> &rect, Args&&... args);
 
 template <typename ...Args>
 mFUNCTION(mSpriteBatch_End, mPtr<mSpriteBatch<Args...>> &spriteBatch);
@@ -142,6 +142,8 @@ struct mSBEColour : mSpriteBatchExtention
   mVec4f colour;
 
   mSBEColour() = default;
+  explicit mSBEColour(const float_t r, const float_t g, const float_t b);
+  explicit mSBEColour(const float_t r, const float_t g, const float_t b, const float_t a);
   explicit mSBEColour(const mVec3f &colour);
   explicit mSBEColour(const mVec4f &colour);
 

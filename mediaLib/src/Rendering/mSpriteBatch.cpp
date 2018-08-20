@@ -15,6 +15,12 @@ mSBETextureCrop::operator mVec4f() const
   return textureStartEndPoint;
 }
 
+mSBEColour::mSBEColour(const float_t r, const float_t g, const float_t b) : colour(r, g, b, 1)
+{ }
+
+mSBEColour::mSBEColour(const float_t r, const float_t g, const float_t b, const float_t a) : colour(r, g, b, a)
+{ }
+
 mSBEColour::mSBEColour(const mVec3f & colour) : colour(colour, 1.0f)
 { }
 
