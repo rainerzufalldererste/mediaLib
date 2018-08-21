@@ -148,6 +148,66 @@ inline mFUNCTION(mSpriteBatch_Draw, mPtr<mSpriteBatch<Args...>>& spriteBatch, mP
   mRETURN_SUCCESS();
 }
 
+template <typename ...Args>
+mFUNCTION(mSpriteBatch_QuickSortRenderObjects, mPtr<mQueue<mSpriteBatch_Internal_RenderObject<Args...>>> &queue, size_t left, size_t right)
+{
+  mFUNCTION_SETUP();
+
+  size_t l = left;
+  size_t r = right;
+  const size_t pivotIndex = (left + right) / 2;
+
+  mSpriteBatch_Internal_RenderObject<Args...> *pRenderObject;
+  mERROR_CHECK(mQueue_PointerAt(queue, pivotIndex, &pRenderObject));
+
+  const float_t pivot = pRenderObject->position.z;
+
+  while (l <= r) 
+  {
+    float_t compare;
+    mSpriteBatch_Internal_RenderObject<Args...> *pRenderObjectL = nullptr;
+    mSpriteBatch_Internal_RenderObject<Args...> *pRenderObjectR = nullptr;
+
+    while (true)
+    {
+      mERROR_CHECK(mQueue_PointerAt(queue, l, &pRenderObjectL));
+      compare = pRenderObjectL->position.z;
+
+      if (compare < pivot)
+        l++;
+      else
+        break;
+    }
+    
+    while (true)
+    {
+      mERROR_CHECK(mQueue_PointerAt(queue, r, &pRenderObjectR));
+      compare = pRenderObjectR->position.z;
+
+      if (compare > pivot)
+        r--;
+      else
+        break;
+    }
+
+    if (l <= r) 
+    {
+      std::swap(*pRenderObjectL, *pRenderObjectR);
+
+      l++;
+      r--;
+    }
+  };
+
+  if (left < r)
+    mERROR_CHECK(mSpriteBatch_QuickSortRenderObjects(queue, left, r));
+
+  if (l < right)
+    mERROR_CHECK(mSpriteBatch_QuickSortRenderObjects(queue, l, right));
+
+  mRETURN_SUCCESS();
+}
+
 template<typename ...Args>
 inline mFUNCTION(mSpriteBatch_End, mPtr<mSpriteBatch<Args...>> &spriteBatch)
 {
@@ -167,13 +227,30 @@ inline mFUNCTION(mSpriteBatch_End, mPtr<mSpriteBatch<Args...>> &spriteBatch)
     size_t count;
     mERROR_CHECK(mQueue_GetCount(spriteBatch->enqueuedRenderObjects, &count));
 
-    for (size_t i = 0; i < count; ++i)
+    // Sort.
+    mERROR_CHECK(mSpriteBatch_QuickSortRenderObjects(spriteBatch->enqueuedRenderObjects, 0, count));
+
+    if (spriteBatch->spriteSortMode == mSpriteBatch_SpriteSortMode::mSB_SSM_BackToFront)
     {
-      mSpriteBatch_Internal_RenderObject<Args...> renderObject;
-      mERROR_CHECK(mQueue_PopFront(spriteBatch->enqueuedRenderObjects, &renderObject));
-      mDEFER_DESTRUCTION(&renderObject, mSpriteBatch_Internal_RenderObject_Destroy);
-      mERROR_CHECK(mSpriteBatch_Internal_RenderObject_Render(renderObject, spriteBatch));
+      for (size_t i = 0; i < count; ++i)
+      {
+        mSpriteBatch_Internal_RenderObject<Args...> renderObject;
+        mERROR_CHECK(mQueue_PopFront(spriteBatch->enqueuedRenderObjects, &renderObject));
+        mDEFER_DESTRUCTION(&renderObject, mSpriteBatch_Internal_RenderObject_Destroy);
+        mERROR_CHECK(mSpriteBatch_Internal_RenderObject_Render(renderObject, spriteBatch));
+      }
     }
+    else
+    {
+      for (size_t i = 0; i < count; ++i)
+      {
+        mSpriteBatch_Internal_RenderObject<Args...> renderObject;
+        mERROR_CHECK(mQueue_PopBack(spriteBatch->enqueuedRenderObjects, &renderObject));
+        mDEFER_DESTRUCTION(&renderObject, mSpriteBatch_Internal_RenderObject_Destroy);
+        mERROR_CHECK(mSpriteBatch_Internal_RenderObject_Render(renderObject, spriteBatch));
+      }
+    }
+
   }
   else
   {
@@ -295,15 +372,17 @@ inline mFUNCTION(mSpriteBatch_Create_Internal, IN_OUT mSpriteBatch<Args...>* pSp
   
   mERROR_IF(0 > sprintf_s(vertexShader, "%s\n\nvoid main()\n{\n\t_texCoord0 = texCoord0;\n\tvec4 position = vec4(position0, 0.0, 1.0);\n", vertexShader), mR_InternalError);
   
-  if (pSpriteBatch->shaderParams.rotation)
-    mERROR_IF(0 > sprintf_s(vertexShader, "%s\n\tposition.xy -= 0.5;\n\tvec2 oldPos = position.xy;\n\tposition.x = sin(" mSBERotation_UniformName ") * oldPos.y + cos(" mSBERotation_UniformName ") * oldPos.x;\n\tposition.y = sin(" mSBERotation_UniformName ") * oldPos.x + cos(" mSBERotation_UniformName ") * oldPos.y;\n\tposition.xy += 0.5;", vertexShader), mR_InternalError);
+  mERROR_IF(0 > sprintf_s(vertexShader, "%s\n\tposition.xy *= scale0;", vertexShader), mR_InternalError);
   
-  mERROR_IF(0 > sprintf_s(vertexShader, "%s\n\tposition.xy = ((position.xy * scale0) + startOffset0.xy);", vertexShader), mR_InternalError);
+  if (pSpriteBatch->shaderParams.rotation)
+    mERROR_IF(0 > sprintf_s(vertexShader, "%s\n\tvec2 oldPos = position.xy;\n\tposition.x = cos(" mSBERotation_UniformName ") * oldPos.x - sin(" mSBERotation_UniformName ") * oldPos.y;\n\tposition.y = sin(" mSBERotation_UniformName ") * oldPos.x + cos(" mSBERotation_UniformName ") * oldPos.y;", vertexShader), mR_InternalError);
+
+  mERROR_IF(0 > sprintf_s(vertexShader, "%s\n\tposition.xy = (position.xy + startOffset0.xy * 2 + scale0) / (screenSize0 * 2);", vertexShader), mR_InternalError);
   
   if (pSpriteBatch->shaderParams.matrixTransform)
     mERROR_IF(0 > sprintf_s(vertexShader, "%s\n\tposition *= " mSBEMatrixTransform_UniformName ";", vertexShader), mR_InternalError);
   
-  mERROR_IF(0 > sprintf_s(vertexShader, "%s\n\tposition.xy = position.xy / screenSize0 - vec2(1);\n\tposition.y = -position.y;\n\tposition.z = startOffset0.z;\n\n\tgl_Position = position;\n}\n", vertexShader), mR_InternalError);
+  mERROR_IF(0 > sprintf_s(vertexShader, "%s\n\tposition.xy = position.xy * 2 - 1;\n\tposition.y = -position.y;\n\tposition.z = startOffset0.z;\n\n\tgl_Position = position;\n}\n", vertexShader), mR_InternalError);
 
   // Fragment Shader.
   char fragmentShader[1024] = "";
@@ -333,11 +412,6 @@ inline mFUNCTION(mSpriteBatch_Create_Internal, IN_OUT mSpriteBatch<Args...>* pSp
     mERROR_IF(0 > sprintf_s(fragmentShader, "%s\n\tfragColour0 *= " mSBEColour_UniformName ";", fragmentShader), mR_InternalError);
   
   mERROR_IF(0 > sprintf_s(fragmentShader, "%s\n}\n", fragmentShader), mR_InternalError);
-
-  printf(vertexShader);
-  printf("\n\n");
-  printf(fragmentShader);
-  printf("\n\n");
 
   mERROR_CHECK(mSharedPointer_Allocate(&pSpriteBatch->shader, nullptr, (std::function<void(mShader *)>)[](mShader *pData) {mShader_Destroy(pData);}, 1));
   mERROR_CHECK(mShader_Create(pSpriteBatch->shader.GetPointer(), vertexShader, fragmentShader, "fragColour0"));
@@ -462,7 +536,7 @@ inline mFUNCTION(mSpriteBatch_Internal_InitializeMesh, mPtr<mSpriteBatch<Args...
 {
   mFUNCTION_SETUP();
 
-  mVec2f buffer[8] = { {0, 0}, {0, 0}, {0, 1}, {0, 1}, {1, 0}, {1, 0}, {1, 1}, {1, 1} };
+  mVec2f buffer[8] = { {-1, -1}, {0, 0}, {-1, 1}, {0, 1}, {1, -1}, {1, 0}, {1, 1}, {1, 1} };
 
   glGenBuffers(1, &spriteBatch->vbo);
   glBindBuffer(GL_ARRAY_BUFFER, spriteBatch->vbo);
