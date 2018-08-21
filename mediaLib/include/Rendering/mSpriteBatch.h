@@ -183,7 +183,7 @@ struct mSBEMatrixTransform : mSpriteBatchExtention
   operator mMatrix() const;
 };
 
-#define mSBETextureFlip_UniformName "mSBEMatrixTransform"
+#define mSBETextureFlip_UniformName "mSBETextureFlip"
 
 struct mSBETextureFlip : mSpriteBatchExtention
 {
