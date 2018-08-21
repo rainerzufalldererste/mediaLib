@@ -73,6 +73,11 @@ int main(int, char **)
   mDEFER_DESTRUCTION(&spriteBatch, mSpriteBatch_Destroy);
   mERROR_CHECK(mSpriteBatch_Create(&spriteBatch, nullptr));
 
+  mPtr<mTexture> texture;
+  mDEFER_DESTRUCTION(&texture, mSharedPointer_Destroy);
+  mERROR_CHECK(mSharedPointer_Allocate(&texture, nullptr, (std::function<void (mTexture *)>)[](mTexture *pData) {mTexture_Destroy(pData);}, 1));
+  mERROR_CHECK(mTexture_Create(texture.GetPointer(), "C:/data/transparent.png"));
+
   size_t frame = 0;
 
   while (true)
@@ -87,9 +92,16 @@ int main(int, char **)
     mERROR_CHECK(mMesh_Render(mesh));
     mERROR_CHECK(mShader_SetUniform(mesh2->shader, mMeshScale2dUniform::uniformName(), mesh->textures[0]->resolutionF / mRenderParams_CurrentRenderResolutionF));
     mERROR_CHECK(mMesh_Render(mesh2));
-    mERROR_CHECK(mSpriteBatch_Begin(spriteBatch, mSB_SSM_None, mSB_AM_NoAlpha));
-    mERROR_CHECK(mSpriteBatch_Draw(spriteBatch, mesh->textures[0], mVec2f(200.0f + 100 * mSin(frame / 1490.0f), 200.0f + 100 * mSin(frame / 3490.0f)), mSBEColour(mSin(frame / 1123.0f) / 2 + 1, mSin(frame / 942.0f) / 2 + 1, mSin(frame / 1391.0f) / 2 + 1), mSBERotation((frame) / 2550.0f), mSBETextureFlip(frame % 2000 > 1000, frame % 4000 > 2000)));
+    mERROR_CHECK(mSpriteBatch_Begin(spriteBatch, mSB_SSM_FrontToBack, mSB_AM_AlphaBlend));
+    printf("%" PRIu64 "\n", texture.GetReferenceCount());
+    mERROR_CHECK(mSpriteBatch_DrawWithDepth(spriteBatch, texture, mVec2f(200.0f + 100 * mSin(frame / 1490.0f), 200.0f + 100 * mSin(frame / 3490.0f)), 0.9f, mSBEColour(mSin(frame / 1123.0f) / 2 + 1, mSin(frame / 942.0f) / 2 + 1, mSin(frame / 1391.0f) / 2 + 1), mSBERotation((frame) / 2550.0f), mSBETextureFlip(frame % 2000 > 1000, frame % 4000 > 2000)));
+    printf("%" PRIu64 "\n", texture.GetReferenceCount());
+    mERROR_CHECK(mSpriteBatch_DrawWithDepth(spriteBatch, texture, mVec2f(200.0f + 100 * mCos(frame / 1241.0f), 200.0f + 100 * mCos(frame / 2490.0f)), 0.0f, mSBEColour(mSin(frame / 1123.0f) / 2 + 1, mSin(frame / 942.0f) / 2 + 1, mSin(frame / 1391.0f) / 2 + 1), mSBERotation((frame) / 2550.0f), mSBETextureFlip()));
+    printf("%" PRIu64 "\n", texture.GetReferenceCount());
+    mERROR_CHECK(mSpriteBatch_DrawWithDepth(spriteBatch, texture, mVec2f(200.0f + 100 * mCos(frame / 1241.0f), 200.0f + 100 * mSin(frame / 1230.0f)), 0.5f, mSBEColour(mCos(frame / 1123.0f) / 2 + 1, mCos(frame / 942.0f) / 2 + 1, mCos(frame / 1391.0f) / 2 + 1), mSBERotation((frame) / 2550.0f), mSBETextureFlip()));
+    printf("%" PRIu64 "\n", texture.GetReferenceCount());
     mERROR_CHECK(mSpriteBatch_End(spriteBatch));
+    printf("%" PRIu64 "\n", texture.GetReferenceCount());
 
     mGL_ERROR_CHECK();
 

@@ -30,6 +30,12 @@ mFUNCTION(mSpriteBatch_Internal_InitializeMesh, mPtr<mSpriteBatch<Args...>> &spr
 template <typename ...Args>
 mFUNCTION(mSpriteBatch_Internal_BindMesh, mPtr<mSpriteBatch<Args...>> &spriteBatch);
 
+template <typename ...Args>
+bool mSpriteBatch_Internal_DrawInstantly(mPtr<mSpriteBatch<Args...>> &spriteBatch)
+{
+  return spriteBatch->spriteSortMode == mSB_SSM_None || spriteBatch->alphaMode == mSB_AM_Additive || spriteBatch->alphaMode == mSB_AM_NoAlpha;
+}
+
 //////////////////////////////////////////////////////////////////////////
 
 template<typename ...Args>
@@ -67,7 +73,7 @@ inline mFUNCTION(mSpriteBatch_Begin, mPtr<mSpriteBatch<Args...>>& spriteBatch)
 
   spriteBatch->isStarted = true;
 
-  if (spriteBatch->spriteSortMode == mSB_SSM_None || spriteBatch->alphaMode == mSB_AM_Additive || spriteBatch->alphaMode == mSB_AM_NoAlpha) // Draw immediately
+  if (mSpriteBatch_Internal_DrawInstantly(spriteBatch))
   {
     mERROR_CHECK(mSpriteBatch_Internal_BindMesh(spriteBatch));
     mERROR_CHECK(mShader_Bind(*spriteBatch->shader.GetPointer()));
@@ -104,7 +110,7 @@ inline mFUNCTION(mSpriteBatch_DrawWithDepth, mPtr<mSpriteBatch<Args...>>& sprite
   mSpriteBatch_Internal_RenderObject<Args...> renderObject;
   mERROR_CHECK(mSpriteBatch_Internal_RenderObject_Create(&renderObject, texture, position, texture->resolutionF, depth, std::forward<Args>(args)...));
 
-  if (spriteBatch->spriteSortMode == mSB_SSM_None || spriteBatch->alphaMode == mSB_AM_Additive || spriteBatch->alphaMode == mSB_AM_NoAlpha) // Draw immediately
+  if (mSpriteBatch_Internal_DrawInstantly(spriteBatch))
     mERROR_CHECK(mSpriteBatch_Internal_RenderObject_Render(renderObject, spriteBatch));
   else
     mERROR_CHECK(mQueue_PushBack(spriteBatch->enqueuedRenderObjects, renderObject));
@@ -120,7 +126,7 @@ inline mFUNCTION(mSpriteBatch_DrawWithDepth, mPtr<mSpriteBatch<Args...>>& sprite
   mSpriteBatch_Internal_RenderObject<Args...> renderObject;
   mERROR_CHECK(mSpriteBatch_Internal_RenderObject_Create(&renderObject, texture, mVec2f(rect.x, rect.y), mVec2f(rect.w, rect.h), depth, std::forward<Args>(args)...));
 
-  if (spriteBatch->spriteSortMode == mSB_SSM_None || spriteBatch->alphaMode == mSB_AM_Additive || spriteBatch->alphaMode == mSB_AM_NoAlpha) // Draw immediately
+  if (mSpriteBatch_Internal_DrawInstantly(spriteBatch))
     mERROR_CHECK(mSpriteBatch_Internal_RenderObject_Render(renderObject, spriteBatch));
   else
     mERROR_CHECK(mQueue_PushBack(spriteBatch->enqueuedRenderObjects, renderObject));
@@ -153,6 +159,9 @@ mFUNCTION(mSpriteBatch_QuickSortRenderObjects, mPtr<mQueue<mSpriteBatch_Internal
 {
   mFUNCTION_SETUP();
 
+  if (left == right)
+    mRETURN_SUCCESS();
+
   size_t l = left;
   size_t r = right;
   const size_t pivotIndex = (left + right) / 2;
@@ -164,16 +173,14 @@ mFUNCTION(mSpriteBatch_QuickSortRenderObjects, mPtr<mQueue<mSpriteBatch_Internal
 
   while (l <= r) 
   {
-    float_t compare;
     mSpriteBatch_Internal_RenderObject<Args...> *pRenderObjectL = nullptr;
     mSpriteBatch_Internal_RenderObject<Args...> *pRenderObjectR = nullptr;
 
     while (true)
     {
       mERROR_CHECK(mQueue_PointerAt(queue, l, &pRenderObjectL));
-      compare = pRenderObjectL->position.z;
 
-      if (compare < pivot)
+      if (pRenderObjectL->position.z < pivot)
         l++;
       else
         break;
@@ -182,9 +189,8 @@ mFUNCTION(mSpriteBatch_QuickSortRenderObjects, mPtr<mQueue<mSpriteBatch_Internal
     while (true)
     {
       mERROR_CHECK(mQueue_PointerAt(queue, r, &pRenderObjectR));
-      compare = pRenderObjectR->position.z;
 
-      if (compare > pivot)
+      if (pRenderObjectR->position.z > pivot)
         r--;
       else
         break;
@@ -216,7 +222,7 @@ inline mFUNCTION(mSpriteBatch_End, mPtr<mSpriteBatch<Args...>> &spriteBatch)
   mERROR_IF(!spriteBatch->isStarted, mR_ResourceStateInvalid);
   spriteBatch->isStarted = false;
 
-  if (spriteBatch->spriteSortMode != mSB_SSM_None && spriteBatch->alphaMode != mSB_AM_Additive)
+  if (!mSpriteBatch_Internal_DrawInstantly(spriteBatch))
   {
     mERROR_CHECK(mSpriteBatch_Internal_BindMesh(spriteBatch));
     mERROR_CHECK(mShader_Bind(*spriteBatch->shader.GetPointer()));
@@ -227,8 +233,7 @@ inline mFUNCTION(mSpriteBatch_End, mPtr<mSpriteBatch<Args...>> &spriteBatch)
     size_t count;
     mERROR_CHECK(mQueue_GetCount(spriteBatch->enqueuedRenderObjects, &count));
 
-    // Sort.
-    mERROR_CHECK(mSpriteBatch_QuickSortRenderObjects(spriteBatch->enqueuedRenderObjects, 0, count));
+    mERROR_CHECK(mSpriteBatch_QuickSortRenderObjects(spriteBatch->enqueuedRenderObjects, 0, count - 1));
 
     if (spriteBatch->spriteSortMode == mSpriteBatch_SpriteSortMode::mSB_SSM_BackToFront)
     {
@@ -242,7 +247,7 @@ inline mFUNCTION(mSpriteBatch_End, mPtr<mSpriteBatch<Args...>> &spriteBatch)
     }
     else
     {
-      for (size_t i = 0; i < count; ++i)
+      for (int64_t i = (int64_t)count - 1; i >= 0; i--)
       {
         mSpriteBatch_Internal_RenderObject<Args...> renderObject;
         mERROR_CHECK(mQueue_PopBack(spriteBatch->enqueuedRenderObjects, &renderObject));
@@ -483,14 +488,19 @@ inline mFUNCTION(mSpriteBatch_Internal_SetDrawOrder, mPtr<mSpriteBatch<Args...>>
   switch (spriteBatch->spriteSortMode)
   {
   case mSB_SSM_None:
+    glDisable(GL_DEPTH_TEST);
     glDepthFunc(GL_ALWAYS);
     break;
 
   case mSB_SSM_BackToFront:
+    mERROR_CHECK(mRenderParams_ClearDepth());
+    glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_GREATER);
     break;
 
   case mSB_SSM_FrontToBack:
+    mERROR_CHECK(mRenderParams_ClearDepth());
+    glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
     break;
 
