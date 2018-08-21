@@ -24,24 +24,37 @@ struct mChunkedArray
 
   size_t blockSize;
   size_t blockCount;
+  size_t blockCapacity;
   size_t itemCount;
+  size_t itemCapacity;
   mChunkedArrayBlock *pBlocks;
   mAllocator *pAllocator;
 };
 
 template <typename T>
-mFUNCTION(mChunkedArray_Create(OUT mPtr<mChunkedArray<T>> *pChunkedArray, IN mAllocator *pAllocator, const size_t blockSize = 64));
+mFUNCTION(mChunkedArray_Create, OUT mPtr<mChunkedArray<T>> *pChunkedArray, IN mAllocator *pAllocator, const size_t blockSize = 64);
 
 template <typename T>
-mFUNCTION(mChunkedArray_Destroy(IN_OUT mPtr<mChunkedArray<T>> *pChunkedArray));
+mFUNCTION(mChunkedArray_Destroy, IN_OUT mPtr<mChunkedArray<T>> *pChunkedArray);
 
 template <typename T>
-mFUNCTION(mChunkedArray_Push(mPtr<mChunkedArray<T>> &chunkedArray, IN T *pItem, const OUT OPTIONAL size_t *pIndex));
+mFUNCTION(mChunkedArray_Push, mPtr<mChunkedArray<T>> &chunkedArray, IN T *pItem, OUT OPTIONAL size_t *pIndex);
 
 template <typename T>
-mFUNCTION(mChunkedArray_PushBack(mPtr<mChunkedArray<T>> &chunkedArray, const size_t index, IN T *pItem));
+mFUNCTION(mChunkedArray_PushBack, mPtr<mChunkedArray<T>> &chunkedArray, IN T *pItem);
 
 template <typename T>
-mFUNCTION(mChunkedArray_GetCount(mPtr<mChunkedArray<T>> &chunkedArray, OUT const size_t *pIndex));
+mFUNCTION(mChunkedArray_GetCount, mPtr<mChunkedArray<T>> &chunkedArray, OUT size_t *pCount);
+
+template <typename T>
+mFUNCTION(mChunkedArray_PeekAt, mPtr<mChunkedArray<T>> &chunkedArray, const size_t index, OUT T *pItem);
+
+template <typename T>
+mFUNCTION(mChunkedArray_PopAt, mPtr<mChunkedArray<T>> &chunkedArray, const size_t index, OUT T *pItem);
+
+template <typename T>
+mFUNCTION(mChunkedArray_PointerAt, mPtr<mChunkedArray<T>> &chunkedArray, const size_t index, OUT T **ppItem);
+
+#include "mChunkedArray.inl"
 
 #endif // mChunkedArray_h__
