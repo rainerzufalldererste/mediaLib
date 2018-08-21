@@ -41,6 +41,19 @@ mFUNCTION(mTexture_Create, OUT mTexture * pTexture, mPtr<mImageBuffer>& imageBuf
   mRETURN_SUCCESS();
 }
 
+mFUNCTION(mTexture_Create, OUT mTexture *pTexture, const std::string &filename, const bool upload /* = true */, const size_t textureUnit /* = 0 */)
+{
+  mFUNCTION_SETUP();
+
+  mPtr<mImageBuffer> imageBuffer;
+  mDEFER_DESTRUCTION(&imageBuffer, mImageBuffer_Destroy);
+  mERROR_CHECK(mImageBuffer_CreateFromFile(&imageBuffer, nullptr, filename));
+
+  mERROR_CHECK(mTexture_Create(pTexture, imageBuffer, upload, textureUnit));
+
+  mRETURN_SUCCESS();
+}
+
 mFUNCTION(mTexture_Destroy, IN_OUT mTexture * pTexture)
 {
   mFUNCTION_SETUP();
