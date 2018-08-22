@@ -10,10 +10,10 @@
 #include "mHash.h"
 
 template <typename TKey, typename TValue>
-mFUNCTION(mHashMap_Destroy_Internal, OUT mHashMap<TKey, TValue> *pHashMap);
+mFUNCTION(mHashMap_Destroy_Internal, IN mHashMap<TKey, TValue> *pHashMap);
 
 template <typename TKey, typename TValue>
-mFUNCTION(mHashMap_Hash_Internal, mHashMap<TKey, TValue> &hashMap, IN TKey *pKey, OUT size_t *pHashedIndex);
+mFUNCTION(mHashMap_Hash_Internal, mPtr<mHashMap<TKey, TValue>> &hashMap, IN TKey *pKey, OUT size_t *pHashedIndex);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -29,9 +29,8 @@ mFUNCTION(mHashMap_Create, OUT mPtr<mHashMap<TKey, TValue>> *pHashMap, IN mAlloc
 
   (*pHashMap)->pAllocator = pAllocator;
   (*pHashMap)->hashMapSize = hashMapSize;
-  new (&(*pHashMap)->destructionFunction) std::function<mResult (mKeyValuePair<TKey, TValue> *)>(nullptr);
 
-  mERROR_CHECK(mQueue_Create(&(*pHashMap)->data));
+  mERROR_CHECK(mQueue_Create(&(*pHashMap)->data, pAllocator));
   mERROR_CHECK(mQueue_Reserve((*pHashMap)->data, hashMapSize));
 
   for (size_t i = 0; i < hashMapSize; ++i)
@@ -59,7 +58,7 @@ mFUNCTION(mHashMap_Destroy, IN_OUT mPtr<mHashMap<TKey, TValue>> *pHashMap)
 }
 
 template <typename TKey, typename TValue>
-mFUNCTION(mHashMap_Contains, mHashMap<TKey, TValue> &hashMap, TKey key, OUT bool *pContains, OUT TValue *pValueIfExistent)
+mFUNCTION(mHashMap_Contains, mPtr<mHashMap<TKey, TValue>> &hashMap, TKey key, OUT bool *pContains, OUT TValue *pValueIfExistent)
 {
   mFUNCTION_SETUP();
 
@@ -94,7 +93,7 @@ mFUNCTION(mHashMap_Contains, mHashMap<TKey, TValue> &hashMap, TKey key, OUT bool
 }
 
 template <typename TKey, typename TValue>
-mFUNCTION(mHashMap_ContainsGetPointer, mHashMap<TKey, TValue> &hashMap, TKey key, OUT bool *pContains, OUT TValue **ppValueIfExistent)
+mFUNCTION(mHashMap_ContainsGetPointer, mPtr<mHashMap<TKey, TValue>> &hashMap, TKey key, OUT bool *pContains, OUT TValue **ppValueIfExistent)
 {
   mFUNCTION_SETUP();
 
@@ -104,7 +103,7 @@ mFUNCTION(mHashMap_ContainsGetPointer, mHashMap<TKey, TValue> &hashMap, TKey key
   mERROR_CHECK(mHashMap_Hash_Internal(hashMap, &key, &index));
 
   mPtr<mChunkedArray<mKeyValuePair<TKey, TValue>>> chunkedArray;
-  mDEFER_DESTRUCTION(chunkedArray, mChunkedArray_Destroy);
+  mDEFER_DESTRUCTION(&chunkedArray, mChunkedArray_Destroy);
   mERROR_CHECK(mQueue_PeekAt(hashMap->data, index, &chunkedArray));
 
   size_t count = 0;
@@ -130,7 +129,7 @@ mFUNCTION(mHashMap_ContainsGetPointer, mHashMap<TKey, TValue> &hashMap, TKey key
 }
 
 template <typename TKey, typename TValue>
-mFUNCTION(mHashMap_Add, mHashMap<TKey, TValue> &hashMap, TKey key, IN TValue *pValue)
+mFUNCTION(mHashMap_Add, mPtr<mHashMap<TKey, TValue>> &hashMap, TKey key, IN TValue *pValue)
 {
   mFUNCTION_SETUP();
 
@@ -140,12 +139,12 @@ mFUNCTION(mHashMap_Add, mHashMap<TKey, TValue> &hashMap, TKey key, IN TValue *pV
   mERROR_CHECK(mHashMap_Hash_Internal(hashMap, &key, &index));
 
   mPtr<mChunkedArray<mKeyValuePair<TKey, TValue>>> chunkedArray;
-  mDEFER_DESTRUCTION(chunkedArray, mChunkedArray_Destroy);
+  mDEFER_DESTRUCTION(&chunkedArray, mChunkedArray_Destroy);
   mERROR_CHECK(mQueue_PeekAt(hashMap->data, index, &chunkedArray));
 
   mKeyValuePair<TKey, TValue> kvpair;
   mDEFER_DESTRUCTION(&kvpair, mKeyValuePair_Destroy); // does nothing.
-  mERROR_CHECK(mKeyValuePair_Create(kvpair, key, *pValue));
+  mERROR_CHECK(mKeyValuePair_Create(&kvpair, key, *pValue));
 
   size_t chunkedArrayIndex = 0; // we don't care anyways.
   mERROR_CHECK(mChunkedArray_Push(chunkedArray, &kvpair, &chunkedArrayIndex));
@@ -154,7 +153,7 @@ mFUNCTION(mHashMap_Add, mHashMap<TKey, TValue> &hashMap, TKey key, IN TValue *pV
 }
 
 template <typename TKey, typename TValue>
-mFUNCTION(mHashMap_Get, mHashMap<TKey, TValue> &hashMap, TKey key, OUT TValue *pValue)
+mFUNCTION(mHashMap_Get, mPtr<mHashMap<TKey, TValue>> &hashMap, TKey key, OUT TValue *pValue)
 {
   mFUNCTION_SETUP();
 
@@ -169,7 +168,7 @@ mFUNCTION(mHashMap_Get, mHashMap<TKey, TValue> &hashMap, TKey key, OUT TValue *p
 }
 
 template <typename TKey, typename TValue>
-mFUNCTION(mHashMap_Remove, mHashMap<TKey, TValue> &hashMap, TKey key, OUT TValue *pValue)
+mFUNCTION(mHashMap_Remove, mPtr<mHashMap<TKey, TValue>> &hashMap, TKey key, OUT TValue *pValue)
 {
   mFUNCTION_SETUP();
 
@@ -179,7 +178,7 @@ mFUNCTION(mHashMap_Remove, mHashMap<TKey, TValue> &hashMap, TKey key, OUT TValue
   mERROR_CHECK(mHashMap_Hash_Internal(hashMap, &key, &index));
 
   mPtr<mChunkedArray<mKeyValuePair<TKey, TValue>>> chunkedArray;
-  mDEFER_DESTRUCTION(chunkedArray, mChunkedArray_Destroy);
+  mDEFER_DESTRUCTION(&chunkedArray, mChunkedArray_Destroy);
   mERROR_CHECK(mQueue_PeekAt(hashMap->data, index, &chunkedArray));
 
   size_t count = 0;
@@ -192,18 +191,17 @@ mFUNCTION(mHashMap_Remove, mHashMap<TKey, TValue> &hashMap, TKey key, OUT TValue
 
     if (pKVPair->key == key)
     {
-      mERROR_CHECK(mChunkedArray_PopAt(chunkedArray, i, pValue));
+      mERROR_CHECK(mChunkedArray_PopAt(chunkedArray, i, pKVPair));
+      *pValue = std::move(pKVPair->value);
       mRETURN_SUCCESS();
     }
   }
 
   mRETURN_RESULT(mR_ResourceNotFound);
-
-  mRETURN_SUCCESS();
 }
 
 template <typename TKey, typename TValue>
-mFUNCTION(mHashMap_SetKeyValuePairDestructionFunction, mHashMap<TKey, TValue> &hashMap, const std::function<void(mKeyValuePair<TKey, TValue> *)> &destructionFunction)
+mFUNCTION(mHashMap_SetKeyValuePairDestructionFunction, mPtr<mHashMap<TKey, TValue>> &hashMap, const std::function<void(mKeyValuePair<TKey, TValue> *)> &destructionFunction)
 {
   mFUNCTION_SETUP();
 
@@ -223,7 +221,7 @@ mFUNCTION(mHashMap_SetKeyValuePairDestructionFunction, mHashMap<TKey, TValue> &h
 //////////////////////////////////////////////////////////////////////////
 
 template<typename TKey, typename TValue>
-inline mFUNCTION(mHashMap_Destroy_Internal, OUT mHashMap<TKey, TValue> *pHashMap)
+inline mFUNCTION(mHashMap_Destroy_Internal, IN mHashMap<TKey, TValue> *pHashMap)
 {
   mFUNCTION_SETUP();
 
@@ -232,7 +230,7 @@ inline mFUNCTION(mHashMap_Destroy_Internal, OUT mHashMap<TKey, TValue> *pHashMap
   for (size_t i = 0; i < pHashMap->hashMapSize; ++i)
   {
     mPtr<mChunkedArray<mKeyValuePair<TKey, TValue>>> chunkedArray;
-    mERROR_CHECK(mQueue_PopFront((*pHashMap)->data, &chunkedArray));
+    mERROR_CHECK(mQueue_PopFront(pHashMap->data, &chunkedArray));
     mERROR_CHECK(mChunkedArray_Destroy(&chunkedArray));
   }
 
@@ -242,7 +240,7 @@ inline mFUNCTION(mHashMap_Destroy_Internal, OUT mHashMap<TKey, TValue> *pHashMap
 }
 
 template<typename TKey, typename TValue>
-inline mFUNCTION(mHashMap_Hash_Internal, mHashMap<TKey, TValue> &hashMap, IN TKey *pKey, OUT size_t *pHashedIndex)
+inline mFUNCTION(mHashMap_Hash_Internal, mPtr<mHashMap<TKey, TValue>> &hashMap, IN TKey *pKey, OUT size_t *pHashedIndex)
 {
   mFUNCTION_SETUP();
 

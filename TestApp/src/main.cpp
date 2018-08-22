@@ -10,6 +10,7 @@
 #include "mTexture.h"
 #include "mMesh.h"
 #include "mSpriteBatch.h"
+#include "mResourceManager.h"
 
 mPtr<mHardwareWindow> window = nullptr;
 mPtr<mImageBuffer> image;
@@ -75,8 +76,7 @@ int main(int, char **)
 
   mPtr<mTexture> texture;
   mDEFER_DESTRUCTION(&texture, mSharedPointer_Destroy);
-  mERROR_CHECK(mSharedPointer_Allocate(&texture, nullptr, (std::function<void (mTexture *)>)[](mTexture *pData) {mTexture_Destroy(pData);}, 1));
-  mERROR_CHECK(mTexture_Create(texture.GetPointer(), "C:/data/transparent.png"));
+  mERROR_CHECK(mResourceManager_GetResource(&texture, std::string("C:/data/transparent.png")));
 
   size_t frame = 0;
 

@@ -11,6 +11,7 @@
 
 #include "mRenderParams.h"
 #include "mImageBuffer.h"
+#include "mResourceManager.h"
 
 struct mTexture
 {
@@ -33,4 +34,10 @@ mFUNCTION(mTexture_GetUploadState, mTexture &texture, OUT mRenderParams_UploadSt
 mFUNCTION(mTexture_Upload, mTexture &texture);
 mFUNCTION(mTexture_Bind, mTexture &texture, const size_t textureUnit = 0);
 
+// For mResourceManager:
+
+mFUNCTION(mCreateResource, OUT mTexture *pTexture, const std::string &filename);
+mFUNCTION(mDestroyResource, IN_OUT mTexture *pTexture);
+
 #endif // mTexture_h__
+

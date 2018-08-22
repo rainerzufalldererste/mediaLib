@@ -14,25 +14,25 @@
 #include "mMutex.h"
 
 template <typename TValue, typename TKey>
-mCreateResource(OUT TValue *pResource, TKey param);
+mFUNCTION(mCreateResource, OUT TValue *pResource, TKey param);
 
 template <typename TValue>
-mDestroyResource(IN_OUT TValue *pResource);
+mFUNCTION(mDestroyResource, IN_OUT TValue *pResource);
 
 template <typename TValue>
-mResourceGetPreferredAllocator(OUT mAllocator **ppAllocator);
+mFUNCTION(mResourceGetPreferredAllocator, OUT mAllocator **ppAllocator);
 
 //////////////////////////////////////////////////////////////////////////
 
 template <typename TValue, typename TKey>
 struct mResourceManager
 {
-  static mPtr<mResourceManager> Instance;
+  static mPtr<mResourceManager<TValue, TKey>> &Instance();
 
   struct ResourceData
   {
     TValue resource;
-    mSharedPointer<TValue>::PointerParams pointerParams;
+    typename mSharedPointer<TValue>::PointerParams pointerParams;
     mPtr<TValue> sharedPointer;
   };
 
@@ -41,38 +41,32 @@ struct mResourceManager
   mMutex *pMutex;
 };
 
-template <typename TKey, typename TValue>
-mFUNCTION(mResourceManager_GetResource, OUT mPtr<TValue> *pValue, TKey key);
-
-template <typename TKey, typename TValue>
-mFUNCTION(mResourceManager_CreateExplicit, IN mAllocator *pAllocator);
-
 //////////////////////////////////////////////////////////////////////////
 
 // To be available for the resource manager, expose two functions: 
-//  'mCreateResource(OUT TValue* pResource, TKey param);'
+//  'mResult mCreateResource(OUT TValue* pResource, TKey param);'
 //  and
-//  'mDestroyResource(IN_OUT TValue *pResource);'
+//  'mResult mDestroyResource(IN_OUT TValue *pResource);'
 
 template <typename TValue, typename TKey>
-mCreateResource(OUT TValue *pResource, TKey param)
+mFUNCTION(mCreateResource, OUT TValue *pResource, TKey param)
 {
   static_assert(false, "This type does not support resource creation yet.");
 }
 
 // To be available for the resource manager, expose two functions: 
-//  'mCreateResource(OUT TValue* pResource, TKey param);'
+//  'mResult mCreateResource(OUT TValue* pResource, TKey param);'
 //  and
-//  'mDestroyResource(IN_OUT TValue *pResource);'
+//  'mResult mDestroyResource(IN_OUT TValue *pResource);'
 
 template <typename TValue>
-mDestroyResource(IN_OUT TValue *pResource)
+mFUNCTION(mDestroyResource, IN_OUT TValue *pResource)
 {
   static_assert(false, "This type does not support resource destruction yet.");
 }
 
 template <typename TValue>
-mResourceGetPreferredAllocator(OUT mAllocator **ppAllocator)
+mFUNCTION(mResourceGetPreferredAllocator, OUT mAllocator **ppAllocator)
 {
   mFUNCTION_SETUP();
 
@@ -85,27 +79,28 @@ mResourceGetPreferredAllocator(OUT mAllocator **ppAllocator)
 
 //////////////////////////////////////////////////////////////////////////
 
-template<typename TKey, typename TValue>
+template<typename TValue, typename TKey>
 inline mFUNCTION(mResourceManager_GetResource, OUT mPtr<TValue> *pValue, TKey key)
 {
   mFUNCTION_SETUP();
 
+  typedef mResourceManager<TValue, TKey> CurrentResourceManagerType;
+
   mERROR_IF(pValue == nullptr, mR_ArgumentNull);
 
-  if (mResourceManager<TKey, TValue>::Instance == nullptr)
+  if (CurrentResourceManagerType::Instance() == nullptr)
   {
     mAllocator *pAllocator;
-    mERROR_CHECK(mResourceGetPreferredAllocator<TValue>(&pAllocator));
-
-    mERROR_CHECK(mResourceManager_CreateExplicit<TKey, TValue>(pAllocator));
+    mERROR_CHECK((mResourceGetPreferredAllocator<TValue>)(&pAllocator));
+    mERROR_CHECK((mResourceManager_CreateRessourceManager_Explicit<TKey, TValue>(pAllocator)));
   }
 
-  mERROR_CHECK(mMutex_Lock(mResourceManager<TKey, TValue>::Instance->pMutex));
-  mDEFER_DESTRUCTION(mResourceManager<TKey, TValue>::Instance->pMutex, mMutex_Unlock);
+  mERROR_CHECK(mMutex_Lock(CurrentResourceManagerType::Instance()->pMutex));
+  mDEFER_DESTRUCTION(CurrentResourceManagerType::Instance()->pMutex, mMutex_Unlock);
 
   bool contains = false;
-  mResourceManager<TKey, TValue>::ResourceData *pResourceData;
-  mERROR_CHECK(mHashMap_ContainsGetPointer(mResourceManager<TKey, TValue>::Instance->data, key, &contains, &pResourceData));
+  CurrentResourceManagerType::ResourceData *pResourceData;
+  mERROR_CHECK(mHashMap_ContainsGetPointer(CurrentResourceManagerType::Instance()->data, key, &contains, &pResourceData));
 
   if (contains)
   {
@@ -113,11 +108,11 @@ inline mFUNCTION(mResourceManager_GetResource, OUT mPtr<TValue> *pValue, TKey ke
     mRETURN_SUCCESS();
   }
 
-  mResourceManager<TKey, TValue>::ResourceData resourceData;
+  CurrentResourceManagerType::ResourceData resourceData;
   mERROR_CHECK(mMemset(&resourceData, 1));
-  mERROR_CHECK(mHashMap_Add(mResourceManager<TKey, TValue>::Instance->data, key, &resourceData));
+  mERROR_CHECK(mHashMap_Add(CurrentResourceManagerType::Instance()->data, key, &resourceData));
 
-  mERROR_CHECK(mHashMap_ContainsGetPointer(mResourceManager<TKey, TValue>::Instance->data, key, &contains, &pResourceData));
+  mERROR_CHECK(mHashMap_ContainsGetPointer(CurrentResourceManagerType::Instance()->data, key, &contains, &pResourceData));
   mERROR_IF(!contains, mR_InternalError);
 
   mERROR_CHECK(mSharedPointer_CreateInplace(
@@ -125,12 +120,12 @@ inline mFUNCTION(mResourceManager_GetResource, OUT mPtr<TValue> *pValue, TKey ke
     &pResourceData->pointerParams, 
     &pResourceData->resource,
     mSHARED_POINTER_FOREIGN_RESOURCE, 
-    [=](TValue *pData) 
+    (std::function<void (TValue *)>)[=](TValue *pData)
       { 
         mDestroyResource(pData); 
         
-        mResourceManager<TKey, TValue>::ResourceData resourceData0; // we don't care.
-        mHashMap_Remove(mResourceManager<TKey, TValue>::Instance->data, key, &resourceData0);
+        CurrentResourceManagerType::ResourceData resourceData0; // we don't care.
+        mHashMap_Remove(CurrentResourceManagerType::Instance()->data, key, &resourceData0);
       }));
 
   mERROR_CHECK(mCreateResource(&pResourceData->resource, key));
@@ -143,30 +138,39 @@ inline mFUNCTION(mResourceManager_GetResource, OUT mPtr<TValue> *pValue, TKey ke
 }
 
 template<typename TKey, typename TValue>
-inline mFUNCTION(mResourceManager_CreateExplicit, IN mAllocator *pAllocator)
+inline mFUNCTION(mResourceManager_CreateRessourceManager_Explicit, IN mAllocator *pAllocator)
 {
   mFUNCTION_SETUP();
 
+  typedef mResourceManager<TValue, TKey> CurrentResourceManagerType;
+
   // only the hashmap will be allocated by pAllocator!
 
-  if (mResourceManager<TKey, TValue>::Instance != nullptr)
+  if (CurrentResourceManagerType::Instance() != nullptr)
     mRETURN_RESULT(mR_ResourceStateInvalid);
 
   mERROR_CHECK(mSharedPointer_Allocate(
-    &mResourceManager<TKey, TValue>::Instance, 
+    &CurrentResourceManagerType::Instance(), 
     nullptr, 
-    (std::function<void(mResourceManager<TKey, TValue> *)>)[](mResourceManager<TKey, TValue> *pData) 
+    (std::function<void(CurrentResourceManagerType *)>)[](CurrentResourceManagerType *pData) 
       { 
         mHashMap_Destroy(&pData->data);
         mMutex_Destroy(&pData->pMutex); 
       }, 
     1));
 
-  mERROR_CHECK(mMutex_Create(&mResourceManager<TKey, TValue>::Instance->pMutex, nullptr));
-  mERROR_CHECK(mHashMap_Create(&mResourceManager<TKey, TValue>::Instance->pMutex, pAllocator, 64));
-  mResourceManager<TKey, TValue>::Instance->pAllocator = pAllocator;
+  mERROR_CHECK(mMutex_Create(&CurrentResourceManagerType::Instance()->pMutex, nullptr));
+  mERROR_CHECK(mHashMap_Create(&CurrentResourceManagerType::Instance()->data, pAllocator, 64));
+  CurrentResourceManagerType::Instance()->pAllocator = pAllocator;
 
   mRETURN_SUCCESS();
+}
+
+template<typename TValue, typename TKey>
+inline mPtr<mResourceManager<TValue, TKey>>& mResourceManager<TValue, TKey>::Instance()
+{
+  static mPtr<mResourceManager<TValue, TKey>> singletonInstance;
+  return singletonInstance;
 }
 
 #endif // mResourceManager_h__

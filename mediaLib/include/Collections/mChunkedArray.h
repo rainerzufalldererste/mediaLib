@@ -29,6 +29,7 @@ struct mChunkedArray
   size_t itemCapacity;
   mChunkedArrayBlock *pBlocks;
   mAllocator *pAllocator;
+  std::function<mResult(T *)> destructionFunction;
 };
 
 template <typename T>
@@ -56,7 +57,7 @@ template <typename T>
 mFUNCTION(mChunkedArray_PointerAt, mPtr<mChunkedArray<T>> &chunkedArray, const size_t index, OUT T **ppItem);
 
 template <typename T>
-mFUNCTION(mChunkedArray_SetDestructionFunction, mPtr<mChunkedArray<T>> &chunkedArray, const std::function<mResult(mKeyValuePair<TKey, TValue> *)> &destructionFunction);
+mFUNCTION(mChunkedArray_SetDestructionFunction, mPtr<mChunkedArray<T>> &chunkedArray, const std::function<mResult(T *)> &destructionFunction);
 
 #include "mChunkedArray.inl"
 
