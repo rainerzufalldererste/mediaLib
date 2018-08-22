@@ -126,7 +126,7 @@ struct mSBETextureCrop : mSpriteBatchExtention
 {
   mVec4f textureStartEndPoint;
 
-  mSBETextureCrop() = default;
+  mSBETextureCrop();
   explicit mSBETextureCrop(const mVec2f &startPoint, const mVec2f &endPoint);
 
   static const mSpriteBatchExtention_Type type = mSBE_T_TextureCrop;
