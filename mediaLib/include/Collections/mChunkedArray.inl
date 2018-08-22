@@ -22,6 +22,7 @@ mFUNCTION(mChunkedArray_Create, OUT mPtr<mChunkedArray<T>> *pChunkedArray, IN mA
   mERROR_IF(pChunkedArray == nullptr, mR_ArgumentNull);
   mERROR_CHECK(mSharedPointer_Allocate(pChunkedArray, pAllocator, (std::function<void(mChunkedArray<T> *)>) [](mChunkedArray<T> *pData) { mChunkedArray_Destroy_Internal(pData); }, 1));
   (*pChunkedArray)->blockSize = blockSize;
+  new (&(*pChunkedArray)->destructionFunction) std::function<mResult(T *)>(nullptr);
 
   mRETURN_SUCCESS();
 }
@@ -157,18 +158,24 @@ mFUNCTION(mChunkedArray_PopAt, mPtr<mChunkedArray<T>> &chunkedArray, const size_
 
     if (innerItemIndex - pBlock->blockStartIndex <= pBlock->blockEndIndex - innerItemIndex)
     {
-      mERROR_CHECK(mAllocator_Move(chunkedArray->pAllocator, &pBlock->pData[pBlock->blockStartIndex], &pBlock->pData[pBlock->blockStartIndex + 1], innerItemIndex - pBlock->blockStartIndex));
+      if (innerItemIndex - pBlock->blockStartIndex > 0)
+        mERROR_CHECK(mAllocator_Move(chunkedArray->pAllocator, &pBlock->pData[pBlock->blockStartIndex], &pBlock->pData[pBlock->blockStartIndex + 1], innerItemIndex - pBlock->blockStartIndex));
+
       ++pBlock->blockStartIndex;
     }
     else
     {
-      mERROR_CHECK(mAllocator_Move(chunkedArray->pAllocator, &pBlock->pData[innerItemIndex + 1], &pBlock->pData[innerItemIndex + 1], pBlock->blockEndIndex - innerItemIndex - 1));
+      if (pBlock->blockEndIndex - innerItemIndex - 1 > 0)
+        mERROR_CHECK(mAllocator_Move(chunkedArray->pAllocator, &pBlock->pData[innerItemIndex + 1], &pBlock->pData[innerItemIndex + 1], pBlock->blockEndIndex - innerItemIndex - 1));
+
       --pBlock->blockEndIndex;
     }
 
     // Cleanup if block empty.
     if (pBlock->blockStartIndex == pBlock->blockEndIndex)
     {
+      mERROR_CHECK(mAllocator_FreePtr(chunkedArray->pAllocator, &pBlock->pData));
+
       if (blockIndex < chunkedArray->blockCount - 1)
         mERROR_CHECK(mAllocator_Move(chunkedArray->pAllocator, pBlock, pBlock + 1, chunkedArray->blockCount - blockIndex - 1));
 
@@ -212,6 +219,18 @@ mFUNCTION(mChunkedArray_PointerAt, mPtr<mChunkedArray<T>> &chunkedArray, const s
   mRETURN_SUCCESS();
 }
 
+template<typename T>
+inline mFUNCTION(mChunkedArray_SetDestructionFunction, mPtr<mChunkedArray<T>> &chunkedArray, const std::function<mResult(mKeyValuePair<TKey, TValue>*)> &destructionFunction)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(chunkedArray == nullptr || ppItem == nullptr, mR_ArgumentNull);
+
+  chunkedArray->destructionFunction = destructionFunction;
+
+  mRETURN_SUCCESS();
+}
+
 //////////////////////////////////////////////////////////////////////////
 
 template<typename T>
@@ -220,6 +239,17 @@ inline mFUNCTION(mChunkedArray_Destroy_Internal, IN mChunkedArray<T>* pChunkedAr
   mFUNCTION_SETUP();
 
   mERROR_IF(pChunkedArray == nullptr, mR_ArgumentNull);
+  
+  for (size_t i = 0; i < pChunkedArray->blockCount; ++i)
+  {
+    if (pChunkedArray->destructionFunction)
+      for (size_t index = pChunkedArray->pBlocks[i].blockStartIndex; index < pChunkedArray->pBlocks[i].blockEndIndex; ++index)
+        mERROR_CHECK(pChunkedArray->destructionFunction(&pChunkedArray->pBlocks[i].pData[index]));
+
+    mERROR_CHECK(mAllocator_FreePtr(pChunkedArray->pAllocator, &pChunkedArray->pBlocks[i].pData));
+  }
+
+  pChunkedArray->destructionFunction.~function();
 
   mERROR_CHECK(mAllocator_FreePtr(&pChunkedArray->pBlocks));
 
