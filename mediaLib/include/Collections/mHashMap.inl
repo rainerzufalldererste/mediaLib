@@ -83,12 +83,48 @@ mFUNCTION(mHashMap_Contains, mHashMap<TKey, TValue> &hashMap, TKey key, OUT bool
     if (pKVPair->key == key)
     {
       *pContains = true;
-      *pValueIfExistent = *pKVPair->value;
+      *pValueIfExistent = pKVPair->value;
       mRETURN_SUCCESS();
     }
   }
 
   *pContains = false;
+
+  mRETURN_SUCCESS();
+}
+
+template <typename TKey, typename TValue>
+mFUNCTION(mHashMap_ContainsGetPointer, mHashMap<TKey, TValue> &hashMap, TKey key, OUT bool *pContains, OUT TValue **ppValueIfExistent)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(hashMap == nullptr || pContains == nullptr || ppValueIfExistent == nullptr, mR_ArgumentNull);
+
+  size_t index = 0;
+  mERROR_CHECK(mHashMap_Hash_Internal(hashMap, &key, &index));
+
+  mPtr<mChunkedArray<mKeyValuePair<TKey, TValue>>> chunkedArray;
+  mDEFER_DESTRUCTION(chunkedArray, mChunkedArray_Destroy);
+  mERROR_CHECK(mQueue_PeekAt(hashMap->data, index, &chunkedArray));
+
+  size_t count = 0;
+  mERROR_CHECK(mChunkedArray_GetCount(chunkedArray, &count));
+
+  for (size_t i = 0; i < count; ++i)
+  {
+    mKeyValuePair<TKey, TValue> *pKVPair = nullptr;
+    mERROR_CHECK(mChunkedArray_PointerAt(chunkedArray, i, &pKVPair));
+
+    if (pKVPair->key == key)
+    {
+      *pContains = true;
+      *ppValueIfExistent = &pKVPair->value;
+      mRETURN_SUCCESS();
+    }
+  }
+
+  *pContains = false;
+  *ppValueIfExistent = nullptr;
 
   mRETURN_SUCCESS();
 }

@@ -32,6 +32,9 @@ template <typename TKey, typename TValue>
 mFUNCTION(mHashMap_Contains, mHashMap<TKey, TValue> &hashMap, TKey key, OUT bool *pContains, OUT TValue *pValueIfExistent);
 
 template <typename TKey, typename TValue>
+mFUNCTION(mHashMap_ContainsGetPointer, mHashMap<TKey, TValue> &hashMap, TKey key, OUT bool *pContains, OUT TValue **ppValueIfExistent);
+
+template <typename TKey, typename TValue>
 mFUNCTION(mHashMap_Add, mHashMap<TKey, TValue> &hashMap, TKey key, IN TValue *pValue);
 
 template <typename TKey, typename TValue>

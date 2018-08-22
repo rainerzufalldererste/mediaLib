@@ -12,6 +12,12 @@
 #include "default.h"
 
 template<typename T>
+mFUNCTION(mHash, mPtr<T> *pData, OUT uint64_t *pHash);
+
+template<typename T>
+mFUNCTION(mHash, mPtr<T> data, OUT uint64_t *pHash);
+
+template<typename T>
 mFUNCTION(mHash, std::basic_string<T> *pString, OUT uint64_t *pHash);
 
 template<typename T>
@@ -23,6 +29,26 @@ mFUNCTION(mHash, const T *pData, OUT uint64_t *pHash, const size_t count = 1);
 uint64_t mMurmurHash2(const void *pData, const size_t length, const uint64_t seed = 0xD0D93DEADC0FFEE5);
 
 //////////////////////////////////////////////////////////////////////////
+
+template<typename T>
+inline mFUNCTION(mHash, mPtr<T> *pData, OUT uint64_t *pHash)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_CHECK(mHash(pData->GetPointer(), pHash));
+
+  mRETURN_SUCCESS();
+}
+
+template<typename T>
+inline mFUNCTION(mHash, mPtr<T> data, OUT uint64_t *pHash)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_CHECK(mHash(pData.GetPointer(), pHash));
+
+  mRETURN_SUCCESS();
+}
 
 template<typename T>
 inline mFUNCTION(mHash, std::basic_string<T>* pString, OUT uint64_t * pHash)
