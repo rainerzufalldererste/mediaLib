@@ -68,7 +68,7 @@ mFUNCTION(mHashMap_Contains, mPtr<mHashMap<TKey, TValue>> &hashMap, TKey key, OU
   mERROR_CHECK(mHashMap_Hash_Internal(hashMap, &key, &index));
 
   mPtr<mChunkedArray<mKeyValuePair<TKey, TValue>>> chunkedArray;
-  mDEFER_DESTRUCTION(chunkedArray, mChunkedArray_Destroy);
+  mDEFER_DESTRUCTION(&chunkedArray, mChunkedArray_Destroy);
   mERROR_CHECK(mQueue_PeekAt(hashMap->data, index, &chunkedArray));
 
   size_t count = 0;

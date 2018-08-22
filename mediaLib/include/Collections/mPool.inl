@@ -18,7 +18,7 @@ mFUNCTION(mPool_Create, OUT mPtr<mPool<T>> *pPool, IN mAllocator *pAllocator)
 
   mERROR_IF(pPool == nullptr, mR_ArgumentNull);
 
-  mERROR_CHECK(mSharedPointer_Allocate(pPool, pAllocator, (std::function<void(mPool<T> *)>) [](mPool<T> *pData) { mPool_Destroy_Internal(pData); }));
+  mERROR_CHECK(mSharedPointer_Allocate(pPool, pAllocator, (std::function<void(mPool<T> *)>) [](mPool<T> *pData) { mPool_Destroy_Internal(pData); }, 1));
 
   mERROR_CHECK(mChunkedArray_Create(&(*pPool)->data, pAllocator));
 
@@ -58,11 +58,11 @@ mFUNCTION(mPool_Add, mPtr<mPool<T>> &pool, IN T *pItem, OUT size_t *pIndex)
     ++pool->size;
   }
 
-  for (size_t i = 0; i < pool->size; i++)
+  for (size_t i = 0; i < pool->size; ++i)
   {
     decltype(*pool->pIndexes) flags = pool->pIndexes[i];
 
-    if (flags == (decltype(flags))(-1))
+    if (flags == (size_t)-1)
       continue;
 
     for (size_t indexOffset = 0; indexOffset < sizeof(flags); ++indexOffset)
@@ -75,7 +75,7 @@ mFUNCTION(mPool_Add, mPtr<mPool<T>> &pool, IN T *pItem, OUT size_t *pIndex)
         
         if (*pIndex == dataCount)
         {
-          mERROR_CHECK(mChunkedArray_PushBack(pool->data, *pIndex));
+          mERROR_CHECK(mChunkedArray_PushBack(pool->data, pItem));
         }
         else
         {
@@ -85,7 +85,7 @@ mFUNCTION(mPool_Add, mPtr<mPool<T>> &pool, IN T *pItem, OUT size_t *pIndex)
           new (pInItem) T (*pItem);
         }
 
-        pool->pIndexes |= (1 << indexOffset);
+        pool->pIndexes[i] |= ((size_t)1 << indexOffset);
         ++pool->count;
 
         break;
@@ -104,20 +104,18 @@ mFUNCTION(mPool_RemoveAt, mPtr<mPool<T>> &pool, const size_t index, OUT T *pItem
   mFUNCTION_SETUP();
 
   mERROR_IF(pool == nullptr || pItem == nullptr, mR_ArgumentNull);
-  mERROR_IF(index >= count, mR_IndexOutOfBounds);
+  mERROR_IF(index >= pool->count, mR_IndexOutOfBounds);
 
   const size_t lutIndex = index / sizeof(pool->pIndexes[0]);
   const size_t lutSubIndex = index - lutIndex * sizeof(pool->pIndexes[0]);
 
-  mERROR_IF((pIndexes[lutIndex] & (1 << lutSubIndex)) == 0, mR_IndexOutOfBounds);
-
-  mERROR_CHECK(mChunkedArray_PointerAt(pool->data, index, ppItem));
+  mERROR_IF((pool->pIndexes[lutIndex] & ((size_t)1 << lutSubIndex)) == 0, mR_IndexOutOfBounds);
 
   T *pOutItem = nullptr;
   mERROR_CHECK(mPool_PointerAt(pool, index, &pOutItem));
 
   *pItem = std::move(*pOutItem);
-  pIndexes[lutIndex] &= ~(1 << lutSubIndex);
+  pool->pIndexes[lutIndex] &= ~((size_t)1 << lutSubIndex);
 
   if (lutIndex == 0 && lutIndex == pool->size - 1)
   {
@@ -166,12 +164,12 @@ mFUNCTION(mPool_PointerAt, mPtr<mPool<T>> &pool, const size_t index, OUT T **ppI
   mFUNCTION_SETUP();
 
   mERROR_IF(pool == nullptr || ppItem == nullptr, mR_ArgumentNull);
-  mERROR_IF(index >= count, mR_IndexOutOfBounds);
+  mERROR_IF(index >= pool->count, mR_IndexOutOfBounds);
 
   const size_t lutIndex = index / sizeof(pool->pIndexes[0]);
   const size_t lutSubIndex = index - lutIndex * sizeof(pool->pIndexes[0]);
 
-  mERROR_IF((pIndexes[lutIndex] & (1 << lutSubIndex)) == 0, mR_IndexOutOfBounds);
+  mERROR_IF((pool->pIndexes[lutIndex] & ((size_t)1 << lutSubIndex)) == 0, mR_IndexOutOfBounds);
 
   mERROR_CHECK(mChunkedArray_PointerAt(pool->data, index, ppItem));
 
@@ -188,7 +186,7 @@ inline mFUNCTION(mPool_Destroy_Internal, IN mPool<T> *pPool)
   mERROR_IF(pPool == nullptr, mR_ArgumentNull);
 
   if (pPool->allocatedSize > 0)
-    mERROR_CHECK(mAllocator_FreePtr(pPool->pAllocator, &pPool->allocatedSize));
+    mERROR_CHECK(mAllocator_FreePtr(pPool->pAllocator, &pPool->pIndexes));
 
   mERROR_CHECK(mChunkedArray_Destroy(&pPool->data));
 

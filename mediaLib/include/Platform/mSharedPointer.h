@@ -50,7 +50,8 @@ public:
   struct PointerParams
   {
     volatile size_t referenceCount;
-    bool freeResource;
+    uint8_t freeResource : 1;
+    uint8_t inplaceConstructed : 1;
     mAllocator *pAllocator;
     std::function<void (T*)> cleanupFunction;
 
@@ -79,6 +80,7 @@ inline mFUNCTION(mSharedPointer_Create, OUT mSharedPointer<T> *pOutSharedPointer
   pOutSharedPointer->m_pParams->referenceCount = 1;
   pOutSharedPointer->m_pParams->pAllocator = pAllocator;
   pOutSharedPointer->m_pParams->freeResource = (pAllocator != mSHARED_POINTER_FOREIGN_RESOURCE);
+  pOutSharedPointer->m_pParams->inplaceConstructed = false;
   pOutSharedPointer->m_pParams->cleanupFunction = cleanupFunction;
   pOutSharedPointer->m_pData = pData;
 
@@ -142,6 +144,7 @@ inline mFUNCTION(mSharedPointer_CreateInplace, IN_OUT mSharedPointer<T> *pOutSha
   pOutSharedPointer->m_pParams->pAllocator = pAllocator;
   pOutSharedPointer->m_pParams->freeResource = (pAllocator != mSHARED_POINTER_FOREIGN_RESOURCE);
   pOutSharedPointer->m_pParams->cleanupFunction = cleanupFunction;
+  pOutSharedPointer->m_pParams->inplaceConstructed = true;
 
   pOutSharedPointer->m_pData = pData;
 
@@ -224,7 +227,9 @@ inline mSharedPointer<T>::~mSharedPointer()
       mAllocator_FreePtr(m_pParams->pAllocator, &m_pData);
 
     m_pParams->~PointerParams();
-    mAllocator_FreePtr(pAllocator, &m_pParams);
+    
+    if(!m_pParams->inplaceConstructed)
+      mAllocator_FreePtr(pAllocator, &m_pParams);
   }
 
   m_pParams = nullptr;
