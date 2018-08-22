@@ -126,6 +126,29 @@ inline mFUNCTION(mSharedPointer_Allocate, OUT mSharedPointer<T> *pOutSharedPoint
 }
 
 template <typename T>
+inline mFUNCTION(mSharedPointer_CreateInplace, IN_OUT mSharedPointer<T> *pOutSharedPointer, IN typename mSharedPointer<T>::PointerParams *pPointerParams, IN T *pData, IN mAllocator *pAllocator, const std::function<void(T *)> &cleanupFunction)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pOutSharedPointer == nullptr || pPointerParams == nullptr || pData == nullptr, mR_ArgumentNull);
+
+  if (*pOutSharedPointer != nullptr)
+    *pOutSharedPointer = nullptr;
+
+  pOutSharedPointer->m_pParams = pPointerParams;
+
+  new (pOutSharedPointer->m_pParams) typename mSharedPointer<T>::PointerParams();
+  pOutSharedPointer->m_pParams->referenceCount = 1;
+  pOutSharedPointer->m_pParams->pAllocator = pAllocator;
+  pOutSharedPointer->m_pParams->freeResource = (pAllocator != mSHARED_POINTER_FOREIGN_RESOURCE);
+  pOutSharedPointer->m_pParams->cleanupFunction = cleanupFunction;
+
+  pOutSharedPointer->m_pData = pData;
+
+  mRETURN_SUCCESS();
+}
+
+template <typename T>
 inline mFUNCTION(mSharedPointer_Destroy, IN_OUT mSharedPointer<T> *pPointer)
 {
   mFUNCTION_SETUP();
