@@ -154,3 +154,21 @@ mFUNCTION(mTexture_Bind, mTexture &texture, const size_t textureUnit /* = 0 */)
 
   mRETURN_SUCCESS();
 }
+
+mFUNCTION(mCreateResource, OUT mTexture * pTexture, const std::string & filename)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_CHECK(mTexture_Create(pTexture, filename, false));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mDestroyResource, IN_OUT mTexture * pTexture)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_CHECK(mTexture_Destroy(pTexture));
+
+  mRETURN_SUCCESS();
+}

@@ -15,7 +15,7 @@ mFUNCTION(mChunkedArray_Grow_Internal, mPtr<mChunkedArray<T>> &chunkedArray);
 //////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-mFUNCTION(mChunkedArray_Create, OUT mPtr<mChunkedArray<T>> *pChunkedArray, IN mAllocator *pAllocator, const size_t blockSize = 64)
+mFUNCTION(mChunkedArray_Create, OUT mPtr<mChunkedArray<T>> *pChunkedArray, IN mAllocator *pAllocator, const size_t blockSize /* = 64 */)
 {
   mFUNCTION_SETUP();
 
@@ -220,7 +220,7 @@ mFUNCTION(mChunkedArray_PointerAt, mPtr<mChunkedArray<T>> &chunkedArray, const s
 }
 
 template<typename T>
-inline mFUNCTION(mChunkedArray_SetDestructionFunction, mPtr<mChunkedArray<T>> &chunkedArray, const std::function<mResult(mKeyValuePair<TKey, TValue>*)> &destructionFunction)
+inline mFUNCTION(mChunkedArray_SetDestructionFunction, mPtr<mChunkedArray<T>> &chunkedArray, const std::function<mResult(T *)> &destructionFunction)
 {
   mFUNCTION_SETUP();
 
@@ -251,7 +251,7 @@ inline mFUNCTION(mChunkedArray_Destroy_Internal, IN mChunkedArray<T>* pChunkedAr
 
   pChunkedArray->destructionFunction.~function();
 
-  mERROR_CHECK(mAllocator_FreePtr(&pChunkedArray->pBlocks));
+  mERROR_CHECK(mAllocator_FreePtr(pChunkedArray->pAllocator, &pChunkedArray->pBlocks));
 
   mRETURN_SUCCESS();
 }
@@ -284,7 +284,7 @@ inline mFUNCTION(mChunkedArray_Grow_Internal, mPtr<mChunkedArray<T>>& chunkedArr
 
   ++chunkedArray->blockCount;
   mDEFER_ON_ERROR(--chunkedArray->blockCount);
-  mERROR_CHECK(mAllocator_AllocateZero(chunkedArray->pAllocator, &chunkedArray->pBlocks[chunkedArray->blockCount - 1].pData));
+  mERROR_CHECK(mAllocator_AllocateZero(chunkedArray->pAllocator, &chunkedArray->pBlocks[chunkedArray->blockCount - 1].pData, chunkedArray->blockSize));
   chunkedArray->pBlocks[chunkedArray->blockCount - 1].blockSize = chunkedArray->blockSize;
   chunkedArray->pBlocks[chunkedArray->blockCount - 1].blockStartIndex = 0;
   chunkedArray->pBlocks[chunkedArray->blockCount - 1].blockEndIndex = 0;

@@ -22,10 +22,10 @@ struct mKeyValuePair
 };
 
 template <typename TKey, typename TValue>
-mFUNCTION(mKeyValuePair_Create, OUT mKeyValuePair *pPair, TKey key, TValue value);
+mFUNCTION(mKeyValuePair_Create, OUT mKeyValuePair<TKey, TValue> *pPair, TKey key, TValue value);
 
 template <typename TKey, typename TValue>
-mFUNCTION(mKeyValuePair_Destroy, IN_OUT mKeyValuePair *pPair);
+mFUNCTION(mKeyValuePair_Destroy, IN_OUT mKeyValuePair<TKey, TValue> *pPair);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -36,16 +36,18 @@ mFUNCTION(mKeyValuePair_Create, OUT mKeyValuePair<TKey, TValue> *pPair, TKey key
 
   mERROR_IF(pPair == nullptr, mR_ArgumentNull);
 
-  *pPair->key = key;
-  *pPair->value = value;
+  pPair->key = key;
+  pPair->value = value;
 
   mRETURN_SUCCESS();
 }
 
 template<typename TKey, typename TValue>
-inline mFUNCTION(mKeyValuePair_Destroy, IN_OUT mKeyValuePair *pPair)
+inline mFUNCTION(mKeyValuePair_Destroy, IN_OUT mKeyValuePair<TKey, TValue> *pPair)
 {
   mFUNCTION_SETUP();
+
+  mUnused(pPair); // Do nothing.
 
   mRETURN_SUCCESS();
 }

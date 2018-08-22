@@ -29,22 +29,22 @@ template <typename TKey, typename TValue>
 mFUNCTION(mHashMap_Destroy, IN_OUT mPtr<mHashMap<TKey, TValue>> *pHashMap);
 
 template <typename TKey, typename TValue>
-mFUNCTION(mHashMap_Contains, mHashMap<TKey, TValue> &hashMap, TKey key, OUT bool *pContains, OUT TValue *pValueIfExistent);
+mFUNCTION(mHashMap_Contains, mPtr<mHashMap<TKey, TValue>> &hashMap, TKey key, OUT bool *pContains, OUT TValue *pValueIfExistent);
 
 template <typename TKey, typename TValue>
-mFUNCTION(mHashMap_ContainsGetPointer, mHashMap<TKey, TValue> &hashMap, TKey key, OUT bool *pContains, OUT TValue **ppValueIfExistent);
+mFUNCTION(mHashMap_ContainsGetPointer, mPtr<mHashMap<TKey, TValue>> &hashMap, TKey key, OUT bool *pContains, OUT TValue **ppValueIfExistent);
 
 template <typename TKey, typename TValue>
-mFUNCTION(mHashMap_Add, mHashMap<TKey, TValue> &hashMap, TKey key, IN TValue *pValue);
+mFUNCTION(mHashMap_Add, mPtr<mHashMap<TKey, TValue>> &hashMap, TKey key, IN TValue *pValue);
 
 template <typename TKey, typename TValue>
-mFUNCTION(mHashMap_Get, mHashMap<TKey, TValue> &hashMap, TKey key, OUT TValue *pValue);
+mFUNCTION(mHashMap_Get, mPtr<mHashMap<TKey, TValue>> &hashMap, TKey key, OUT TValue *pValue);
 
 template <typename TKey, typename TValue>
-mFUNCTION(mHashMap_Remove, mHashMap<TKey, TValue> &hashMap, TKey key, OUT TValue *pValue);
+mFUNCTION(mHashMap_Remove, mPtr<mHashMap<TKey, TValue>> &hashMap, TKey key, OUT TValue *pValue);
 
 template <typename TKey, typename TValue>
-mFUNCTION(mHashMap_SetKeyValuePairDestructionFunction, mHashMap<TKey, TValue> &hashMap, const std::function<mResult (mKeyValuePair<TKey, TValue> *)> &destructionFunction);
+mFUNCTION(mHashMap_SetKeyValuePairDestructionFunction, mPtr<mHashMap<TKey, TValue>> &hashMap, const std::function<mResult (mKeyValuePair<TKey, TValue> *)> &destructionFunction);
 
 #include "mHashMap.inl"
 
