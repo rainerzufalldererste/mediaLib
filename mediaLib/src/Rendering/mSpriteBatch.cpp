@@ -8,6 +8,9 @@
 
 #include "mSpriteBatch.h"
 
+mSBETextureCrop::mSBETextureCrop() : textureStartEndPoint(0.0f, 0.0f, 1.0f, 1.0f)
+{ }
+
 mSBETextureCrop::mSBETextureCrop(const mVec2f & startPoint, const mVec2f & endPoint) : textureStartEndPoint(startPoint.x, startPoint.y, endPoint.x, endPoint.y) { }
 
 mSBETextureCrop::operator mVec4f() const

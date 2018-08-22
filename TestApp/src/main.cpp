@@ -70,7 +70,7 @@ int main(int, char **)
   mDEFER_DESTRUCTION(&mesh2, mMesh_Destroy);
   mERROR_CHECK(mMeshFactory_CreateMesh(meshFactory, &mesh2, nullptr, image));
 
-  mPtr<mSpriteBatch<mSBEColour, mSBERotation, mSBETextureFlip>> spriteBatch;
+  mPtr<mSpriteBatch<mSBEColour, mSBERotation, mSBETextureFlip, mSBETextureCrop>> spriteBatch;
   mDEFER_DESTRUCTION(&spriteBatch, mSpriteBatch_Destroy);
   mERROR_CHECK(mSpriteBatch_Create(&spriteBatch, nullptr));
 
@@ -93,9 +93,9 @@ int main(int, char **)
     mERROR_CHECK(mShader_SetUniform(mesh2->shader, mMeshScale2dUniform::uniformName(), mesh->textures[0]->resolutionF / mRenderParams_CurrentRenderResolutionF));
     mERROR_CHECK(mMesh_Render(mesh2));
     mERROR_CHECK(mSpriteBatch_Begin(spriteBatch, mSB_SSM_FrontToBack, mSB_AM_AlphaBlend));
-    mERROR_CHECK(mSpriteBatch_DrawWithDepth(spriteBatch, texture, mVec2f(200.0f + 100 * mSin(frame / 1490.0f), 200.0f + 100 * mSin(frame / 3490.0f)), 0.9f, mSBEColour(mSin(frame / 1123.0f) / 2 + 1, mSin(frame / 942.0f) / 2 + 1, mSin(frame / 1391.0f) / 2 + 1, mSin(frame / 1234.0f) / 2 + 1), mSBERotation((frame) / 2550.0f), mSBETextureFlip(frame % 2000 > 1000, frame % 4000 > 2000)));
-    mERROR_CHECK(mSpriteBatch_DrawWithDepth(spriteBatch, texture, mVec2f(200.0f + 100 * mCos(frame / 1241.0f), 200.0f + 100 * mCos(frame / 2490.0f)), 0.0f, mSBEColour(mSin(frame / 1123.0f) / 2 + 1, mSin(frame / 942.0f) / 2 + 1, mSin(frame / 1391.0f) / 2 + 1), mSBERotation((frame) / 2550.0f), mSBETextureFlip()));
-    mERROR_CHECK(mSpriteBatch_DrawWithDepth(spriteBatch, texture, mVec2f(200.0f + 100 * mCos(frame / 1241.0f), 200.0f + 100 * mSin(frame / 1230.0f)), 0.5f, mSBEColour(mCos(frame / 1123.0f) / 2 + 1, mCos(frame / 942.0f) / 2 + 1, mCos(frame / 1391.0f) / 2 + 1), mSBERotation((frame) / 2550.0f), mSBETextureFlip()));
+    mERROR_CHECK(mSpriteBatch_DrawWithDepth(spriteBatch, texture, mVec2f(200.0f + 100 * mSin(frame / 1490.0f), 200.0f + 100 * mSin(frame / 3490.0f)), 0.9f, mSBEColour(mSin(frame / 1123.0f) / 2 + 1, mSin(frame / 942.0f) / 2 + 1, mSin(frame / 1391.0f) / 2 + 1, mSin(frame / 1234.0f) / 2 + 1), mSBERotation((frame) / 2550.0f), mSBETextureFlip(frame % 2000 > 1000, frame % 4000 > 2000), mSBETextureCrop(mVec2f(mSin(frame / 1240.0f) / 4 + .5f, mSin(frame / 1402.0f) / 4 + .5f), mVec2f(1, 1))));
+    mERROR_CHECK(mSpriteBatch_DrawWithDepth(spriteBatch, texture, mVec2f(200.0f + 100 * mCos(frame / 1241.0f), 200.0f + 100 * mCos(frame / 2490.0f)), 0.0f, mSBEColour(mSin(frame / 1123.0f) / 2 + 1, mSin(frame / 942.0f) / 2 + 1, mSin(frame / 1391.0f) / 2 + 1), mSBERotation((frame) / 2550.0f), mSBETextureFlip(), mSBETextureCrop()));
+    mERROR_CHECK(mSpriteBatch_DrawWithDepth(spriteBatch, texture, mVec2f(200.0f + 100 * mCos(frame / 1241.0f), 200.0f + 100 * mSin(frame / 1230.0f)), 0.5f, mSBEColour(mCos(frame / 1123.0f) / 2 + 1, mCos(frame / 942.0f) / 2 + 1, mCos(frame / 1391.0f) / 2 + 1), mSBERotation((frame) / 2550.0f), mSBETextureFlip(), mSBETextureCrop(mVec2f(0.2f, 0.3f), mVec2f(0.5f, 0.9f))));
     mERROR_CHECK(mSpriteBatch_End(spriteBatch));
 
     mGL_ERROR_CHECK();
