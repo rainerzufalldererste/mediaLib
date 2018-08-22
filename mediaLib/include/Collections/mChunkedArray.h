@@ -55,6 +55,9 @@ mFUNCTION(mChunkedArray_PopAt, mPtr<mChunkedArray<T>> &chunkedArray, const size_
 template <typename T>
 mFUNCTION(mChunkedArray_PointerAt, mPtr<mChunkedArray<T>> &chunkedArray, const size_t index, OUT T **ppItem);
 
+template <typename T>
+mFUNCTION(mChunkedArray_SetDestructionFunction, mPtr<mChunkedArray<T>> &chunkedArray, const std::function<mResult(mKeyValuePair<TKey, TValue> *)> &destructionFunction);
+
 #include "mChunkedArray.inl"
 
 #endif // mChunkedArray_h__

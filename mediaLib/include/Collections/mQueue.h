@@ -241,9 +241,7 @@ inline mFUNCTION(mQueue_PeekAt, mPtr<mQueue<T>> &queue, const size_t index, OUT 
   mFUNCTION_SETUP();
 
   mERROR_IF(queue == nullptr || pItem == nullptr, mR_ArgumentNull);
-
-  if (queue->count < index)
-    mRETURN_RESULT(mR_IndexOutOfBounds);
+  mERROR_IF(queue->count <= index, mR_IndexOutOfBounds);
 
   const size_t queueIndex = (queue->startIndex + index) % queue->size;
 
@@ -258,9 +256,7 @@ inline mFUNCTION(mQueue_PointerAt, mPtr<mQueue<T>> &queue, const size_t index, O
   mFUNCTION_SETUP();
 
   mERROR_IF(queue == nullptr || ppItem == nullptr, mR_ArgumentNull);
-
-  if (queue->count < index)
-    mRETURN_RESULT(mR_IndexOutOfBounds);
+  mERROR_IF(queue->count <= index, mR_IndexOutOfBounds);
 
   const size_t queueIndex = (queue->startIndex + index) % queue->size;
 
@@ -354,9 +350,7 @@ inline mFUNCTION(mQueue_PopAt_Internal, mPtr<mQueue<T>>& queue, const size_t ind
   mFUNCTION_SETUP();
 
   mERROR_IF(queue == nullptr || pItem == nullptr, mR_ArgumentNull);
-
-  if (queue->count < index)
-    mRETURN_RESULT(mR_IndexOutOfBounds);
+  mERROR_IF(queue->count <= index, mR_IndexOutOfBounds);
 
   const size_t queueIndex = (queue->startIndex + index) % queue->size;
 
