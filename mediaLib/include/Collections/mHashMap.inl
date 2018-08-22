@@ -191,8 +191,10 @@ mFUNCTION(mHashMap_Remove, mPtr<mHashMap<TKey, TValue>> &hashMap, TKey key, OUT 
 
     if (pKVPair->key == key)
     {
-      mERROR_CHECK(mChunkedArray_PopAt(chunkedArray, i, pKVPair));
-      *pValue = std::move(pKVPair->value);
+      mKeyValuePair<TKey, TValue> kvpair;
+      mERROR_CHECK(mChunkedArray_PopAt(chunkedArray, i, &kvpair));
+      mERROR_CHECK(mDestruct(&kvpair.key));
+      *pValue = std::move(kvpair.value);
       mRETURN_SUCCESS();
     }
   }

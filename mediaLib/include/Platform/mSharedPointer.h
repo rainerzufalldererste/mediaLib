@@ -367,4 +367,14 @@ inline size_t mSharedPointer<T>::GetReferenceCount() const
   return m_pParams->referenceCount;
 }
 
+template<typename T>
+inline mFUNCTION(mDestruct, IN mPtr<T> *pData)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_CHECK(mSharedPointer_Destroy(pData));
+
+  mRETURN_SUCCESS();
+}
+
 #endif // mSharedPointer_h__
