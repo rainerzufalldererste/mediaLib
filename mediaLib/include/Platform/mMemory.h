@@ -253,6 +253,52 @@ template <typename T> mFUNCTION(mMemcpy, T *pDst, T *pSrc, const size_t count)
   mRETURN_SUCCESS();
 }
 
+template <size_t TCount>
+mFUNCTION(mStringLength, const char text[TCount], OUT size_t *pLength)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(text == nullptr || pLength == nullptr, mR_ArgumentNull);
+
+  *pLength = strnlen_s(text, TCount);
+
+  mRETURN_SUCCESS();
+}
+
+inline mFUNCTION(mStringLength, const char *text, const size_t maxLength, OUT size_t *pLength)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(text == nullptr || pLength == nullptr, mR_ArgumentNull);
+
+  *pLength = strnlen_s(text, maxLength);
+
+  mRETURN_SUCCESS();
+}
+
+template <size_t TCount>
+mFUNCTION(mStringChar, const char text[TCount], const char character, OUT size_t *pLength)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(text == nullptr || pLength == nullptr, mR_ArgumentNull);
+
+  *pLength = (size_t)((char *)memchr((void *)text, (int)character, strnlen_s(text, TCount)) - (char *)text);
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mStringChar, const char *text, const size_t maxLength, const char character, OUT size_t *pLength)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(text == nullptr || pLength == nullptr, mR_ArgumentNull);
+
+  *pLength = (size_t)((char *)memchr((void *)text, (int)character, strnlen_s(text, maxLength)) - (char *)text);
+
+  mRETURN_SUCCESS();
+}
+
 /*
 * Simd Library (http://ermig1979.github.io/Simd).
 *
