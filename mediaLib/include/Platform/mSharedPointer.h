@@ -75,10 +75,10 @@ inline mFUNCTION(mSharedPointer_Create, OUT mSharedPointer<T> *pOutSharedPointer
   if (*pOutSharedPointer != nullptr)
     *pOutSharedPointer = nullptr;
 
-  mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &pOutSharedPointer->m_pParams, 1));
+  mERROR_CHECK(mAllocator_AllocateZero(pAllocator == mSHARED_POINTER_FOREIGN_RESOURCE ? nullptr : pAllocator, &pOutSharedPointer->m_pParams, 1));
   pOutSharedPointer->m_pParams = new (pOutSharedPointer->m_pParams) typename mSharedPointer<T>::PointerParams();
   pOutSharedPointer->m_pParams->referenceCount = 1;
-  pOutSharedPointer->m_pParams->pAllocator = pAllocator;
+  pOutSharedPointer->m_pParams->pAllocator = pAllocator == mSHARED_POINTER_FOREIGN_RESOURCE ? nullptr : pAllocator;
   pOutSharedPointer->m_pParams->freeResource = (pAllocator != mSHARED_POINTER_FOREIGN_RESOURCE);
   pOutSharedPointer->m_pParams->inplaceConstructed = false;
   pOutSharedPointer->m_pParams->cleanupFunction = cleanupFunction;

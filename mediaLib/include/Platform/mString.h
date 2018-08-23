@@ -11,29 +11,48 @@
 
 #include "default.h"
 
-typedef uint32_t mchar_t;
+typedef int32_t mchar_t;
+
+template <size_t TCount>
+mchar_t mToChar(char c[TCount]);
+mchar_t mToChar(char *c, const size_t size);
 
 struct mString
 {
   char *text;
   mAllocator *pAllocator;
   size_t bytes;
-  size_t length;
+  size_t count;
   size_t capacity;
 
   mString();
+
+  template <size_t TSize>
+  mString(char text[TSize], IN OPTIONAL mAllocator *pAllocator = nullptr);
+
+  mString(char *text, const size_t size, IN OPTIONAL mAllocator *pAllocator = nullptr);
   mString(char *text, IN OPTIONAL mAllocator *pAllocator = nullptr);
+
   ~mString();
 
-  size_t Size() const;
-  size_t Length() const;
+  mString(const mString &copy);
+  mString(mString &&move);
 
-  bool IsValidUnicode() const;
+  mString & operator = (const mString &copy);
+  mString & operator = (mString &&move);
+
+  size_t Size() const;
+  size_t Count() const;
 
   mchar_t operator[](const size_t index) const;
 
   mString operator +(const mString &s) const;
   mString operator +=(const mString &s);
+
+  explicit operator std::string() const;
+  explicit operator std::wstring() const;
+
+  const char * c_str() const;
 };
 
 template <size_t TCount>
@@ -52,8 +71,6 @@ mFUNCTION(mString_GetByteSize, const mString &string, OUT size_t *pSize);
 
 mFUNCTION(mString_GetLength, const mString &string, OUT size_t *pLength);
 
-mFUNCTION(mString_IsValidUnicode, const mString &string, OUT bool *pIsUnicode);
-
 mFUNCTION(mString_ToWideString, const mString &string, std::wstring *pWideString);
 
 mFUNCTION(mString_Substring, const mString &text, OUT mString *pSubstring, const size_t startIndex);
@@ -62,6 +79,12 @@ mFUNCTION(mString_Substring, const mString &text, OUT mString *pSubstring, const
 
 
 //////////////////////////////////////////////////////////////////////////
+
+template<size_t TCount>
+inline mchar_t mToChar(char c[TCount])
+{
+  return mToChar(c, TCount);
+}
 
 template<size_t TCount>
 inline mFUNCTION(mString_Create, OUT mString *pString, char text[TCount], IN OPTIONAL mAllocator *pAllocator /* = nullptr */)
@@ -85,5 +108,9 @@ inline mFUNCTION(mString_CreateFormat, OUT mString *pString, IN OPTIONAL mAlloca
 
   mRETURN_SUCCESS();
 }
+
+template<size_t TSize>
+inline mString::mString(char text[TSize], IN OPTIONAL mAllocator *pAllocator /* = nullptr */) : mString(text, TSize, pAllocator)
+{ }
 
 #endif // mString_h__
