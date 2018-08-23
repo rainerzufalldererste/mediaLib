@@ -29,7 +29,10 @@ struct mString
 
   bool IsValidUnicode() const;
 
-  mchar_t operator[](size_t index);
+  mchar_t operator[](const size_t index) const;
+
+  mString operator +(const mString &s) const;
+  mString operator +=(const mString &s);
 };
 
 template <size_t TCount>
@@ -38,6 +41,9 @@ mFUNCTION(mString_Create, OUT mString *pString, char text[TCount], IN OPTIONAL m
 mFUNCTION(mString_Create, OUT mString *pString, char *text, IN OPTIONAL mAllocator *pAllocator = nullptr);
 
 mFUNCTION(mString_Create, OUT mString *pString, const size_t size, char *text, IN OPTIONAL mAllocator *pAllocator = nullptr);
+
+template <typename ...Args>
+mFUNCTION(mString_CreateFormat, OUT mString *pString, IN OPTIONAL mAllocator *pAllocator, const char *formatString, Args&&... args);
 
 mFUNCTION(mString_Destroy, IN_OUT mString *pString);
 
@@ -49,6 +55,11 @@ mFUNCTION(mString_IsValidUnicode, const mString &string, OUT bool *pIsUnicode);
 
 mFUNCTION(mString_ToWideString, const mString &string, std::wstring *pWideString);
 
+mFUNCTION(mString_Substring, const mString &text, OUT mString *pSubstring, const size_t startIndex);
+
+mFUNCTION(mString_Substring, const mString &text, OUT mString *pSubstring, const size_t startIndex, const size_t length);
+
+
 //////////////////////////////////////////////////////////////////////////
 
 template<size_t TCount>
@@ -57,6 +68,19 @@ inline mFUNCTION(mString_Create, OUT mString *pString, char text[TCount], IN OPT
   mFUNCTION_SETUP();
 
   mERROR_CHECK(mString_Create(pString, text, TCount, pAllocator));
+
+  mRETURN_SUCCESS();
+}
+
+template<typename ...Args>
+inline mFUNCTION(mString_CreateFormat, OUT mString *pString, IN OPTIONAL mAllocator *pAllocator, const char *formatString, Args && ...args)
+{
+  mFUNCTION_SETUP();
+
+  char text[2048];
+  mERROR_IF(0 > sprintf_s(text, formatString, std::forward<Args>(args)...));
+
+  mERROR_CHECK(mString_Create(pString, text, pAllocator));
 
   mRETURN_SUCCESS();
 }
