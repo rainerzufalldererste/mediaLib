@@ -7,20 +7,51 @@
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "mString.h"
+#include "utf8proc.h"
 
 mString::mString()
-  : pData(nullptr),
+  : text(nullptr),
   pAllocator(nullptr),
   bytes(0),
   length(0)
 { }
 
+mString::mString(char *text, IN OPTIONAL mAllocator *pAllocator)
+{
+  mResult result = mR_Success;
+
+  this->pAllocator = pAllocator;
+  this->bytes = strlen(text);
+
+  mERROR_CHECK_GOTO(mAllocator_AllocateZero(this->pAllocator, &this->text, this->bytes), result, epilogue);
+  this->capacity = bytes;
+  mERROR_CHECK_GOTO(mAllocator_Copy(this->pAllocator, this->text, text, this->bytes), result, epilogue);
+
+  size_t i = 0;
+  this->length = 0;
+  
+  while (i < bytes)
+  {
+    utf8proc_int32_t codePoint;
+    ptrdiff_t position;
+    mERROR_IF_GOTO((position = utf8proc_iterate((uint8_t *)this->text + i, this->bytes, &codePoint)) < 0, mR_InternalError, result, epilogue);
+    mERROR_IF_GOTO(codePoint < 0, mR_InternalError, result, epilogue);
+    i += (size_t)position;
+    this->length++;
+  }
+
+  return;
+
+epilogue:
+  this->~mString();
+}
+
 mString::~mString()
 {
-  if (pData)
-    mAllocator_FreePtr(pAllocator, &pData);
+  if (text != nullptr)
+    mAllocator_FreePtr(pAllocator, &text);
 
-  pData = nullptr;
+  text = nullptr;
   pAllocator = nullptr;
   bytes = 0;
   length = 0;

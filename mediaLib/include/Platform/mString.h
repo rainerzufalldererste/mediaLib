@@ -15,10 +15,11 @@ typedef uint32_t mchar_t;
 
 struct mString
 {
-  char *pData;
+  char *text;
   mAllocator *pAllocator;
   size_t bytes;
   size_t length;
+  size_t capacity;
 
   mString();
   mString(char *text, IN OPTIONAL mAllocator *pAllocator = nullptr);
@@ -78,7 +79,7 @@ inline mFUNCTION(mString_CreateFormat, OUT mString *pString, IN OPTIONAL mAlloca
   mFUNCTION_SETUP();
 
   char text[2048];
-  mERROR_IF(0 > sprintf_s(text, formatString, std::forward<Args>(args)...));
+  mERROR_IF(0 > sprintf_s(text, formatString, std::forward<Args>(args)...), mR_InternalError);
 
   mERROR_CHECK(mString_Create(pString, text, pAllocator));
 
