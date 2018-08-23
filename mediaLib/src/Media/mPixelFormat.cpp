@@ -1139,6 +1139,8 @@ mFUNCTION(mPixelFormat_TransformBuffer, mPtr<mImageBuffer> &source, mPtr<mImageB
       mRETURN_RESULT(mR_InvalidParameter);
     }
     }
+
+    break;
   }
 
   //////////////////////////////////////////////////////////////////////////
