@@ -11,6 +11,7 @@
 #include "mMesh.h"
 #include "mSpriteBatch.h"
 #include "mResourceManager.h"
+#include "mString.h"
 
 mPtr<mHardwareWindow> window = nullptr;
 mPtr<mImageBuffer> image;
@@ -21,6 +22,9 @@ int main(int, char **)
   mFUNCTION_SETUP();
 
   g_mResult_breakOnError = true;
+
+  mString s = mString("ricecracker.");
+
   mDEFER_DESTRUCTION(&threadPool, mThreadPool_Destroy);
   mERROR_CHECK(mThreadPool_Create(&threadPool, nullptr));
 

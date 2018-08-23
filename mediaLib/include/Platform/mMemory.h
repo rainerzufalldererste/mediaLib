@@ -288,7 +288,7 @@ mFUNCTION(mStringChar, const char text[TCount], const char character, OUT size_t
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mStringChar, const char *text, const size_t maxLength, const char character, OUT size_t *pLength)
+inline mFUNCTION(mStringChar, const char *text, const size_t maxLength, const char character, OUT size_t *pLength)
 {
   mFUNCTION_SETUP();
 
