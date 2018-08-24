@@ -134,12 +134,8 @@ mFUNCTION(mTexture_Upload, mTexture &texture)
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)texture.imageBuffer->currentSize.x, (GLsizei)texture.imageBuffer->currentSize.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, texture.imageBuffer->pPixels);
   else if (texture.imageBuffer->pixelFormat == mPF_R8G8B8)
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, (GLsizei)texture.imageBuffer->currentSize.x, (GLsizei)texture.imageBuffer->currentSize.y, 0, GL_RGB, GL_UNSIGNED_BYTE, texture.imageBuffer->pPixels);
-  else if (texture.imageBuffer->pixelFormat == mPF_B8G8R8A8)
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_BGRA, (GLsizei)texture.imageBuffer->currentSize.x, (GLsizei)texture.imageBuffer->currentSize.y, 0, GL_BGRA, GL_UNSIGNED_BYTE, texture.imageBuffer->pPixels);
-  else if (texture.imageBuffer->pixelFormat == mPF_B8G8R8)
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_BGR, (GLsizei)texture.imageBuffer->currentSize.x, (GLsizei)texture.imageBuffer->currentSize.y, 0, GL_BGR, GL_UNSIGNED_BYTE, texture.imageBuffer->pPixels);
   else if (texture.imageBuffer->pixelFormat == mPF_Monochrome8)
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, (GLsizei)texture.imageBuffer->currentSize.x, (GLsizei)texture.imageBuffer->currentSize.y, 0, GL_RED, GL_UNSIGNED_BYTE, texture.imageBuffer->pPixels);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, (GLsizei)texture.imageBuffer->currentSize.x, (GLsizei)texture.imageBuffer->currentSize.y, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, texture.imageBuffer->pPixels);
   else
   {
     mPtr<mImageBuffer> imageBuffer;
@@ -221,7 +217,7 @@ mFUNCTION(mTexture_SetTo, mTexture &texture, const uint8_t *pData, const mVec2s 
 
   mPtr<mImageBuffer> imageBuffer;
   mDEFER_DESTRUCTION(&imageBuffer, mImageBuffer_Destroy);
-  mERROR_CHECK(mImageBuffer_Create(&imageBuffer, nullptr, size, pixelFormat));
+  mERROR_CHECK(mImageBuffer_Create(&imageBuffer, nullptr, (void *)pData, size, pixelFormat));
 
   mERROR_CHECK(mTexture_SetTo(texture, imageBuffer, upload));
 

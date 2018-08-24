@@ -73,9 +73,9 @@ int main(int, char **)
   pDataY = currentFrame->pPixels + offsetY;
   pDataU = currentFrame->pPixels + offsetU;
   pDataV = currentFrame->pPixels + offsetV;
-  mERROR_CHECK(mTexture_Create(textureY.GetPointer(), pDataY, sizeY, mPF_Monochrome8));
-  mERROR_CHECK(mTexture_Create(textureU.GetPointer(), pDataU, sizeU, mPF_Monochrome8));
-  mERROR_CHECK(mTexture_Create(textureV.GetPointer(), pDataV, sizeV, mPF_Monochrome8));
+  mERROR_CHECK(mTexture_Create(textureY.GetPointer(), pDataY, sizeY, mPF_Monochrome8, true, 0));
+  mERROR_CHECK(mTexture_Create(textureU.GetPointer(), pDataU, sizeU, mPF_Monochrome8, true, 1));
+  mERROR_CHECK(mTexture_Create(textureV.GetPointer(), pDataV, sizeV, mPF_Monochrome8, true, 2));
 
   // Create Meshes.
   mPtr<mQueue<mPtr<mMesh>>> meshes;
@@ -114,11 +114,18 @@ int main(int, char **)
 
       void main()
       {
-        float y = texture(textureY, _texCoord0).x;
-        float u = texture(textureU, _texCoord0).x;
-        float v = texture(textureV, _texCoord0).x;
+        vec2 pos = _texCoord0;
 
-        outColour = vec4(y, u, v, 1);
+        float y = texture(textureY, pos).x;
+        float u = texture(textureU, pos).x;
+        float v = texture(textureV, pos).x;
+
+        vec3 col = vec3(
+          clamp(y + 1.370705 * (v - 0.5), 0, 1),
+          clamp(y - 0.698001 * (v - 0.5) - 0.337633 * (u - 0.5), 0, 1),
+          clamp(y + 1.732446 * (u - 0.5), 0, 1));
+
+        outColour = vec4(col, 1);
       }
     );
 
@@ -126,6 +133,10 @@ int main(int, char **)
     mDEFER_DESTRUCTION(&shader, mSharedPointer_Destroy);
     mERROR_CHECK(mSharedPointer_Allocate(&shader, nullptr, (std::function<void(mShader *)>)[](mShader *pData) {mShader_Destroy(pData);}, 1));
     mERROR_CHECK(mShader_Create(shader.GetPointer(), vertexShader, fragmentShader, "outColour"));
+
+    mERROR_CHECK(mShader_SetUniform(shader, "textureY", textureY));
+    mERROR_CHECK(mShader_SetUniform(shader, "textureU", textureU));
+    mERROR_CHECK(mShader_SetUniform(shader, "textureV", textureV));
 
     mPtr<mQueue<mPtr<mTexture>>> textures;
     mDEFER_DESTRUCTION(&textures, mQueue_Destroy);
@@ -140,19 +151,19 @@ int main(int, char **)
       mPtr<mBinaryChunk> binaryChunk;
       mDEFER_DESTRUCTION(&binaryChunk, mBinaryChunk_Destroy);
       mERROR_CHECK(mBinaryChunk_Create(&binaryChunk, nullptr));
-
+             
       mERROR_CHECK(mBinaryChunk_WriteData(binaryChunk, mVec2f(-1, -1)));  // position.
-      mERROR_CHECK(mBinaryChunk_WriteData(binaryChunk, mVec2f(0 ,  1)));  // texCoord.
-      mERROR_CHECK(mBinaryChunk_WriteData(binaryChunk, mVec2f(1 , -1)));  // position.
-      mERROR_CHECK(mBinaryChunk_WriteData(binaryChunk, mVec2f(0 ,  0)));  // texCoord.
-      mERROR_CHECK(mBinaryChunk_WriteData(binaryChunk, mVec2f(-1,  1)));  // position.
       mERROR_CHECK(mBinaryChunk_WriteData(binaryChunk, mVec2f(1 ,  1)));  // texCoord.
-      mERROR_CHECK(mBinaryChunk_WriteData(binaryChunk, mVec2f(1 ,  1)));  // position.
+      mERROR_CHECK(mBinaryChunk_WriteData(binaryChunk, mVec2f(1 , -1)));  // position.
+      mERROR_CHECK(mBinaryChunk_WriteData(binaryChunk, mVec2f(0 ,  1)));  // texCoord.
+      mERROR_CHECK(mBinaryChunk_WriteData(binaryChunk, mVec2f(-1,  1)));  // position.
       mERROR_CHECK(mBinaryChunk_WriteData(binaryChunk, mVec2f(1 ,  0)));  // texCoord.
+      mERROR_CHECK(mBinaryChunk_WriteData(binaryChunk, mVec2f(1 ,  1)));  // position.
+      mERROR_CHECK(mBinaryChunk_WriteData(binaryChunk, mVec2f(0 ,  0)));  // texCoord.
 
       mPtr<mMesh> mesh;
       mDEFER_DESTRUCTION(&mesh, mMesh_Destroy);
-      mERROR_CHECK(mMesh_Create(&mesh, nullptr, info, shader, binaryChunk, textures, mRP_RM_TriangleStrip));
+      mERROR_CHECK(mMesh_Create(&mesh, nullptr, info, shader, binaryChunk, textures, mRP_VRM_TriangleStrip));
 
       mERROR_CHECK(mQueue_PushBack(meshes, mesh));
     }
