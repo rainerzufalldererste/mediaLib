@@ -56,7 +56,7 @@ mFUNCTION(mDefaultAllocator_Move, IN_OUT uint8_t *pDestimation, IN uint8_t *pSou
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mDefaultAllocator_Copy, IN_OUT uint8_t *pDestimation, IN uint8_t *pSource, const size_t size, const size_t count, IN void *)
+mFUNCTION(mDefaultAllocator_Copy, IN_OUT uint8_t *pDestimation, IN const uint8_t *pSource, const size_t size, const size_t count, IN void *)
 {
   mFUNCTION_SETUP();
 
