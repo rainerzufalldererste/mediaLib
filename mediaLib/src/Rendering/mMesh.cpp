@@ -8,7 +8,7 @@
 
 #include "mMesh.h"
 
-mFUNCTION(mMesh_Create, OUT mPtr<mMesh> *pMesh, IN mAllocator *pAllocator, mPtr<mQueue<mMeshFactory_AttributeInformation>> &attributeInformation, mPtr<mShader>& shader, mPtr<mBinaryChunk>& data, mPtr<mQueue<mPtr<mTexture>>> &textures, const mRenderParams_VertexRenderMode triangleRenderMode /* = mRP_RM_TriangleList */)
+mFUNCTION(mMesh_Create, OUT mPtr<mMesh> *pMesh, IN mAllocator *pAllocator, mPtr<mQueue<mMeshFactory_AttributeInformation>> &attributeInformation, mPtr<mShader>& shader, mPtr<mBinaryChunk>& data, mPtr<mQueue<mPtr<mTexture>>> &textures, const mRenderParams_VertexRenderMode triangleRenderMode /* = mRP_VRM_TriangleList */)
 {
   mFUNCTION_SETUP();
 
@@ -210,43 +210,43 @@ mFUNCTION(mMesh_Render, mPtr<mMesh>& data)
 
   switch (data->triangleRenderMode)
   {
-  case mRP_RM_Points:
+  case mRP_VRM_Points:
     glDrawArrays(GL_POINTS, 0, (GLuint)data->primitiveCount);
     break;
 
-  case mRP_PM_LineList:
+  case mRP_VRM_LineList:
     glDrawArrays(GL_LINES, 0, (GLuint)data->primitiveCount);
     break;
 
-  case mRP_PM_LineStrip:
+  case mRP_VRM_LineStrip:
     glDrawArrays(GL_LINE_STRIP, 0, (GLuint)data->primitiveCount);
     break;
 
-  case mRP_PM_LineLoop:
+  case mRP_VRM_LineLoop:
     glDrawArrays(GL_LINE_LOOP, 0, (GLuint)data->primitiveCount);
     break;
 
-  case mRP_RM_TriangleList:
+  case mRP_VRM_TriangleList:
     glDrawArrays(GL_TRIANGLES, 0, (GLuint)data->primitiveCount);
     break;
 
-  case mRP_RM_TriangleStrip:
+  case mRP_VRM_TriangleStrip:
     glDrawArrays(GL_TRIANGLE_STRIP, 0, (GLuint)data->primitiveCount);
     break;
 
-  case mRP_RM_TriangleFan:
+  case mRP_VRM_TriangleFan:
     glDrawArrays(GL_TRIANGLE_FAN, 0, (GLuint)data->primitiveCount);
     break;
 
-  case mRP_PM_QuadList:
+  case mRP_VRM_QuadList:
     glDrawArrays(GL_QUADS, 0, (GLuint)data->primitiveCount);
     break;
 
-  case mRP_PM_QuadStrip:
+  case mRP_VRM_QuadStrip:
     glDrawArrays(GL_QUAD_STRIP, 0, (GLuint)data->primitiveCount);
     break;
 
-  case mRP_PM_Polygon:
+  case mRP_VRM_Polygon:
     glDrawArrays(GL_POLYGON, 0, (GLuint)data->primitiveCount);
     break;
 
