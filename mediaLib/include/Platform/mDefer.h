@@ -121,7 +121,7 @@ inline mDefer<T>::mDefer(const std::function<void(T*)> &onExit, T* pData, const 
 {
   m_deferType = mDeferType::mDT_LambdaTPtr;
   m_pData = pData;
-  m_onExitLT = onExit;
+  m_onExitLP = onExit;
   m_pResult = pResult;
 }
 
@@ -130,7 +130,7 @@ inline mDefer<T>::mDefer(std::function<void(T*)> &&onExit, T* pData, const mResu
 {
   m_deferType = mDeferType::mDT_LambdaTPtr;
   m_pData = pData;
-  m_onExitLT = std::move(onExit);
+  m_onExitLP = std::move(onExit);
   m_pResult = pResult;
 }
 

@@ -14,6 +14,7 @@
 #include "mResult.h"
 #include "mDefer.h"
 #include <climits>
+#include <malloc.h>
 
 template <typename T>
 void mSetToNullptr(T **ppData)

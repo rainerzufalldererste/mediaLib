@@ -24,6 +24,7 @@ struct mString
   size_t bytes;
   size_t count;
   size_t capacity;
+  bool hasFailed;
 
   mString();
 
@@ -60,7 +61,7 @@ mFUNCTION(mString_Create, OUT mString *pString, char text[TCount], IN OPTIONAL m
 
 mFUNCTION(mString_Create, OUT mString *pString, char *text, IN OPTIONAL mAllocator *pAllocator = nullptr);
 
-mFUNCTION(mString_Create, OUT mString *pString, const size_t size, char *text, IN OPTIONAL mAllocator *pAllocator = nullptr);
+mFUNCTION(mString_Create, OUT mString *pString, char *text, const size_t size, IN OPTIONAL mAllocator *pAllocator = nullptr);
 
 template <typename ...Args>
 mFUNCTION(mString_CreateFormat, OUT mString *pString, IN OPTIONAL mAllocator *pAllocator, const char *formatString, Args&&... args);
@@ -69,14 +70,15 @@ mFUNCTION(mString_Destroy, IN_OUT mString *pString);
 
 mFUNCTION(mString_GetByteSize, const mString &string, OUT size_t *pSize);
 
-mFUNCTION(mString_GetLength, const mString &string, OUT size_t *pLength);
+mFUNCTION(mString_GetCount, const mString &string, OUT size_t *pLength);
 
 mFUNCTION(mString_ToWideString, const mString &string, std::wstring *pWideString);
 
-mFUNCTION(mString_Substring, const mString &text, OUT mString *pSubstring, const size_t startIndex);
+mFUNCTION(mString_Substring, const mString &text, OUT mString *pSubstring, const size_t startCharacter);
 
-mFUNCTION(mString_Substring, const mString &text, OUT mString *pSubstring, const size_t startIndex, const size_t length);
+mFUNCTION(mString_Substring, const mString &text, OUT mString *pSubstring, const size_t startCharacter, const size_t length);
 
+mFUNCTION(mString_Append, mString &text, const mString &appendedText);
 
 //////////////////////////////////////////////////////////////////////////
 
