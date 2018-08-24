@@ -971,8 +971,8 @@ namespace mPixelFormat_Transform
       for (; x < maxX; x += 4)
       {
         __m128i color = *(__m128i *)&pSource[x + ySourceOffset];
-        __m128i swap0 = mSimd_ShiftLeft(color, 0x10);
-        __m128i swap1 = mSimd_ShiftRight(color, 0x10);
+        __m128i swap0 = _mm_slli_si128(color, 2);
+        __m128i swap1 = _mm_srli_si128(color, 2);
 
         color = _mm_and_si128(color, _G_A_Pattern);
         swap0 = _mm_and_si128(swap0, X____Pattern);
