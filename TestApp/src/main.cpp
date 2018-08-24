@@ -13,6 +13,7 @@
 #include "mResourceManager.h"
 #include "mVideoPlaybackEngine.h"
 
+const std::wstring videoFilename = L"N:/Data/video/PublicHologram.mp4";
 
 int main(int, char **)
 {
@@ -26,12 +27,12 @@ int main(int, char **)
   SDL_GetCurrentDisplayMode(0, &displayMode);
 
   mVec2s resolution;
-  resolution.x = displayMode.w;
-  resolution.y = displayMode.h;
+  resolution.x = displayMode.w / 2;
+  resolution.y = displayMode.h / 2;
 
   mPtr<mHardwareWindow> window = nullptr;
   mDEFER_DESTRUCTION(&window, mHardwareWindow_Destroy);
-  mERROR_CHECK(mHardwareWindow_Create(&window, nullptr, "OpenGL Window", resolution, mHW_DM_FullscreenDesktop));
+  mERROR_CHECK(mHardwareWindow_Create(&window, nullptr, "OpenGL Window", resolution));// , mHW_DM_FullscreenDesktop));
   mERROR_CHECK(mRenderParams_InitializeToDefault());
 
   mERROR_CHECK(mRenderParams_SetDoubleBuffering(true));
@@ -41,7 +42,7 @@ int main(int, char **)
   mPtr<mThreadPool> threadPool;
   mPtr<mVideoPlaybackEngine> videoPlaybackEngine;
   mDEFER_DESTRUCTION(&videoPlaybackEngine, mVideoPlaybackEngine_Destroy);
-  mERROR_CHECK(mVideoPlaybackEngine_Create(&videoPlaybackEngine, nullptr, L"C:/Users/cstiller/Videos/Converted.mp4", threadPool, 0, mPF_YUV420));
+  mERROR_CHECK(mVideoPlaybackEngine_Create(&videoPlaybackEngine, nullptr, videoFilename, threadPool, 0, mPF_YUV420));
 
   mPtr<mTexture> textureY;
   mDEFER_DESTRUCTION(&textureY, mSharedPointer_Destroy);
@@ -113,7 +114,11 @@ int main(int, char **)
 
       void main()
       {
-        outColour = vec4(_texCoord0, 0, 1);
+        float y = texture(textureY, _texCoord0).x;
+        float u = texture(textureU, _texCoord0).x;
+        float v = texture(textureV, _texCoord0).x;
+
+        outColour = vec4(y, u, v, 1);
       }
     );
 
@@ -139,7 +144,7 @@ int main(int, char **)
       mERROR_CHECK(mBinaryChunk_WriteData(binaryChunk, mVec2f(-1, -1)));  // position.
       mERROR_CHECK(mBinaryChunk_WriteData(binaryChunk, mVec2f(0 ,  1)));  // texCoord.
       mERROR_CHECK(mBinaryChunk_WriteData(binaryChunk, mVec2f(1 , -1)));  // position.
-      mERROR_CHECK(mBinaryChunk_WriteData(binaryChunk, mVec2f(1 ,  0)));  // texCoord.
+      mERROR_CHECK(mBinaryChunk_WriteData(binaryChunk, mVec2f(0 ,  0)));  // texCoord.
       mERROR_CHECK(mBinaryChunk_WriteData(binaryChunk, mVec2f(-1,  1)));  // position.
       mERROR_CHECK(mBinaryChunk_WriteData(binaryChunk, mVec2f(1 ,  1)));  // texCoord.
       mERROR_CHECK(mBinaryChunk_WriteData(binaryChunk, mVec2f(1 ,  1)));  // position.
@@ -163,10 +168,10 @@ int main(int, char **)
     bool isNewFrame = true;
     mResult result = mVideoPlaybackEngine_GetCurrentFrame(videoPlaybackEngine, &currentFrame, &isNewFrame);
 
-    if (!mSUCCEEDED(result))
+    if (mFAILED(result))
     {
       if (result == mR_EndOfStream)
-        mERROR_CHECK(mVideoPlaybackEngine_Create(&videoPlaybackEngine, nullptr, L"C:/Users/cstiller/Videos/Converted.mp4", threadPool, 0, mPF_YUV420));
+        mERROR_CHECK(mVideoPlaybackEngine_Create(&videoPlaybackEngine, nullptr, videoFilename, threadPool, 0, mPF_YUV420));
       else
         mERROR_CHECK(result);
 
