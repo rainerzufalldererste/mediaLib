@@ -113,12 +113,14 @@ mString & mString::operator=(const mString &copy)
 {
   this->~mString();
   new (this) mString(copy);
+  return *this;
 }
 
 mString & mString::operator=(mString &&move)
 {
   this->~mString();
   new (this) mString(std::move(move));
+  return *this;
 }
 
 size_t mString::Size() const
@@ -173,6 +175,8 @@ mString::operator std::wstring() const
   {
     mDEFER(mAllocator_FreePtr(nullptr, &wtext));
   }
+
+  return std::wstring();
 }
 
 const char * mString::c_str() const
