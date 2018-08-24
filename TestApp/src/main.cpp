@@ -31,18 +31,6 @@ int main(int, char **)
   mDEFER_DESTRUCTION(&image, mImageBuffer_Destroy);
   mERROR_CHECK(mImageBuffer_CreateFromFile(&image, nullptr, "C:/data/avatar.jpg"));
 
-  mPtr<mImageBuffer> bgra;
-  mDEFER_DESTRUCTION(&bgra, mImageBuffer_Destroy);
-  mERROR_CHECK(mImageBuffer_Create(&bgra, nullptr, image->currentSize, mPF_B8G8R8A8));
-
-  mPtr<mImageBuffer> rgba;
-  mDEFER_DESTRUCTION(&rgba, mImageBuffer_Destroy);
-  mERROR_CHECK(mImageBuffer_Create(&rgba, nullptr, image->currentSize, mPF_R8G8B8A8));
-
-  mERROR_CHECK(mPixelFormat_TransformBuffer(image, bgra));
-  mERROR_CHECK(mPixelFormat_TransformBuffer(bgra, rgba));
-  mERROR_CHECK(mImageBuffer_SaveAsPng(rgba, "testrgba.png"));
-
   SDL_Init(SDL_INIT_EVERYTHING);
 
   SDL_DisplayMode displayMode;
