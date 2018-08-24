@@ -31,6 +31,7 @@ project(ProjectName)
   includedirs { "3rdParty/stb" }
   includedirs { "3rdParty/SDL2/include" }
   includedirs { "3rdParty/glew/include" }
+  includedirs { "3rdParty/utf8proc/include" }
 
   filter { "configurations:Debug", "system:Windows" }
     ignoredefaultlibraries { "libcmt" }
@@ -42,6 +43,9 @@ project(ProjectName)
   
 filter {}
 configuration {}
+
+linkoptions { "3rdParty/utf8proc/lib/utf8proc_static.lib" }
+defines { "UTF8PROC_STATIC" }
 
 warnings "Extra"
 
@@ -62,7 +66,7 @@ filter { "configurations:Debug*" }
 
 filter { "configurations:Release" }
 	defines { "NDEBUG" }
-	optimize "Full"
+	optimize "Speed"
 	flags { "NoFramePointer", "NoBufferSecurityCheck" }
 	symbols "On"
 

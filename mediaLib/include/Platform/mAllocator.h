@@ -12,19 +12,19 @@
 #include "mResult.h"
 #include "default.h"
 
-// Parameters: 
+// Parameters:
 //   OUT uint8_t **ppData: pointer to pointer to allocate to.
 //   const size_t size: size of a single object.
 //   const size_t count: amount of objects.
 //   IN void *pUserData: associated user data with the custom allocator.
 typedef mResult(mAllocator_AllocFunction) (OUT uint8_t **, const size_t, const size_t, IN void *);
 
-// Parameters: 
+// Parameters:
 //   IN uint8_t *ppData: pointer to free memory at.
 //   IN void *pUserData: associated user data with the custom allocator.
 typedef mResult(mAllocator_FreeFunction) (IN uint8_t *, IN void *);
 
-// Parameters: 
+// Parameters:
 //   IN_OUT uint8_t *pDestination: pointer to the destination.
 //   IN_OUT uint8_t *pSource: size of a single object.
 //   const size_t size: size of a single object.
@@ -32,15 +32,15 @@ typedef mResult(mAllocator_FreeFunction) (IN uint8_t *, IN void *);
 //   IN void *pUserData: associated user data with the custom allocator.
 typedef mResult(mAllocator_MoveFunction) (IN_OUT uint8_t *, IN_OUT uint8_t *, const size_t, const size_t, IN void *);
 
-// Parameters: 
+// Parameters:
 //   IN_OUT uint8_t *pDestination: pointer to the destination.
-//   IN_OUT uint8_t *pSource: size of a single object.
+//   IN const uint8_t *pSource: size of a single object.
 //   const size_t size: size of a single object.
 //   const size_t count: amount of objects.
 //   IN void *pUserData: associated user data with the custom allocator.
-typedef mResult(mAllocator_CopyFunction) (IN_OUT uint8_t *, IN uint8_t *, const size_t, const size_t, IN void *);
+typedef mResult(mAllocator_CopyFunction) (IN_OUT uint8_t *, IN const uint8_t *, const size_t, const size_t, IN void *);
 
-// Parameters: 
+// Parameters:
 //   IN void *pUserData: associated user data with the custom allocator.
 typedef mResult(mAllocator_DestroyAllocator) (IN void *);
 
@@ -49,7 +49,7 @@ mFUNCTION(mDefaultAllocator_AllocZero, OUT uint8_t **ppData, const size_t size, 
 mFUNCTION(mDefaultAllocator_Realloc, OUT uint8_t **ppData, const size_t size, const size_t count, IN void *pUserData = nullptr);
 mFUNCTION(mDefaultAllocator_Free, OUT uint8_t *pData, IN void *pUserData = nullptr);
 mFUNCTION(mDefaultAllocator_Move, IN_OUT uint8_t *pDestimation, IN uint8_t *pSource, const size_t size, const size_t count, IN void *pUserData = nullptr);
-mFUNCTION(mDefaultAllocator_Copy, IN_OUT uint8_t *pDestimation, IN uint8_t *pSource, const size_t size, const size_t count, IN void *pUserData = nullptr);
+mFUNCTION(mDefaultAllocator_Copy, IN_OUT uint8_t *pDestimation, IN const uint8_t *pSource, const size_t size, const size_t count, IN void *pUserData = nullptr);
 
 struct mAllocator;
 extern mAllocator mDefaultAllocator;

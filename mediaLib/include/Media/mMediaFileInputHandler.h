@@ -6,19 +6,14 @@
 // 
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+#ifndef mMediaFileInputHandler_h__
+#define mMediaFileInputHandler_h__
+
 #include "default.h"
 #include <string>
 #include "mPixelFormat.h"
 #include "mImageBuffer.h"
 #include "mTimeStamp.h"
-
-#pragma comment(lib, "dxva2.lib")
-#pragma comment(lib, "evr.lib")
-#pragma comment(lib, "mf.lib")
-#pragma comment(lib, "mfplat.lib")
-#pragma comment(lib, "mfplay.lib")
-#pragma comment(lib, "mfreadwrite.lib")
-#pragma comment(lib, "mfuuid.lib")
 
 struct mMediaFileInputHandler;
 
@@ -94,3 +89,5 @@ mFUNCTION(mMediaFileInputIterator_SeekTo, mPtr<mMediaFileInputIterator> &iterato
 
 // Returns 'mR_EndOfStream' on end of stream.
 mFUNCTION(mMediaFileInputIterator_SkipFrame, mPtr<mMediaFileInputIterator> &iterator);
+
+#endif // mMediaFileInputHandler_h__
