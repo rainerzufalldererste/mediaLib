@@ -303,7 +303,7 @@ struct mMeshFactory
 {
   mMeshFactory_Internal meshFactoryInternal;
   mPtr<mBinaryChunk> values;
-  mRenderParams_TriangleRenderMode triangleRenderMode;
+  mRenderParams_VertexRenderMode triangleRenderMode;
 };
 
 struct mMesh
@@ -312,7 +312,7 @@ struct mMesh
   size_t dataSize;
   mRenderParams_UploadState uploadState;
   mArray<mPtr<mTexture>> textures;
-  mRenderParams_TriangleRenderMode triangleRenderMode;
+  mRenderParams_VertexRenderMode triangleRenderMode;
   mPtr<mQueue<mMeshFactory_AttributeInformation>> information;
   size_t primitiveCount;
 #if defined (mRENDERER_OPENGL)
@@ -325,7 +325,7 @@ template <typename ...Args>
 mFUNCTION(mMeshFactory_Destroy_Internal, mMeshFactory<Args...> *pFactory);
 
 template <typename ...Args>
-mFUNCTION(mMeshFactory_Create, OUT mPtr<mMeshFactory<Args...>> *pFactory, IN mAllocator *pAllocator, const mRenderParams_TriangleRenderMode triangleRenderMode = mRP_RM_TriangleList);
+mFUNCTION(mMeshFactory_Create, OUT mPtr<mMeshFactory<Args...>> *pFactory, IN mAllocator *pAllocator, const mRenderParams_VertexRenderMode triangleRenderMode = mRP_RM_TriangleList);
 
 template <typename ...Args>
 mFUNCTION(mMeshFactory_Destroy, IN_OUT mPtr<mMeshFactory<Args...>> *pFactory);
@@ -342,6 +342,8 @@ mFUNCTION(mMeshFactory_GrowBack, mPtr<mMeshFactory<Args...>> &factory, const siz
 template <typename ...Args>
 mFUNCTION(mMeshFactory_Clear, mPtr<mMeshFactory<Args...>> &factory);
 
+mFUNCTION(mMesh_Create, OUT mPtr<mMesh> *pMesh, IN mAllocator *pAllocator, mPtr<mQueue<mMeshFactory_AttributeInformation>> &attributeInformation, mPtr<mShader> &shader, mPtr<mBinaryChunk> &data, mPtr<mQueue<mPtr<mTexture>>> &textures, const mRenderParams_VertexRenderMode triangleRenderMode = mRP_RM_TriangleList);
+
 mFUNCTION(mMesh_Destroy, IN_OUT mPtr<mMesh> *pMesh);
 
 mFUNCTION(mMesh_Destroy_Internal, mMesh *pMesh);
@@ -357,7 +359,7 @@ mFUNCTION(mMesh_Render, mPtr<mMesh> &data, mMatrix &matrix);
 //////////////////////////////////////////////////////////////////////////
 
 template <typename ...Args>
-mFUNCTION(mMeshFactory_Create, OUT mPtr<mMeshFactory<Args...>> *pFactory, IN mAllocator *pAllocator, const mRenderParams_TriangleRenderMode triangleRenderMode /* = mRP_RM_TriangleList */)
+mFUNCTION(mMeshFactory_Create, OUT mPtr<mMeshFactory<Args...>> *pFactory, IN mAllocator *pAllocator, const mRenderParams_VertexRenderMode triangleRenderMode /* = mRP_RM_TriangleList */)
 {
   mFUNCTION_SETUP();
 

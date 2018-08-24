@@ -11,34 +11,14 @@
 #include "mMesh.h"
 #include "mSpriteBatch.h"
 #include "mResourceManager.h"
+#include "mVideoPlaybackEngine.h"
 
-mPtr<mHardwareWindow> window = nullptr;
-mPtr<mImageBuffer> image;
-mPtr<mThreadPool> threadPool = nullptr;
 
 int main(int, char **)
 {
   mFUNCTION_SETUP();
 
   g_mResult_breakOnError = true;
-  mDEFER_DESTRUCTION(&threadPool, mThreadPool_Destroy);
-  mERROR_CHECK(mThreadPool_Create(&threadPool, nullptr));
-
-  mDEFER_DESTRUCTION(&image, mImageBuffer_Destroy);
-  mERROR_CHECK(mImageBuffer_CreateFromFile(&image, nullptr, "C:/data/avatar.jpg"));
-
-  mPtr<mImageBuffer> bgra;
-  mDEFER_DESTRUCTION(&bgra, mImageBuffer_Destroy);
-  mERROR_CHECK(mImageBuffer_Create(&bgra, nullptr, image->currentSize));
-
-  mPtr<mImageBuffer> rgba;
-  mDEFER_DESTRUCTION(&rgba, mImageBuffer_Destroy);
-  mERROR_CHECK(mImageBuffer_Create(&rgba, nullptr, image->currentSize, mPF_R8G8B8A8));
-
-  mERROR_CHECK(mPixelFormat_TransformBuffer(image, bgra));
-  mERROR_CHECK(mPixelFormat_TransformBuffer(bgra, rgba));
-
-  mERROR_CHECK(mImageBuffer_SaveAsPng(rgba, "test.png"));
 
   SDL_Init(SDL_INIT_EVERYTHING);
 
@@ -46,73 +26,179 @@ int main(int, char **)
   SDL_GetCurrentDisplayMode(0, &displayMode);
 
   mVec2s resolution;
-  resolution.x = displayMode.w / 2;
-  resolution.y = displayMode.h / 2;
+  resolution.x = displayMode.w;
+  resolution.y = displayMode.h;
 
+  mPtr<mHardwareWindow> window = nullptr;
   mDEFER_DESTRUCTION(&window, mHardwareWindow_Destroy);
-  mERROR_CHECK(mHardwareWindow_Create(&window, nullptr, "OpenGL Window", resolution));
+  mERROR_CHECK(mHardwareWindow_Create(&window, nullptr, "OpenGL Window", resolution, mHW_DM_FullscreenDesktop));
   mERROR_CHECK(mRenderParams_InitializeToDefault());
 
   mERROR_CHECK(mRenderParams_SetDoubleBuffering(true));
   mERROR_CHECK(mRenderParams_SetMultisampling(4));
   mERROR_CHECK(mRenderParams_SetVsync(false));
 
-  mPtr<mMeshFactory<mMesh2dPosition, mMeshTexcoord, mMeshScale2dUniform>> meshFactory;
-  mDEFER_DESTRUCTION(&meshFactory, mMeshFactory_Destroy);
-  mERROR_CHECK(mMeshFactory_Create(&meshFactory, nullptr, mRP_RM_TriangleStrip));
+  mPtr<mThreadPool> threadPool;
+  mPtr<mVideoPlaybackEngine> videoPlaybackEngine;
+  mDEFER_DESTRUCTION(&videoPlaybackEngine, mVideoPlaybackEngine_Destroy);
+  mERROR_CHECK(mVideoPlaybackEngine_Create(&videoPlaybackEngine, nullptr, L"C:/Users/cstiller/Videos/Converted.mp4", threadPool, 0, mPF_YUV420));
 
-  mERROR_CHECK(mMeshFactory_GrowBack(meshFactory, 4));
-  mERROR_CHECK(mMeshFactory_AppendData(meshFactory, mMesh2dPosition(-1, -1), mMeshTexcoord(0, 1), mMeshScale2dUniform()));
-  mERROR_CHECK(mMeshFactory_AppendData(meshFactory, mMesh2dPosition(-1,  1), mMeshTexcoord(0, 0), mMeshScale2dUniform()));
-  mERROR_CHECK(mMeshFactory_AppendData(meshFactory, mMesh2dPosition( 1, -1), mMeshTexcoord(1, 1), mMeshScale2dUniform()));
-  mERROR_CHECK(mMeshFactory_AppendData(meshFactory, mMesh2dPosition( 1,  1), mMeshTexcoord(1, 0), mMeshScale2dUniform()));
+  mPtr<mTexture> textureY;
+  mDEFER_DESTRUCTION(&textureY, mSharedPointer_Destroy);
+  mERROR_CHECK(mSharedPointer_Allocate(&textureY, nullptr, (std::function<void(mTexture *)>)[](mTexture *pTexture) {mTexture_Destroy(pTexture);}, 1));
 
-  mPtr<mMesh> mesh;
-  mDEFER_DESTRUCTION(&mesh, mMesh_Destroy);
-  mERROR_CHECK(mMeshFactory_CreateMesh(meshFactory, &mesh, nullptr, image));
-  mERROR_CHECK(mMeshFactory_Clear(meshFactory));
+  mPtr<mTexture> textureU;
+  mDEFER_DESTRUCTION(&textureU, mSharedPointer_Destroy);
+  mERROR_CHECK(mSharedPointer_Allocate(&textureU, nullptr, (std::function<void(mTexture *)>)[](mTexture *pTexture) {mTexture_Destroy(pTexture);}, 1));
 
-  mERROR_CHECK(mMeshFactory_GrowBack(meshFactory, 5));
-  mERROR_CHECK(mMeshFactory_AppendData(meshFactory, mMesh2dPosition(0, 0), mMeshTexcoord(1, 0), mMeshScale2dUniform()));
-  mERROR_CHECK(mMeshFactory_AppendData(meshFactory, mMesh2dPosition(0, 4), mMeshTexcoord(1, 1), mMeshScale2dUniform()));
-  mERROR_CHECK(mMeshFactory_AppendData(meshFactory, mMesh2dPosition(2, 0), mMeshTexcoord(0, 0), mMeshScale2dUniform()));
-  mERROR_CHECK(mMeshFactory_AppendData(meshFactory, mMesh2dPosition(2, 2), mMeshTexcoord(0, 1), mMeshScale2dUniform()));
-  mERROR_CHECK(mMeshFactory_AppendData(meshFactory, mMesh2dPosition(3, 3), mMeshTexcoord(1, 0), mMeshScale2dUniform()));
+  mPtr<mTexture> textureV;
+  mDEFER_DESTRUCTION(&textureV, mSharedPointer_Destroy);
+  mERROR_CHECK(mSharedPointer_Allocate(&textureV, nullptr, (std::function<void(mTexture *)>)[](mTexture *pTexture) {mTexture_Destroy(pTexture);}, 1));
 
-  mPtr<mMesh> mesh2;
-  mDEFER_DESTRUCTION(&mesh2, mMesh_Destroy);
-  mERROR_CHECK(mMeshFactory_CreateMesh(meshFactory, &mesh2, nullptr, image));
+  mPtr<mImageBuffer> currentFrame;
+  mERROR_CHECK(mVideoPlaybackEngine_GetCurrentFrame(videoPlaybackEngine, &currentFrame));
 
-  mPtr<mSpriteBatch<mSBEColour, mSBERotation, mSBETextureFlip, mSBETextureCrop>> spriteBatch;
-  mDEFER_DESTRUCTION(&spriteBatch, mSpriteBatch_Destroy);
-  mERROR_CHECK(mSpriteBatch_Create(&spriteBatch, nullptr));
+  // Create Textures.
+  size_t offsetY, offsetU, offsetV;
+  mVec2s sizeY, sizeU, sizeV;
+  uint8_t *pDataY, *pDataU, *pDataV;
+  mERROR_CHECK(mPixelFormat_GetSubBufferOffset(currentFrame->pixelFormat, 0, currentFrame->currentSize, &offsetY));
+  mERROR_CHECK(mPixelFormat_GetSubBufferOffset(currentFrame->pixelFormat, 1, currentFrame->currentSize, &offsetU));
+  mERROR_CHECK(mPixelFormat_GetSubBufferOffset(currentFrame->pixelFormat, 2, currentFrame->currentSize, &offsetV));
+  mERROR_CHECK(mPixelFormat_GetSubBufferSize(currentFrame->pixelFormat, 0, currentFrame->currentSize, &sizeY));
+  mERROR_CHECK(mPixelFormat_GetSubBufferSize(currentFrame->pixelFormat, 1, currentFrame->currentSize, &sizeU));
+  mERROR_CHECK(mPixelFormat_GetSubBufferSize(currentFrame->pixelFormat, 2, currentFrame->currentSize, &sizeV));
 
-  mPtr<mTexture> texture;
-  mDEFER_DESTRUCTION(&texture, mSharedPointer_Destroy);
-  mERROR_CHECK(mResourceManager_GetResource(&texture, std::string("C:/data/transparent.png")));
+  pDataY = currentFrame->pPixels + offsetY;
+  pDataU = currentFrame->pPixels + offsetU;
+  pDataV = currentFrame->pPixels + offsetV;
+  mERROR_CHECK(mTexture_Create(textureY.GetPointer(), pDataY, sizeY, mPF_Monochrome8));
+  mERROR_CHECK(mTexture_Create(textureU.GetPointer(), pDataU, sizeU, mPF_Monochrome8));
+  mERROR_CHECK(mTexture_Create(textureV.GetPointer(), pDataV, sizeV, mPF_Monochrome8));
 
-  size_t frame = 0;
+  // Create Meshes.
+  mPtr<mQueue<mPtr<mMesh>>> meshes;
+  mDEFER_DESTRUCTION(&meshes, mQueue_Destroy);
+  mERROR_CHECK(mQueue_Create(&meshes, nullptr));
+
+  // Create individual meshes.
+  {
+    const size_t meshesCount = 1;
+
+    mPtr<mQueue<mMeshFactory_AttributeInformation>> info;
+    mDEFER_DESTRUCTION(&info, mQueue_Destroy);
+    mERROR_CHECK(mQueue_Create(&info, nullptr));
+
+    mERROR_CHECK(mQueue_PushBack(info, mMeshFactory_AttributeInformation(sizeof(mVec2f), 0, mMF_AIT_Attribute, GL_FLOAT, sizeof(float_t))));
+    mERROR_CHECK(mQueue_PushBack(info, mMeshFactory_AttributeInformation(sizeof(mVec2f), 0, mMF_AIT_Attribute, GL_FLOAT, sizeof(float_t))));
+
+    const char *vertexShader = mGLSL(
+      in vec2 position0;
+      in vec2 texCoord0;
+      out vec2 _texCoord0;
+
+      void main()
+      {
+        _texCoord0 = texCoord0;
+        gl_Position = vec4(position0, 0, 1);
+      }
+    );
+
+    const char *fragmentShader = mGLSL(
+      out vec4 outColour;
+      in vec2 _texCoord0;
+      uniform sampler2D textureY;
+      uniform sampler2D textureU;
+      uniform sampler2D textureV;
+
+      void main()
+      {
+        outColour = vec4(_texCoord0, 0, 1);
+      }
+    );
+
+    mPtr<mShader> shader;
+    mDEFER_DESTRUCTION(&shader, mSharedPointer_Destroy);
+    mERROR_CHECK(mSharedPointer_Allocate(&shader, nullptr, (std::function<void(mShader *)>)[](mShader *pData) {mShader_Destroy(pData);}, 1));
+    mERROR_CHECK(mShader_Create(shader.GetPointer(), vertexShader, fragmentShader, "outColour"));
+
+    mPtr<mQueue<mPtr<mTexture>>> textures;
+    mDEFER_DESTRUCTION(&textures, mQueue_Destroy);
+    mERROR_CHECK(mQueue_Create(&textures, nullptr));
+
+    mERROR_CHECK(mQueue_PushBack(textures, textureY));
+    mERROR_CHECK(mQueue_PushBack(textures, textureU));
+    mERROR_CHECK(mQueue_PushBack(textures, textureV));
+
+    for (size_t i = 0; i < meshesCount; ++i)
+    {
+      mPtr<mBinaryChunk> binaryChunk;
+      mDEFER_DESTRUCTION(&binaryChunk, mBinaryChunk_Destroy);
+      mERROR_CHECK(mBinaryChunk_Create(&binaryChunk, nullptr));
+
+      mERROR_CHECK(mBinaryChunk_WriteData(binaryChunk, mVec2f(-1, -1)));  // position.
+      mERROR_CHECK(mBinaryChunk_WriteData(binaryChunk, mVec2f(0 ,  1)));  // texCoord.
+      mERROR_CHECK(mBinaryChunk_WriteData(binaryChunk, mVec2f(1 , -1)));  // position.
+      mERROR_CHECK(mBinaryChunk_WriteData(binaryChunk, mVec2f(1 ,  0)));  // texCoord.
+      mERROR_CHECK(mBinaryChunk_WriteData(binaryChunk, mVec2f(-1,  1)));  // position.
+      mERROR_CHECK(mBinaryChunk_WriteData(binaryChunk, mVec2f(1 ,  1)));  // texCoord.
+      mERROR_CHECK(mBinaryChunk_WriteData(binaryChunk, mVec2f(1 ,  1)));  // position.
+      mERROR_CHECK(mBinaryChunk_WriteData(binaryChunk, mVec2f(1 ,  0)));  // texCoord.
+
+      mPtr<mMesh> mesh;
+      mDEFER_DESTRUCTION(&mesh, mMesh_Destroy);
+      mERROR_CHECK(mMesh_Create(&mesh, nullptr, info, shader, binaryChunk, textures, mRP_RM_TriangleStrip));
+
+      mERROR_CHECK(mQueue_PushBack(meshes, mesh));
+    }
+  }
 
   while (true)
   {
-    frame++;
-    mRenderParams_ClearTargetDepthAndColour(mVector(mSin((frame) / 255.0f) / 4.0f + 0.25f, mSin((frame) / 255.0f) / 4.0f + 0.25f, mSin((frame) / 255.0f) / 4.0f + 0.25f, 1.0f));
+    mERROR_CHECK(mRenderParams_ClearTargetDepthAndColour());
 
     mTimeStamp before;
     mERROR_CHECK(mTimeStamp_Now(&before));
 
-    mERROR_CHECK(mShader_SetUniform(mesh->shader, mMeshScale2dUniform::uniformName(), 1.5f * mesh->textures[0]->resolutionF / mRenderParams_CurrentRenderResolutionF));
-    mERROR_CHECK(mMesh_Render(mesh));
-    mERROR_CHECK(mShader_SetUniform(mesh2->shader, mMeshScale2dUniform::uniformName(), mesh->textures[0]->resolutionF / mRenderParams_CurrentRenderResolutionF));
-    mERROR_CHECK(mMesh_Render(mesh2));
-    mERROR_CHECK(mSpriteBatch_Begin(spriteBatch, mSB_SSM_FrontToBack, mSB_AM_AlphaBlend));
-    mERROR_CHECK(mSpriteBatch_DrawWithDepth(spriteBatch, texture, mVec2f(200.0f + 100 * mSin(frame / 1490.0f), 200.0f + 100 * mSin(frame / 3490.0f)), 0.9f, mSBEColour(mSin(frame / 1123.0f) / 2 + 1, mSin(frame / 942.0f) / 2 + 1, mSin(frame / 1391.0f) / 2 + 1, mSin(frame / 1234.0f) / 2 + 1), mSBERotation((frame) / 2550.0f), mSBETextureFlip(frame % 2000 > 1000, frame % 4000 > 2000), mSBETextureCrop(mVec2f(mSin(frame / 1240.0f) / 4 + .5f, mSin(frame / 1402.0f) / 4 + .5f), mVec2f(1, 1))));
-    mERROR_CHECK(mSpriteBatch_DrawWithDepth(spriteBatch, texture, mVec2f(200.0f + 100 * mCos(frame / 1241.0f), 200.0f + 100 * mCos(frame / 2490.0f)), 0.0f, mSBEColour(mSin(frame / 1123.0f) / 2 + 1, mSin(frame / 942.0f) / 2 + 1, mSin(frame / 1391.0f) / 2 + 1), mSBERotation((frame) / 2550.0f), mSBETextureFlip(), mSBETextureCrop()));
-    mERROR_CHECK(mSpriteBatch_DrawWithDepth(spriteBatch, texture, mVec2f(200.0f + 100 * mCos(frame / 1241.0f), 200.0f + 100 * mSin(frame / 1230.0f)), 0.5f, mSBEColour(mCos(frame / 1123.0f) / 2 + 1, mCos(frame / 942.0f) / 2 + 1, mCos(frame / 1391.0f) / 2 + 1), mSBERotation((frame) / 2550.0f), mSBETextureFlip(), mSBETextureCrop(mVec2f(0.2f, 0.3f), mVec2f(0.5f, 0.9f))));
-    mERROR_CHECK(mSpriteBatch_End(spriteBatch));
+    bool isNewFrame = true;
+    mResult result = mVideoPlaybackEngine_GetCurrentFrame(videoPlaybackEngine, &currentFrame, &isNewFrame);
 
-    mGL_ERROR_CHECK();
+    if (!mSUCCEEDED(result))
+    {
+      if (result == mR_EndOfStream)
+        mERROR_CHECK(mVideoPlaybackEngine_Create(&videoPlaybackEngine, nullptr, L"C:/Users/cstiller/Videos/Converted.mp4", threadPool, 0, mPF_YUV420));
+      else
+        mERROR_CHECK(result);
 
+      continue;
+    }
+
+    if (!isNewFrame)
+      continue;
+
+    // Change textures.
+    pDataY = currentFrame->pPixels + offsetY;
+    pDataU = currentFrame->pPixels + offsetU;
+    pDataV = currentFrame->pPixels + offsetV;
+    mERROR_CHECK(mTexture_SetTo(*textureY.GetPointer(), pDataY, sizeY, mPF_Monochrome8));
+    mERROR_CHECK(mTexture_SetTo(*textureU.GetPointer(), pDataU, sizeU, mPF_Monochrome8));
+    mERROR_CHECK(mTexture_SetTo(*textureV.GetPointer(), pDataV, sizeV, mPF_Monochrome8));
+
+    // Render Scene.
+    size_t meshCount = 0;
+    mERROR_CHECK(mQueue_GetCount(meshes, &meshCount));
+
+    for (size_t i = 0; i < meshCount; ++i)
+    {
+      mPtr<mMesh> *pMesh;
+      mERROR_CHECK(mQueue_PointerAt(meshes, i, &pMesh));
+
+      mERROR_CHECK(mMesh_Render(*pMesh));
+    }
+
+    mGL_DEBUG_ERROR_CHECK();
+
+    // Swap.
     mERROR_CHECK(mHardwareWindow_Swap(window));
 
     mTimeStamp after;

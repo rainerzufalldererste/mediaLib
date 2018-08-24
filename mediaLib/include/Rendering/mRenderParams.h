@@ -84,7 +84,7 @@ enum mRenderParams_UploadState
   mRP_US_Ready
 };
 
-enum mRenderParams_TriangleRenderMode
+enum mRenderParams_VertexRenderMode
 {
   mRP_RM_Points,
   mRP_PM_LineList,
