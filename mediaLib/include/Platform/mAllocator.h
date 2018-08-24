@@ -92,7 +92,7 @@ template <typename T>
 mFUNCTION(mAllocator_Move, IN OPTIONAL mAllocator *pAllocator, IN_OUT T *pDestination, IN_OUT T *pSource, const size_t count);
 
 template <typename T>
-mFUNCTION(mAllocator_Copy, IN OPTIONAL mAllocator *pAllocator, IN_OUT T *pDestination, IN T *pSource, const size_t count);
+mFUNCTION(mAllocator_Copy, IN OPTIONAL mAllocator *pAllocator, IN_OUT T *pDestination, IN const T *pSource, const size_t count);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -204,7 +204,7 @@ inline mFUNCTION(mAllocator_Move, IN OPTIONAL mAllocator *pAllocator, IN_OUT T *
 }
 
 template<typename T>
-inline mFUNCTION(mAllocator_Copy, IN OPTIONAL mAllocator *pAllocator, IN_OUT T *pDestination, IN T *pSource, const size_t count)
+inline mFUNCTION(mAllocator_Copy, IN OPTIONAL mAllocator *pAllocator, IN_OUT T *pDestination, IN const T *pSource, const size_t count)
 {
   mFUNCTION_SETUP();
 

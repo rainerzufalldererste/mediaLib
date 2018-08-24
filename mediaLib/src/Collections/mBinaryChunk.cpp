@@ -84,6 +84,28 @@ mFUNCTION(mBinaryChunk_ResetRead, mPtr<mBinaryChunk>& binaryChunk)
   mRETURN_SUCCESS();
 }
 
+mFUNCTION(mBinaryChunk_GetWriteBytes, mPtr<mBinaryChunk>& binaryChunk, OUT size_t * pSize)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(binaryChunk == nullptr || pSize == nullptr, mR_ArgumentNull);
+
+  *pSize = binaryChunk->writeBytes;
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mBinaryChunk_GetReadBytes, mPtr<mBinaryChunk>& binaryChunk, OUT size_t * pSize)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(binaryChunk == nullptr || pSize == nullptr, mR_ArgumentNull);
+
+  *pSize = binaryChunk->readBytes;
+
+  mRETURN_SUCCESS();
+}
+
 //////////////////////////////////////////////////////////////////////////
 
 mFUNCTION(mBinaryChunk_Destroy_Internal, mBinaryChunk *pBinaryChunk)

@@ -36,6 +36,9 @@ mFUNCTION(mBinaryChunk_Read, mPtr<mBinaryChunk> &binaryChunk, T *pItem);
 mFUNCTION(mBinaryChunk_ResetWrite, mPtr<mBinaryChunk> &binaryChunk);
 mFUNCTION(mBinaryChunk_ResetRead, mPtr<mBinaryChunk> &binaryChunk);
 
+mFUNCTION(mBinaryChunk_GetWriteBytes, mPtr<mBinaryChunk> &binaryChunk, OUT size_t *pSize);
+mFUNCTION(mBinaryChunk_GetReadBytes, mPtr<mBinaryChunk> &binaryChunk, OUT size_t *pSize);
+
 //////////////////////////////////////////////////////////////////////////
 
 template<typename T>
