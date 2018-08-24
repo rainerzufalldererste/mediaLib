@@ -10,3 +10,6 @@
 [submodule "mediaLib/3rdParty/glew"]
 	path = mediaLib/3rdParty/glew
 	url = https://github.com/rainerzufalldererste/glewBuild.git
+[submodule "mediaLib/3rdParty/utf8proc"]
+	path = mediaLib/3rdParty/utf8proc
+	url = https://github.com/rainerzufalldererste/utf8procBuild.git
