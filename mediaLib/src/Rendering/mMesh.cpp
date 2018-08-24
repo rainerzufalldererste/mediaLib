@@ -26,6 +26,7 @@ mFUNCTION(mMesh_Create, OUT mPtr<mMesh> *pMesh, IN mAllocator *pAllocator, mPtr<
     mMeshFactory_AttributeInformation *pInfo;
     mERROR_CHECK(mQueue_PointerAt(attributeInformation, i, &pInfo));
 
+    pInfo->offset = (*pMesh)->dataSize;
     (*pMesh)->dataSize += pInfo->size;
   }
 
