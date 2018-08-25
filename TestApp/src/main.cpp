@@ -13,7 +13,7 @@
 #include "mResourceManager.h"
 #include "mVideoPlaybackEngine.h"
 
-const std::wstring videoFilename = L"N:/Data/video/PublicHologram.mp4";
+const std::wstring videoFilename = L"N:/Data/video/Babuji3.mp4";
 
 int main(int, char **)
 {
@@ -82,26 +82,34 @@ int main(int, char **)
   mDEFER_DESTRUCTION(&meshes, mQueue_Destroy);
   mERROR_CHECK(mQueue_Create(&meshes, nullptr));
 
+  const size_t quadCount = 1;
+
   // Create individual meshes.
   {
-    const size_t meshesCount = 1;
-
     mPtr<mQueue<mMeshFactory_AttributeInformation>> info;
     mDEFER_DESTRUCTION(&info, mQueue_Destroy);
     mERROR_CHECK(mQueue_Create(&info, nullptr));
 
-    mERROR_CHECK(mQueue_PushBack(info, mMeshFactory_AttributeInformation(sizeof(mVec2f), 0, mMF_AIT_Attribute, GL_FLOAT, sizeof(float_t))));
-    mERROR_CHECK(mQueue_PushBack(info, mMeshFactory_AttributeInformation(sizeof(mVec2f), 0, mMF_AIT_Attribute, GL_FLOAT, sizeof(float_t))));
+    mERROR_CHECK(mQueue_PushBack(info, mMeshFactory_AttributeInformation(sizeof(float_t), 0, mMF_AIT_Attribute, GL_FLOAT, sizeof(float_t))));
+
+    mPtr<mBinaryChunk> binaryChunk;
+    mDEFER_DESTRUCTION(&binaryChunk, mBinaryChunk_Destroy);
+    mERROR_CHECK(mBinaryChunk_Create(&binaryChunk, nullptr));
+
+    mERROR_CHECK(mBinaryChunk_WriteData(binaryChunk, 0.0f));
+    mERROR_CHECK(mBinaryChunk_WriteData(binaryChunk, 0.0f));
+    mERROR_CHECK(mBinaryChunk_WriteData(binaryChunk, 0.0f));
+    mERROR_CHECK(mBinaryChunk_WriteData(binaryChunk, 0.0f));
 
     const char *vertexShader = mGLSL(
-      in vec2 position0;
-      in vec2 texCoord0;
+      in float position0;
       out vec2 _texCoord0;
+      uniform vec2 offsets[4];
 
       void main()
       {
-        _texCoord0 = texCoord0;
-        gl_Position = vec4(position0, 0, 1);
+        _texCoord0 = offsets[gl_VertexID];
+        gl_Position = vec4(offsets[gl_VertexID] * 2 - 1, 0, 1);
       }
     );
 
@@ -111,10 +119,43 @@ int main(int, char **)
       uniform sampler2D textureY;
       uniform sampler2D textureU;
       uniform sampler2D textureV;
+      uniform vec2 offsets[4];
+
+      float cross(in vec2 a, in vec2 b) { return a.x*b.y - a.y*b.x; }
+
+      vec2 invBilinear(in vec2 p, in vec2 a, in vec2 b, in vec2 c, in vec2 d)
+      {
+        vec2 e = b - a;
+        vec2 f = d - a;
+        vec2 g = a - b + c - d;
+        vec2 h = p - a;
+
+        float k2 = cross(g, f);
+        float k1 = cross(e, f) + cross(h, g);
+        float k0 = cross(h, e);
+
+        float w = k1 * k1 - 4.0*k0*k2;
+        if (w < 0.0) return vec2(-1.0);
+        w = sqrt(w);
+
+        float v1 = (-k1 - w) / (2.0*k2);
+        float u1 = (h.x - f.x*v1) / (e.x + g.x*v1);
+
+        float v2 = (-k1 + w) / (2.0*k2);
+        float u2 = (h.x - f.x*v2) / (e.x + g.x*v2);
+
+        float u = u1;
+        float v = v1;
+
+        if (v<0.0 || v>1.0 || u<0.0 || u>1.0) { u = u2;   v = v2; }
+        if (v<0.0 || v>1.0 || u<0.0 || u>1.0) { u = -1.0; v = -1.0; }
+
+        return vec2(u, v);
+      }
 
       void main()
       {
-        vec2 pos = _texCoord0;
+        vec2 pos = invBilinear(_texCoord0, offsets[1], offsets[3], offsets[2], offsets[0]);
 
         float y = texture(textureY, pos).x;
         float u = texture(textureU, pos).x;
@@ -146,21 +187,8 @@ int main(int, char **)
     mERROR_CHECK(mQueue_PushBack(textures, textureU));
     mERROR_CHECK(mQueue_PushBack(textures, textureV));
 
-    for (size_t i = 0; i < meshesCount; ++i)
+    for (size_t i = 0; i < quadCount; ++i)
     {
-      mPtr<mBinaryChunk> binaryChunk;
-      mDEFER_DESTRUCTION(&binaryChunk, mBinaryChunk_Destroy);
-      mERROR_CHECK(mBinaryChunk_Create(&binaryChunk, nullptr));
-             
-      mERROR_CHECK(mBinaryChunk_WriteData(binaryChunk, mVec2f(-1, -1)));  // position.
-      mERROR_CHECK(mBinaryChunk_WriteData(binaryChunk, mVec2f(1 ,  1)));  // texCoord.
-      mERROR_CHECK(mBinaryChunk_WriteData(binaryChunk, mVec2f(1 , -1)));  // position.
-      mERROR_CHECK(mBinaryChunk_WriteData(binaryChunk, mVec2f(0 ,  1)));  // texCoord.
-      mERROR_CHECK(mBinaryChunk_WriteData(binaryChunk, mVec2f(-1,  1)));  // position.
-      mERROR_CHECK(mBinaryChunk_WriteData(binaryChunk, mVec2f(1 ,  0)));  // texCoord.
-      mERROR_CHECK(mBinaryChunk_WriteData(binaryChunk, mVec2f(1 ,  1)));  // position.
-      mERROR_CHECK(mBinaryChunk_WriteData(binaryChunk, mVec2f(0 ,  0)));  // texCoord.
-
       mPtr<mMesh> mesh;
       mDEFER_DESTRUCTION(&mesh, mMesh_Destroy);
       mERROR_CHECK(mMesh_Create(&mesh, nullptr, info, shader, binaryChunk, textures, mRP_VRM_TriangleStrip));
@@ -168,6 +196,9 @@ int main(int, char **)
       mERROR_CHECK(mQueue_PushBack(meshes, mesh));
     }
   }
+
+  // Generate Point Offsets:
+  mVec2f offsets[quadCount * 4] = { {0.15, 0.15}, {0, 1}, {0.6, 0.025}, {1, 1} };
 
   while (true)
   {
@@ -208,6 +239,43 @@ int main(int, char **)
     {
       mPtr<mMesh> *pMesh;
       mERROR_CHECK(mQueue_PointerAt(meshes, i, &pMesh));
+
+      mVec2f *pOffsets = &offsets[i * 4];
+
+      //for (size_t offsetIndex = 0; offsetIndex < 4; ++offsetIndex)
+      //  pOffsets[offsetIndex] += (mVec2f(rand() / (float_t)RAND_MAX, rand() / (float_t)RAND_MAX) - mVec2f(0.5f)) / 100.0f;
+
+      //mVec3f positions[4];
+      //
+      //for (size_t j = 0; j < 4; ++j)
+      //  positions[j] = mVec3f(pOffsets[j], 1);
+      //
+      //mVec2f a = pOffsets[2] - pOffsets[0];
+      //mVec2f b = pOffsets[3] - pOffsets[1];
+      //
+      //float_t cross = a.x * b.y - a.y * b.x;
+      //
+      //if (cross != 0)
+      //{
+      //  mVec2f c = pOffsets[0] - pOffsets[1];
+      //
+      //  float_t s = (a.x * c.y - a.y * c.x) / cross;
+      //
+      //  if (s > 0 && s < 1)
+      //  {
+      //    float_t t = (b.x * c.y - b.y * c.x) / cross;
+      //
+      //    if (t > 0 && t < 1)
+      //    {
+      //      positions[0].z = 1 / (1 - t);
+      //      positions[1].z = 1 / (1 - s);
+      //      positions[2].z = 1 / t;
+      //      positions[3].z = 1 / s;
+      //    }
+      //  }
+      //}
+
+      mERROR_CHECK(mShader_SetUniform((*pMesh)->shader, "offsets", pOffsets, 4));
 
       mERROR_CHECK(mMesh_Render(*pMesh));
     }

@@ -159,14 +159,7 @@ mFUNCTION(mShader_Bind, mShader &shader)
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mShader_SetAttributeAtIndex, mShader &shader, const shaderAttributeIndex_t index, const float_t v);
-mFUNCTION(mShader_SetAttributeAtIndex, mShader &shader, const shaderAttributeIndex_t index, const mVec2f &v);
-mFUNCTION(mShader_SetAttributeAtIndex, mShader &shader, const shaderAttributeIndex_t index, const mVec3f &v);
-mFUNCTION(mShader_SetAttributeAtIndex, mShader &shader, const shaderAttributeIndex_t index, const mVec4f &v);
-mFUNCTION(mShader_SetAttributeAtIndex, mShader &shader, const shaderAttributeIndex_t index, const mVector &v);
-mFUNCTION(mShader_SetAttributeAtIndex, mShader &shader, const shaderAttributeIndex_t index, const mMatrix &v);
-mFUNCTION(mShader_SetAttributeAtIndex, mShader &shader, const shaderAttributeIndex_t index, const mTexture &v);
-mFUNCTION(mShader_SetAttributeAtIndex, mShader &shader, const shaderAttributeIndex_t index, const mPtr<mTexture> &v);
+//////////////////////////////////////////////////////////////////////////
 
 mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex_t index, const float_t v)
 {
@@ -257,7 +250,7 @@ mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex
   mERROR_CHECK(mShader_Bind(shader));
 
 #if defined (mRENDERER_OPENGL)
-  glUniform1i(index, v.textureUnit);
+  glUniform1i(index, (GLint)v.textureUnit);
 #else 
   mRETURN_RESULT(mR_NotImplemented);
 #endif
@@ -271,7 +264,119 @@ mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex
   mERROR_CHECK(mShader_Bind(shader));
 
 #if defined (mRENDERER_OPENGL)
-  glUniform1i(index, v->textureUnit);
+  glUniform1i(index, (GLint)v->textureUnit);
+#else 
+  mRETURN_RESULT(mR_NotImplemented);
+#endif
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex_t index, const float_t *pV, const size_t count)
+{
+  mFUNCTION_SETUP();
+  mERROR_CHECK(mShader_Bind(shader));
+
+#if defined (mRENDERER_OPENGL)
+  glUniform1fv(index, (GLsizei)count, pV);
+#else 
+  mRETURN_RESULT(mR_NotImplemented);
+#endif
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex_t index, const mVec2f *pV, const size_t count)
+{
+  mFUNCTION_SETUP();
+  mERROR_CHECK(mShader_Bind(shader));
+
+#if defined (mRENDERER_OPENGL)
+  glUniform2fv(index, (GLsizei)count, (float_t *)pV);
+#else 
+  mRETURN_RESULT(mR_NotImplemented);
+#endif
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex_t index, const mVec3f *pV, const size_t count)
+{
+  mFUNCTION_SETUP();
+  mERROR_CHECK(mShader_Bind(shader));
+
+#if defined (mRENDERER_OPENGL)
+  glUniform3fv(index, (GLsizei)count, (float_t *)pV);
+#else 
+  mRETURN_RESULT(mR_NotImplemented);
+#endif
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex_t index, const mVec4f *pV, const size_t count)
+{
+  mFUNCTION_SETUP();
+  mERROR_CHECK(mShader_Bind(shader));
+
+#if defined (mRENDERER_OPENGL)
+  glUniform4fv(index, (GLsizei)count, (float_t *)pV);
+#else 
+  mRETURN_RESULT(mR_NotImplemented);
+#endif
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex_t index, const mVector *pV, const size_t count)
+{
+  mFUNCTION_SETUP();
+  mERROR_CHECK(mShader_Bind(shader));
+
+#if defined (mRENDERER_OPENGL)
+  glUniform4fv(index, (GLsizei)count, (float_t *)pV);
+#else 
+  mRETURN_RESULT(mR_NotImplemented);
+#endif
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex_t index, const mTexture *pV, const size_t count)
+{
+  mFUNCTION_SETUP();
+  mERROR_CHECK(mShader_Bind(shader));
+
+#if defined (mRENDERER_OPENGL)
+  GLint *pValues;
+  mDEFER_DESTRUCTION(&pValues, mFreePtrStack);
+  mERROR_CHECK(mAllocStackZero(&pValues, count));
+
+  for (size_t i = 0; i < count; ++i)
+    pValues[i] = (GLint)pV[i].textureId;
+
+  glUniform1iv(index, (GLsizei)count, pValues);
+#else 
+  mRETURN_RESULT(mR_NotImplemented);
+#endif
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mShader_SetUniformAtIndex, mShader & shader, const shaderAttributeIndex_t index, const mPtr<mTexture>* pV, const size_t count)
+{
+  mFUNCTION_SETUP();
+  mERROR_CHECK(mShader_Bind(shader));
+
+#if defined (mRENDERER_OPENGL)
+  GLint *pValues;
+  mDEFER_DESTRUCTION(&pValues, mFreePtrStack);
+  mERROR_CHECK(mAllocStackZero(&pValues, count));
+
+  for (size_t i = 0; i < count; ++i)
+    pValues[i] = (GLint)pV[i]->textureId;
+
+  glUniform1iv(index, (GLsizei)count, pValues);
 #else 
   mRETURN_RESULT(mR_NotImplemented);
 #endif
