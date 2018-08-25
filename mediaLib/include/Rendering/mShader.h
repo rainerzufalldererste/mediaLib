@@ -47,6 +47,16 @@ mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex
 mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex_t index, mTexture &v);
 mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex_t index, mPtr<mTexture> &v);
 
+mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex_t index, const float_t *pV, const size_t count);
+mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex_t index, const mVec2f *pV, const size_t count);
+mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex_t index, const mVec3f *pV, const size_t count);
+mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex_t index, const mVec4f *pV, const size_t count);
+mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex_t index, const mVector *pV, const size_t count);
+mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex_t index, const mTexture *pV, const size_t count);
+mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex_t index, const mPtr<mTexture> *pV, const size_t count);
+
+//////////////////////////////////////////////////////////////////////////
+
 template <typename T>
 mFUNCTION(mShader_SetUniform, mShader &shader, const char *uniformName, T v)
 {
@@ -120,6 +130,168 @@ mFUNCTION(mShader_SetUniform, mPtr<mShader> &shader, const std::string &uniformN
 #endif
 
   mERROR_CHECK(mShader_SetUniformAtIndex(*shader.GetPointer(), uniformLocation, v));
+
+  mGL_DEBUG_ERROR_CHECK();
+
+  mRETURN_SUCCESS();
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+template <typename T, size_t TCount>
+mFUNCTION(mShader_SetUniform, mShader &shader, const char *uniformName, T pV[TCount])
+{
+  mFUNCTION_SETUP();
+
+  const shaderAttributeIndex_t uniformLocation =
+#if defined (mRENDERER_OPENGL)
+    glGetUniformLocation(shader.shaderProgram, uniformName);
+#else
+    0;
+  mRETURN_RESULT(mR_NotImplemented);
+#endif
+
+  mERROR_CHECK(mShader_SetUniformAtIndex(shader, uniformLocation, pV, TCount));
+
+  mGL_DEBUG_ERROR_CHECK();
+
+  mRETURN_SUCCESS();
+}
+
+template <typename T, size_t TCount>
+mFUNCTION(mShader_SetUniform, mPtr<mShader> &shader, const char *uniformName, T pV[TCount])
+{
+  mFUNCTION_SETUP();
+
+  const shaderAttributeIndex_t uniformLocation =
+#if defined (mRENDERER_OPENGL)
+    glGetUniformLocation(shader->shaderProgram, uniformName);
+#else
+    0;
+  mRETURN_RESULT(mR_NotImplemented);
+#endif
+
+  mERROR_CHECK(mShader_SetUniformAtIndex(*shader.GetPointer(), uniformLocation, pV, TCount));
+
+  mGL_DEBUG_ERROR_CHECK();
+
+  mRETURN_SUCCESS();
+}
+template <typename T, size_t TCount>
+mFUNCTION(mShader_SetUniform, mShader &shader, const std::string &uniformName, T pV[TCount])
+{
+  mFUNCTION_SETUP();
+
+  const shaderAttributeIndex_t uniformLocation =
+#if defined (mRENDERER_OPENGL)
+    glGetUniformLocation(shader.shaderProgram, uniformName.c_str());
+#else
+    0;
+  mRETURN_RESULT(mR_NotImplemented);
+#endif
+
+  mERROR_CHECK(mShader_SetUniformAtIndex(shader, uniformLocation, pV, TCount));
+
+  mGL_DEBUG_ERROR_CHECK();
+
+  mRETURN_SUCCESS();
+}
+
+template <typename T, size_t TCount>
+mFUNCTION(mShader_SetUniform, mPtr<mShader> &shader, const std::string &uniformName, T pV[TCount])
+{
+  mFUNCTION_SETUP();
+
+  const shaderAttributeIndex_t uniformLocation =
+#if defined (mRENDERER_OPENGL)
+    glGetUniformLocation(shader->shaderProgram, uniformName.c_str());
+#else
+    0;
+  mRETURN_RESULT(mR_NotImplemented);
+#endif
+
+  mERROR_CHECK(mShader_SetUniformAtIndex(*shader.GetPointer(), uniformLocation, pV, TCount));
+
+  mGL_DEBUG_ERROR_CHECK();
+
+  mRETURN_SUCCESS();
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+template <typename T>
+mFUNCTION(mShader_SetUniform, mShader &shader, const char *uniformName, T *pV, const size_t count)
+{
+  mFUNCTION_SETUP();
+
+  const shaderAttributeIndex_t uniformLocation =
+#if defined (mRENDERER_OPENGL)
+    glGetUniformLocation(shader.shaderProgram, uniformName);
+#else
+    0;
+  mRETURN_RESULT(mR_NotImplemented);
+#endif
+
+  mERROR_CHECK(mShader_SetUniformAtIndex(shader, uniformLocation, pV, count));
+
+  mGL_DEBUG_ERROR_CHECK();
+
+  mRETURN_SUCCESS();
+}
+
+template <typename T>
+mFUNCTION(mShader_SetUniform, mPtr<mShader> &shader, const char *uniformName, T *pV, const size_t count)
+{
+  mFUNCTION_SETUP();
+
+  const shaderAttributeIndex_t uniformLocation =
+#if defined (mRENDERER_OPENGL)
+    glGetUniformLocation(shader->shaderProgram, uniformName);
+#else
+    0;
+  mRETURN_RESULT(mR_NotImplemented);
+#endif
+
+  mERROR_CHECK(mShader_SetUniformAtIndex(*shader.GetPointer(), uniformLocation, pV, count));
+
+  mGL_DEBUG_ERROR_CHECK();
+
+  mRETURN_SUCCESS();
+}
+template <typename T>
+mFUNCTION(mShader_SetUniform, mShader &shader, const std::string &uniformName, T *pV, const size_t count)
+{
+  mFUNCTION_SETUP();
+
+  const shaderAttributeIndex_t uniformLocation =
+#if defined (mRENDERER_OPENGL)
+    glGetUniformLocation(shader.shaderProgram, uniformName.c_str());
+#else
+    0;
+  mRETURN_RESULT(mR_NotImplemented);
+#endif
+
+  mERROR_CHECK(mShader_SetUniformAtIndex(shader, uniformLocation, pV, count));
+
+  mGL_DEBUG_ERROR_CHECK();
+
+  mRETURN_SUCCESS();
+}
+
+template <typename T>
+mFUNCTION(mShader_SetUniform, mPtr<mShader> &shader, const std::string &uniformName, T *pV, const size_t count)
+{
+  mFUNCTION_SETUP();
+
+  const shaderAttributeIndex_t uniformLocation =
+#if defined (mRENDERER_OPENGL)
+    glGetUniformLocation(shader->shaderProgram, uniformName.c_str());
+#else
+    0;
+  mRETURN_RESULT(mR_NotImplemented);
+#endif
+
+  mERROR_CHECK(mShader_SetUniformAtIndex(*shader.GetPointer(), uniformLocation, pV, count));
 
   mGL_DEBUG_ERROR_CHECK();
 
