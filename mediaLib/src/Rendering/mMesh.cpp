@@ -30,7 +30,156 @@ mFUNCTION(mMeshAttributeContainer_Destroy_Internal, IN mMeshAttributeContainer *
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mMesh_Create, OUT mPtr<mMesh> *pMesh, IN mAllocator *pAllocator, mPtr<mQueue<mMeshFactory_AttributeInformation>> &attributeInformation, mPtr<mShader>& shader, mPtr<mBinaryChunk>& data, mPtr<mQueue<mPtr<mTexture>>> &textures, const mRenderParams_VertexRenderMode triangleRenderMode /* = mRP_VRM_TriangleList */)
+mFUNCTION(mMesh_Create, OUT mPtr<mMesh>* pMesh, IN mAllocator * pAllocator, const std::initializer_list<mPtr<mMeshAttributeContainer>>& attributeInformation, mPtr<mShader>& shader, mPtr<mQueue<mPtr<mTexture>>>& textures, const mRenderParams_VertexRenderMode triangleRenderMode /* = mRP_VRM_TriangleList */)
+{
+  mFUNCTION_SETUP();
+
+  mPtr<mQueue<mPtr<mMeshAttributeContainer>>> queue;
+  mDEFER_DESTRUCTION(&queue, mQueue_Destroy);
+  mERROR_CHECK(mQueue_Create(&queue, pAllocator));
+  mERROR_CHECK(mQueue_Reserve(queue, attributeInformation.size()));
+
+  for (const mPtr<mMeshAttributeContainer> &item : attributeInformation)
+    mERROR_CHECK(mQueue_PushBack(queue, item));
+
+  mERROR_CHECK(mMesh_Create(pMesh, pAllocator, queue, shader, textures, triangleRenderMode));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mMesh_Create, OUT mPtr<mMesh> *pMesh, IN mAllocator *pAllocator, mPtr<mQueue<mPtr<mMeshAttributeContainer>>> &attributeInformation, mPtr<mShader> &shader, mPtr<mQueue<mPtr<mTexture>>> &textures, const mRenderParams_VertexRenderMode triangleRenderMode /* = mRP_VRM_TriangleList */)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pMesh == nullptr || attributeInformation == nullptr || shader == nullptr || textures == nullptr, mR_ArgumentNull);
+
+  mERROR_CHECK(mSharedPointer_Allocate(pMesh, pAllocator, (std::function<void(mMesh *)>)[](mMesh *pData) { mMesh_Destroy_Internal(pData); }, 1));
+
+  size_t attributeCount = 0;
+  mERROR_CHECK(mQueue_GetCount(attributeInformation, &attributeCount));
+
+  mPtr<mQueue<mMeshFactory_AttributeInformation>> info;
+  mDEFER_DESTRUCTION(&info, mQueue_Destroy);
+  mERROR_CHECK(mQueue_Create(&info, pAllocator));
+
+#if defined (mRENDERER_OPENGL)
+  GLint *pIndexes = nullptr;
+  mDEFER_DESTRUCTION(&pIndexes, mFreePtrStack);
+  mERROR_CHECK(mAllocStackZero(&pIndexes, attributeCount));
+
+  mERROR_CHECK(mShader_Bind(*shader.GetPointer()));
+
+  size_t count = 0;
+
+  for (size_t i = 0; i < attributeCount; ++i)
+  {
+    mPtr<mMeshAttributeContainer> meshAttrib;
+    mDEFER_DESTRUCTION(&meshAttrib, mMeshAttributeContainer_Destroy);
+    mERROR_CHECK(mQueue_PeekAt(attributeInformation, i, &meshAttrib));
+
+    if (i == 0)
+      count = meshAttrib->attributeCount;
+    else
+      mERROR_IF(count != meshAttrib->attributeCount, mR_InvalidParameter);
+
+    pIndexes[i] = glGetAttribLocation(shader->shaderProgram, meshAttrib->attributeName);
+  }
+
+  size_t offset = 0;
+
+  for (size_t i = 0; i < attributeCount; ++i)
+  {
+    for (size_t j = 0; j < attributeCount; ++j)
+    {
+      if (pIndexes[j] == i)
+      {
+        mPtr<mMeshAttributeContainer> meshAttrib;
+        mDEFER_DESTRUCTION(&meshAttrib, mMeshAttributeContainer_Destroy);
+        mERROR_CHECK(mQueue_PeekAt(attributeInformation, j, &meshAttrib));
+
+        mERROR_CHECK(mQueue_PushBack(info, mMeshFactory_AttributeInformation(meshAttrib->size, offset, mMF_AIT_Attribute, meshAttrib->dataType, meshAttrib->subComponentSize)));
+        offset += meshAttrib->size;
+
+        goto nextAttribute;
+      }
+    }
+
+    mERROR_IF(true, mR_InvalidParameter);
+
+  nextAttribute:;
+  }
+
+  mPtr<mBinaryChunk> data;
+  mDEFER_DESTRUCTION(&data, mBinaryChunk_Destroy);
+  mERROR_CHECK(mBinaryChunk_Create(&data, pAllocator));
+
+  for (size_t i = 0; i < count; ++i)
+  {
+    for (size_t j = 0; j < attributeCount; ++j)
+    {
+      mPtr<mMeshAttributeContainer> meshAttrib;
+      mDEFER_DESTRUCTION(&meshAttrib, mMeshAttributeContainer_Destroy);
+      mERROR_CHECK(mQueue_PeekAt(attributeInformation, pIndexes[j], &meshAttrib));
+      
+      mERROR_CHECK(mBinaryChunk_WriteBytes(data, meshAttrib->attributes->pData + meshAttrib->size * i, meshAttrib->size));
+    }
+  }
+
+  (*pMesh)->primitiveCount = count;
+  (*pMesh)->dataSize = offset;
+  (*pMesh)->information = info;
+  (*pMesh)->shader = shader;
+  (*pMesh)->uploadState = mRenderParams_UploadState::mRP_US_NotInitialized;
+  (*pMesh)->triangleRenderMode = triangleRenderMode;
+
+  size_t textureCount = 0;
+  mERROR_CHECK(mQueue_GetCount(textures, &textureCount));
+
+  mERROR_CHECK(mArray_Create(&(*pMesh)->textures, pAllocator, textureCount));
+
+  for (size_t i = 0; i < textureCount; ++i)
+  {
+    mPtr<mTexture> *pTexture;
+    mERROR_CHECK(mQueue_PointerAt(textures, i, &pTexture));
+    mERROR_CHECK(mArray_PutAt((*pMesh)->textures, i, pTexture));
+  }
+
+  (*pMesh)->hasVbo = true;
+
+  glGenBuffers(1, &(*pMesh)->vbo);
+  glBindBuffer(GL_ARRAY_BUFFER, (*pMesh)->vbo);
+  glBufferData(GL_ARRAY_BUFFER, data->writeBytes, data->pData, GL_STATIC_DRAW);
+
+  GLuint index = 0;
+
+  for (size_t i = 0; i < attributeCount; ++i)
+  {
+    mMeshFactory_AttributeInformation attrInfo;
+    mERROR_CHECK(mQueue_PeekAt((*pMesh)->information, i, &attrInfo));
+
+    if (attrInfo.size > 0 && attrInfo.type == mMF_AIT_Attribute)
+    {
+      glEnableVertexAttribArray((GLuint)index);
+      glVertexAttribPointer((GLuint)index, (GLint)(attrInfo.size / attrInfo.individualSubTypeSize), attrInfo.dataType, GL_FALSE, (GLsizei)(*pMesh)->dataSize, (const void *)attrInfo.offset);
+      ++index;
+    }
+
+    mGL_DEBUG_ERROR_CHECK();
+  }
+
+  if ((*pMesh)->textures.count > 0)
+    (*pMesh)->uploadState = mRP_US_NotUploaded;
+  else
+    (*pMesh)->uploadState = mRP_US_Ready;
+
+#else
+  mRETURN_RESULT(mR_NotImplemented);
+#endif
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mMesh_Create, OUT mPtr<mMesh> *pMesh, IN mAllocator *pAllocator, mPtr<mQueue<mMeshFactory_AttributeInformation>> &attributeInformation, mPtr<mShader> &shader, mPtr<mBinaryChunk>& data, mPtr<mQueue<mPtr<mTexture>>> &textures, const mRenderParams_VertexRenderMode triangleRenderMode /* = mRP_VRM_TriangleList */)
 {
   mFUNCTION_SETUP();
 
