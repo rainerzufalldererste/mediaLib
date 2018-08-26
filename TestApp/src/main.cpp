@@ -1,19 +1,11 @@
-#include "default.h"
-#include "mMediaFileInputHandler.h"
-#include "mMediaFileWriter.h"
-#include "mThreadPool.h"
+﻿#include "default.h"
 #include "SDL.h"
-#include <time.h>
-#include "GL\glew.h"
+#include "mThreadPool.h"
 #include "mHardwareWindow.h"
-#include "mShader.h"
-#include "mTexture.h"
 #include "mMesh.h"
-#include "mSpriteBatch.h"
 #include "mResourceManager.h"
 #include "mVideoPlaybackEngine.h"
-
-const std::wstring videoFilename = L"N:/Data/video/Babuji3.mp4";
+#include "mTimeStamp.h"
 
 int main(int, char **)
 {
@@ -27,17 +19,19 @@ int main(int, char **)
   SDL_GetCurrentDisplayMode(0, &displayMode);
 
   mVec2s resolution;
-  resolution.x = displayMode.w / 2;
-  resolution.y = displayMode.h / 2;
+  resolution.x = displayMode.w;
+  resolution.y = displayMode.h;
 
   mPtr<mHardwareWindow> window = nullptr;
   mDEFER_DESTRUCTION(&window, mHardwareWindow_Destroy);
-  mERROR_CHECK(mHardwareWindow_Create(&window, nullptr, "OpenGL Window", resolution));// , mHW_DM_FullscreenDesktop));
+  mERROR_CHECK(mHardwareWindow_Create(&window, nullptr, "OpenGL Window", resolution, mHW_DM_FullscreenDesktop));
   mERROR_CHECK(mRenderParams_InitializeToDefault());
 
   mERROR_CHECK(mRenderParams_SetDoubleBuffering(true));
   mERROR_CHECK(mRenderParams_SetMultisampling(4));
   mERROR_CHECK(mRenderParams_SetVsync(false));
+
+  const std::wstring videoFilename = L"N:/Data/video/Babuji3.mp4";
 
   mPtr<mThreadPool> threadPool;
   mPtr<mVideoPlaybackEngine> videoPlaybackEngine;
