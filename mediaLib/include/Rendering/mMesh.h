@@ -306,6 +306,18 @@ struct mMeshFactory
   mRenderParams_VertexRenderMode triangleRenderMode;
 };
 
+struct mMeshAttributeContainer
+{
+  char attributeName[64];
+  size_t size;
+  size_t subComponentSize;
+  size_t attributeCount;
+  mPtr<mBinaryChunk> attributes;
+#if defined(mRENDERER_OPENGL)
+  GLenum dataType;
+#endif
+};
+
 struct mMesh
 {
   mPtr<mShader> shader;
@@ -341,6 +353,19 @@ mFUNCTION(mMeshFactory_GrowBack, mPtr<mMeshFactory<Args...>> &factory, const siz
 
 template <typename ...Args>
 mFUNCTION(mMeshFactory_Clear, mPtr<mMeshFactory<Args...>> &factory);
+
+template <typename T>
+mFUNCTION(mMeshAttributeContainer_Create, OUT mPtr<mMeshAttributeContainer> *pMeshAttributeContainer, IN mAllocator *pAllocator, char attributeName[64], const std::initializer_list<T> &items);
+
+template <typename T>
+mFUNCTION(mMeshAttributeContainer_Create, OUT mPtr<mMeshAttributeContainer> *pMeshAttributeContainer, IN mAllocator *pAllocator, char attributeName[64], mPtr<mQueue<T>> &items);
+
+template <typename T>
+mFUNCTION(mMeshAttributeContainer_ResolveType_Internal, mPtr<mMeshAttributeContainer> &attributeContainer);
+
+mFUNCTION(mMeshAttributeContainer_Destroy, IN_OUT mPtr<mMeshAttributeContainer> *pMeshAttributeContainer);
+
+mFUNCTION(mMeshAttributeContainer_Destroy_Internal, IN mMeshAttributeContainer *pMeshAttributeContainer);
 
 mFUNCTION(mMesh_Create, OUT mPtr<mMesh> *pMesh, IN mAllocator *pAllocator, mPtr<mQueue<mMeshFactory_AttributeInformation>> &attributeInformation, mPtr<mShader> &shader, mPtr<mBinaryChunk> &data, mPtr<mQueue<mPtr<mTexture>>> &textures, const mRenderParams_VertexRenderMode triangleRenderMode = mRP_VRM_TriangleList);
 
@@ -623,6 +648,137 @@ inline mFUNCTION(mMeshFactory_Clear, mPtr<mMeshFactory<Args...>>& factory)
   mFUNCTION_SETUP();
 
   mERROR_CHECK(mBinaryChunk_ResetWrite(factory->values));
+
+  mRETURN_SUCCESS();
+}
+
+template<typename T>
+inline mFUNCTION(mMeshAttributeContainer_Create, OUT mPtr<mMeshAttributeContainer> *pMeshAttributeContainer, IN mAllocator *pAllocator, char attributeName[64], const std::initializer_list<T> &items)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pMeshAttributeContainer == nullptr, mR_ArgumentNull);
+  mERROR_IF(items.size() == 0, mR_InvalidParameter);
+
+  mERROR_CHECK(mSharedPointer_Allocate(pMeshAttributeContainer, pAllocator, (std::function<void(mMeshAttributeContainer *)>)[](mMeshAttributeContainer *pData) {mMeshAttributeContainer_Destroy(pData); }, 1));
+
+  mERROR_CHECK(mBinaryChunk_Create(&(*pMeshAttributeContainer)->attributes, pAllocator));
+
+  mERROR_CHECK(mMeshAttributeContainer_ResolveType_Internal<T>(*pMeshAttributeContainer));
+
+  (*pMeshAttributeContainer)->attributeCount == items.size();
+  mERROR_CHECK(mAllocator_Copy(pAllocator, (*pMeshAttributeContainer)->attributeName, attributeName, 64));
+  (*pMeshAttributeContainer)->attributeName[63] = '\0';
+
+  for (T &item: items)
+    mERROR_CHECK(mBinaryChunk_Write((*pMeshAttributeContainer)->attributes, &item));
+
+  mRETURN_SUCCESS();
+}
+
+template<typename T>
+inline mFUNCTION(mMeshAttributeContainer_Create, OUT mPtr<mMeshAttributeContainer>* pMeshAttributeContainer, IN mAllocator * pAllocator, char attributeName[64], mPtr<mQueue<T>>& items)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pMeshAttributeContainer == nullptr, mR_ArgumentNull);
+
+  size_t queueCount = 0;
+  mERROR_CHECK(mQueue_GetCount(items, &queueCount));
+
+  mERROR_IF(queueCount == 0, mR_InvalidParameter);
+
+  mERROR_CHECK(mSharedPointer_Allocate(pMeshAttributeContainer, pAllocator, (std::function<void(mMeshAttributeContainer *)>)[](mMeshAttributeContainer *pData) {mMeshAttributeContainer_Destroy(pData); }, 1));
+
+  mERROR_CHECK(mBinaryChunk_Create(&(*pMeshAttributeContainer)->attributes, pAllocator));
+
+  mERROR_CHECK(mMeshAttributeContainer_ResolveType_Internal<T>(*pMeshAttributeContainer));
+
+  (*pMeshAttributeContainer)->attributeCount == queueCount;
+  mERROR_CHECK(mAllocator_Copy(pAllocator, (*pMeshAttributeContainer)->attributeName, attributeName, 64));
+  (*pMeshAttributeContainer)->attributeName[63] = '\0';
+
+  for (size_t i = 0; i < queueCount; ++i)
+  {
+    T *pItem;
+    mERROR_CHECK(mQueue_PointerAt(items, i, &pItem));
+    mERROR_CHECK(mBinaryChunk_Write((*pMeshAttributeContainer)->attributes, pItem));
+  }
+
+  mRETURN_SUCCESS();
+}
+
+template<>
+inline mFUNCTION(mMeshAttributeContainer_ResolveType_Internal<float_t>, mPtr<mMeshAttributeContainer> &attributeContainer)
+{
+  mFUNCTION_SETUP();
+
+  attributeContainer->size = sizeof(float_t);
+  attributeContainer->subComponentSize = sizeof(float_t);
+
+#if defined (mRENDERER_OPENGL)
+  attributeContainer->dataType = GL_FLOAT;
+#endif
+
+  mRETURN_SUCCESS();
+}
+
+template<>
+inline mFUNCTION(mMeshAttributeContainer_ResolveType_Internal<mVec2f>, mPtr<mMeshAttributeContainer> &attributeContainer)
+{
+  mFUNCTION_SETUP();
+
+  attributeContainer->size = sizeof(mVec2f);
+  attributeContainer->subComponentSize = sizeof(float_t);
+
+#if defined (mRENDERER_OPENGL)
+  attributeContainer->dataType = GL_FLOAT;
+#endif
+
+  mRETURN_SUCCESS();
+}
+
+template<>
+inline mFUNCTION(mMeshAttributeContainer_ResolveType_Internal<mVec3f>, mPtr<mMeshAttributeContainer> &attributeContainer)
+{
+  mFUNCTION_SETUP();
+
+  attributeContainer->size = sizeof(mVec3f);
+  attributeContainer->subComponentSize = sizeof(float_t);
+
+#if defined (mRENDERER_OPENGL)
+  attributeContainer->dataType = GL_FLOAT;
+#endif
+
+  mRETURN_SUCCESS();
+}
+
+template<>
+inline mFUNCTION(mMeshAttributeContainer_ResolveType_Internal<mVec4f>, mPtr<mMeshAttributeContainer> &attributeContainer)
+{
+  mFUNCTION_SETUP();
+
+  attributeContainer->size = sizeof(mVec4f);
+  attributeContainer->subComponentSize = sizeof(float_t);
+
+#if defined (mRENDERER_OPENGL)
+  attributeContainer->dataType = GL_FLOAT;
+#endif
+
+  mRETURN_SUCCESS();
+}
+
+template<>
+inline mFUNCTION(mMeshAttributeContainer_ResolveType_Internal<mVector>, mPtr<mMeshAttributeContainer> &attributeContainer)
+{
+  mFUNCTION_SETUP();
+
+  attributeContainer->size = sizeof(mVector);
+  attributeContainer->subComponentSize = sizeof(float_t);
+
+#if defined (mRENDERER_OPENGL)
+  attributeContainer->dataType = GL_FLOAT;
+#endif
 
   mRETURN_SUCCESS();
 }
