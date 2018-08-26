@@ -86,30 +86,19 @@ int main(int, char **)
 
   // Create individual meshes.
   {
-    mPtr<mQueue<mMeshFactory_AttributeInformation>> info;
-    mDEFER_DESTRUCTION(&info, mQueue_Destroy);
-    mERROR_CHECK(mQueue_Create(&info, nullptr));
-
-    mERROR_CHECK(mQueue_PushBack(info, mMeshFactory_AttributeInformation(sizeof(float_t), 0, mMF_AIT_Attribute, GL_FLOAT, sizeof(float_t))));
-
-    mPtr<mBinaryChunk> binaryChunk;
-    mDEFER_DESTRUCTION(&binaryChunk, mBinaryChunk_Destroy);
-    mERROR_CHECK(mBinaryChunk_Create(&binaryChunk, nullptr));
-
-    mERROR_CHECK(mBinaryChunk_WriteData(binaryChunk, 0.0f));
-    mERROR_CHECK(mBinaryChunk_WriteData(binaryChunk, 0.0f));
-    mERROR_CHECK(mBinaryChunk_WriteData(binaryChunk, 0.0f));
-    mERROR_CHECK(mBinaryChunk_WriteData(binaryChunk, 0.0f));
+    mPtr<mMeshAttributeContainer> positionMeshAttribute;
+    mDEFER_DESTRUCTION(&positionMeshAttribute, mMeshAttributeContainer_Destroy);
+    mERROR_CHECK(mMeshAttributeContainer_Create<float_t>(&positionMeshAttribute, nullptr, "unused", { 0, 0, 0, 0 }));
 
     const char *vertexShader = mGLSL(
-      in float position0;
+      in float unused;
       out vec2 _texCoord0;
       uniform vec2 offsets[4];
 
       void main()
       {
         _texCoord0 = offsets[gl_VertexID];
-        gl_Position = vec4(offsets[gl_VertexID] * 2 - 1, 0, 1);
+        gl_Position = vec4(offsets[gl_VertexID] * 2 - 1 - unused, 0, 1);
       }
     );
 
@@ -184,7 +173,7 @@ int main(int, char **)
 
     mPtr<mShader> shader;
     mDEFER_DESTRUCTION(&shader, mSharedPointer_Destroy);
-    mERROR_CHECK(mSharedPointer_Allocate(&shader, nullptr, (std::function<void(mShader *)>)[](mShader *pData) {mShader_Destroy(pData);}, 1));
+    mERROR_CHECK(mSharedPointer_Allocate(&shader, nullptr, (std::function<void(mShader *)>)[](mShader *pData) { mShader_Destroy(pData); }, 1));
     mERROR_CHECK(mShader_Create(shader.GetPointer(), vertexShader, fragmentShader, "outColour"));
 
     mERROR_CHECK(mShader_SetUniform(shader, "textureY", textureY));
@@ -203,7 +192,7 @@ int main(int, char **)
     {
       mPtr<mMesh> mesh;
       mDEFER_DESTRUCTION(&mesh, mMesh_Destroy);
-      mERROR_CHECK(mMesh_Create(&mesh, nullptr, info, shader, binaryChunk, textures, mRP_VRM_TriangleStrip));
+      mERROR_CHECK(mMesh_Create(&mesh, nullptr, { positionMeshAttribute }, shader, textures, mRP_VRM_TriangleStrip));
 
       mERROR_CHECK(mQueue_PushBack(meshes, mesh));
     }
