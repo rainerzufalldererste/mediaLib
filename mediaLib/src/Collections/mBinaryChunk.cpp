@@ -62,6 +62,89 @@ mFUNCTION(mBinaryChunk_GrowBack, mPtr<mBinaryChunk> &binaryChunk, const size_t s
   mRETURN_SUCCESS();
 }
 
+mFUNCTION(mBinaryChunk_WriteBytes, mPtr<mBinaryChunk>& binaryChunk, IN const uint8_t * pItems, const size_t bytes)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(binaryChunk == nullptr || pItems == nullptr, mR_ArgumentNull);
+
+  mERROR_CHECK(mBinaryChunk_GrowBack(binaryChunk, bytes));
+
+  uint8_t *pData = &binaryChunk->pData[binaryChunk->writeBytes];
+  size_t writtenSize = 0;
+
+#if defined(SSE2)
+  while (writtenSize + sizeof(__m128i) <= bytes)
+  {
+    *((__m128i *)pData) = *(__m128i *)pItems;
+    writtenSize += sizeof(__m128i);
+    pData += sizeof(__m128i);
+    pItems += sizeof(__m128i);
+  }
+#else
+  while (writtenSize + sizeof(size_t) <= bytes)
+  {
+    *((size_t *)pData) = *(size_t *)pItems;
+    writtenSize += sizeof(size_t);
+    pData += sizeof(size_t);
+    pItems += sizeof(size_t);
+  }
+#endif
+
+  while (writtenSize < bytes)
+  {
+    *pData = *pItems;
+    ++writtenSize;
+    ++pData;
+    ++pItems;
+  }
+
+  binaryChunk->writeBytes += bytes;
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mBinaryChunk_ReadBytes, mPtr<mBinaryChunk>& binaryChunk, OUT uint8_t * pItems, const size_t bytes)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(binaryChunk == nullptr || pItems == nullptr, mR_ArgumentNull);
+  mERROR_IF(binaryChunk->readBytes + bytes > binaryChunk->writeBytes, mR_IndexOutOfBounds);
+
+  uint8_t *pData = &binaryChunk->pData[binaryChunk->writeBytes];
+  size_t writtenSize = 0;
+
+#if defined(SSE2)
+  while (writtenSize + sizeof(__m128i) <= bytes)
+  {
+    *(__m128i *)pItems = *((__m128i *)pData);
+    writtenSize += sizeof(__m128i);
+    pData += sizeof(__m128i);
+    pItems += sizeof(__m128i);
+  }
+#else
+  while (writtenSize + sizeof(size_t) <= bytes)
+  {
+    *(size_t *)pItems = *((size_t *)pData);
+    writtenSize += sizeof(size_t);
+    pData += sizeof(size_t);
+    pItems += sizeof(size_t);
+  }
+#endif
+
+  while (writtenSize < bytes)
+  {
+    *pItems = *pData;
+    ++writtenSize;
+    ++pData;
+    ++pItems;
+  }
+
+  binaryChunk->readBytes += bytes;
+
+  mRETURN_SUCCESS();
+}
+
 mFUNCTION(mBinaryChunk_ResetWrite, mPtr<mBinaryChunk>& binaryChunk)
 {
   mFUNCTION_SETUP();

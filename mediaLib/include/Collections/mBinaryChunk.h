@@ -33,6 +33,9 @@ mFUNCTION(mBinaryChunk_WriteData, mPtr<mBinaryChunk> &binaryChunk, T item);
 template <typename T>
 mFUNCTION(mBinaryChunk_Read, mPtr<mBinaryChunk> &binaryChunk, T *pItem);
 
+mFUNCTION(mBinaryChunk_WriteBytes, mPtr<mBinaryChunk> &binaryChunk, IN const uint8_t *pItems, const size_t bytes);
+mFUNCTION(mBinaryChunk_ReadBytes, mPtr<mBinaryChunk> &binaryChunk, OUT uint8_t *pItems, const size_t bytes);
+
 mFUNCTION(mBinaryChunk_ResetWrite, mPtr<mBinaryChunk> &binaryChunk);
 mFUNCTION(mBinaryChunk_ResetRead, mPtr<mBinaryChunk> &binaryChunk);
 
@@ -62,8 +65,7 @@ inline mFUNCTION(mBinaryChunk_Write, mPtr<mBinaryChunk>& binaryChunk, T *pItem)
     pData += sizeof(__m128i);
     pItemData += sizeof(__m128i);
   }
-#endif
-
+#else
   while (writtenSize + sizeof(size_t) <= sizeof(T))
   {
     *((size_t *)pData) = *(size_t *)pItemData;
@@ -71,6 +73,7 @@ inline mFUNCTION(mBinaryChunk_Write, mPtr<mBinaryChunk>& binaryChunk, T *pItem)
     pData += sizeof(size_t);
     pItemData += sizeof(size_t);
   }
+#endif
 
   while (writtenSize < sizeof(T))
   {
@@ -101,7 +104,7 @@ inline mFUNCTION(mBinaryChunk_Read, mPtr<mBinaryChunk>& binaryChunk, T *pItem)
   mFUNCTION_SETUP();
 
   mERROR_IF(binaryChunk == nullptr || pItem == nullptr, mR_ArgumentNull);
-  mERROR_IF(writeCount + sizeof(T) > readCount, mR_IndexOutOfBounds);
+  mERROR_IF(binaryChunk->readBytes + sizeof(T) > binaryChunk->writeBytes, mR_IndexOutOfBounds);
 
   uint8_t *pData = &binaryChunk->pData[binaryChunk->writeBytes];
   size_t writtenSize = 0;
