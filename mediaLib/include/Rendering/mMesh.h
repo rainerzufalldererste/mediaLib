@@ -665,17 +665,17 @@ inline mFUNCTION(mMeshAttributeContainer_Create, OUT mPtr<mMeshAttributeContaine
   mERROR_IF(pMeshAttributeContainer == nullptr, mR_ArgumentNull);
   mERROR_IF(items.size() == 0, mR_InvalidParameter);
 
-  mERROR_CHECK(mSharedPointer_Allocate(pMeshAttributeContainer, pAllocator, (std::function<void(mMeshAttributeContainer *)>)[](mMeshAttributeContainer *pData) {mMeshAttributeContainer_Destroy(pData); }, 1));
+  mERROR_CHECK(mSharedPointer_Allocate(pMeshAttributeContainer, pAllocator, (std::function<void(mMeshAttributeContainer *)>)[](mMeshAttributeContainer *pData) {mMeshAttributeContainer_Destroy_Internal(pData); }, 1));
 
   mERROR_CHECK(mBinaryChunk_Create(&(*pMeshAttributeContainer)->attributes, pAllocator));
 
   mERROR_CHECK(mMeshAttributeContainer_ResolveType_Internal<T>(*pMeshAttributeContainer));
 
-  (*pMeshAttributeContainer)->attributeCount == items.size();
+  (*pMeshAttributeContainer)->attributeCount = items.size();
   mERROR_CHECK(mAllocator_Copy(pAllocator, (*pMeshAttributeContainer)->attributeName, attributeName, 64));
   (*pMeshAttributeContainer)->attributeName[63] = '\0';
 
-  for (T &item: items)
+  for (T item: items)
     mERROR_CHECK(mBinaryChunk_Write((*pMeshAttributeContainer)->attributes, &item));
 
   mRETURN_SUCCESS();
@@ -693,7 +693,7 @@ inline mFUNCTION(mMeshAttributeContainer_Create, OUT mPtr<mMeshAttributeContaine
 
   mERROR_IF(queueCount == 0, mR_InvalidParameter);
 
-  mERROR_CHECK(mSharedPointer_Allocate(pMeshAttributeContainer, pAllocator, (std::function<void(mMeshAttributeContainer *)>)[](mMeshAttributeContainer *pData) {mMeshAttributeContainer_Destroy(pData); }, 1));
+  mERROR_CHECK(mSharedPointer_Allocate(pMeshAttributeContainer, pAllocator, (std::function<void(mMeshAttributeContainer *)>)[](mMeshAttributeContainer *pData) {mMeshAttributeContainer_Destroy_Internal(pData); }, 1));
 
   mERROR_CHECK(mBinaryChunk_Create(&(*pMeshAttributeContainer)->attributes, pAllocator));
 

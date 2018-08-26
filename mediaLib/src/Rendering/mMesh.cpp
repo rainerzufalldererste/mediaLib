@@ -83,6 +83,8 @@ mFUNCTION(mMesh_Create, OUT mPtr<mMesh> *pMesh, IN mAllocator *pAllocator, mPtr<
       mERROR_IF(count != meshAttrib->attributeCount, mR_InvalidParameter);
 
     pIndexes[i] = glGetAttribLocation(shader->shaderProgram, meshAttrib->attributeName);
+
+    mERROR_IF(pIndexes[i] == -1, mR_InvalidParameter);
   }
 
   size_t offset = 0;
