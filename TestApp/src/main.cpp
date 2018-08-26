@@ -134,21 +134,33 @@ int main(int, char **)
         float k1 = cross(e, f) + cross(h, g);
         float k0 = cross(h, e);
 
-        float w = k1 * k1 - 4.0*k0*k2;
-        if (w < 0.0) return vec2(-1.0);
+        float w = k1 * k1 - 4.0 * k0 * k2;
+
+        if (w < 0.0)
+          return vec2(-1.0);
+
         w = sqrt(w);
 
-        float v1 = (-k1 - w) / (2.0*k2);
-        float u1 = (h.x - f.x*v1) / (e.x + g.x*v1);
+        float v1 = (-k1 - w) / (2.0 * k2);
+        float u1 = (h.x - f.x * v1) / (e.x + g.x * v1);
 
-        float v2 = (-k1 + w) / (2.0*k2);
-        float u2 = (h.x - f.x*v2) / (e.x + g.x*v2);
+        float v2 = (-k1 + w) / (2.0 * k2);
+        float u2 = (h.x - f.x * v2) / (e.x + g.x * v2);
 
         float u = u1;
         float v = v1;
 
-        if (v<0.0 || v>1.0 || u<0.0 || u>1.0) { u = u2;   v = v2; }
-        if (v<0.0 || v>1.0 || u<0.0 || u>1.0) { u = -1.0; v = -1.0; }
+        if (v < 0.0 || v > 1.0 || u < 0.0 || u > 1.0)
+        {
+          u = u2;
+          v = v2;
+        }
+
+        if (v < 0.0 || v > 1.0 || u < 0.0 || u > 1.0)
+        {
+          u = -1.0;
+          v = -1.0;
+        }
 
         return vec2(u, v);
       }
@@ -198,7 +210,7 @@ int main(int, char **)
   }
 
   // Generate Point Offsets:
-  mVec2f offsets[quadCount * 4] = { {0.15, 0.15}, {0, 1}, {0.6, 0.025}, {1, 1} };
+  mVec2f positions[quadCount * 4] = { {0.15, 0.15}, {0, 1}, {0.6, 0.025}, {1, 1} };
 
   while (true)
   {
@@ -240,42 +252,12 @@ int main(int, char **)
       mPtr<mMesh> *pMesh;
       mERROR_CHECK(mQueue_PointerAt(meshes, i, &pMesh));
 
-      mVec2f *pOffsets = &offsets[i * 4];
+      mVec2f *pPositions = &positions[i * 4];
 
-      //for (size_t offsetIndex = 0; offsetIndex < 4; ++offsetIndex)
-      //  pOffsets[offsetIndex] += (mVec2f(rand() / (float_t)RAND_MAX, rand() / (float_t)RAND_MAX) - mVec2f(0.5f)) / 100.0f;
+      for (size_t offsetIndex = 0; offsetIndex < 4; ++offsetIndex)
+        pPositions[offsetIndex] += (mVec2f(rand() / (float_t)RAND_MAX, rand() / (float_t)RAND_MAX) - mVec2f(0.5f)) / 1000.0f;
 
-      //mVec3f positions[4];
-      //
-      //for (size_t j = 0; j < 4; ++j)
-      //  positions[j] = mVec3f(pOffsets[j], 1);
-      //
-      //mVec2f a = pOffsets[2] - pOffsets[0];
-      //mVec2f b = pOffsets[3] - pOffsets[1];
-      //
-      //float_t cross = a.x * b.y - a.y * b.x;
-      //
-      //if (cross != 0)
-      //{
-      //  mVec2f c = pOffsets[0] - pOffsets[1];
-      //
-      //  float_t s = (a.x * c.y - a.y * c.x) / cross;
-      //
-      //  if (s > 0 && s < 1)
-      //  {
-      //    float_t t = (b.x * c.y - b.y * c.x) / cross;
-      //
-      //    if (t > 0 && t < 1)
-      //    {
-      //      positions[0].z = 1 / (1 - t);
-      //      positions[1].z = 1 / (1 - s);
-      //      positions[2].z = 1 / t;
-      //      positions[3].z = 1 / s;
-      //    }
-      //  }
-      //}
-
-      mERROR_CHECK(mShader_SetUniform((*pMesh)->shader, "offsets", pOffsets, 4));
+      mERROR_CHECK(mShader_SetUniform((*pMesh)->shader, "offsets", pPositions, 4));
 
       mERROR_CHECK(mMesh_Render(*pMesh));
     }

@@ -8,6 +8,28 @@
 
 #include "mMesh.h"
 
+mFUNCTION(mMeshAttributeContainer_Destroy, IN_OUT mPtr<mMeshAttributeContainer> *pMeshAttributeContainer)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pMeshAttributeContainer == nullptr, mR_ArgumentNull);
+
+  mERROR_CHECK(mSharedPointer_Destroy(pMeshAttributeContainer));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mMeshAttributeContainer_Destroy_Internal, IN mMeshAttributeContainer *pMeshAttributeContainer)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pMeshAttributeContainer == nullptr, mR_ArgumentNull);
+
+  mERROR_CHECK(mBinaryChunk_Destroy(&pMeshAttributeContainer->attributes));
+
+  mRETURN_SUCCESS();
+}
+
 mFUNCTION(mMesh_Create, OUT mPtr<mMesh> *pMesh, IN mAllocator *pAllocator, mPtr<mQueue<mMeshFactory_AttributeInformation>> &attributeInformation, mPtr<mShader>& shader, mPtr<mBinaryChunk>& data, mPtr<mQueue<mPtr<mTexture>>> &textures, const mRenderParams_VertexRenderMode triangleRenderMode /* = mRP_VRM_TriangleList */)
 {
   mFUNCTION_SETUP();
@@ -29,6 +51,8 @@ mFUNCTION(mMesh_Create, OUT mPtr<mMesh> *pMesh, IN mAllocator *pAllocator, mPtr<
     pInfo->offset = (*pMesh)->dataSize;
     (*pMesh)->dataSize += pInfo->size;
   }
+
+  mERROR_IF((*pMesh)->dataSize == 0, mR_InvalidParameter);
 
   size_t completeDataSize = 0;
   mERROR_CHECK(mBinaryChunk_GetWriteBytes(data, &completeDataSize));
