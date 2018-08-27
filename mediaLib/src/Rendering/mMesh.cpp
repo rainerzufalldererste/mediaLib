@@ -147,8 +147,9 @@ mFUNCTION(mMesh_Create, OUT mPtr<mMesh> *pMesh, IN mAllocator *pAllocator, mPtr<
   }
 
   (*pMesh)->hasVbo = true;
-
   glGenBuffers(1, &(*pMesh)->vbo);
+  mGL_ERROR_CHECK();
+  mSTDRESULT = mR_Success;
   glBindBuffer(GL_ARRAY_BUFFER, (*pMesh)->vbo);
   glBufferData(GL_ARRAY_BUFFER, data->writeBytes, data->pData, GL_STATIC_DRAW);
 

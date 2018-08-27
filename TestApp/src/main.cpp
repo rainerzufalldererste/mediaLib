@@ -19,19 +19,19 @@ int main(int, char **)
   SDL_GetCurrentDisplayMode(0, &displayMode);
 
   mVec2s resolution;
-  resolution.x = displayMode.w;
-  resolution.y = displayMode.h;
+  resolution.x = displayMode.w / 2;
+  resolution.y = displayMode.h / 2;
 
   mPtr<mHardwareWindow> window = nullptr;
   mDEFER_DESTRUCTION(&window, mHardwareWindow_Destroy);
-  mERROR_CHECK(mHardwareWindow_Create(&window, nullptr, "OpenGL Window", resolution, mHW_DM_FullscreenDesktop));
+  mERROR_CHECK(mHardwareWindow_Create(&window, nullptr, "OpenGL Window", resolution));//, mHW_DM_FullscreenDesktop));
   mERROR_CHECK(mRenderParams_InitializeToDefault());
 
   mERROR_CHECK(mRenderParams_SetDoubleBuffering(true));
   mERROR_CHECK(mRenderParams_SetMultisampling(4));
   mERROR_CHECK(mRenderParams_SetVsync(false));
 
-  const std::wstring videoFilename = L"N:/Data/video/Babuji3.mp4";
+  const std::wstring videoFilename = L"C:/Users/cstiller/Videos/Converted.mp4";
 
   mPtr<mThreadPool> threadPool;
   mPtr<mVideoPlaybackEngine> videoPlaybackEngine;
@@ -82,10 +82,10 @@ int main(int, char **)
   {
     mPtr<mMeshAttributeContainer> positionMeshAttribute;
     mDEFER_DESTRUCTION(&positionMeshAttribute, mMeshAttributeContainer_Destroy);
-    mERROR_CHECK(mMeshAttributeContainer_Create<float_t>(&positionMeshAttribute, nullptr, "unused", { 0, 0, 0, 0 }));
+    mERROR_CHECK(mMeshAttributeContainer_Create<mVec2f>(&positionMeshAttribute, nullptr, "unused", { mVec2f(0), mVec2f(0), mVec2f(0), mVec2f(0) }));
 
     const char *vertexShader = mGLSL(
-      in float unused;
+      in vec2 unused;
       out vec2 _texCoord0;
       uniform vec2 offsets[4];
 
