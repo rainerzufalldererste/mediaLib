@@ -319,6 +319,23 @@ struct mMeshAttributeContainer
 #endif
 };
 
+struct mMeshAttribute
+{
+  size_t attributeIndex;
+  size_t dataEntrySize;
+  size_t dataEntrySubComponentSize;
+  size_t count;
+  size_t offset;
+
+#if defined(mRENDERER_OPENGL)
+  GLenum dataType;
+
+  inline mMeshAttribute(const size_t attributeIndex, const size_t dataEntrySize, const size_t dataEntrySubComponentSize, const size_t count, const size_t offset, const GLenum dataType) : attributeIndex(attributeIndex), dataEntrySize(dataEntrySize), dataEntrySubComponentSize(dataEntrySubComponentSize), count(count), offset(offset), dataType(dataType) {}
+#endif
+
+  inline mMeshAttribute() = default;
+};
+
 struct mMesh
 {
   mPtr<mShader> shader;
@@ -326,7 +343,7 @@ struct mMesh
   mRenderParams_UploadState uploadState;
   mArray<mPtr<mTexture>> textures;
   mRenderParams_VertexRenderMode triangleRenderMode;
-  mPtr<mQueue<mMeshFactory_AttributeInformation>> information;
+  mPtr<mQueue<mMeshAttribute>> information;
   size_t primitiveCount;
 #if defined (mRENDERER_OPENGL)
   bool hasVbo;
@@ -372,7 +389,7 @@ mFUNCTION(mMesh_Create, OUT mPtr<mMesh> *pMesh, IN mAllocator *pAllocator, const
 
 mFUNCTION(mMesh_Create, OUT mPtr<mMesh> *pMesh, IN mAllocator *pAllocator, mPtr<mQueue<mPtr<mMeshAttributeContainer>>> &attributeInformation, mPtr<mShader> &shader, mPtr<mQueue<mPtr<mTexture>>> &textures, const mRenderParams_VertexRenderMode triangleRenderMode = mRP_VRM_TriangleList);
 
-mFUNCTION(mMesh_Create, OUT mPtr<mMesh> *pMesh, IN mAllocator *pAllocator, mPtr<mQueue<mMeshFactory_AttributeInformation>> &attributeInformation, mPtr<mShader> &shader, mPtr<mBinaryChunk> &data, mPtr<mQueue<mPtr<mTexture>>> &textures, const mRenderParams_VertexRenderMode triangleRenderMode = mRP_VRM_TriangleList);
+mFUNCTION(mMesh_Create, OUT mPtr<mMesh> *pMesh, IN mAllocator *pAllocator, mPtr<mQueue<mMeshAttribute>> &attributeInformation, mPtr<mShader> &shader, mPtr<mBinaryChunk> &data, mPtr<mQueue<mPtr<mTexture>>> &textures, const mRenderParams_VertexRenderMode triangleRenderMode = mRP_VRM_TriangleList);
 
 mFUNCTION(mMesh_Destroy, IN_OUT mPtr<mMesh> *pMesh);
 
@@ -532,6 +549,13 @@ inline mFUNCTION(mMeshFactory_CreateMesh, mPtr<mMeshFactory<Args...>> &factory, 
   case mRP_VRM_TriangleList:
   case mRP_VRM_TriangleStrip:
   case mRP_VRM_TriangleFan:
+  case mRP_VRM_Points:
+  case mRP_VRM_LineList:
+  case mRP_VRM_LineLoop:
+  case mRP_VRM_LineStrip:
+  case mRP_VRM_QuadList:
+  case mRP_VRM_QuadStrip:
+  case mRP_VRM_Polygon:
     (*pMesh)->triangleRenderMode = factory->triangleRenderMode;
     (*pMesh)->primitiveCount = factory->values->writeBytes / factory->meshFactoryInternal.size;
     break;

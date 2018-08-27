@@ -7,7 +7,24 @@
 #include "mVideoPlaybackEngine.h"
 #include "mTimeStamp.h"
 
+mFUNCTION(mainLoop);
+
 int main(int, char **)
+{
+  mFUNCTION_SETUP();
+
+  mResult result = mainLoop();
+
+  if (mFAILED(result))
+  {
+    printf("FAILED!!!!!!!!! %" PRIi32 ".", result);
+    getchar();
+  }
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mainLoop)
 {
   mFUNCTION_SETUP();
 
@@ -19,19 +36,19 @@ int main(int, char **)
   SDL_GetCurrentDisplayMode(0, &displayMode);
 
   mVec2s resolution;
-  resolution.x = displayMode.w;
-  resolution.y = displayMode.h;
+  resolution.x = displayMode.w / 2;
+  resolution.y = displayMode.h / 2;
 
   mPtr<mHardwareWindow> window = nullptr;
   mDEFER_DESTRUCTION(&window, mHardwareWindow_Destroy);
-  mERROR_CHECK(mHardwareWindow_Create(&window, nullptr, "OpenGL Window", resolution, mHW_DM_FullscreenDesktop));
+  mERROR_CHECK(mHardwareWindow_Create(&window, nullptr, "OpenGL Window", resolution));//, mHW_DM_FullscreenDesktop));
   mERROR_CHECK(mRenderParams_InitializeToDefault());
 
   mERROR_CHECK(mRenderParams_SetDoubleBuffering(true));
   mERROR_CHECK(mRenderParams_SetMultisampling(4));
   mERROR_CHECK(mRenderParams_SetVsync(false));
 
-  const std::wstring videoFilename = L"N:/Data/video/Babuji3.mp4";
+  const std::wstring videoFilename = L"C:/Users/cstiller/Videos/Converted.mp4";
 
   mPtr<mThreadPool> threadPool;
   mPtr<mVideoPlaybackEngine> videoPlaybackEngine;
@@ -86,83 +103,83 @@ int main(int, char **)
 
     const char *vertexShader = mGLSL(
       in float unused;
-      out vec2 _texCoord0;
-      uniform vec2 offsets[4];
+    out vec2 _texCoord0;
+    uniform vec2 offsets[4];
 
-      void main()
-      {
-        _texCoord0 = offsets[gl_VertexID];
-        gl_Position = vec4(offsets[gl_VertexID] * 2 - 1 - unused, 0, 1);
-      }
+    void main()
+    {
+      _texCoord0 = offsets[gl_VertexID];
+      gl_Position = vec4(offsets[gl_VertexID] * 2 - 1 - unused, 0, 1);
+    }
     );
 
     const char *fragmentShader = mGLSL(
       out vec4 outColour;
-      in vec2 _texCoord0;
-      uniform sampler2D textureY;
-      uniform sampler2D textureU;
-      uniform sampler2D textureV;
-      uniform vec2 offsets[4];
+    in vec2 _texCoord0;
+    uniform sampler2D textureY;
+    uniform sampler2D textureU;
+    uniform sampler2D textureV;
+    uniform vec2 offsets[4];
 
-      float cross(in vec2 a, in vec2 b) { return a.x*b.y - a.y*b.x; }
+    float cross(in vec2 a, in vec2 b) { return a.x*b.y - a.y*b.x; }
 
-      vec2 invBilinear(in vec2 p, in vec2 a, in vec2 b, in vec2 c, in vec2 d)
+    vec2 invBilinear(in vec2 p, in vec2 a, in vec2 b, in vec2 c, in vec2 d)
+    {
+      vec2 e = b - a;
+      vec2 f = d - a;
+      vec2 g = a - b + c - d;
+      vec2 h = p - a;
+
+      float k2 = cross(g, f);
+      float k1 = cross(e, f) + cross(h, g);
+      float k0 = cross(h, e);
+
+      float w = k1 * k1 - 4.0 * k0 * k2;
+
+      if (w < 0.0)
+        return vec2(-1.0);
+
+      w = sqrt(w);
+
+      float v1 = (-k1 - w) / (2.0 * k2);
+      float u1 = (h.x - f.x * v1) / (e.x + g.x * v1);
+
+      float v2 = (-k1 + w) / (2.0 * k2);
+      float u2 = (h.x - f.x * v2) / (e.x + g.x * v2);
+
+      float u = u1;
+      float v = v1;
+
+      if (v < 0.0 || v > 1.0 || u < 0.0 || u > 1.0)
       {
-        vec2 e = b - a;
-        vec2 f = d - a;
-        vec2 g = a - b + c - d;
-        vec2 h = p - a;
-
-        float k2 = cross(g, f);
-        float k1 = cross(e, f) + cross(h, g);
-        float k0 = cross(h, e);
-
-        float w = k1 * k1 - 4.0 * k0 * k2;
-
-        if (w < 0.0)
-          return vec2(-1.0);
-
-        w = sqrt(w);
-
-        float v1 = (-k1 - w) / (2.0 * k2);
-        float u1 = (h.x - f.x * v1) / (e.x + g.x * v1);
-
-        float v2 = (-k1 + w) / (2.0 * k2);
-        float u2 = (h.x - f.x * v2) / (e.x + g.x * v2);
-
-        float u = u1;
-        float v = v1;
-
-        if (v < 0.0 || v > 1.0 || u < 0.0 || u > 1.0)
-        {
-          u = u2;
-          v = v2;
-        }
-
-        if (v < 0.0 || v > 1.0 || u < 0.0 || u > 1.0)
-        {
-          u = -1.0;
-          v = -1.0;
-        }
-
-        return vec2(u, v);
+        u = u2;
+        v = v2;
       }
 
-      void main()
+      if (v < 0.0 || v > 1.0 || u < 0.0 || u > 1.0)
       {
-        vec2 pos = invBilinear(_texCoord0, offsets[1], offsets[3], offsets[2], offsets[0]);
-
-        float y = texture(textureY, pos).x;
-        float u = texture(textureU, pos).x;
-        float v = texture(textureV, pos).x;
-
-        vec3 col = vec3(
-          clamp(y + 1.370705 * (v - 0.5), 0, 1),
-          clamp(y - 0.698001 * (v - 0.5) - 0.337633 * (u - 0.5), 0, 1),
-          clamp(y + 1.732446 * (u - 0.5), 0, 1));
-
-        outColour = vec4(col, 1);
+        u = -1.0;
+        v = -1.0;
       }
+
+      return vec2(u, v);
+    }
+
+    void main()
+    {
+      vec2 pos = invBilinear(_texCoord0, offsets[1], offsets[3], offsets[2], offsets[0]);
+
+      float y = texture(textureY, pos).x;
+      float u = texture(textureU, pos).x;
+      float v = texture(textureV, pos).x;
+
+      vec3 col = vec3(
+        clamp(y + 1.370705 * (v - 0.5), 0, 1),
+        clamp(y - 0.698001 * (v - 0.5) - 0.337633 * (u - 0.5), 0, 1),
+        clamp(y + 1.732446 * (u - 0.5), 0, 1));
+
+      outColour = vec4(col, 1);
+    }
     );
 
     mPtr<mShader> shader;
@@ -193,7 +210,7 @@ int main(int, char **)
   }
 
   // Generate Point Offsets:
-  mVec2f positions[quadCount * 4] = { {0.15, 0.15}, {0, 1}, {0.6, 0.025}, {1, 1} };
+  mVec2f positions[quadCount * 4] = { { 0.15, 0.15 },{ 0, 1 },{ 0.6, 0.025 },{ 1, 1 } };
 
   while (true)
   {
