@@ -260,13 +260,20 @@ struct mMeshFactory_AttributeInformation
   size_t offset;
   mMeshFactory_AttributeInformationType type;
   size_t individualSubTypeSize;
+  char name[32];
 
 #if defined(mRENDERER_OPENGL)
   GLenum dataType;
 
-  inline mMeshFactory_AttributeInformation(const size_t size, const size_t offset, const mMeshFactory_AttributeInformationType type, const GLenum dataType, const size_t individualSubTypeSize) : size(size), offset(offset), type(type), dataType(dataType), individualSubTypeSize(individualSubTypeSize) {}
+  inline mMeshFactory_AttributeInformation(const char name[32], const size_t size, const size_t offset, const mMeshFactory_AttributeInformationType type, const GLenum dataType, const size_t individualSubTypeSize) : size(size), offset(offset), type(type), dataType(dataType), individualSubTypeSize(individualSubTypeSize) 
+  {
+    mMemcpy((char *)this->name, name, 32);
+  }
 #else
-  inline mMeshFactory_AttributeInformation(const size_t size, const size_t offset, const mMeshFactory_AttributeInformationType type, const size_t individualSubTypeSize) : size(size), offset(offset), type(type), individualSubTypeSize(individualSubTypeSize) {}
+  inline mMeshFactory_AttributeInformation(const char name[32], const size_t size, const size_t offset, const mMeshFactory_AttributeInformationType type, const size_t individualSubTypeSize) : size(size), offset(offset), type(type), individualSubTypeSize(individualSubTypeSize) 
+  {
+    mMemcpy((char *)this->name, name, 32);
+  }
 #endif
 
   inline mMeshFactory_AttributeInformation() = default;
@@ -567,14 +574,29 @@ inline mFUNCTION(mMeshFactory_CreateMesh, mPtr<mMeshFactory<Args...>> &factory, 
 
 #if defined (mRENDERER_OPENGL)
   (*pMesh)->hasVbo = true;
-  (*pMesh)->information = factory->meshFactoryInternal.information;
+
+  size_t informationCount;
+  mERROR_CHECK(mQueue_GetCount(factory->meshFactoryInternal.information, &informationCount));
+
+  mERROR_CHECK(mQueue_Create(&(*pMesh)->information, pAllocator));
+
+  mERROR_CHECK(mShader_Bind(*shader.GetPointer()));
+
+  for (size_t i = 0; i < informationCount; ++i)
+  {
+    mMeshFactory_AttributeInformation *pItem;
+    mERROR_CHECK(mQueue_PointerAt(factory->meshFactoryInternal.information, i, &pItem));
+
+    const GLint index = glGetAttribLocation(shader->shaderProgram, pItem->name);
+    mERROR_IF(index < 0, mR_InternalError);
+
+    mERROR_CHECK(mQueue_PushBack((*pMesh)->information, mMeshAttribute(index, pItem->size, pItem->individualSubTypeSize, 0, pItem->offset, pItem->dataType)));
+  }
+
   (*pMesh)->dataSize = factory->meshFactoryInternal.size;
   glGenBuffers(1, &(*pMesh)->vbo);
   glBindBuffer(GL_ARRAY_BUFFER, (*pMesh)->vbo);
   glBufferData(GL_ARRAY_BUFFER, factory->values->writeBytes, factory->values->pData, GL_STATIC_DRAW);
-
-  size_t informationCount;
-  mERROR_CHECK(mQueue_GetCount(factory->meshFactoryInternal.information, &informationCount));
 
   GLuint index = 0;
 
@@ -842,7 +864,7 @@ struct mMeshFactory_Internal_Unpacker <T>
         break;
       }
 
-      mERROR_CHECK(mQueue_PushBack(pMeshFactory->information, mMeshFactory_AttributeInformation(T::size, pMeshFactory->size, mMF_AIT_Attribute, GL_FLOAT, sizeof(float_t))));
+      mERROR_CHECK(mQueue_PushBack(pMeshFactory->information, mMeshFactory_AttributeInformation(mRenderObjectParam_Position_AttributeName "0", T::size, pMeshFactory->size, mMF_AIT_Attribute, GL_FLOAT, sizeof(float_t))));
 
       break;
 
@@ -863,7 +885,7 @@ struct mMeshFactory_Internal_Unpacker <T>
         break;
       }
 
-      mERROR_CHECK(mQueue_PushBack(pMeshFactory->information, mMeshFactory_AttributeInformation(T::size, pMeshFactory->size, mMF_AIT_Attribute, GL_FLOAT, sizeof(float_t))));
+      mERROR_CHECK(mQueue_PushBack(pMeshFactory->information, mMeshFactory_AttributeInformation(mMeshTexcoord::attributeName(pMeshFactory->textureCoordCount).c_str(), T::size, pMeshFactory->size, mMF_AIT_Attribute, GL_FLOAT, sizeof(float_t))));
 
       break;
 
@@ -884,7 +906,7 @@ struct mMeshFactory_Internal_Unpacker <T>
         break;
       }
 
-      mERROR_CHECK(mQueue_PushBack(pMeshFactory->information, mMeshFactory_AttributeInformation(T::size, pMeshFactory->size, mMF_AIT_Attribute, GL_FLOAT, sizeof(float_t))));
+      mERROR_CHECK(mQueue_PushBack(pMeshFactory->information, mMeshFactory_AttributeInformation("_" mMeshColour_AttributeName "0", T::size, pMeshFactory->size, mMF_AIT_Attribute, GL_FLOAT, sizeof(float_t))));
 
       break;
 
@@ -896,8 +918,8 @@ struct mMeshFactory_Internal_Unpacker <T>
       {
       case mROPST_TextureBlendFactor:
         mERROR_IF(0 > sprintf_s(pMeshFactory->vertShader, "%s\nin float " mMeshTextureBlendFactor_AttributeName "0;\nout float _" mMeshColour_AttributeName "0;", pMeshFactory->vertShader), mR_InternalError);
-        mERROR_IF(0 > sprintf_s(pMeshFactory->vertShaderImpl, "%s\n\t_" mMeshColour_AttributeName "0 = " mMeshColour_AttributeName "0;", pMeshFactory->vertShaderImpl), mR_InternalError);
-        mERROR_IF(0 > sprintf_s(pMeshFactory->fragShader, "%s\nin vec3 _" mMeshColour_AttributeName "0;", pMeshFactory->fragShader), mR_InternalError);
+        mERROR_IF(0 > sprintf_s(pMeshFactory->vertShaderImpl, "%s\n\t_" mMeshTextureBlendFactor_AttributeName "0 = " mMeshTextureBlendFactor_AttributeName "0;", pMeshFactory->vertShaderImpl), mR_InternalError);
+        mERROR_IF(0 > sprintf_s(pMeshFactory->fragShader, "%s\nin vec3 _" mMeshTextureBlendFactor_AttributeName "0;", pMeshFactory->fragShader), mR_InternalError);
         break;
 
       default:
@@ -905,7 +927,7 @@ struct mMeshFactory_Internal_Unpacker <T>
         break;
       }
 
-      mERROR_CHECK(mQueue_PushBack(pMeshFactory->information, mMeshFactory_AttributeInformation(T::size, pMeshFactory->size, mMF_AIT_Attribute, GL_FLOAT, sizeof(float_t))));
+      mERROR_CHECK(mQueue_PushBack(pMeshFactory->information, mMeshFactory_AttributeInformation(mMeshTextureBlendFactor_AttributeName "0", T::size, pMeshFactory->size, mMF_AIT_Attribute, GL_FLOAT, sizeof(float_t))));
 
       break;
 
@@ -915,7 +937,7 @@ struct mMeshFactory_Internal_Unpacker <T>
 
       // TODO: implement.
 
-      mERROR_CHECK(mQueue_PushBack(pMeshFactory->information, mMeshFactory_AttributeInformation(T::size, pMeshFactory->size, mMF_AIT_Attribute, GL_FLOAT, sizeof(float_t))));
+      mERROR_CHECK(mQueue_PushBack(pMeshFactory->information, mMeshFactory_AttributeInformation("", T::size, pMeshFactory->size, mMF_AIT_Attribute, GL_FLOAT, sizeof(float_t))));
 
       break;
 
@@ -936,7 +958,7 @@ struct mMeshFactory_Internal_Unpacker <T>
         break;
       }
 
-      mERROR_CHECK(mQueue_PushBack(pMeshFactory->information, mMeshFactory_AttributeInformation(T::size, pMeshFactory->size, mMF_AIT_Attribute, GL_FLOAT, sizeof(float_t))));
+      mERROR_CHECK(mQueue_PushBack(pMeshFactory->information, mMeshFactory_AttributeInformation(mMeshAlphaChannel_AttributeName "0", T::size, pMeshFactory->size, mMF_AIT_Attribute, GL_FLOAT, sizeof(float_t))));
 
       break;
 
@@ -944,7 +966,7 @@ struct mMeshFactory_Internal_Unpacker <T>
       // mERROR_IF(pMeshFactory->useTextureAlpha != 0, mR_InvalidParameter); // will be ignored anyways.
       pMeshFactory->useTextureAlpha = 1;
 
-      mERROR_CHECK(mQueue_PushBack(pMeshFactory->information, mMeshFactory_AttributeInformation(T::size, pMeshFactory->size, mMF_AIT_Flag, GL_FALSE, 1)));
+      mERROR_CHECK(mQueue_PushBack(pMeshFactory->information, mMeshFactory_AttributeInformation("", T::size, pMeshFactory->size, mMF_AIT_Flag, GL_FALSE, 1)));
 
       break;
 
@@ -956,20 +978,24 @@ struct mMeshFactory_Internal_Unpacker <T>
         mERROR_IF(0 > sprintf_s(pMeshFactory->vertShader, "%s\nuniform float " mMeshScaleUniform_AttributeName "0;", pMeshFactory->vertShader), mR_InternalError);
         // mERROR_IF(pMeshFactory->scaleUniform != 0, mR_InvalidParameter); // will be ignored anyways.
         pMeshFactory->scaleUniform = 1;
+
+        mERROR_CHECK(mQueue_PushBack(pMeshFactory->information, mMeshFactory_AttributeInformation(mMeshScaleUniform_AttributeName "0", T::size, pMeshFactory->size, mMF_AIT_Uniform, GL_FLOAT, sizeof(float_t))));
+
         break;
 
       case mROPST_Scale2dUniform:
         mERROR_IF(0 > sprintf_s(pMeshFactory->vertShader, "%s\nuniform vec2 " mMeshScale2dUniform_AttributeName "0;", pMeshFactory->vertShader), mR_InternalError);
         // mERROR_IF(pMeshFactory->scale2dUniform != 0, mR_InvalidParameter); // will be ignored anyways.
         pMeshFactory->scale2dUniform = 1;
+
+        mERROR_CHECK(mQueue_PushBack(pMeshFactory->information, mMeshFactory_AttributeInformation(mMeshScale2dUniform_AttributeName "0",  T::size, pMeshFactory->size, mMF_AIT_Uniform, GL_FLOAT, sizeof(float_t))));
+
         break;
 
       default:
         mRETURN_RESULT(mR_OperationNotSupported);
         break;
       }
-
-      mERROR_CHECK(mQueue_PushBack(pMeshFactory->information, mMeshFactory_AttributeInformation(T::size, pMeshFactory->size, mMF_AIT_Uniform, GL_FLOAT, sizeof(float_t))));
 
       break;
 
@@ -1050,7 +1076,7 @@ mFUNCTION(mMeshFactory_Internal_Build, mMeshFactory_Internal *pMeshFactory)
   }
 
   if (pMeshFactory->colour)
-    mERROR_IF(0 > sprintf_s(pMeshFactory->fragShader, "%s\n\tret *= vec4(" mMeshColour_AttributeName "0, 1);", pMeshFactory->fragShader), mR_InternalError);
+    mERROR_IF(0 > sprintf_s(pMeshFactory->fragShader, "%s\n\tret *= vec4(_" mMeshColour_AttributeName "0, 1);", pMeshFactory->fragShader), mR_InternalError);
 
   if (pMeshFactory->alpha)
     mERROR_IF(0 > sprintf_s(pMeshFactory->fragShader, "%s\n\tret.a *= _" mMeshAlphaChannel_AttributeName "0);", pMeshFactory->fragShader), mR_InternalError);

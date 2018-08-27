@@ -241,7 +241,7 @@ template <typename T> mFUNCTION(mMemmove, T *pDst, T *pSrc, const size_t count)
   mRETURN_SUCCESS();
 }
 
-template <typename T> mFUNCTION(mMemcpy, T *pDst, T *pSrc, const size_t count)
+template <typename T> mFUNCTION(mMemcpy, T *pDst, const T *pSrc, const size_t count)
 {
   mFUNCTION_SETUP();
   mERROR_IF(pDst == nullptr || pSrc == nullptr, mR_ArgumentNull);
