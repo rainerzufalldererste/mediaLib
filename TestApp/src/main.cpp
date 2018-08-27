@@ -50,6 +50,16 @@ mFUNCTION(mainLoop)
 
   const std::wstring videoFilename = L"C:/Users/cstiller/Videos/Converted.mp4";
 
+  mPtr<mMeshFactory<mMesh2dPosition, mMeshColour>> meshFactory;
+  mDEFER_DESTRUCTION(&meshFactory, mMeshFactory_Destroy);
+  mERROR_CHECK(mMeshFactory_Create(&meshFactory, nullptr));
+
+  mERROR_CHECK(mMeshFactory_AppendData(meshFactory, mMesh2dPosition(0, 1), mMeshColour(0, 0, 1)));
+
+  mPtr<mMesh> meshTest;
+  mDEFER_DESTRUCTION(&meshTest, mMesh_Destroy);
+  mERROR_CHECK(mMeshFactory_CreateMesh(meshFactory, &meshTest, nullptr));
+
   mPtr<mThreadPool> threadPool;
   mPtr<mVideoPlaybackEngine> videoPlaybackEngine;
   mDEFER_DESTRUCTION(&videoPlaybackEngine, mVideoPlaybackEngine_Destroy);
