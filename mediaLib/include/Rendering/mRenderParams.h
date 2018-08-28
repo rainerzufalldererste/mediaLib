@@ -69,6 +69,15 @@ mFUNCTION(mRenderParams_SetCurrentRenderResolution, const mVec2s &resolution);
 mFUNCTION(mRenderParams_SetVsync, const bool vsync);
 mFUNCTION(mRenderParams_SetDoubleBuffering, const bool doubleBuffering);
 mFUNCTION(mRenderParams_SetMultisampling, const size_t count);
+mFUNCTION(mRenderParams_SetStereo3d, const bool enabled);
+
+enum mRenderParams_StereoRenderBuffer
+{
+  mRP_SRB_LeftEye,
+  mRP_SRB_RightEye,
+};
+
+mFUNCTION(mRenderParams_SetStereo3dBuffer, const mRenderParams_StereoRenderBuffer buffer);
 
 mFUNCTION(mRenderParams_ClearTargetColour, const mVector &colour = mVector(0, 0, 0, 1));
 mFUNCTION(mRenderParams_ClearDepth);

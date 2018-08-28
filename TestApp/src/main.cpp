@@ -6,6 +6,7 @@
 #include "mResourceManager.h"
 #include "mVideoPlaybackEngine.h"
 #include "mTimeStamp.h"
+#include "SDL_opengl.h"
 
 mFUNCTION(mainLoop);
 
@@ -49,6 +50,14 @@ mFUNCTION(mainLoop)
   mERROR_CHECK(mRenderParams_SetDoubleBuffering(true));
   mERROR_CHECK(mRenderParams_SetMultisampling(4));
   mERROR_CHECK(mRenderParams_SetVsync(false));
+
+  GLboolean supportsStereo = false; 
+  glGetBooleanv(GL_STEREO, &supportsStereo);
+
+  mPRINT(supportsStereo ? "Graphics Device supports stereo.\n" : "Graphics Device does not support stereo.\n");
+
+  if (supportsStereo)
+    mERROR_CHECK(mRenderParams_SetStereo3d(true));
 
   const std::wstring videoFilename = L"C:/Users/cstiller/Videos/Converted.mp4";
 
@@ -221,7 +230,6 @@ mFUNCTION(mainLoop)
 
   while (true)
   {
-    mERROR_CHECK(mRenderParams_ClearTargetDepthAndColour());
 
     bool isNewFrame = true;
     mResult result = mVideoPlaybackEngine_GetCurrentFrame(videoPlaybackEngine, &currentFrame, &isNewFrame);
@@ -251,6 +259,15 @@ mFUNCTION(mainLoop)
     size_t meshCount = 0;
     mERROR_CHECK(mQueue_GetCount(meshes, &meshCount));
 
+    bool leftEye = true;
+
+  stereoEntryPoint:
+
+    if (supportsStereo)
+      mERROR_CHECK(mRenderParams_SetStereo3dBuffer(leftEye ? mRP_SRB_LeftEye : mRP_SRB_RightEye));
+
+    mERROR_CHECK(mRenderParams_ClearTargetDepthAndColour());
+
     for (size_t i = 0; i < meshCount; ++i)
     {
       mPtr<mMesh> *pMesh;
@@ -264,6 +281,12 @@ mFUNCTION(mainLoop)
       mERROR_CHECK(mShader_SetUniform((*pMesh)->shader, "offsets", pPositions, 4));
 
       mERROR_CHECK(mMesh_Render(*pMesh));
+    }
+
+    if (supportsStereo && leftEye)
+    {
+      leftEye = false;
+      goto stereoEntryPoint;
     }
 
     mGL_DEBUG_ERROR_CHECK();
