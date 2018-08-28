@@ -11,6 +11,9 @@
 
 #include <functional>
 #include <type_traits>
+#include <windows.h>
+#include <debugapi.h>
+#include <stdarg.h>
 
 enum mResult
 {
@@ -57,6 +60,20 @@ extern bool g_mResult_breakOnError;
 #define mBREAK_ON_FAILURE false
 #endif // _DEBUG
 
+inline void WINAPIV mDebugOut(const char *fmt, ...)
+{
+  char s[1025];
+  va_list args;
+  ZeroMemory(s, 1025 * sizeof(s[0]));
+  va_start(args, fmt);
+  vsprintf_s(s, fmt, args);
+  va_end(args);
+  s[1024] = 0;
+  OutputDebugStringA(s);
+}
+
+mFUNCTION(mResult_ToString, const mResult result, OUT struct mString *pString);
+
 void mDeinit();
 void mDeinit(const std::function<void(void)> &param);
 template <typename ...Args> void mDeinit(const std::function<void(void)> &param, Args && ...args) { if (param) { param(); } mDeinit(std::forward<Args>(args)); };
@@ -68,6 +85,7 @@ template <typename ...Args> void mDeinit(const std::function<void(void)> &param,
     { g_mResult_lastErrorResult = mSTDRESULT; \
       g_mResult_lastErrorFile = __FILE__; \
       g_mResult_lastErrorLine = __LINE__; \
+      mDebugOut("Error in '%s' line % " PRIi32 " with Result %" PRIi32 ".\n", __FILE__, __LINE__, mSTDRESULT); \
       mDeinit(__VA_ARGS__); \
       if (g_mResult_breakOnError && mBREAK_ON_FAILURE) \
       { __debugbreak(); \
@@ -84,6 +102,7 @@ template <typename ...Args> void mDeinit(const std::function<void(void)> &param,
       { g_mResult_lastErrorResult = mSTDRESULT; \
         g_mResult_lastErrorFile = __FILE__; \
         g_mResult_lastErrorLine = __LINE__; \
+        mDebugOut("Error in '%s' line % " PRIi32 " with Result %" PRIi32 ".\n", __FILE__, __LINE__, mSTDRESULT); \
         mDeinit(__VA_ARGS__); \
         if (g_mResult_breakOnError && mBREAK_ON_FAILURE) \
         { __debugbreak(); \
@@ -124,6 +143,5 @@ template <typename ...Args> void mDeinit(const std::function<void(void)> &param,
       } \
     } \
   } while (0)
-
 
 #endif // mResult_h__
