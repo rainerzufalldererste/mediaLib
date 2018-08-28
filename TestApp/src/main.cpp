@@ -42,13 +42,14 @@ mFUNCTION(mainLoop)
   resolution.x = displayMode.w;
   resolution.y = displayMode.h;
 
+  mERROR_CHECK(mRenderParams_SetMultisampling(16));
+
   mPtr<mHardwareWindow> window = nullptr;
   mDEFER_DESTRUCTION(&window, mHardwareWindow_Destroy);
   mERROR_CHECK(mHardwareWindow_Create(&window, nullptr, "OpenGL Window", resolution, mHW_DM_Fullscreen));
   mERROR_CHECK(mRenderParams_InitializeToDefault());
 
   mERROR_CHECK(mRenderParams_SetDoubleBuffering(true));
-  mERROR_CHECK(mRenderParams_SetMultisampling(4));
   mERROR_CHECK(mRenderParams_SetVsync(false));
   mERROR_CHECK(mRenderParams_ShowCursor(false));
 
