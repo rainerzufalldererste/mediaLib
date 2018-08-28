@@ -39,19 +39,20 @@ mFUNCTION(mainLoop)
   SDL_GetCurrentDisplayMode(0, &displayMode);
 
   mVec2s resolution;
-  resolution.x = displayMode.w / 2;
-  resolution.y = displayMode.h / 2;
+  resolution.x = displayMode.w;
+  resolution.y = displayMode.h;
 
   mPtr<mHardwareWindow> window = nullptr;
   mDEFER_DESTRUCTION(&window, mHardwareWindow_Destroy);
-  mERROR_CHECK(mHardwareWindow_Create(&window, nullptr, "OpenGL Window", resolution));//, mHW_DM_FullscreenDesktop));
+  mERROR_CHECK(mHardwareWindow_Create(&window, nullptr, "OpenGL Window", resolution, mHW_DM_Fullscreen));
   mERROR_CHECK(mRenderParams_InitializeToDefault());
 
   mERROR_CHECK(mRenderParams_SetDoubleBuffering(true));
   mERROR_CHECK(mRenderParams_SetMultisampling(4));
   mERROR_CHECK(mRenderParams_SetVsync(false));
+  mERROR_CHECK(mRenderParams_ShowCursor(false));
 
-  GLboolean supportsStereo = false; 
+  GLboolean supportsStereo = false;
   glGetBooleanv(GL_STEREO, &supportsStereo);
 
   mPRINT(supportsStereo ? "Graphics Device supports stereo.\n" : "Graphics Device does not support stereo.\n");
@@ -198,10 +199,12 @@ mFUNCTION(mainLoop)
     mERROR_CHECK(mSharedPointer_Allocate(&shader, nullptr, (std::function<void(mShader *)>)[](mShader *pData) { mShader_Destroy(pData); }, 1));
     mERROR_CHECK(mShader_Create(shader.GetPointer(), vertexShader, fragmentShader, "outColour"));
 
+    mGL_ERROR_CHECK();
     mERROR_CHECK(mShader_SetUniform(shader, "textureY", textureY));
     mERROR_CHECK(mShader_SetUniform(shader, "textureU", textureU));
     mERROR_CHECK(mShader_SetUniform(shader, "textureV", textureV));
 
+    mGL_ERROR_CHECK();
     mPtr<mQueue<mPtr<mTexture>>> textures;
     mDEFER_DESTRUCTION(&textures, mQueue_Destroy);
     mERROR_CHECK(mQueue_Create(&textures, nullptr));
@@ -266,7 +269,10 @@ mFUNCTION(mainLoop)
     if (supportsStereo)
       mERROR_CHECK(mRenderParams_SetStereo3dBuffer(leftEye ? mRP_SRB_LeftEye : mRP_SRB_RightEye));
 
-    mERROR_CHECK(mRenderParams_ClearTargetDepthAndColour());
+    if(leftEye)
+      mERROR_CHECK(mRenderParams_ClearTargetDepthAndColour());
+    else
+      mERROR_CHECK(mRenderParams_ClearTargetDepthAndColour(mVector(1, 0, 0)));
 
     for (size_t i = 0; i < meshCount; ++i)
     {

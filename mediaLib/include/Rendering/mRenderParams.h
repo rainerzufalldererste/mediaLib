@@ -41,7 +41,7 @@ extern size_t mRenderParams_RenderContextCount;
 #if defined(mRENDERER_OPENGL)
 extern GLenum mRenderParams_GLError;
 
-#define mOPENGL_ERROR_CHECK() mERROR_IF((mRenderParams_GLError = glGetError()) != GL_NO_ERROR, mR_RenderingError)
+#define mOPENGL_ERROR_CHECK() do { mRenderParams_GLError = glGetError(); if(mRenderParams_GLError != GL_NO_ERROR) { mDebugOut("Rendering Error in File '%s' (Line %" PRIi32 "): GLError %" PRIi32 "\n", __FILE__, __LINE__, mRenderParams_GLError); mERROR_IF(true, mR_RenderingError); } } while (0);
 
 #define mGL_ERROR_CHECK() mOPENGL_ERROR_CHECK()
 
@@ -70,6 +70,7 @@ mFUNCTION(mRenderParams_SetVsync, const bool vsync);
 mFUNCTION(mRenderParams_SetDoubleBuffering, const bool doubleBuffering);
 mFUNCTION(mRenderParams_SetMultisampling, const size_t count);
 mFUNCTION(mRenderParams_SetStereo3d, const bool enabled);
+mFUNCTION(mRenderParams_ShowCursor, const bool isVisible);
 
 enum mRenderParams_StereoRenderBuffer
 {

@@ -15,6 +15,29 @@ mResult g_mResult_lastErrorResult = mR_Success;
 
 bool g_mResult_breakOnError = false;
 
+void mDebugOut(const char * fmt, ...)
+{
+  char s[1025];
+  va_list args;
+  ZeroMemory(s, 1025 * sizeof(s[0]));
+  va_start(args, fmt);
+  vsprintf_s(s, fmt, args);
+  va_end(args);
+  s[1024] = 0;
+  printf(s);
+  OutputDebugStringA(s);
+}
+
+void mPrintError(char *function, char *file, const int32_t line, const mResult error)
+{
+  mString errorName;
+
+  if (mFAILED(mResult_ToString(error, &errorName)))
+    mDebugOut("Error in '%s' (File '%s'; Line % " PRIi32 ") [%" PRIx32 "].\n", function, file, line, error);
+  else
+    mDebugOut("Error %s in '%s' (File '%s'; Line % " PRIi32 ") [%" PRIx32 "].\n", errorName.c_str(), function, file, line, error);
+}
+
 mFUNCTION(mResult_ToString, const mResult result, OUT mString *pString)
 {
   mFUNCTION_SETUP();

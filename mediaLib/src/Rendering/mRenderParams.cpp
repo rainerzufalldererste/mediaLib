@@ -203,6 +203,15 @@ mFUNCTION(mRenderParams_SetStereo3d, const bool enabled)
   mRETURN_SUCCESS();
 }
 
+mFUNCTION(mRenderParams_ShowCursor, const bool isVisible)
+{
+  mFUNCTION_SETUP();
+
+  SDL_ShowCursor(isVisible ? SDL_ENABLE : SDL_DISABLE);
+
+  mRETURN_SUCCESS();
+}
+
 mFUNCTION(mRenderParams_SetStereo3dBuffer, const mRenderParams_StereoRenderBuffer buffer)
 {
   mFUNCTION_SETUP();
