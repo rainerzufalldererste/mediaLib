@@ -7,12 +7,97 @@
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "mResult.h"
+#include "mString.h"
 
 const char *g_mResult_lastErrorFile = nullptr;
 size_t g_mResult_lastErrorLine = 0;
 mResult g_mResult_lastErrorResult = mR_Success;
 
 bool g_mResult_breakOnError = false;
+
+mFUNCTION(mResult_ToString, const mResult result, OUT mString *pString)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pString == nullptr, mR_InternalError);
+
+  switch (result)
+  {
+  case mR_Success:
+    *pString = "mR_Success";
+    break;
+
+  case mR_InvalidParameter:
+    *pString = "mR_InvalidParameter";
+    break;
+
+  case mR_ArgumentNull:
+    *pString = "mR_ArgumentNull";
+    break;
+
+  case mR_InternalError:
+    *pString = "mR_InternalError";
+    break;
+
+  case mR_MemoryAllocationFailure:
+    *pString = "mR_MemoryAllocationFailure";
+    break;
+
+  case mR_NotImplemented:
+    *pString = "mR_NotImplemented";
+    break;
+
+  case mR_NotInitialized:
+    *pString = "mR_NotInitialized";
+    break;
+
+  case mR_IndexOutOfBounds:
+    *pString = "mR_IndexOutOfBounds";
+    break;
+
+  case mR_ArgumentOutOfBounds:
+    *pString = "mR_ArgumentOutOfBounds";
+    break;
+
+  case mR_Timeout:
+    *pString = "mR_Timeout";
+    break;
+
+  case mR_OperationNotSupported:
+    *pString = "mR_OperationNotSupported";
+    break;
+
+  case mR_ResourceNotFound:
+    *pString = "mR_ResourceNotFound";
+    break;
+
+  case mR_ResourceInvalid:
+    *pString = "mR_ResourceInvalid";
+    break;
+
+  case mR_ResourceStateInvalid:
+    *pString = "mR_ResourceStateInvalid";
+    break;
+
+  case mR_ResourceIncompatible:
+    *pString = "mR_ResourceIncompatible";
+    break;
+
+  case mR_EndOfStream:
+    *pString = "mR_EndOfStream";
+    break;
+
+  case mR_RenderingError:
+    *pString = "mR_RenderingError";
+    break;
+
+  default:
+    *pString = "<Unknown mResult>";
+    break;
+  }
+
+  mRETURN_SUCCESS();
+}
 
 void mDeinit() { }
 

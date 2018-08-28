@@ -17,7 +17,9 @@ int main(int, char **)
 
   if (mFAILED(result))
   {
-    printf("FAILED!!!!!!!!! %" PRIi32 ".", result);
+    mString resultToString;
+    mERROR_CHECK(mResult_ToString(result, &resultToString));
+    mPRINT("Application Failed with Error %" PRIi32 " (%s) in File '%s' (Line %" PRIu64 ").\n", result, resultToString.c_str(), g_mResult_lastErrorFile, g_mResult_lastErrorLine);
     getchar();
   }
 
@@ -222,12 +224,14 @@ mFUNCTION(mainLoop)
   // Generate Point Offsets:
   mVec2f positions[quadCount * 4] = { { 0.15, 0.15 },{ 0, 1 },{ 0.6, 0.025 },{ 1, 1 } };
 
+  size_t frames = 0;
+  size_t decodedFrames = 0;
+  mTimeStamp before;
+  mERROR_CHECK(mTimeStamp_Now(&before));
+
   while (true)
   {
     mERROR_CHECK(mRenderParams_ClearTargetDepthAndColour());
-
-    mTimeStamp before;
-    mERROR_CHECK(mTimeStamp_Now(&before));
 
     bool isNewFrame = true;
     mResult result = mVideoPlaybackEngine_GetCurrentFrame(videoPlaybackEngine, &currentFrame, &isNewFrame);
@@ -242,8 +246,8 @@ mFUNCTION(mainLoop)
       continue;
     }
 
-    if (!isNewFrame)
-      continue;
+    if (isNewFrame)
+      ++decodedFrames;
 
     // Change textures.
     pDataY = currentFrame->pPixels + offsetY;
@@ -280,7 +284,16 @@ mFUNCTION(mainLoop)
     mTimeStamp after;
     mERROR_CHECK(mTimeStamp_Now(&after));
 
-    mPRINT("\rframes per second: %f, frame time: %f ms   ", (1.0 / (after - before).timePoint), (after - before).timePoint * 1000.0);
+    ++frames;
+
+    if ((after - before).timePoint > 1)
+    {
+      mPRINT("\rframes per second: %f (decoded %f video frames per second), frame time: %f ms   ", (float_t)frames / (after - before).timePoint, (float_t)decodedFrames / (after - before).timePoint, (after - before).timePoint * 1000.0 / (float_t)frames);
+
+      frames = 0;
+      decodedFrames = 0;
+      mERROR_CHECK(mTimeStamp_Now(&before));
+    }
 
     SDL_Event _event;
     while (SDL_PollEvent(&_event))
