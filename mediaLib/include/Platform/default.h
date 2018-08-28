@@ -92,6 +92,7 @@ void mUnused(T unused, Args && ...args)
 #include "mMath.h"
 #include "mFastMath.h"
 #include "mStaticIf.h"
+#include "mString.h"
 
 mFUNCTION(mSleep, const size_t milliseconds = 0);
 

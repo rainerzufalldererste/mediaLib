@@ -58,18 +58,16 @@ mFUNCTION(mMesh_Create, OUT mPtr<mMesh> *pMesh, IN mAllocator *pAllocator, mPtr<
   size_t attributeCount = 0;
   mERROR_CHECK(mQueue_GetCount(attributeInformation, &attributeCount));
 
-  mPtr<mQueue<mMeshFactory_AttributeInformation>> info;
+  mPtr<mQueue<mMeshAttribute>> info;
   mDEFER_DESTRUCTION(&info, mQueue_Destroy);
   mERROR_CHECK(mQueue_Create(&info, pAllocator));
 
 #if defined (mRENDERER_OPENGL)
-  GLint *pIndexes = nullptr;
-  mDEFER_DESTRUCTION(&pIndexes, mFreePtrStack);
-  mERROR_CHECK(mAllocStackZero(&pIndexes, attributeCount));
 
   mERROR_CHECK(mShader_Bind(*shader.GetPointer()));
 
   size_t count = 0;
+  size_t offset = 0;
 
   for (size_t i = 0; i < attributeCount; ++i)
   {
@@ -82,33 +80,11 @@ mFUNCTION(mMesh_Create, OUT mPtr<mMesh> *pMesh, IN mAllocator *pAllocator, mPtr<
     else
       mERROR_IF(count != meshAttrib->attributeCount, mR_InvalidParameter);
 
-    pIndexes[i] = glGetAttribLocation(shader->shaderProgram, meshAttrib->attributeName);
+    const GLint location = glGetAttribLocation(shader->shaderProgram, meshAttrib->attributeName);
 
-    mERROR_IF(pIndexes[i] == -1, mR_InvalidParameter);
-  }
+    mERROR_CHECK(mQueue_PushBack(info, mMeshAttribute(location, meshAttrib->size, meshAttrib->subComponentSize, meshAttrib->attributeCount, offset, meshAttrib->dataType)));
 
-  size_t offset = 0;
-
-  for (size_t i = 0; i < attributeCount; ++i)
-  {
-    for (size_t j = 0; j < attributeCount; ++j)
-    {
-      if (pIndexes[j] == i)
-      {
-        mPtr<mMeshAttributeContainer> meshAttrib;
-        mDEFER_DESTRUCTION(&meshAttrib, mMeshAttributeContainer_Destroy);
-        mERROR_CHECK(mQueue_PeekAt(attributeInformation, j, &meshAttrib));
-
-        mERROR_CHECK(mQueue_PushBack(info, mMeshFactory_AttributeInformation(meshAttrib->size, offset, mMF_AIT_Attribute, meshAttrib->dataType, meshAttrib->subComponentSize)));
-        offset += meshAttrib->size;
-
-        goto nextAttribute;
-      }
-    }
-
-    mERROR_IF(true, mR_InvalidParameter);
-
-  nextAttribute:;
+    offset += meshAttrib->size;
   }
 
   mPtr<mBinaryChunk> data;
@@ -121,7 +97,7 @@ mFUNCTION(mMesh_Create, OUT mPtr<mMesh> *pMesh, IN mAllocator *pAllocator, mPtr<
     {
       mPtr<mMeshAttributeContainer> meshAttrib;
       mDEFER_DESTRUCTION(&meshAttrib, mMeshAttributeContainer_Destroy);
-      mERROR_CHECK(mQueue_PeekAt(attributeInformation, pIndexes[j], &meshAttrib));
+      mERROR_CHECK(mQueue_PeekAt(attributeInformation, j, &meshAttrib));
       
       mERROR_CHECK(mBinaryChunk_WriteBytes(data, meshAttrib->attributes->pData + meshAttrib->size * i, meshAttrib->size));
     }
@@ -157,13 +133,13 @@ mFUNCTION(mMesh_Create, OUT mPtr<mMesh> *pMesh, IN mAllocator *pAllocator, mPtr<
 
   for (size_t i = 0; i < attributeCount; ++i)
   {
-    mMeshFactory_AttributeInformation attrInfo;
+    mMeshAttribute attrInfo;
     mERROR_CHECK(mQueue_PeekAt((*pMesh)->information, i, &attrInfo));
 
-    if (attrInfo.size > 0 && attrInfo.type == mMF_AIT_Attribute)
+    if (attrInfo.dataEntrySize > 0)
     {
-      glEnableVertexAttribArray((GLuint)index);
-      glVertexAttribPointer((GLuint)index, (GLint)(attrInfo.size / attrInfo.individualSubTypeSize), attrInfo.dataType, GL_FALSE, (GLsizei)(*pMesh)->dataSize, (const void *)attrInfo.offset);
+      glEnableVertexAttribArray((GLuint)attrInfo.attributeIndex);
+      glVertexAttribPointer((GLuint)index, (GLint)(attrInfo.dataEntrySize / attrInfo.dataEntrySubComponentSize), attrInfo.dataType, GL_FALSE, (GLsizei)(*pMesh)->dataSize, (const void *)attrInfo.offset);
       ++index;
     }
 
@@ -182,7 +158,7 @@ mFUNCTION(mMesh_Create, OUT mPtr<mMesh> *pMesh, IN mAllocator *pAllocator, mPtr<
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mMesh_Create, OUT mPtr<mMesh> *pMesh, IN mAllocator *pAllocator, mPtr<mQueue<mMeshFactory_AttributeInformation>> &attributeInformation, mPtr<mShader> &shader, mPtr<mBinaryChunk>& data, mPtr<mQueue<mPtr<mTexture>>> &textures, const mRenderParams_VertexRenderMode triangleRenderMode /* = mRP_VRM_TriangleList */)
+mFUNCTION(mMesh_Create, OUT mPtr<mMesh> *pMesh, IN mAllocator *pAllocator, mPtr<mQueue<mMeshAttribute>> &attributeInformation, mPtr<mShader> &shader, mPtr<mBinaryChunk>& data, mPtr<mQueue<mPtr<mTexture>>> &textures, const mRenderParams_VertexRenderMode triangleRenderMode /* = mRP_VRM_TriangleList */)
 {
   mFUNCTION_SETUP();
 
@@ -197,11 +173,11 @@ mFUNCTION(mMesh_Create, OUT mPtr<mMesh> *pMesh, IN mAllocator *pAllocator, mPtr<
 
   for (size_t i = 0; i < attributeCount; ++i)
   {
-    mMeshFactory_AttributeInformation *pInfo;
+    mMeshAttribute *pInfo;
     mERROR_CHECK(mQueue_PointerAt(attributeInformation, i, &pInfo));
 
     pInfo->offset = (*pMesh)->dataSize;
-    (*pMesh)->dataSize += pInfo->size;
+    (*pMesh)->dataSize += pInfo->dataEntrySize;
   }
 
   mERROR_IF((*pMesh)->dataSize == 0, mR_InvalidParameter);
@@ -238,13 +214,13 @@ mFUNCTION(mMesh_Create, OUT mPtr<mMesh> *pMesh, IN mAllocator *pAllocator, mPtr<
 
   for (size_t i = 0; i < attributeCount; ++i)
   {
-    mMeshFactory_AttributeInformation info;
+    mMeshAttribute info;
     mERROR_CHECK(mQueue_PeekAt((*pMesh)->information, i, &info));
 
-    if (info.size > 0 && info.type == mMF_AIT_Attribute)
+    if (info.dataEntrySize > 0)
     {
-      glEnableVertexAttribArray((GLuint)index);
-      glVertexAttribPointer((GLuint)index, (GLint)(info.size / info.individualSubTypeSize), info.dataType, GL_FALSE, (GLsizei)(*pMesh)->dataSize, (const void *)info.offset);
+      glEnableVertexAttribArray((GLuint)info.attributeIndex);
+      glVertexAttribPointer((GLuint)index, (GLint)(info.dataEntrySize / info.dataEntrySubComponentSize), info.dataType, GL_FALSE, (GLsizei)(*pMesh)->dataSize, (const void *)info.offset);
       ++index;
     }
 
@@ -371,13 +347,13 @@ mFUNCTION(mMesh_Render, mPtr<mMesh>& data)
 
   for (size_t i = 0; i < informationCount; ++i)
   {
-    mMeshFactory_AttributeInformation info;
+    mMeshAttribute info;
     mERROR_CHECK(mQueue_PeekAt(data->information, i, &info));
 
-    if (info.size > 0 && info.type == mMF_AIT_Attribute)
+    if (info.dataEntrySize > 0)
     {
-      glEnableVertexAttribArray((GLuint)index);
-      glVertexAttribPointer((GLuint)index, (GLint)(info.size / info.individualSubTypeSize), info.dataType, GL_FALSE, (GLsizei)data->dataSize, (const void *)info.offset);
+      glEnableVertexAttribArray((GLuint)info.attributeIndex);
+      glVertexAttribPointer((GLuint)index, (GLint)(info.dataEntrySize / info.dataEntrySubComponentSize), info.dataType, GL_FALSE, (GLsizei)data->dataSize, (const void *)info.offset);
       ++index;
     }
 
