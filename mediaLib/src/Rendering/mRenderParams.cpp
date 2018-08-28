@@ -185,6 +185,48 @@ mFUNCTION(mRenderParams_SetMultisampling, const size_t count)
   mRETURN_SUCCESS();
 }
 
+bool mRenderParams_IsStereo = false;
+
+mFUNCTION(mRenderParams_SetStereo3d, const bool enabled)
+{
+  mFUNCTION_SETUP();
+
+  GLboolean supportsStereo = false;
+  glGetBooleanv(GL_STEREO, &supportsStereo);
+
+  mERROR_IF(!supportsStereo && enabled, mR_OperationNotSupported);
+
+  mERROR_IF(0 > SDL_GL_SetAttribute(SDL_GL_STEREO, 1), mR_InternalError);
+
+  mRenderParams_IsStereo = true;
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mRenderParams_SetStereo3dBuffer, const mRenderParams_StereoRenderBuffer buffer)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(!mRenderParams_IsStereo, mR_OperationNotSupported);
+
+  switch (buffer)
+  {
+  case mRP_SRB_LeftEye:
+    glDrawBuffer(GL_BACK_LEFT);
+    break;
+
+  case mRP_SRB_RightEye:
+    glDrawBuffer(GL_BACK_RIGHT);
+    break;
+
+  default:
+    mRETURN_RESULT(mR_OperationNotSupported);
+    break;
+  }
+
+  mRETURN_SUCCESS();
+}
+
 mFUNCTION(mRenderParams_ClearTargetColour, const mVector & colour)
 {
   mFUNCTION_SETUP();

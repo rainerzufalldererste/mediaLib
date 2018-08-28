@@ -31,6 +31,7 @@ struct mVideoPlaybackEngine
   size_t maxQueuedFrames;
   bool seekingEnabled;
   bool dropFramesAllowed;
+  void *pLastFramePtr;
 };
 
 mFUNCTION(mVideoPlaybackEngine_Create_Internal, IN mVideoPlaybackEngine *pPlaybackEngine, IN mAllocator *pAllocator, const std::wstring &fileName, mPtr<mThreadPool> &threadPool, const size_t videoStreamIndex, const mPixelFormat outputPixelFormat, const size_t playbackFlags);
@@ -235,6 +236,11 @@ mFUNCTION(mVideoPlaybackEngine_GetCurrentFrame, mPtr<mVideoPlaybackEngine> &play
     continue;
   }
 
+  if(pIsNewFrame)
+    *pIsNewFrame = playbackEngine->pLastFramePtr != pImageBuffer->GetPointer();
+
+  playbackEngine->pLastFramePtr = pImageBuffer->GetPointer();
+
   if (playbackEngine->pPlaybackThread->threadState == mThread_ThreadState::mT_TS_Stopped)
   {
     mERROR_IF(mFAILED(playbackEngine->pPlaybackThread->result), playbackEngine->pPlaybackThread->result);
@@ -255,6 +261,7 @@ mFUNCTION(mVideoPlaybackEngine_Create_Internal, IN mVideoPlaybackEngine *pPlayba
   pPlaybackEngine->videoStreamIndex = videoStreamIndex;
   pPlaybackEngine->targetPixelFormat = outputPixelFormat;
   pPlaybackEngine->maxQueuedFrames = 8;
+  pPlaybackEngine->pLastFramePtr = nullptr;
 
   pPlaybackEngine->seekingEnabled = (playbackFlags & mVideoPlaybackEngine_PlaybackFlags::mVPE_PF_SeekingInVideoAllowed) != 0;
   pPlaybackEngine->dropFramesAllowed = (playbackFlags & mVideoPlaybackEngine_PlaybackFlags::mVPE_PF_DroppingFramesOnProducerOverloadEnabled) != 0;
