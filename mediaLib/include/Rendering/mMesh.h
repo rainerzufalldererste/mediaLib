@@ -450,7 +450,6 @@ struct mMeshFactory_Internal_TextureParameterUnpacker <>
     mFUNCTION_SETUP();
 
     mUnused(index, pTextureArray);
-    mASSERT(false, "Missing Parameter List.");
 
     mRETURN_SUCCESS();
   }
@@ -582,10 +581,17 @@ inline mFUNCTION(mMeshFactory_CreateMesh, mPtr<mMeshFactory<Args...>> &factory, 
 
   mERROR_CHECK(mShader_Bind(*shader.GetPointer()));
 
+  size_t attributeInformationCount = 0;
+
   for (size_t i = 0; i < informationCount; ++i)
   {
     mMeshFactory_AttributeInformation *pItem;
     mERROR_CHECK(mQueue_PointerAt(factory->meshFactoryInternal.information, i, &pItem));
+
+    if (pItem->type != mMF_AIT_Attribute)
+      continue;
+
+    ++attributeInformationCount;
 
     const GLint index = glGetAttribLocation(shader->shaderProgram, pItem->name);
     mERROR_IF(index < 0, mR_InternalError);
@@ -600,15 +606,15 @@ inline mFUNCTION(mMeshFactory_CreateMesh, mPtr<mMeshFactory<Args...>> &factory, 
 
   GLuint index = 0;
 
-  for (size_t i = 0; i < informationCount; ++i)
+  for (size_t i = 0; i < attributeInformationCount; ++i)
   {
-    mMeshFactory_AttributeInformation info;
-    mERROR_CHECK(mQueue_PeekAt(factory->meshFactoryInternal.information, i, &info));
+    mMeshAttribute info;
+    mERROR_CHECK(mQueue_PeekAt((*pMesh)->information, i, &info));
 
-    if (info.size > 0 && info.type == mMF_AIT_Attribute)
+    if (info.dataEntrySize > 0)
     {
-      glEnableVertexAttribArray((GLuint)index);
-      glVertexAttribPointer((GLuint)index, (GLint)(info.size / info.individualSubTypeSize), info.dataType, GL_FALSE, (GLsizei)factory->meshFactoryInternal.size, (const void *)info.offset);
+      glEnableVertexAttribArray((GLuint)info.attributeIndex);
+      glVertexAttribPointer((GLuint)index, (GLint)(info.dataEntrySize / info.dataEntrySubComponentSize), info.dataType, GL_FALSE, (GLsizei)(*pMesh)->dataSize, (const void *)info.offset);
       ++index;
     }
 
@@ -906,7 +912,7 @@ struct mMeshFactory_Internal_Unpacker <T>
         break;
       }
 
-      mERROR_CHECK(mQueue_PushBack(pMeshFactory->information, mMeshFactory_AttributeInformation("_" mMeshColour_AttributeName "0", T::size, pMeshFactory->size, mMF_AIT_Attribute, GL_FLOAT, sizeof(float_t))));
+      mERROR_CHECK(mQueue_PushBack(pMeshFactory->information, mMeshFactory_AttributeInformation(mMeshColour_AttributeName "0", T::size, pMeshFactory->size, mMF_AIT_Attribute, GL_FLOAT, sizeof(float_t))));
 
       break;
 
