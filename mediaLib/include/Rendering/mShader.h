@@ -26,9 +26,13 @@ struct mShader
 #endif
 
 mFUNCTION(mShader_Create, OUT mShader *pShader, const std::string &vertexShader, const std::string &fragmentShader, IN OPTIONAL const char *fragDataLocation = nullptr);
-mFUNCTION(mShader_CreateFromFile, OUT mShader *pShader, const std::wstring &filename, IN OPTIONAL const char *fragDataLocation = nullptr);
+mFUNCTION(mShader_CreateFromFile, OUT mShader *pShader, const std::wstring &filename);
 mFUNCTION(mShader_CreateFromFile, OUT mShader *pShader, const std::wstring &vertexShaderPath, const std::wstring &fragmentShaderPath, IN OPTIONAL const char *fragDataLocation = nullptr);
 mFUNCTION(mShader_Destroy, IN_OUT mShader *pShader);
+
+mFUNCTION(mShader_SetTo, mPtr<mShader> &shader, const std::string &vertexShader, const std::string &fragmentShader, IN OPTIONAL const char *fragDataLocation = nullptr);
+mFUNCTION(mShader_SetToFile, mPtr<mShader> &shader, const std::wstring &vertexShaderPath, const std::wstring &fragmentShaderPath, IN OPTIONAL const char *fragDataLocation = nullptr);
+mFUNCTION(mShader_SetToFile, mPtr<mShader> &shader, const std::wstring &filename);
 
 mFUNCTION(mShader_Bind, mShader &shader);
 

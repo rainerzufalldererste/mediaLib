@@ -83,14 +83,14 @@ mFUNCTION(mShader_Create, OUT mShader *pShader, const std::string & vertexShader
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mShader_CreateFromFile, OUT mShader *pShader, const std::wstring & filename, IN OPTIONAL const char *fragDataLocation /* = nullptr */)
+mFUNCTION(mShader_CreateFromFile, OUT mShader *pShader, const std::wstring & filename)
 {
   mFUNCTION_SETUP();
 
   mERROR_IF(pShader == nullptr, mR_ArgumentNull);
 
 #if defined(mRENDERER_OPENGL)
-  mERROR_CHECK(mShader_CreateFromFile(pShader, filename + L".frag", filename + L".vert", fragDataLocation));
+  mERROR_CHECK(mShader_CreateFromFile(pShader, filename + L".frag", filename + L".vert", nullptr));
 #else
   mRETURN_RESULT(mR_NotImplemented);
 #endif
@@ -133,6 +133,100 @@ mFUNCTION(mShader_Destroy, IN_OUT mShader *pShader)
 #else
   mRETURN_RESULT(mR_NotImplemented);
 #endif
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mShader_SetTo, mPtr<mShader>& shader, const std::string & vertexShader, const std::string & fragmentShader, IN OPTIONAL const char *fragDataLocation)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(shader == nullptr, mR_ArgumentNull);
+  mERROR_IF(!shader->initialized, mR_NotInitialized);
+
+#if defined(mRENDERER_OPENGL)
+
+  shader->initialized = false;
+
+  const char *vertexSource = vertexShader.c_str();
+  GLuint vertexShaderHandle = glCreateShader(GL_VERTEX_SHADER);
+  mDEFER(glDeleteShader(vertexShaderHandle));
+  glShaderSource(vertexShaderHandle, 1, &vertexSource, NULL);
+  glCompileShader(vertexShaderHandle);
+
+  GLint status;
+  glGetShaderiv(vertexShaderHandle, GL_COMPILE_STATUS, &status);
+
+  if (status != GL_TRUE)
+  {
+    mPRINT("Error compiling vertex shader:\n");
+    mPRINT(vertexSource);
+    mPRINT("\n\nThe following error occured:\n");
+    char buffer[1024];
+    glGetShaderInfoLog(vertexShaderHandle, sizeof(buffer), nullptr, buffer);
+    mPRINT(buffer);
+    mERROR_IF(true, mR_ResourceInvalid);
+  }
+
+  const char *fragmentSource = fragmentShader.c_str();
+  GLuint fragmentShaderHandle = glCreateShader(GL_FRAGMENT_SHADER);
+  mDEFER(glDeleteShader(fragmentShaderHandle));
+  glShaderSource(fragmentShaderHandle, 1, &fragmentSource, NULL);
+  glCompileShader(fragmentShaderHandle);
+
+  status = GL_TRUE;
+  glGetShaderiv(fragmentShaderHandle, GL_COMPILE_STATUS, &status);
+
+  if (status != GL_TRUE)
+  {
+    mPRINT("Error compiling fragment shader:\n");
+    mPRINT(fragmentSource);
+    mPRINT("\n\nThe following error occured:\n");
+    char buffer[1024];
+    glGetShaderInfoLog(fragmentShaderHandle, sizeof(buffer), nullptr, buffer);
+    mPRINT(buffer);
+    mERROR_IF(true, mR_ResourceInvalid);
+  }
+
+  glUseProgram(shader->shaderProgram);
+
+  glAttachShader(shader->shaderProgram, vertexShaderHandle);
+  glAttachShader(shader->shaderProgram, fragmentShaderHandle);
+
+  if (fragDataLocation != nullptr)
+    glBindFragDataLocation(shader->shaderProgram, 0, fragDataLocation);
+
+  glLinkProgram(shader->shaderProgram);
+
+  shader->initialized = true;
+
+  mGL_DEBUG_ERROR_CHECK();
+#else
+  mRETURN_RESULT(mR_NotImplemented);
+#endif
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mShader_SetToFile, mPtr<mShader>& shader, const std::wstring & filename)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_CHECK(mShader_SetToFile(shader, filename + L".frag", filename + L".vert", nullptr));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mShader_SetToFile, mPtr<mShader>& shader, const std::wstring & vertexShaderPath, const std::wstring & fragmentShaderPath, IN OPTIONAL const char *fragDataLocation /* = nullptr */)
+{
+  mFUNCTION_SETUP();
+
+  std::string vertexShader, fragmentShader;
+
+  mERROR_CHECK(mFile_ReadAllText(vertexShaderPath, nullptr, &vertexShader));
+  mERROR_CHECK(mFile_ReadAllText(fragmentShaderPath, nullptr, &fragmentShader));
+
+  mERROR_CHECK(mShader_SetTo(shader, vertexShader, fragmentShader));
 
   mRETURN_SUCCESS();
 }
