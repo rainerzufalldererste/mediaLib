@@ -61,7 +61,7 @@ extern bool g_mResult_breakOnError;
 #endif // _DEBUG
 
 void mDebugOut(const char *fmt, ...);
-void mPrintError(char *function, char *file, const int32_t line, const mResult error);
+void mPrintError(char *function, char *file, const int32_t line, const mResult error, const char *expression);
 
 mFUNCTION(mResult_ToString, const mResult result, OUT struct mString *pString);
 
@@ -76,7 +76,7 @@ template <typename ...Args> void mDeinit(const std::function<void(void)> &param,
     { g_mResult_lastErrorResult = mSTDRESULT; \
       g_mResult_lastErrorFile = __FILE__; \
       g_mResult_lastErrorLine = __LINE__; \
-      mPrintError(__FUNCTION__, __FILE__, __LINE__, mSTDRESULT); \
+      mPrintError(__FUNCTION__, __FILE__, __LINE__, mSTDRESULT, #functionCall); \
       mDeinit(__VA_ARGS__); \
       if (g_mResult_breakOnError && mBREAK_ON_FAILURE) \
       { __debugbreak(); \
@@ -93,7 +93,7 @@ template <typename ...Args> void mDeinit(const std::function<void(void)> &param,
       { g_mResult_lastErrorResult = mSTDRESULT; \
         g_mResult_lastErrorFile = __FILE__; \
         g_mResult_lastErrorLine = __LINE__; \
-        mPrintError(__FUNCTION__, __FILE__, __LINE__, mSTDRESULT); \
+        mPrintError(__FUNCTION__, __FILE__, __LINE__, mSTDRESULT, #conditional); \
         mDeinit(__VA_ARGS__); \
         if (g_mResult_breakOnError && mBREAK_ON_FAILURE) \
         { __debugbreak(); \
