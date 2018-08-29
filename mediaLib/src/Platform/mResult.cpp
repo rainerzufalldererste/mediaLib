@@ -17,6 +17,7 @@ bool g_mResult_breakOnError = false;
 
 void mDebugOut(const char * fmt, ...)
 {
+#if !defined(FINAL)
   char s[1025];
   va_list args;
   ZeroMemory(s, 1025 * sizeof(s[0]));
@@ -26,16 +27,23 @@ void mDebugOut(const char * fmt, ...)
   s[1024] = 0;
   printf(s);
   OutputDebugStringA(s);
+#else
+  mUnused(fmt);
+#endif
 }
 
-void mPrintError(char *function, char *file, const int32_t line, const mResult error)
+void mPrintError(char *function, char *file, const int32_t line, const mResult error, const char *expression)
 {
   mString errorName;
 
+#if defined(FINAL)
+
+#else
   if (mFAILED(mResult_ToString(error, &errorName)))
-    mDebugOut("Error in '%s' (File '%s'; Line % " PRIi32 ") [%" PRIx32 "].\n", function, file, line, error);
+    mDebugOut("Error in '%s' (File '%s'; Line % " PRIi32 ") [0x%" PRIx32 "].\n", function, file, line, error);
   else
-    mDebugOut("Error %s in '%s' (File '%s'; Line % " PRIi32 ") [%" PRIx32 "].\n", errorName.c_str(), function, file, line, error);
+    mDebugOut("Error %s in '%s' (File '%s'; Line % " PRIi32 ") [0x%" PRIx32 "].\n", errorName.c_str(), function, file, line, error);
+#endif
 }
 
 mFUNCTION(mResult_ToString, const mResult result, OUT mString *pString)
