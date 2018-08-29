@@ -8,13 +8,13 @@
 #include "mTimeStamp.h"
 #include "SDL_opengl.h"
 
-mFUNCTION(mainLoop);
+mFUNCTION(MainLoop);
 
 int main(int, char **)
 {
   mFUNCTION_SETUP();
 
-  mResult result = mainLoop();
+  mResult result = MainLoop();
 
   if (mFAILED(result))
   {
@@ -27,7 +27,7 @@ int main(int, char **)
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mainLoop)
+mFUNCTION(MainLoop)
 {
   mFUNCTION_SETUP();
 
@@ -53,8 +53,8 @@ mFUNCTION(mainLoop)
   mERROR_CHECK(mRenderParams_SetVsync(false));
   mERROR_CHECK(mRenderParams_ShowCursor(false));
 
-  GLboolean supportsStereo = false;
-  glGetBooleanv(GL_STEREO, &supportsStereo);
+  bool supportsStereo = false;
+  mERROR_CHECK(mRenderParams_SupportsStereo3d(&supportsStereo));
 
   mPRINT(supportsStereo ? "Graphics Device supports stereo.\n" : "Graphics Device does not support stereo.\n");
 

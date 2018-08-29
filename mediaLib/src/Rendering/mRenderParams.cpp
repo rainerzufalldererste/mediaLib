@@ -25,10 +25,14 @@ mFUNCTION(mRenderParams_InitializeToDefault)
 {
   mFUNCTION_SETUP();
 
+  glEnable(GL_POLYGON_SMOOTH);
+
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+  mGL_ERROR_CHECK();
 
   mRETURN_SUCCESS();
 }
@@ -185,17 +189,28 @@ mFUNCTION(mRenderParams_SetMultisampling, const size_t count)
   mRETURN_SUCCESS();
 }
 
+mFUNCTION(mRenderParams_SupportsStereo3d, OUT bool *pSupportsStereo3d)
+{
+  mFUNCTION_SETUP();
+
+  GLboolean supportsStereo;
+  glGetBooleanv(GL_STEREO, &supportsStereo);
+
+  *pSupportsStereo3d = supportsStereo != 0;
+
+  mRETURN_SUCCESS();
+}
+
 bool mRenderParams_IsStereo = false;
 
 mFUNCTION(mRenderParams_SetStereo3d, const bool enabled)
 {
   mFUNCTION_SETUP();
 
-  GLboolean supportsStereo = false;
-  glGetBooleanv(GL_STEREO, &supportsStereo);
+  bool supportsStereo = false;
+  mERROR_CHECK(mRenderParams_SupportsStereo3d(&supportsStereo));
 
   mERROR_IF(!supportsStereo && enabled, mR_OperationNotSupported);
-
   mERROR_IF(0 > SDL_GL_SetAttribute(SDL_GL_STEREO, 1), mR_InternalError);
 
   mRenderParams_IsStereo = true;
