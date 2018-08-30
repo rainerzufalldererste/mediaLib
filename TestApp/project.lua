@@ -20,7 +20,7 @@ project(ProjectName)
   objdir "intermediate/obj"
 
   files { "src/**.cpp", "src/**.h", "src/**.inl" }
-  files { "include/**.cpp", "include/**.h", "include/**.inl" }
+  files { "shaders/**.vert", "shaders/**.frag" }
   files { "project.lua" }
 
   includedirs { "../mediaLib/include/**" }
