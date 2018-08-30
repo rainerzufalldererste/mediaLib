@@ -13,29 +13,44 @@ mFUNCTION(mFramebuffer_Destroy_Internal, IN mFramebuffer *pFramebuffer);
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mFramebuffer_Create, OUT mPtr<mFramebuffer>* pFramebuffer, IN mAllocator * pAllocator, const mVec2s & size)
+mFUNCTION(mFramebuffer_Create, OUT mPtr<mFramebuffer> *pFramebuffer, IN mAllocator *pAllocator, const mVec2s &size)
 {
   mFUNCTION_SETUP();
 
   mERROR_IF(pFramebuffer == nullptr, mR_ArgumentNull);
 
+  mERROR_CHECK(mSharedPointer_Allocate(pFramebuffer, pAllocator, (std::function<void (mFramebuffer *)>)[](mFramebuffer *pData) { mFramebuffer_Destroy_Internal(pData); }, 1));
+
+  mERROR_CHECK(mFramebuffer_Create_Internal(pFramebuffer->GetPointer(), size));
+
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mFramebuffer_Destroy, IN_OUT mPtr<mFramebuffer>* pFramebuffer)
+mFUNCTION(mFramebuffer_Destroy, IN_OUT mPtr<mFramebuffer> *pFramebuffer)
 {
   mFUNCTION_SETUP();
 
   mERROR_IF(pFramebuffer == nullptr, mR_ArgumentNull);
 
+  mERROR_CHECK(mSharedPointer_Destroy(pFramebuffer));
+
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mFramebuffer_Bind, mPtr<mFramebuffer>& framebuffer)
+mFUNCTION(mFramebuffer_Bind, mPtr<mFramebuffer> &framebuffer)
 {
   mFUNCTION_SETUP();
 
   mERROR_IF(framebuffer == nullptr, mR_ArgumentNull);
+
+#if defined(mRENDERER_OPENGL)
+  glBindFramebuffer(GL_FRAMEBUFFER, framebuffer->frameBufferHandle);
+  mERROR_CHECK(mRenderParams_SetCurrentRenderResolution(framebuffer->size));
+
+  mGL_DEBUG_ERROR_CHECK();
+#else
+  mRETURN_RESULT(mR_NotImplemented);
+#endif
 
   mRETURN_SUCCESS();
 }
@@ -43,6 +58,14 @@ mFUNCTION(mFramebuffer_Bind, mPtr<mFramebuffer>& framebuffer)
 mFUNCTION(mFramebuffer_Unbind)
 {
   mFUNCTION_SETUP();
+
+#if defined(mRENDERER_OPENGL)
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+  mGL_DEBUG_ERROR_CHECK();
+#else
+  mRETURN_RESULT(mR_NotImplemented);
+#endif
 
   mRETURN_SUCCESS();
 }
@@ -71,6 +94,8 @@ mFUNCTION(mFramebuffer_Create_Internal, mFramebuffer *pFramebuffer, const mVec2s
   glGenRenderbuffers(1, &pFramebuffer->rboDepthStencil);
   glBindRenderbuffer(GL_RENDERBUFFER, pFramebuffer->rboDepthStencil);
   glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, (GLsizei)size.x, (GLsizei)size.y);
+
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
   mGL_ERROR_CHECK();
 

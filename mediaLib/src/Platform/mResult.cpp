@@ -36,14 +36,15 @@ void mPrintError(char *function, char *file, const int32_t line, const mResult e
 {
   mString errorName;
 
-#if defined(FINAL)
+  const char *expr = "";
 
-#else
+  if (expression)
+    expr = expression;
+
   if (mFAILED(mResult_ToString(error, &errorName)))
-    mDebugOut("Error in '%s' (File '%s'; Line % " PRIi32 ") [0x%" PRIx32 "].\n", function, file, line, error);
+    mDebugOut("Error in '%s' (File '%s'; Line % " PRIi32 ") [0x%" PRIx32 "].\nExpression: '%s'.\n\n", function, file, line, error, expr);
   else
-    mDebugOut("Error %s in '%s' (File '%s'; Line % " PRIi32 ") [0x%" PRIx32 "].\n", errorName.c_str(), function, file, line, error);
-#endif
+    mDebugOut("Error %s in '%s' (File '%s'; Line % " PRIi32 ") [0x%" PRIx32 "].\nExpression: '%s'.\n\n", errorName.c_str(), function, file, line, error, expr);
 }
 
 mFUNCTION(mResult_ToString, const mResult result, OUT mString *pString)

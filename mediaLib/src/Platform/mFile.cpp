@@ -37,10 +37,12 @@ mFUNCTION(mFile_ReadAllText, const std::wstring & filename, IN OPTIONAL mAllocat
 
   mERROR_IF(pText == nullptr, mR_ArgumentNull);
 
-  size_t count;
-  char *text;
+  size_t count = 0;
+  char *text = nullptr;
 
+  mDEFER(mAllocator_FreePtr(nullptr, &text));
   mERROR_CHECK(mFile_ReadRaw(filename, &text, pAllocator, &count));
+  text[count - 1] = '\0';
   new (pText) std::string(text);
   mERROR_CHECK(mAllocator_FreePtr(pAllocator, &text));
 

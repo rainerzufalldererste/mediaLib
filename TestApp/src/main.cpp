@@ -6,7 +6,7 @@
 #include "mResourceManager.h"
 #include "mVideoPlaybackEngine.h"
 #include "mTimeStamp.h"
-#include "SDL_opengl.h"
+#include "mFramebuffer.h"
 
 mFUNCTION(MainLoop);
 
@@ -39,14 +39,14 @@ mFUNCTION(MainLoop)
   SDL_GetCurrentDisplayMode(0, &displayMode);
 
   mVec2s resolution;
-  resolution.x = displayMode.w;
-  resolution.y = displayMode.h;
+  resolution.x = displayMode.w / 2;
+  resolution.y = displayMode.h / 2;
 
   mERROR_CHECK(mRenderParams_SetMultisampling(16));
 
   mPtr<mHardwareWindow> window = nullptr;
   mDEFER_DESTRUCTION(&window, mHardwareWindow_Destroy);
-  mERROR_CHECK(mHardwareWindow_Create(&window, nullptr, "OpenGL Window", resolution, mHW_DM_Fullscreen));
+  mERROR_CHECK(mHardwareWindow_Create(&window, nullptr, "OpenGL Window", resolution));
   mERROR_CHECK(mRenderParams_InitializeToDefault());
 
   mERROR_CHECK(mRenderParams_SetDoubleBuffering(true));
@@ -59,7 +59,10 @@ mFUNCTION(MainLoop)
   mPRINT(supportsStereo ? "Graphics Device supports stereo.\n" : "Graphics Device does not support stereo.\n");
 
   if (supportsStereo)
+  {
     mERROR_CHECK(mRenderParams_SetStereo3d(true));
+    mERROR_CHECK(mRenderParams_SetVsync(true));
+  }
 
   const std::wstring videoFilename = L"C:/Users/cstiller/Videos/Converted.mp4";
 
@@ -79,6 +82,10 @@ mFUNCTION(MainLoop)
   mPtr<mTexture> textureV;
   mDEFER_DESTRUCTION(&textureV, mSharedPointer_Destroy);
   mERROR_CHECK(mSharedPointer_Allocate(&textureV, nullptr, (std::function<void(mTexture *)>)[](mTexture *pTexture) {mTexture_Destroy(pTexture);}, 1));
+
+  mPtr<mFramebuffer> framebuffer;
+  mDEFER_DESTRUCTION(&framebuffer, mFramebuffer_Destroy);
+  mERROR_CHECK(mFramebuffer_Create(&framebuffer, nullptr, mRenderParams_CurrentRenderResolution));
 
   mPtr<mImageBuffer> currentFrame;
   mERROR_CHECK(mVideoPlaybackEngine_GetCurrentFrame(videoPlaybackEngine, &currentFrame));
@@ -106,6 +113,9 @@ mFUNCTION(MainLoop)
   mDEFER_DESTRUCTION(&meshes, mQueue_Destroy);
   mERROR_CHECK(mQueue_Create(&meshes, nullptr));
 
+  mPtr<mShader> shader;
+  mDEFER_DESTRUCTION(&shader, mSharedPointer_Destroy);
+
   const size_t quadCount = 1;
 
   // Create individual meshes.
@@ -114,91 +124,8 @@ mFUNCTION(MainLoop)
     mDEFER_DESTRUCTION(&positionMeshAttribute, mMeshAttributeContainer_Destroy);
     mERROR_CHECK(mMeshAttributeContainer_Create<mVec2f>(&positionMeshAttribute, nullptr, "unused", { mVec2f(0), mVec2f(0), mVec2f(0), mVec2f(0) }));
 
-    const char *vertexShader = mGLSL(
-      in vec2 unused;
-      out vec2 _texCoord0;
-      uniform vec2 offsets[4];
-
-    void main()
-    {
-      _texCoord0 = offsets[gl_VertexID];
-      gl_Position = vec4(offsets[gl_VertexID] * 2 - 1 - unused, 0, 1);
-    }
-    );
-
-    const char *fragmentShader = mGLSL(
-      out vec4 outColour;
-    in vec2 _texCoord0;
-    uniform sampler2D textureY;
-    uniform sampler2D textureU;
-    uniform sampler2D textureV;
-    uniform vec2 offsets[4];
-
-    float cross(in vec2 a, in vec2 b) { return a.x*b.y - a.y*b.x; }
-
-    vec2 invBilinear(in vec2 p, in vec2 a, in vec2 b, in vec2 c, in vec2 d)
-    {
-      vec2 e = b - a;
-      vec2 f = d - a;
-      vec2 g = a - b + c - d;
-      vec2 h = p - a;
-
-      float k2 = cross(g, f);
-      float k1 = cross(e, f) + cross(h, g);
-      float k0 = cross(h, e);
-
-      float w = k1 * k1 - 4.0 * k0 * k2;
-
-      if (w < 0.0)
-        return vec2(-1.0);
-
-      w = sqrt(w);
-
-      float v1 = (-k1 - w) / (2.0 * k2);
-      float u1 = (h.x - f.x * v1) / (e.x + g.x * v1);
-
-      float v2 = (-k1 + w) / (2.0 * k2);
-      float u2 = (h.x - f.x * v2) / (e.x + g.x * v2);
-
-      float u = u1;
-      float v = v1;
-
-      if (v < 0.0 || v > 1.0 || u < 0.0 || u > 1.0)
-      {
-        u = u2;
-        v = v2;
-      }
-
-      if (v < 0.0 || v > 1.0 || u < 0.0 || u > 1.0)
-      {
-        u = -1.0;
-        v = -1.0;
-      }
-
-      return vec2(u, v);
-    }
-
-    void main()
-    {
-      vec2 pos = invBilinear(_texCoord0, offsets[1], offsets[3], offsets[2], offsets[0]);
-
-      float y = texture(textureY, pos).x;
-      float u = texture(textureU, pos).x;
-      float v = texture(textureV, pos).x;
-
-      vec3 col = vec3(
-        clamp(y + 1.370705 * (v - 0.5), 0, 1),
-        clamp(y - 0.698001 * (v - 0.5) - 0.337633 * (u - 0.5), 0, 1),
-        clamp(y + 1.732446 * (u - 0.5), 0, 1));
-
-      outColour = vec4(col, 1);
-    }
-    );
-
-    mPtr<mShader> shader;
-    mDEFER_DESTRUCTION(&shader, mSharedPointer_Destroy);
     mERROR_CHECK(mSharedPointer_Allocate(&shader, nullptr, (std::function<void(mShader *)>)[](mShader *pData) { mShader_Destroy(pData); }, 1));
-    mERROR_CHECK(mShader_Create(shader.GetPointer(), vertexShader, fragmentShader, "outColour"));
+    mERROR_CHECK(mShader_CreateFromFile(shader.GetPointer(), L"../shaders/yuvQuad"));
 
     mGL_ERROR_CHECK();
     mERROR_CHECK(mShader_SetUniform(shader, "textureY", textureY));
@@ -234,7 +161,6 @@ mFUNCTION(MainLoop)
 
   while (true)
   {
-
     bool isNewFrame = true;
     mResult result = mVideoPlaybackEngine_GetCurrentFrame(videoPlaybackEngine, &currentFrame, &isNewFrame);
 
@@ -270,10 +196,9 @@ mFUNCTION(MainLoop)
     if (supportsStereo)
       mERROR_CHECK(mRenderParams_SetStereo3dBuffer(leftEye ? mRP_SRB_LeftEye : mRP_SRB_RightEye));
 
-    if(leftEye)
-      mERROR_CHECK(mRenderParams_ClearTargetDepthAndColour());
-    else
-      mERROR_CHECK(mRenderParams_ClearTargetDepthAndColour(mVector(1, 0, 0)));
+    mERROR_CHECK(mRenderParams_ClearTargetDepthAndColour());
+
+    mERROR_CHECK(mFramebuffer_Bind(framebuffer));
 
     for (size_t i = 0; i < meshCount; ++i)
     {
@@ -286,9 +211,13 @@ mFUNCTION(MainLoop)
         pPositions[offsetIndex] += (mVec2f(rand() / (float_t)RAND_MAX, rand() / (float_t)RAND_MAX) - mVec2f(0.5f)) / 1000.0f;
 
       mERROR_CHECK(mShader_SetUniform((*pMesh)->shader, "offsets", pPositions, 4));
-
       mERROR_CHECK(mMesh_Render(*pMesh));
     }
+
+    mERROR_CHECK(mFramebuffer_Unbind());
+    mERROR_CHECK(mHardwareWindow_SetAsActiveRenderTarget(window));
+
+
 
     if (supportsStereo && leftEye)
     {
@@ -317,8 +246,12 @@ mFUNCTION(MainLoop)
 
     SDL_Event _event;
     while (SDL_PollEvent(&_event))
+    {
       if (_event.type == SDL_QUIT || (_event.type == SDL_KEYDOWN && _event.key.keysym.sym == SDLK_ESCAPE))
         goto end;
+      else if (_event.type == SDL_KEYDOWN && _event.key.keysym.sym == SDLK_BACKQUOTE)
+        mERROR_CHECK(mShader_ReloadFromFile(shader));
+    }
   }
 
 end:;
