@@ -28,14 +28,19 @@ void mDebugOut(const char * fmt, ...)
   OutputDebugStringA(s);
 }
 
-void mPrintError(char *function, char *file, const int32_t line, const mResult error)
+void mPrintError(char *function, char *file, const int32_t line, const mResult error, const char *expression)
 {
   mString errorName;
 
+  const char *expr = "";
+
+  if (expression)
+    expr = expression;
+
   if (mFAILED(mResult_ToString(error, &errorName)))
-    mDebugOut("Error in '%s' (File '%s'; Line % " PRIi32 ") [%" PRIx32 "].\n", function, file, line, error);
+    mDebugOut("Error in '%s' (File '%s'; Line % " PRIi32 ") [0x%" PRIx32 "].\nExpression: '%s'.\n\n", function, file, line, error, expr);
   else
-    mDebugOut("Error %s in '%s' (File '%s'; Line % " PRIi32 ") [%" PRIx32 "].\n", errorName.c_str(), function, file, line, error);
+    mDebugOut("Error %s in '%s' (File '%s'; Line % " PRIi32 ") [0x%" PRIx32 "].\nExpression: '%s'.\n\n", errorName.c_str(), function, file, line, error, expr);
 }
 
 mFUNCTION(mResult_ToString, const mResult result, OUT mString *pString)

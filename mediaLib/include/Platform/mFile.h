@@ -62,7 +62,7 @@ inline mFUNCTION(mFile_ReadRaw, const std::wstring &filename, OUT T **ppData, IN
   mERROR_IF(ppData == nullptr || pCount == nullptr, mR_ArgumentNull);
 
   FILE *pFile = _wfopen(filename.c_str(), L"r");
-  mDEFER(fclose(pFile));
+  mDEFER(if (pFile) { fclose(pFile); });
   mERROR_IF(pFile == nullptr, mR_ResourceNotFound);
 
   mERROR_IF(0 != fseek(pFile, 0, SEEK_END), mR_InternalError);
@@ -70,12 +70,12 @@ inline mFUNCTION(mFile_ReadRaw, const std::wstring &filename, OUT T **ppData, IN
   const size_t length = ftell(pFile);
   const size_t count = length / sizeof(T);
 
+  mERROR_IF(0 != fseek(pFile, 0, SEEK_SET), mR_InternalError);
+
   mERROR_CHECK(mAllocator_Allocate(pAllocator, (uint8_t **)ppData, length));
-  const size_t readCount = fread(*ppData, sizeof(T), count, pFile);
+  const size_t readLength = fread(*ppData, 1, length, pFile);
 
-  mERROR_IF(readCount != count, mR_ResourceInvalid);
-
-  *pCount = readCount;
+  *pCount = readLength / sizeof(T);
 
   mRETURN_SUCCESS();
 }
@@ -87,8 +87,8 @@ inline mFUNCTION(mFile_WriteRaw, const std::wstring &filename, IN T *pData, cons
 
   mERROR_IF(pData == nullptr, mR_ArgumentNull);
 
-  FILE *pFile = _wfopen(filename.c_str(), L"w");
-  mDEFER(fclose(pFile));
+  FILE *pFile = _wfopen(filename.c_str(), L"wb");
+  mDEFER(if (pFile) fclose(pFile););
   mERROR_IF(pFile == nullptr, mR_ResourceNotFound);
 
   const size_t writeCount = fwrite(pData, sizeof(T), count, pFile);
