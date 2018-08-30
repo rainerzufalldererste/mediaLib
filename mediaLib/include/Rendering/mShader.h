@@ -15,9 +15,12 @@
 struct mShader
 {
   bool initialized = false;
+  std::wstring vertexShader;
+  std::wstring fragmentShader;
 
 #if defined(mRENDERER_OPENGL)
   GLuint shaderProgram;
+  bool loadedFromFile;
 #endif
 };
 
@@ -33,6 +36,8 @@ mFUNCTION(mShader_Destroy, IN_OUT mShader *pShader);
 mFUNCTION(mShader_SetTo, mPtr<mShader> &shader, const std::string &vertexShader, const std::string &fragmentShader, IN OPTIONAL const char *fragDataLocation = nullptr);
 mFUNCTION(mShader_SetToFile, mPtr<mShader> &shader, const std::wstring &vertexShaderPath, const std::wstring &fragmentShaderPath, IN OPTIONAL const char *fragDataLocation = nullptr);
 mFUNCTION(mShader_SetToFile, mPtr<mShader> &shader, const std::wstring &filename);
+
+mFUNCTION(mShader_ReloadFromFile, mPtr<mShader> &shader);
 
 mFUNCTION(mShader_Bind, mShader &shader);
 
