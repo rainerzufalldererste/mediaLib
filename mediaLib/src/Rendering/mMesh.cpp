@@ -30,7 +30,7 @@ mFUNCTION(mMeshAttributeContainer_Destroy_Internal, IN mMeshAttributeContainer *
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mMesh_Create, OUT mPtr<mMesh>* pMesh, IN mAllocator * pAllocator, const std::initializer_list<mPtr<mMeshAttributeContainer>>& attributeInformation, mPtr<mShader>& shader, mPtr<mQueue<mPtr<mTexture>>>& textures, const mRenderParams_VertexRenderMode triangleRenderMode /* = mRP_VRM_TriangleList */)
+mFUNCTION(mMesh_Create, OUT mPtr<mMesh>* pMesh, IN mAllocator * pAllocator, const std::initializer_list<mPtr<mMeshAttributeContainer>>& attributeInformation, mPtr<mShader>& shader, mPtr<mQueue<mKeyValuePair<mString, mPtr<mTexture>>>>& textures, const mRenderParams_VertexRenderMode triangleRenderMode /* = mRP_VRM_TriangleList */)
 {
   mFUNCTION_SETUP();
 
@@ -47,7 +47,7 @@ mFUNCTION(mMesh_Create, OUT mPtr<mMesh>* pMesh, IN mAllocator * pAllocator, cons
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mMesh_Create, OUT mPtr<mMesh> *pMesh, IN mAllocator *pAllocator, mPtr<mQueue<mPtr<mMeshAttributeContainer>>> &attributeInformation, mPtr<mShader> &shader, mPtr<mQueue<mPtr<mTexture>>> &textures, const mRenderParams_VertexRenderMode triangleRenderMode /* = mRP_VRM_TriangleList */)
+mFUNCTION(mMesh_Create, OUT mPtr<mMesh> *pMesh, IN mAllocator *pAllocator, mPtr<mQueue<mPtr<mMeshAttributeContainer>>> &attributeInformation, mPtr<mShader> &shader, mPtr<mQueue<mKeyValuePair<mString, mPtr<mTexture>>>> &textures, const mRenderParams_VertexRenderMode triangleRenderMode /* = mRP_VRM_TriangleList */)
 {
   mFUNCTION_SETUP();
 
@@ -109,18 +109,7 @@ mFUNCTION(mMesh_Create, OUT mPtr<mMesh> *pMesh, IN mAllocator *pAllocator, mPtr<
   (*pMesh)->shader = shader;
   (*pMesh)->uploadState = mRenderParams_UploadState::mRP_US_NotInitialized;
   (*pMesh)->triangleRenderMode = triangleRenderMode;
-
-  size_t textureCount = 0;
-  mERROR_CHECK(mQueue_GetCount(textures, &textureCount));
-
-  mERROR_CHECK(mArray_Create(&(*pMesh)->textures, pAllocator, textureCount));
-
-  for (size_t i = 0; i < textureCount; ++i)
-  {
-    mPtr<mTexture> *pTexture;
-    mERROR_CHECK(mQueue_PointerAt(textures, i, &pTexture));
-    mERROR_CHECK(mArray_PutAt((*pMesh)->textures, i, pTexture));
-  }
+  (*pMesh)->textures = textures;
 
   (*pMesh)->hasVbo = true;
   glGenBuffers(1, &(*pMesh)->vbo);
@@ -146,7 +135,10 @@ mFUNCTION(mMesh_Create, OUT mPtr<mMesh> *pMesh, IN mAllocator *pAllocator, mPtr<
     mGL_DEBUG_ERROR_CHECK();
   }
 
-  if ((*pMesh)->textures.count > 0)
+  size_t textureCount = 0;
+  mERROR_CHECK(mQueue_GetCount(textures, &textureCount));
+
+  if (textureCount > 0)
     (*pMesh)->uploadState = mRP_US_NotUploaded;
   else
     (*pMesh)->uploadState = mRP_US_Ready;
@@ -158,7 +150,7 @@ mFUNCTION(mMesh_Create, OUT mPtr<mMesh> *pMesh, IN mAllocator *pAllocator, mPtr<
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mMesh_Create, OUT mPtr<mMesh> *pMesh, IN mAllocator *pAllocator, mPtr<mQueue<mMeshAttribute>> &attributeInformation, mPtr<mShader> &shader, mPtr<mBinaryChunk>& data, mPtr<mQueue<mPtr<mTexture>>> &textures, const mRenderParams_VertexRenderMode triangleRenderMode /* = mRP_VRM_TriangleList */)
+mFUNCTION(mMesh_Create, OUT mPtr<mMesh> *pMesh, IN mAllocator *pAllocator, mPtr<mQueue<mMeshAttribute>> &attributeInformation, mPtr<mShader> &shader, mPtr<mBinaryChunk>& data, mPtr<mQueue<mKeyValuePair<mString, mPtr<mTexture>>>> &textures, const mRenderParams_VertexRenderMode triangleRenderMode /* = mRP_VRM_TriangleList */)
 {
   mFUNCTION_SETUP();
 
@@ -190,18 +182,7 @@ mFUNCTION(mMesh_Create, OUT mPtr<mMesh> *pMesh, IN mAllocator *pAllocator, mPtr<
   (*pMesh)->uploadState = mRenderParams_UploadState::mRP_US_NotInitialized;
   (*pMesh)->triangleRenderMode = triangleRenderMode;
   (*pMesh)->information = attributeInformation;
-
-  size_t textureCount = 0;
-  mERROR_CHECK(mQueue_GetCount(textures, &textureCount));
-
-  mERROR_CHECK(mArray_Create(&(*pMesh)->textures, pAllocator, textureCount));
-
-  for (size_t i = 0; i < textureCount; ++i)
-  {
-    mPtr<mTexture> *pTexture;
-    mERROR_CHECK(mQueue_PointerAt(textures, i, &pTexture));
-    mERROR_CHECK(mArray_PutAt((*pMesh)->textures, i, pTexture));
-  }
+  (*pMesh)->textures = textures;
 
 #if defined (mRENDERER_OPENGL)
   (*pMesh)->hasVbo = true;
@@ -227,7 +208,10 @@ mFUNCTION(mMesh_Create, OUT mPtr<mMesh> *pMesh, IN mAllocator *pAllocator, mPtr<
     mGL_DEBUG_ERROR_CHECK();
   }
 
-  if ((*pMesh)->textures.count > 0)
+  size_t textureCount = 0;
+  mERROR_CHECK(mQueue_GetCount(textures, &textureCount));
+
+  if (textureCount > 0)
     (*pMesh)->uploadState = mRP_US_NotUploaded;
   else
     (*pMesh)->uploadState = mRP_US_Ready;
@@ -262,14 +246,17 @@ mFUNCTION(mMesh_Destroy_Internal, mMesh * pMesh)
     pMesh->hasVbo = false;
   }
 
-  for (size_t i = 0; i < pMesh->textures.count; ++i)
+  size_t textureCount;
+  mERROR_CHECK(mQueue_GetCount(pMesh->textures, &textureCount));
+
+  for (size_t i = 0; i < textureCount; ++i)
   {
-    mPtr<mTexture> texture;
-    mERROR_CHECK(mArray_PopAt(pMesh->textures, i, &texture));
-    mERROR_CHECK(mSharedPointer_Destroy(&texture));
+    mKeyValuePair<mString, mPtr<mTexture>> texture;
+    mERROR_CHECK(mQueue_PopFront(pMesh->textures, &texture));
+    mERROR_CHECK(mDestruct(&texture));
   }
 
-  mERROR_CHECK(mArray_Destroy(&pMesh->textures));
+  mERROR_CHECK(mQueue_Destroy(&pMesh->textures));
   mERROR_CHECK(mQueue_Destroy(&pMesh->information));
 #endif
 
@@ -288,12 +275,14 @@ mFUNCTION(mMesh_Upload, mPtr<mMesh> &data)
 
 #if defined (mRENDERER_OPENGL)
 
-  for (size_t i = 0; i < data->textures.count; ++i)
+  size_t textureCount;
+  mERROR_CHECK(mQueue_GetCount(data->textures, &textureCount));
+
+  for (size_t i = 0; i < textureCount; ++i)
   {
-    mPtr<mTexture> texture;
-    mDEFER_DESTRUCTION(&texture, mSharedPointer_Destroy);
-    mERROR_CHECK(mArray_PeekAt(data->textures, i, &texture));
-    mERROR_CHECK(mTexture_Upload(*texture.GetPointer()));
+    mKeyValuePair<mString, mPtr<mTexture>> *pTexture;
+    mERROR_CHECK(mQueue_PointerAt(data->textures, i, &pTexture));
+    mERROR_CHECK(mTexture_Upload(*pTexture->value));
   }
 
 #else
@@ -325,12 +314,15 @@ mFUNCTION(mMesh_Render, mPtr<mMesh>& data)
 
 #if defined (mRENDERER_OPENGL)
 
-  for (size_t i = 0; i < data->textures.count; ++i)
+  size_t textureCount;
+  mERROR_CHECK(mQueue_GetCount(data->textures, &textureCount));
+
+  for (size_t i = 0; i < textureCount; ++i)
   {
-    mPtr<mTexture> texture;
-    mDEFER_DESTRUCTION(&texture, mSharedPointer_Destroy);
-    mERROR_CHECK(mArray_PeekAt(data->textures, i, &texture));
-    mERROR_CHECK(mTexture_Bind(*texture.GetPointer(), i));
+    mKeyValuePair<mString, mPtr<mTexture>> *pTexture;
+    mERROR_CHECK(mQueue_PointerAt(data->textures, i, &pTexture));
+    mERROR_CHECK(mTexture_Bind(*pTexture->value, i));
+    mERROR_CHECK(mShader_SetUniform(*data->shader, pTexture->key.c_str(), *pTexture->value));
   }
 
   mERROR_CHECK(mShader_Bind(*data->shader.GetPointer()));

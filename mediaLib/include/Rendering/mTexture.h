@@ -43,5 +43,7 @@ mFUNCTION(mTexture_SetTo, mTexture &texture, const uint8_t *pData, const mVec2s 
 mFUNCTION(mCreateResource, OUT mTexture *pTexture, const std::string &filename);
 mFUNCTION(mDestroyResource, IN_OUT mTexture *pTexture);
 
+mFUNCTION(mDestruct, IN_OUT mTexture *pTexture);
+
 #endif // mTexture_h__
 

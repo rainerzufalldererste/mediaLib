@@ -15,6 +15,7 @@
 #include "mArray.h"
 #include "mTexture.h"
 #include <initializer_list>
+#include "mKeyValuePair.h"
 
 enum mRenderObjectParamType
 {
@@ -348,7 +349,7 @@ struct mMesh
   mPtr<mShader> shader;
   size_t dataSize;
   mRenderParams_UploadState uploadState;
-  mArray<mPtr<mTexture>> textures;
+  mPtr<mQueue<mKeyValuePair<mString, mPtr<mTexture>>>> textures;
   mRenderParams_VertexRenderMode triangleRenderMode;
   mPtr<mQueue<mMeshAttribute>> information;
   size_t primitiveCount;
@@ -392,11 +393,11 @@ mFUNCTION(mMeshAttributeContainer_Destroy, IN_OUT mPtr<mMeshAttributeContainer> 
 
 mFUNCTION(mMeshAttributeContainer_Destroy_Internal, IN mMeshAttributeContainer *pMeshAttributeContainer);
 
-mFUNCTION(mMesh_Create, OUT mPtr<mMesh> *pMesh, IN mAllocator *pAllocator, const std::initializer_list<mPtr<mMeshAttributeContainer>> &attributeInformation, mPtr<mShader> &shader, mPtr<mQueue<mPtr<mTexture>>> &textures, const mRenderParams_VertexRenderMode triangleRenderMode = mRP_VRM_TriangleList);
+mFUNCTION(mMesh_Create, OUT mPtr<mMesh> *pMesh, IN mAllocator *pAllocator, const std::initializer_list<mPtr<mMeshAttributeContainer>> &attributeInformation, mPtr<mShader> &shader, mPtr<mQueue<mKeyValuePair<mString, mPtr<mTexture>>>> &textures, const mRenderParams_VertexRenderMode triangleRenderMode = mRP_VRM_TriangleList);
 
-mFUNCTION(mMesh_Create, OUT mPtr<mMesh> *pMesh, IN mAllocator *pAllocator, mPtr<mQueue<mPtr<mMeshAttributeContainer>>> &attributeInformation, mPtr<mShader> &shader, mPtr<mQueue<mPtr<mTexture>>> &textures, const mRenderParams_VertexRenderMode triangleRenderMode = mRP_VRM_TriangleList);
+mFUNCTION(mMesh_Create, OUT mPtr<mMesh> *pMesh, IN mAllocator *pAllocator, mPtr<mQueue<mPtr<mMeshAttributeContainer>>> &attributeInformation, mPtr<mShader> &shader, mPtr<mQueue<mKeyValuePair<mString, mPtr<mTexture>>>> &textures, const mRenderParams_VertexRenderMode triangleRenderMode = mRP_VRM_TriangleList);
 
-mFUNCTION(mMesh_Create, OUT mPtr<mMesh> *pMesh, IN mAllocator *pAllocator, mPtr<mQueue<mMeshAttribute>> &attributeInformation, mPtr<mShader> &shader, mPtr<mBinaryChunk> &data, mPtr<mQueue<mPtr<mTexture>>> &textures, const mRenderParams_VertexRenderMode triangleRenderMode = mRP_VRM_TriangleList);
+mFUNCTION(mMesh_Create, OUT mPtr<mMesh> *pMesh, IN mAllocator *pAllocator, mPtr<mQueue<mMeshAttribute>> &attributeInformation, mPtr<mShader> &shader, mPtr<mBinaryChunk> &data, mPtr<mQueue<mKeyValuePair<mString, mPtr<mTexture>>>> &textures, const mRenderParams_VertexRenderMode triangleRenderMode = mRP_VRM_TriangleList);
 
 mFUNCTION(mMesh_Destroy, IN_OUT mPtr<mMesh> *pMesh);
 
@@ -445,7 +446,7 @@ struct mMeshFactory_Internal_TextureParameterUnpacker;
 template <>
 struct mMeshFactory_Internal_TextureParameterUnpacker <>
 {
-  static mFUNCTION(Unpack, mArray<mPtr<mTexture>> *pTextureArray, const size_t index)
+  static mFUNCTION(Unpack, mPtr<mQueue<mKeyValuePair<mString, mPtr<mTexture>>>> *pTextureArray, const size_t index)
   {
     mFUNCTION_SETUP();
 
@@ -456,62 +457,62 @@ struct mMeshFactory_Internal_TextureParameterUnpacker <>
 };
 
 template <>
-struct mMeshFactory_Internal_TextureParameterUnpacker <mPtr<mImageBuffer>&>
+struct mMeshFactory_Internal_TextureParameterUnpacker <mKeyValuePair<mString, mPtr<mImageBuffer>>&>
 {
-  static mFUNCTION(Unpack, mArray<mPtr<mTexture>> *pTextureArray, const size_t index, mPtr<mImageBuffer> &imageBuffer)
+  static mFUNCTION(Unpack, mPtr<mQueue<mKeyValuePair<mString, mPtr<mTexture>>>> *pTextureArray, mKeyValuePair<mString, mPtr<mImageBuffer>> &imageBuffer)
   {
     mFUNCTION_SETUP();
 
     mPtr<mTexture> texture;
     mDEFER_DESTRUCTION(&texture, mSharedPointer_Destroy);
     mERROR_CHECK(mSharedPointer_Allocate(&texture, nullptr, (std::function<void(mTexture *)>)[](mTexture *pData) {mTexture_Destroy(pData); }, 1));
-    mERROR_CHECK(mTexture_Create(texture.GetPointer(), imageBuffer, false, index));
+    mERROR_CHECK(mTexture_Create(texture.GetPointer(), imageBuffer.value, false));
 
-    mERROR_CHECK(mArray_PutDataAt(*pTextureArray, index, texture));
+    mERROR_CHECK(mQueue_PushBack(*pTextureArray, mKeyValuePair<mString, mPtr<mTexture>>(imageBuffer.key, texture)));
 
     mRETURN_SUCCESS();
   }
 };
 
 template <>
-struct mMeshFactory_Internal_TextureParameterUnpacker <mPtr<mTexture>&>
+struct mMeshFactory_Internal_TextureParameterUnpacker <mKeyValuePair<mString, mPtr<mTexture>>&>
 {
-  static mFUNCTION(Unpack, mArray<mPtr<mTexture>> *pTextureArray, const size_t index, mPtr<mTexture> &texture)
+  static mFUNCTION(Unpack, mPtr<mQueue<mKeyValuePair<mString, mPtr<mTexture>>>> *pTextureArray, mKeyValuePair<mString, mPtr<mTexture>> &texture)
   {
     mFUNCTION_SETUP();
 
-    mERROR_CHECK(mArray_PutDataAt(*pTextureArray, index, texture));
+    mERROR_CHECK(mQueue_PushBack(*pTextureArray, texture));
 
     mRETURN_SUCCESS();
   }
 };
 
 template <>
-struct mMeshFactory_Internal_TextureParameterUnpacker <mPtr<mImageBuffer>>
+struct mMeshFactory_Internal_TextureParameterUnpacker <mKeyValuePair<mString, mPtr<mImageBuffer>>>
 {
-  static mFUNCTION(Unpack, mArray<mPtr<mTexture>> *pTextureArray, const size_t index, mPtr<mImageBuffer> imageBuffer)
+  static mFUNCTION(Unpack, mPtr<mQueue<mKeyValuePair<mString, mPtr<mTexture>>>> *pTextureArray, mKeyValuePair<mString, mPtr<mImageBuffer>> imageBuffer)
   {
     mFUNCTION_SETUP();
 
     mPtr<mTexture> texture;
     mDEFER_DESTRUCTION(&texture, mSharedPointer_Destroy);
     mERROR_CHECK(mSharedPointer_Allocate(&texture, nullptr, (std::function<void(mTexture *)>)[](mTexture *pData) {mTexture_Destroy(pData); }, 1));
-    mERROR_CHECK(mTexture_Create(texture.GetPointer(), imageBuffer, false, index));
+    mERROR_CHECK(mTexture_Create(texture.GetPointer(), imageBuffer.value, false));
 
-    mERROR_CHECK(mArray_PutDataAt(*pTextureArray, index, texture));
+    mERROR_CHECK(mQueue_PushBack(*pTextureArray, mKeyValuePair<mString, mPtr<mTexture>>(imageBuffer.key, texture)));
 
     mRETURN_SUCCESS();
   }
 };
 
 template <>
-struct mMeshFactory_Internal_TextureParameterUnpacker <mPtr<mTexture>>
+struct mMeshFactory_Internal_TextureParameterUnpacker <mKeyValuePair<mString, mPtr<mTexture>>>
 {
-  static mFUNCTION(Unpack, mArray<mPtr<mTexture>> *pTextureArray, const size_t index, mPtr<mTexture> texture)
+  static mFUNCTION(Unpack, mPtr<mQueue<mKeyValuePair<mString, mPtr<mTexture>>>> *pTextureArray, mKeyValuePair<mString, mPtr<mTexture>> texture)
   {
     mFUNCTION_SETUP();
 
-    mERROR_CHECK(mArray_PutDataAt(*pTextureArray, index, texture));
+    mERROR_CHECK(mQueue_PushBack(*pTextureArray, texture));
 
     mRETURN_SUCCESS();
   }
@@ -520,12 +521,12 @@ struct mMeshFactory_Internal_TextureParameterUnpacker <mPtr<mTexture>>
 template <typename T, typename ...Args>
 struct mMeshFactory_Internal_TextureParameterUnpacker <T, Args...>
 {
-  static mFUNCTION(Unpack, mArray<mPtr<mTexture>> *pTextureArray, const size_t index, T t, Args&&... args)
+  static mFUNCTION(Unpack, mPtr<mQueue<mKeyValuePair<mString, mPtr<mTexture>>>> *pTextureArray, T t, Args&&... args)
   {
     mFUNCTION_SETUP();
 
-    mERROR_CHECK(mMeshFactory_Internal_TextureParameterUnpacker<T>::Unpack(pTextureArray, index, t));
-    mERROR_CHECK(mMeshFactory_Internal_TextureParameterUnpacker<Args...>::Unpack(pTextureArray, index + 1, std::forward<Args>(args)...));
+    mERROR_CHECK(mMeshFactory_Internal_TextureParameterUnpacker<T>::Unpack(pTextureArray, t));
+    mERROR_CHECK(mMeshFactory_Internal_TextureParameterUnpacker<Args...>::Unpack(pTextureArray, std::forward<Args>(args)...));
 
     mRETURN_SUCCESS();
   }
@@ -622,8 +623,9 @@ inline mFUNCTION(mMeshFactory_CreateMesh, mPtr<mMeshFactory<Args...>> &factory, 
   }
 
   mERROR_IF(factory->meshFactoryInternal.textureCoordCount != sizeof...(TTextures), mR_InvalidParameter);
-  mERROR_CHECK(mArray_Create(&(*pMesh)->textures, nullptr, factory->meshFactoryInternal.textureCoordCount));
-  mERROR_CHECK(mMeshFactory_Internal_TextureParameterUnpacker<TTextures...>::Unpack(&(*pMesh)->textures, 0, std::forward<TTextures>(textures)...));
+  mERROR_CHECK(mQueue_Create(&(*pMesh)->textures, nullptr));
+  mERROR_CHECK(mQueue_Reserve((*pMesh)->textures, factory->meshFactoryInternal.textureCoordCount));
+  mERROR_CHECK(mMeshFactory_Internal_TextureParameterUnpacker<TTextures...>::Unpack(&(*pMesh)->textures, std::forward<TTextures>(textures)...));
 
   if ((*pMesh)->textures.count > 0)
     (*pMesh)->uploadState = mRP_US_NotUploaded;
@@ -734,7 +736,7 @@ inline mFUNCTION(mMeshAttributeContainer_Create, OUT mPtr<mMeshAttributeContaine
 }
 
 template<typename T>
-inline mFUNCTION(mMeshAttributeContainer_Create, OUT mPtr<mMeshAttributeContainer>* pMeshAttributeContainer, IN mAllocator * pAllocator, char attributeName[64], mPtr<mQueue<T>>& items)
+inline mFUNCTION(mMeshAttributeContainer_Create, OUT mPtr<mMeshAttributeContainer> *pMeshAttributeContainer, IN mAllocator *pAllocator, char attributeName[64], mPtr<mQueue<T>>& items)
 {
   mFUNCTION_SETUP();
 
