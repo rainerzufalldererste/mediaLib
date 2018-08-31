@@ -12,18 +12,25 @@
 #include "mRenderParams.h"
 #include "mShader.h"
 
+// mScreenQuad.
+// Your fragment shader requires inputs for the amount of textures specified called `_texCoord%TextureIndex%` (`_texCoord0`, `_texCoord1`, ...).
+
 struct mScreenQuad
 {
   mPtr<mShader> shader;
 #if defined(mRENDERER_OPENGL)
-  GLint vbo;
+  GLuint vbo;
+  mVec2f positions[4];
 #endif
 };
 
-mFUNCTION(mScreenQuad_Create, OUT mPtr<mScreenQuad> *pScreenQuad, IN mAllocator *pAllocator, const std::string &fragmentShader);
-mFUNCTION(mScreenQuad_CreateFromn, OUT mPtr<mScreenQuad> *pScreenQuad, IN mAllocator *pAllocator, const std::string &fragmentShader);
+mFUNCTION(mScreenQuad_Create, OUT mPtr<mScreenQuad> *pScreenQuad, IN mAllocator *pAllocator, const std::string &fragmentShader, const size_t textureCount = 1);
+mFUNCTION(mScreenQuad_CreateFromn, OUT mPtr<mScreenQuad> *pScreenQuad, IN mAllocator *pAllocator, const std::wstring &fragmentShaderPath, const size_t textureCount = 1);
 
 mFUNCTION(mScreenQuad_Destroy, IN_OUT mPtr<mScreenQuad> *pScreenQuad);
 mFUNCTION(mScreenQuad_Render, mPtr<mScreenQuad> &screenQuad);
+
+template <typename ...Args>
+mFUNCTION(mScreenQuad_Render, mPtr<mScreenQuad> &screenQuad, Args&&... args);
 
 #endif // mScreenQuad_h__

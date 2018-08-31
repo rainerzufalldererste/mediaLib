@@ -61,7 +61,7 @@ inline mFUNCTION(mFile_ReadRaw, const std::wstring &filename, OUT T **ppData, IN
 
   mERROR_IF(ppData == nullptr || pCount == nullptr, mR_ArgumentNull);
 
-  FILE *pFile = _wfopen(filename.c_str(), L"r");
+  FILE *pFile = _wfopen(filename.c_str(), L"rb");
   mDEFER(if (pFile) { fclose(pFile); });
   mERROR_IF(pFile == nullptr, mR_ResourceNotFound);
 
