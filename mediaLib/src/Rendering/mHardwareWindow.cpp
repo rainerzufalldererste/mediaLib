@@ -13,7 +13,6 @@ struct mHardwareWindow
 {
   SDL_Window *pWindow;
   mRenderContextId renderContextID;
-  bool no3dAvailableFlag;
 };
 
 mFUNCTION(mHardwareWindow_Create_Internal, IN mHardwareWindow *pWindow, const std::string & title, const mVec2s & size, const mHardwareWindow_DisplayMode displaymode);
@@ -110,13 +109,24 @@ mFUNCTION(mHardwareWindow_SetAsActiveRenderTarget, mPtr<mHardwareWindow>& window
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mHardwareWindow_GetSdlWindowPtr, mPtr<mHardwareWindow>& window, OUT SDL_Window ** ppSdlWindow)
+mFUNCTION(mHardwareWindow_GetSdlWindowPtr, mPtr<mHardwareWindow> &window, OUT SDL_Window **ppSdlWindow)
 {
   mFUNCTION_SETUP();
 
   mERROR_IF(window == nullptr || ppSdlWindow == nullptr, mR_ArgumentNull);
 
   *ppSdlWindow = window->pWindow;
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mHardwareWindow_GetRenderContextId, mPtr<mHardwareWindow> &window, OUT mRenderContextId *pRenderContextId)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(window == nullptr || pRenderContextId == nullptr, mR_ArgumentNull);
+
+  *pRenderContextId = window->renderContextID;
 
   mRETURN_SUCCESS();
 }

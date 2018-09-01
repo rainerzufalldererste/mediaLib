@@ -25,13 +25,16 @@ project(ProjectName)
   files { "include/**.cpp", "include/**.h", "include/**.inl", "src/**rc" }
   files { "project.lua" }
   
+  includedirs { "include" }
   includedirs { "include/**" }
+  includedirs { "3rdParty" }
   includedirs { "3rdParty/DirectXMath/Inc" }
   includedirs { "3rdParty/DirectXMath/Extensions" }
   includedirs { "3rdParty/stb" }
   includedirs { "3rdParty/SDL2/include" }
   includedirs { "3rdParty/glew/include" }
   includedirs { "3rdParty/utf8proc/include" }
+  includedirs { "3rdParty/imgui" }
 
   filter { "configurations:Debug", "system:Windows" }
     ignoredefaultlibraries { "libcmt" }
