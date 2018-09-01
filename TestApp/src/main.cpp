@@ -64,7 +64,7 @@ mFUNCTION(MainLoop)
     mERROR_CHECK(mRenderParams_SetVsync(true));
   }
 
-  const std::wstring videoFilename = L"C:/Users/cstiller/Videos/Converted.mp4";
+  const std::wstring videoFilename = L"N:/Data/video/Babuji3.mp4";
 
   mPtr<mThreadPool> threadPool;
   mPtr<mVideoPlaybackEngine> videoPlaybackEngine;
@@ -128,18 +128,15 @@ mFUNCTION(MainLoop)
     mERROR_CHECK(mShader_CreateFromFile(shader.GetPointer(), L"../shaders/yuvQuad"));
 
     mGL_ERROR_CHECK();
-    mERROR_CHECK(mShader_SetUniform(shader, "textureY", textureY));
-    mERROR_CHECK(mShader_SetUniform(shader, "textureU", textureU));
-    mERROR_CHECK(mShader_SetUniform(shader, "textureV", textureV));
 
     mGL_ERROR_CHECK();
-    mPtr<mQueue<mPtr<mTexture>>> textures;
+    mPtr<mQueue<mKeyValuePair<mString, mPtr<mTexture>>>> textures;
     mDEFER_DESTRUCTION(&textures, mQueue_Destroy);
     mERROR_CHECK(mQueue_Create(&textures, nullptr));
 
-    mERROR_CHECK(mQueue_PushBack(textures, textureY));
-    mERROR_CHECK(mQueue_PushBack(textures, textureU));
-    mERROR_CHECK(mQueue_PushBack(textures, textureV));
+    mERROR_CHECK(mQueue_PushBack(textures, mKeyValuePair<mString, mPtr<mTexture>>("textureY", textureY)));
+    mERROR_CHECK(mQueue_PushBack(textures, mKeyValuePair<mString, mPtr<mTexture>>("textureU", textureU)));
+    mERROR_CHECK(mQueue_PushBack(textures, mKeyValuePair<mString, mPtr<mTexture>>("textureV", textureV)));
 
     for (size_t i = 0; i < quadCount; ++i)
     {

@@ -235,7 +235,16 @@ mFUNCTION(mCreateResource, OUT mTexture * pTexture, const std::string & filename
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mDestroyResource, IN_OUT mTexture * pTexture)
+mFUNCTION(mDestroyResource, IN_OUT mTexture *pTexture)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_CHECK(mTexture_Destroy(pTexture));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mDestruct, IN_OUT mTexture *pTexture)
 {
   mFUNCTION_SETUP();
 

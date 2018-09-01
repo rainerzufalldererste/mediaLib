@@ -47,7 +47,20 @@ inline mFUNCTION(mKeyValuePair_Destroy, IN_OUT mKeyValuePair<TKey, TValue> *pPai
 {
   mFUNCTION_SETUP();
 
-  mUnused(pPair); // Do nothing.
+  mERROR_IF(pPair == nullptr, mR_ArgumentNull);
+
+  mERROR_CHECK(mDestruct(&pPair->key));
+  mERROR_CHECK(mDestruct(&pPair->value));
+
+  mRETURN_SUCCESS();
+}
+
+template<typename TKey, typename TValue>
+mFUNCTION(mDestruct, IN_OUT mKeyValuePair<TKey, TValue> *pPair)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_CHECK(mKeyValuePair_Destroy(pPair));
 
   mRETURN_SUCCESS();
 }
