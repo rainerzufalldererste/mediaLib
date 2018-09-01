@@ -13,3 +13,6 @@
 [submodule "mediaLib/3rdParty/utf8proc"]
 	path = mediaLib/3rdParty/utf8proc
 	url = https://github.com/rainerzufalldererste/utf8procBuild.git
+[submodule "mediaLib/3rdParty/json"]
+	path = mediaLib/3rdParty/json
+	url = https://github.com/nlohmann/json
