@@ -122,6 +122,18 @@ mFUNCTION(MainLoop)
   mPtr<mShader> shader;
   mDEFER_DESTRUCTION(&shader, mSharedPointer_Destroy);
 
+  mPtr<mMeshFactory<mMesh2dPosition, mMeshTexcoord>> meshFactory;
+  mDEFER_DESTRUCTION(&meshFactory, mMeshFactory_Destroy);
+  mERROR_CHECK(mMeshFactory_Create(&meshFactory, nullptr));
+
+  mERROR_CHECK(mMeshFactory_AppendData(meshFactory, mMesh2dPosition(-0.5, -0.5), mMeshTexcoord(0, 0)));
+  mERROR_CHECK(mMeshFactory_AppendData(meshFactory, mMesh2dPosition(0.5, -0.5), mMeshTexcoord(1, 0)));
+  mERROR_CHECK(mMeshFactory_AppendData(meshFactory, mMesh2dPosition(0, 0.5), mMeshTexcoord(1, 1)));
+
+  mPtr<mMesh> meshTest;
+  mDEFER_DESTRUCTION(&meshTest, mMesh_Destroy);
+  mERROR_CHECK(mMeshFactory_CreateMesh(meshFactory, &meshTest, nullptr, textureY));
+
   const size_t quadCount = 1;
 
   // Create individual meshes.
@@ -226,6 +238,8 @@ mFUNCTION(MainLoop)
     mERROR_CHECK(mTexture_Bind(framebuffer));
     mERROR_CHECK(mShader_SetUniform(screenQuad->shader, "texture0", framebuffer));
     mERROR_CHECK(mScreenQuad_Render(screenQuad));
+
+    mERROR_CHECK(mMesh_Render(meshTest));
 
     if (isFirstFrame)
     {

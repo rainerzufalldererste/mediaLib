@@ -457,62 +457,74 @@ struct mMeshFactory_Internal_TextureParameterUnpacker <>
 };
 
 template <>
-struct mMeshFactory_Internal_TextureParameterUnpacker <mKeyValuePair<mString, mPtr<mImageBuffer>>&>
+struct mMeshFactory_Internal_TextureParameterUnpacker <mPtr<mImageBuffer>&>
 {
-  static mFUNCTION(Unpack, mPtr<mQueue<mKeyValuePair<mString, mPtr<mTexture>>>> *pTextureArray, mKeyValuePair<mString, mPtr<mImageBuffer>> &imageBuffer)
+  static mFUNCTION(Unpack, mPtr<mQueue<mKeyValuePair<mString, mPtr<mTexture>>>> *pTextureArray, const size_t index, mPtr<mImageBuffer> &imageBuffer)
   {
     mFUNCTION_SETUP();
 
     mPtr<mTexture> texture;
     mDEFER_DESTRUCTION(&texture, mSharedPointer_Destroy);
     mERROR_CHECK(mSharedPointer_Allocate(&texture, nullptr, (std::function<void(mTexture *)>)[](mTexture *pData) {mTexture_Destroy(pData); }, 1));
-    mERROR_CHECK(mTexture_Create(texture.GetPointer(), imageBuffer.value, false));
+    mERROR_CHECK(mTexture_Create(texture.GetPointer(), imageBuffer, false, index));
 
-    mERROR_CHECK(mQueue_PushBack(*pTextureArray, mKeyValuePair<mString, mPtr<mTexture>>(imageBuffer.key, texture)));
+    char name[64];
+    mERROR_IF(0 > sprintf_s(name, "_" mRenderObjectParam_TextureAttributeName "%" PRIu64, index), mR_InternalError);
+
+    mERROR_CHECK(mQueue_PushBack(*pTextureArray, mKeyValuePair<mString, mPtr<mTexture>>(name, texture)));
 
     mRETURN_SUCCESS();
   }
 };
 
 template <>
-struct mMeshFactory_Internal_TextureParameterUnpacker <mKeyValuePair<mString, mPtr<mTexture>>&>
+struct mMeshFactory_Internal_TextureParameterUnpacker <mPtr<mTexture>&>
 {
-  static mFUNCTION(Unpack, mPtr<mQueue<mKeyValuePair<mString, mPtr<mTexture>>>> *pTextureArray, mKeyValuePair<mString, mPtr<mTexture>> &texture)
+  static mFUNCTION(Unpack, mPtr<mQueue<mKeyValuePair<mString, mPtr<mTexture>>>> *pTextureArray, const size_t index, mPtr<mTexture> &texture)
   {
     mFUNCTION_SETUP();
 
-    mERROR_CHECK(mQueue_PushBack(*pTextureArray, texture));
+    char name[64];
+    mERROR_IF(0 > sprintf_s(name, "_" mRenderObjectParam_TextureAttributeName "%" PRIu64, index), mR_InternalError);
+
+    mERROR_CHECK(mQueue_PushBack(*pTextureArray, mKeyValuePair<mString, mPtr<mTexture>>(name, texture)));
 
     mRETURN_SUCCESS();
   }
 };
 
 template <>
-struct mMeshFactory_Internal_TextureParameterUnpacker <mKeyValuePair<mString, mPtr<mImageBuffer>>>
+struct mMeshFactory_Internal_TextureParameterUnpacker <mPtr<mImageBuffer>>
 {
-  static mFUNCTION(Unpack, mPtr<mQueue<mKeyValuePair<mString, mPtr<mTexture>>>> *pTextureArray, mKeyValuePair<mString, mPtr<mImageBuffer>> imageBuffer)
+  static mFUNCTION(Unpack, mPtr<mQueue<mKeyValuePair<mString, mPtr<mTexture>>>> *pTextureArray, const size_t index, mPtr<mImageBuffer> imageBuffer)
   {
     mFUNCTION_SETUP();
 
     mPtr<mTexture> texture;
     mDEFER_DESTRUCTION(&texture, mSharedPointer_Destroy);
     mERROR_CHECK(mSharedPointer_Allocate(&texture, nullptr, (std::function<void(mTexture *)>)[](mTexture *pData) {mTexture_Destroy(pData); }, 1));
-    mERROR_CHECK(mTexture_Create(texture.GetPointer(), imageBuffer.value, false));
+    mERROR_CHECK(mTexture_Create(texture.GetPointer(), imageBuffer, false, index));
 
-    mERROR_CHECK(mQueue_PushBack(*pTextureArray, mKeyValuePair<mString, mPtr<mTexture>>(imageBuffer.key, texture)));
+    char name[64];
+    mERROR_IF(0 > sprintf_s(name, "_" mRenderObjectParam_TextureAttributeName "%" PRIu64, index), mR_InternalError);
+
+    mERROR_CHECK(mQueue_PushBack(*pTextureArray, mKeyValuePair<mString, mPtr<mTexture>>(name, texture)));
 
     mRETURN_SUCCESS();
   }
 };
 
 template <>
-struct mMeshFactory_Internal_TextureParameterUnpacker <mKeyValuePair<mString, mPtr<mTexture>>>
+struct mMeshFactory_Internal_TextureParameterUnpacker <mPtr<mTexture>>
 {
-  static mFUNCTION(Unpack, mPtr<mQueue<mKeyValuePair<mString, mPtr<mTexture>>>> *pTextureArray, mKeyValuePair<mString, mPtr<mTexture>> texture)
+  static mFUNCTION(Unpack, mPtr<mQueue<mKeyValuePair<mString, mPtr<mTexture>>>> *pTextureArray, const size_t index, mPtr<mTexture> texture)
   {
     mFUNCTION_SETUP();
 
-    mERROR_CHECK(mQueue_PushBack(*pTextureArray, texture));
+    char name[64];
+    mERROR_IF(0 > sprintf_s(name, "_" mRenderObjectParam_TextureAttributeName "%" PRIu64, index), mR_InternalError);
+
+    mERROR_CHECK(mQueue_PushBack(*pTextureArray, mKeyValuePair<mString, mPtr<mTexture>>(name, texture)));
 
     mRETURN_SUCCESS();
   }
@@ -521,12 +533,12 @@ struct mMeshFactory_Internal_TextureParameterUnpacker <mKeyValuePair<mString, mP
 template <typename T, typename ...Args>
 struct mMeshFactory_Internal_TextureParameterUnpacker <T, Args...>
 {
-  static mFUNCTION(Unpack, mPtr<mQueue<mKeyValuePair<mString, mPtr<mTexture>>>> *pTextureArray, T t, Args&&... args)
+  static mFUNCTION(Unpack, mPtr<mQueue<mKeyValuePair<mString, mPtr<mTexture>>>> *pTextureArray, const size_t index, T t, Args&&... args)
   {
     mFUNCTION_SETUP();
 
-    mERROR_CHECK(mMeshFactory_Internal_TextureParameterUnpacker<T>::Unpack(pTextureArray, t));
-    mERROR_CHECK(mMeshFactory_Internal_TextureParameterUnpacker<Args...>::Unpack(pTextureArray, std::forward<Args>(args)...));
+    mERROR_CHECK(mMeshFactory_Internal_TextureParameterUnpacker<T>::Unpack(pTextureArray, index, t));
+    mERROR_CHECK(mMeshFactory_Internal_TextureParameterUnpacker<Args...>::Unpack(pTextureArray, index + 1, std::forward<Args>(args)...));
 
     mRETURN_SUCCESS();
   }
@@ -625,9 +637,9 @@ inline mFUNCTION(mMeshFactory_CreateMesh, mPtr<mMeshFactory<Args...>> &factory, 
   mERROR_IF(factory->meshFactoryInternal.textureCoordCount != sizeof...(TTextures), mR_InvalidParameter);
   mERROR_CHECK(mQueue_Create(&(*pMesh)->textures, nullptr));
   mERROR_CHECK(mQueue_Reserve((*pMesh)->textures, factory->meshFactoryInternal.textureCoordCount));
-  mERROR_CHECK(mMeshFactory_Internal_TextureParameterUnpacker<TTextures...>::Unpack(&(*pMesh)->textures, std::forward<TTextures>(textures)...));
+  mERROR_CHECK(mMeshFactory_Internal_TextureParameterUnpacker<TTextures...>::Unpack(&(*pMesh)->textures, 0, std::forward<TTextures>(textures)...));
 
-  if ((*pMesh)->textures.count > 0)
+  if (factory->meshFactoryInternal.textureCoordCount > 0)
     (*pMesh)->uploadState = mRP_US_NotUploaded;
   else
     (*pMesh)->uploadState = mRP_US_Ready;
@@ -893,7 +905,7 @@ struct mMeshFactory_Internal_Unpacker <T>
         break;
       }
 
-      mERROR_CHECK(mQueue_PushBack(pMeshFactory->information, mMeshFactory_AttributeInformation(mMeshTexcoord::attributeName(pMeshFactory->textureCoordCount).c_str(), T::size, pMeshFactory->size, mMF_AIT_Attribute, GL_FLOAT, sizeof(float_t))));
+      mERROR_CHECK(mQueue_PushBack(pMeshFactory->information, mMeshFactory_AttributeInformation(mMeshTexcoord::attributeName(pMeshFactory->textureCoordCount - 1).c_str(), T::size, pMeshFactory->size, mMF_AIT_Attribute, GL_FLOAT, sizeof(float_t))));
 
       break;
 

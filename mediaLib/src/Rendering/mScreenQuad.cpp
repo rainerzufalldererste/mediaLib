@@ -45,7 +45,9 @@ mFUNCTION(mScreenQuad_Create, OUT mPtr<mScreenQuad> *pScreenQuad, IN mAllocator 
   glBindBuffer(GL_ARRAY_BUFFER, (*pScreenQuad)->vbo);
   glBufferData(GL_ARRAY_BUFFER, sizeof(mVec2f) * 4, positions, GL_STATIC_DRAW);
 
-  const GLuint index = glGetAttribLocation((*pScreenQuad)->shader->shaderProgram, "position0");
+  const GLint index = glGetAttribLocation((*pScreenQuad)->shader->shaderProgram, "position0");
+  mERROR_IF(index < 0, mR_InternalError);
+
   glEnableVertexAttribArray(index);
   glVertexAttribPointer((GLuint)0, (GLint)2, GL_FLOAT, GL_FALSE, (GLsizei)sizeof(mVec2f), (const void *)0);
 
