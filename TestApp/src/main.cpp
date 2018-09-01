@@ -8,6 +8,7 @@
 #include "mTimeStamp.h"
 #include "mFramebuffer.h"
 #include "mScreenQuad.h"
+#include "mUI.h"
 
 mFUNCTION(MainLoop);
 
@@ -175,6 +176,8 @@ mFUNCTION(MainLoop)
   mERROR_CHECK(mTimeStamp_Now(&before));
   bool isFirstFrame = true;
 
+  mERROR_CHECK(mUI_Initilialize(window));
+
   while (true)
   {
     bool isNewFrame = true;
@@ -233,6 +236,9 @@ mFUNCTION(MainLoop)
     mERROR_CHECK(mFramebuffer_Unbind());
     mERROR_CHECK(mHardwareWindow_SetAsActiveRenderTarget(window));
 
+    mERROR_CHECK(mUI_StartFrame(window));
+    mERROR_CHECK(mUI_Bake(window));
+
     mERROR_CHECK(mRenderParams_ClearTargetDepthAndColour());
 
     mERROR_CHECK(mTexture_Bind(framebuffer));
@@ -240,6 +246,8 @@ mFUNCTION(MainLoop)
     mERROR_CHECK(mScreenQuad_Render(screenQuad));
 
     mERROR_CHECK(mMesh_Render(meshTest));
+
+    mERROR_CHECK(mUI_Render());
 
     if (isFirstFrame)
     {

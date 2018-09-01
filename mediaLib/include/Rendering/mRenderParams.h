@@ -72,6 +72,10 @@ mFUNCTION(mRenderParams_CreateRenderContext, OUT mRenderContextId *pRenderContex
 mFUNCTION(mRenderParams_ActivateRenderContext, mPtr<mHardwareWindow> &window, const mRenderContextId renderContextId);
 mFUNCTION(mRenderParams_DestroyRenderContext, IN_OUT mRenderContextId *pRenderContextId);
 
+#if defined(mRENDERER_OPENGL)
+mFUNCTION(mRenderParams_GetRenderContext, mPtr<mHardwareWindow> &window, OUT SDL_GLContext *pContext);
+#endif
+
 mFUNCTION(mRenderParams_SetCurrentRenderResolution, const mVec2s &resolution);
 
 mFUNCTION(mRenderParams_SetVsync, const bool vsync);
