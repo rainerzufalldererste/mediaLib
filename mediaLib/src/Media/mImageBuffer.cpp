@@ -412,6 +412,60 @@ mFUNCTION(mImageBuffer_SaveAsTga, mPtr<mImageBuffer> &imageBuffer, const std::st
   mRETURN_SUCCESS();
 }
 
+mFUNCTION(mImageBuffer_FlipY, mPtr<mImageBuffer> &imageBuffer)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(imageBuffer == nullptr, mR_ArgumentNull);
+
+  size_t subBufferCount = 0;
+  mERROR_CHECK(mPixelFormat_GetSubBufferCount(imageBuffer->pixelFormat, &subBufferCount));
+
+  uint8_t *pBuffer = nullptr;
+  mDEFER(mAllocator_FreePtr(nullptr, &pBuffer));
+  size_t bufferSize = 0;
+
+  for (size_t subBuffer = 0; subBuffer < subBufferCount; ++subBuffer)
+  {
+    mVec2s subBufferSize;
+    mERROR_CHECK(mPixelFormat_GetSubBufferSize(imageBuffer->pixelFormat, subBuffer, imageBuffer->currentSize, &subBufferSize));
+
+    mPixelFormat subBufferPixelFormat;
+    mERROR_CHECK(mPixelFormat_GetSubBufferPixelFormat(imageBuffer->pixelFormat, subBuffer, &subBufferPixelFormat));
+
+    size_t subBufferPixelFormatUnitSize;
+    mERROR_CHECK(mPixelFormat_GetUnitSize(subBufferPixelFormat, &subBufferPixelFormatUnitSize));
+
+    size_t subBufferOffset;
+    mERROR_CHECK(mPixelFormat_GetSubBufferOffset(imageBuffer->pixelFormat, subBuffer, imageBuffer->currentSize, &subBufferOffset));
+
+    size_t subBufferStride;
+    mERROR_CHECK(mPixelFormat_GetSubBufferStride(imageBuffer->pixelFormat, subBuffer, imageBuffer->lineStride, &subBufferStride));
+
+    size_t strideBytes = subBufferPixelFormatUnitSize * subBufferStride;
+    uint8_t *pSubBuffer = imageBuffer->pPixels + subBufferOffset;
+    uint8_t *pSubBufferEnd = pSubBuffer + (subBufferSize.y - 1) * strideBytes;
+
+    if (strideBytes > bufferSize)
+    {
+      mERROR_CHECK(mAllocator_Reallocate(nullptr, &pBuffer, strideBytes));
+      bufferSize = strideBytes;
+    }
+
+    while (pSubBuffer < pSubBufferEnd)
+    {
+      mERROR_CHECK(mAllocator_Copy(imageBuffer->pAllocator, pBuffer, pSubBuffer, strideBytes));
+      mERROR_CHECK(mAllocator_Copy(imageBuffer->pAllocator, pSubBuffer, pSubBufferEnd, strideBytes));
+      mERROR_CHECK(mAllocator_Copy(imageBuffer->pAllocator, pSubBufferEnd, pBuffer, strideBytes));
+
+      pSubBuffer += strideBytes;
+      pSubBufferEnd -= strideBytes;
+    }
+  }
+
+  mRETURN_SUCCESS();
+}
+
 //////////////////////////////////////////////////////////////////////////
 
 mFUNCTION(mImageBuffer_Destroy_Iternal, mImageBuffer *pImageBuffer)

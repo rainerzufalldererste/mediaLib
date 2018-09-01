@@ -7,6 +7,7 @@
 #include "mVideoPlaybackEngine.h"
 #include "mTimeStamp.h"
 #include "mFramebuffer.h"
+#include "mScreenQuad.h"
 
 mFUNCTION(MainLoop);
 
@@ -64,7 +65,7 @@ mFUNCTION(MainLoop)
     mERROR_CHECK(mRenderParams_SetVsync(true));
   }
 
-  const std::wstring videoFilename = L"N:/Data/video/Babuji3.mp4";
+  const std::wstring videoFilename = L"C:/Users/cstiller/Videos/Converted.mp4";
 
   mPtr<mThreadPool> threadPool;
   mPtr<mVideoPlaybackEngine> videoPlaybackEngine;
@@ -87,7 +88,12 @@ mFUNCTION(MainLoop)
   mDEFER_DESTRUCTION(&framebuffer, mFramebuffer_Destroy);
   mERROR_CHECK(mFramebuffer_Create(&framebuffer, nullptr, mRenderParams_CurrentRenderResolution));
 
+  mPtr<mScreenQuad> screenQuad;
+  mDEFER_DESTRUCTION(&screenQuad, mScreenQuad_Destroy);
+  mERROR_CHECK(mScreenQuad_CreateFrom(&screenQuad, nullptr, L"../shaders/screenEffect.frag"));
+
   mPtr<mImageBuffer> currentFrame;
+  mDEFER_DESTRUCTION(&currentFrame, mImageBuffer_Destroy);
   mERROR_CHECK(mVideoPlaybackEngine_GetCurrentFrame(videoPlaybackEngine, &currentFrame));
 
   // Create Textures.
@@ -155,6 +161,7 @@ mFUNCTION(MainLoop)
   size_t decodedFrames = 0;
   mTimeStamp before;
   mERROR_CHECK(mTimeStamp_Now(&before));
+  bool isFirstFrame = true;
 
   while (true)
   {
@@ -193,9 +200,9 @@ mFUNCTION(MainLoop)
     if (supportsStereo)
       mERROR_CHECK(mRenderParams_SetStereo3dBuffer(leftEye ? mRP_SRB_LeftEye : mRP_SRB_RightEye));
 
-    mERROR_CHECK(mRenderParams_ClearTargetDepthAndColour());
-
     mERROR_CHECK(mFramebuffer_Bind(framebuffer));
+
+    mERROR_CHECK(mRenderParams_ClearTargetDepthAndColour());
 
     for (size_t i = 0; i < meshCount; ++i)
     {
@@ -214,7 +221,20 @@ mFUNCTION(MainLoop)
     mERROR_CHECK(mFramebuffer_Unbind());
     mERROR_CHECK(mHardwareWindow_SetAsActiveRenderTarget(window));
 
+    mERROR_CHECK(mRenderParams_ClearTargetDepthAndColour());
 
+    mERROR_CHECK(mTexture_Bind(framebuffer));
+    mERROR_CHECK(mShader_SetUniform(screenQuad->shader, "texture0", framebuffer));
+    mERROR_CHECK(mScreenQuad_Render(screenQuad));
+
+    if (isFirstFrame)
+    {
+      isFirstFrame = false;
+      mPtr<mImageBuffer> imageBuffer;
+      mDEFER_DESTRUCTION(&imageBuffer, mImageBuffer_Destroy);
+      mERROR_CHECK(mFramebuffer_Download(framebuffer, &imageBuffer, nullptr));
+      mERROR_CHECK(mImageBuffer_SaveAsJpeg(imageBuffer, "frame.jpg"));
+    }
 
     if (supportsStereo && leftEye)
     {
