@@ -157,11 +157,11 @@ mFUNCTION(mHardwareWindow_Destroy_Internal, IN mHardwareWindow * pWindow)
   mFUNCTION_SETUP();
 
   mERROR_IF(pWindow == nullptr, mR_ArgumentNull);
+  
+  mERROR_CHECK(mRenderParams_DestroyRenderContext(&pWindow->renderContextID));
 
   SDL_DestroyWindow(pWindow->pWindow);
   pWindow->pWindow = nullptr;
-
-  mERROR_CHECK(mRenderParams_DestroyRenderContext(&pWindow->renderContextID));
 
   mRETURN_SUCCESS();
 }

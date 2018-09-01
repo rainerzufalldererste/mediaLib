@@ -308,6 +308,15 @@ inline mFUNCTION(mQueue_Destroy_Internal, IN mQueue<T> *pQueue)
 
   if (pQueue->pData != nullptr)
   {
+    size_t index = pQueue->startIndex;
+
+    for (size_t i = 0; i < pQueue->count; ++i)
+    {
+      mERROR_CHECK(mDestruct(pQueue->pData + index));
+
+      index = (index + 1) % pQueue->size;
+    }
+
     mAllocator *pAllocator = pQueue->pAllocator;
     mERROR_CHECK(mAllocator_FreePtr(pAllocator, &pQueue->pData));
   }
