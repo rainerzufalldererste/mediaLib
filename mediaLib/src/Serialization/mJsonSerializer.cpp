@@ -8,6 +8,7 @@
 
 #include "mJsonSerializer.h"
 
+#define JSON_NOEXCEPTION
 #include "json/single_include/nlohmann/json.hpp"
 
 struct mJsonWriter
