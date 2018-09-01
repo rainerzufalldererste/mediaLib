@@ -49,4 +49,6 @@ mFUNCTION(mImageBuffer_SaveAsJpeg, mPtr<mImageBuffer> &imageBuffer, const std::s
 mFUNCTION(mImageBuffer_SaveAsBmp, mPtr<mImageBuffer> &imageBuffer, const std::string &filename);
 mFUNCTION(mImageBuffer_SaveAsTga, mPtr<mImageBuffer> &imageBuffer, const std::string &filename);
 
+mFUNCTION(mImageBuffer_FlipY, mPtr<mImageBuffer> &imageBuffer);
+
 #endif // mImageBuffer_h__

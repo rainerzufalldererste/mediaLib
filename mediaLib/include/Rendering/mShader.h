@@ -11,6 +11,7 @@
 
 #include "mRenderParams.h"
 #include "mTexture.h"
+#include "mFramebuffer.h"
 
 struct mShader
 {
@@ -55,6 +56,7 @@ mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex
 mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex_t index, const mMatrix &v);
 mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex_t index, mTexture &v);
 mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex_t index, mPtr<mTexture> &v);
+mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex_t index, mPtr<mFramebuffer> &v);
 
 mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex_t index, const float_t *pV, const size_t count);
 mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex_t index, const mVec2f *pV, const size_t count);

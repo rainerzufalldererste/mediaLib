@@ -61,7 +61,7 @@ inline mFUNCTION(mFile_ReadRaw, const std::wstring &filename, OUT T **ppData, IN
 
   mERROR_IF(ppData == nullptr || pCount == nullptr, mR_ArgumentNull);
 
-  FILE *pFile = _wfopen(filename.c_str(), L"rb");
+  FILE *pFile = _wfopen(filename.c_str(), L"r");
   mDEFER(if (pFile) { fclose(pFile); });
   mERROR_IF(pFile == nullptr, mR_ResourceNotFound);
 
@@ -72,7 +72,7 @@ inline mFUNCTION(mFile_ReadRaw, const std::wstring &filename, OUT T **ppData, IN
 
   mERROR_IF(0 != fseek(pFile, 0, SEEK_SET), mR_InternalError);
 
-  mERROR_CHECK(mAllocator_Allocate(pAllocator, (uint8_t **)ppData, length));
+  mERROR_CHECK(mAllocator_Allocate(pAllocator, (uint8_t **)ppData, length + 1));
   const size_t readLength = fread(*ppData, 1, length, pFile);
 
   *pCount = readLength / sizeof(T);
@@ -87,7 +87,7 @@ inline mFUNCTION(mFile_WriteRaw, const std::wstring &filename, IN T *pData, cons
 
   mERROR_IF(pData == nullptr, mR_ArgumentNull);
 
-  FILE *pFile = _wfopen(filename.c_str(), L"wb");
+  FILE *pFile = _wfopen(filename.c_str(), L"w");
   mDEFER(if (pFile) fclose(pFile););
   mERROR_IF(pFile == nullptr, mR_ResourceNotFound);
 

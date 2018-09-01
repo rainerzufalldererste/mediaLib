@@ -458,6 +458,20 @@ mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex
   mRETURN_SUCCESS();
 }
 
+mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex_t index, mPtr<mFramebuffer> &v)
+{
+  mFUNCTION_SETUP();
+  mERROR_CHECK(mShader_Bind(shader));
+
+#if defined (mRENDERER_OPENGL)
+  glUniform1i(index, (GLint)v->textureUnit);
+#else 
+  mRETURN_RESULT(mR_NotImplemented);
+#endif
+
+  mRETURN_SUCCESS();
+}
+
 mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex_t index, const float_t *pV, const size_t count)
 {
   mFUNCTION_SETUP();

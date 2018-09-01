@@ -41,7 +41,15 @@ extern size_t mRenderParams_RenderContextCount;
 #if defined(mRENDERER_OPENGL)
 extern GLenum mRenderParams_GLError;
 
-#define mOPENGL_ERROR_CHECK() do { mRenderParams_GLError = glGetError(); if(mRenderParams_GLError != GL_NO_ERROR) { mDebugOut("Rendering Error in '" __FUNCTION__ "' (File '" __FILE__ "'; Line %" PRIi32 "): GLError Code %" PRIi32 " (%s)\n", __LINE__, mRenderParams_GLError, glErrorStringREGAL(mRenderParams_GLError)); mERROR_IF(true, mR_RenderingError); } } while (0);
+#define mOPENGL_ERROR_CHECK() \
+  do { \
+    mRenderParams_GLError = glGetError(); \
+    if(mRenderParams_GLError != GL_NO_ERROR) { \
+      mDebugOut("Rendering Error in '" __FUNCTION__ "': GLError Code %" PRIi32 " (%s) (File '" __FILE__ "'; Line %" PRIi32 ")\n", mRenderParams_GLError, gluErrorString(mRenderParams_GLError), __LINE__); \
+      mERROR_IF(mRenderParams_GLError != GL_NO_ERROR, mR_RenderingError); \
+    } \
+  } \
+  while (0);
 
 #define mGL_ERROR_CHECK() mOPENGL_ERROR_CHECK()
 

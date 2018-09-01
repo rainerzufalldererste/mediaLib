@@ -8,6 +8,10 @@
 
 #include "mFramebuffer.h"
 
+#if defined (mRENDERER_OPENGL)
+GLuint mFrameBuffer_ActiveFrameBufferHandle = 0;
+#endif
+
 mFUNCTION(mFramebuffer_Create_Internal, OUT mFramebuffer *pFramebuffer, const mVec2s &size);
 mFUNCTION(mFramebuffer_Destroy_Internal, IN mFramebuffer *pFramebuffer);
 
@@ -46,6 +50,7 @@ mFUNCTION(mFramebuffer_Bind, mPtr<mFramebuffer> &framebuffer)
 #if defined(mRENDERER_OPENGL)
   glBindFramebuffer(GL_FRAMEBUFFER, framebuffer->frameBufferHandle);
   mERROR_CHECK(mRenderParams_SetCurrentRenderResolution(framebuffer->size));
+  mFrameBuffer_ActiveFrameBufferHandle = framebuffer->frameBufferHandle;
 
   mGL_DEBUG_ERROR_CHECK();
 #else
@@ -61,6 +66,51 @@ mFUNCTION(mFramebuffer_Unbind)
 
 #if defined(mRENDERER_OPENGL)
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  mFrameBuffer_ActiveFrameBufferHandle = 0;
+
+  mGL_DEBUG_ERROR_CHECK();
+#else
+  mRETURN_RESULT(mR_NotImplemented);
+#endif
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mFramebuffer_Download, mPtr<mFramebuffer> &framebuffer, OUT mPtr<mImageBuffer> *pImageBuffer, IN mAllocator *pAllocator)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(framebuffer == nullptr, mR_ArgumentNull);
+
+#if defined(mRENDERER_OPENGL)
+  mERROR_IF(mFrameBuffer_ActiveFrameBufferHandle == framebuffer->frameBufferHandle, mR_ResourceStateInvalid);
+
+  mERROR_CHECK(mImageBuffer_Create(pImageBuffer, pAllocator, framebuffer->size, mPF_R8G8B8A8));
+
+  glBindTexture(GL_TEXTURE_2D, framebuffer->texColourBuffer);
+  glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, (*pImageBuffer)->pPixels);
+
+  mERROR_CHECK(mImageBuffer_FlipY(*pImageBuffer));
+#else
+  mRETURN_RESULT(mR_NotImplemented);
+#endif
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mTexture_Bind, mPtr<mFramebuffer> &framebuffer, const size_t textureUnit /* = 0 */)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(framebuffer == nullptr, mR_ArgumentNull);
+
+  framebuffer->textureUnit = textureUnit;
+
+#if defined(mRENDERER_OPENGL)
+  mERROR_IF(mFrameBuffer_ActiveFrameBufferHandle == framebuffer->frameBufferHandle, mR_ResourceStateInvalid);
+
+  glActiveTexture(GL_TEXTURE0 + (GLuint)framebuffer->textureUnit);
+  glBindTexture(GL_TEXTURE_2D, framebuffer->texColourBuffer);
 
   mGL_DEBUG_ERROR_CHECK();
 #else
@@ -78,6 +128,9 @@ mFUNCTION(mFramebuffer_Create_Internal, mFramebuffer *pFramebuffer, const mVec2s
 
   mERROR_IF(pFramebuffer == nullptr, mR_ArgumentNull);
   mERROR_IF(size.x > UINT32_MAX || size.y > UINT32_MAX, mR_ArgumentOutOfBounds);
+
+  pFramebuffer->size = size;
+  pFramebuffer->textureUnit = (size_t)-1;
 
   glGenFramebuffers(1, &pFramebuffer->frameBufferHandle);
   glBindFramebuffer(GL_FRAMEBUFFER, pFramebuffer->frameBufferHandle);

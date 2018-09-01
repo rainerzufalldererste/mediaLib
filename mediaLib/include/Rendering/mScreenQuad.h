@@ -20,17 +20,13 @@ struct mScreenQuad
   mPtr<mShader> shader;
 #if defined(mRENDERER_OPENGL)
   GLuint vbo;
-  mVec2f positions[4];
 #endif
 };
 
 mFUNCTION(mScreenQuad_Create, OUT mPtr<mScreenQuad> *pScreenQuad, IN mAllocator *pAllocator, const std::string &fragmentShader, const size_t textureCount = 1);
-mFUNCTION(mScreenQuad_CreateFromn, OUT mPtr<mScreenQuad> *pScreenQuad, IN mAllocator *pAllocator, const std::wstring &fragmentShaderPath, const size_t textureCount = 1);
+mFUNCTION(mScreenQuad_CreateFrom, OUT mPtr<mScreenQuad> *pScreenQuad, IN mAllocator *pAllocator, const std::wstring &fragmentShaderPath, const size_t textureCount = 1);
 
 mFUNCTION(mScreenQuad_Destroy, IN_OUT mPtr<mScreenQuad> *pScreenQuad);
 mFUNCTION(mScreenQuad_Render, mPtr<mScreenQuad> &screenQuad);
-
-template <typename ...Args>
-mFUNCTION(mScreenQuad_Render, mPtr<mScreenQuad> &screenQuad, Args&&... args);
 
 #endif // mScreenQuad_h__
