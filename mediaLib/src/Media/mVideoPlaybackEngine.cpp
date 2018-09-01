@@ -304,6 +304,8 @@ mFUNCTION(mVideoPlaybackEngine_Destroy_Internal, IN_OUT mVideoPlaybackEngine * p
     mERROR_CHECK(mImageBuffer_Destroy(&imageBuffer));
   }
 
+  mERROR_CHECK(mQueue_Destroy(&pPlaybackEngine->imageQueue));
+
   count = 0;
   mERROR_CHECK(mQueue_GetCount(pPlaybackEngine->freeImageBuffers, &count));
 
@@ -312,6 +314,8 @@ mFUNCTION(mVideoPlaybackEngine_Destroy_Internal, IN_OUT mVideoPlaybackEngine * p
     mERROR_CHECK(mQueue_PopFront(pPlaybackEngine->freeImageBuffers, &imageBuffer));
     mERROR_CHECK(mImageBuffer_Destroy(&imageBuffer));
   }
+
+  mERROR_CHECK(mQueue_Destroy(&pPlaybackEngine->freeImageBuffers));
 
   mERROR_CHECK(mMediaFileInputIterator_Destroy(&pPlaybackEngine->iterator));
   mERROR_CHECK(mMediaFileInputHandler_Destroy(&pPlaybackEngine->mediaFileInputHandler));
