@@ -132,6 +132,7 @@ mFUNCTION(MainLoop)
   mPtr<mFramebuffer> framebuffer;
   mDEFER_DESTRUCTION(&framebuffer, mFramebuffer_Destroy);
   mERROR_CHECK(mFramebuffer_Create(&framebuffer, nullptr, mRenderParams_CurrentRenderResolution));
+  mERROR_CHECK(mHardwareWindow_AddOnResizeEvent(window, [&](const mVec2s &size) { return mFramebuffer_SetResolution(framebuffer, size); }));
 
   mPtr<mScreenQuad> screenQuad;
   mDEFER_DESTRUCTION(&screenQuad, mScreenQuad_Destroy);
