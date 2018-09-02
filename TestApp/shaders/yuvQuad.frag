@@ -7,7 +7,10 @@ uniform sampler2D textureU;
 uniform sampler2D textureV;
 uniform vec2 offsets[4];
 
-float cross(in vec2 a, in vec2 b) { return a.x*b.y - a.y*b.x; }
+float cross(in vec2 a, in vec2 b) 
+{ 
+  return a.x*b.y - a.y*b.x;
+}
 
 vec2 invBilinear(in vec2 p, in vec2 a, in vec2 b, in vec2 c, in vec2 d)
 {

@@ -21,4 +21,7 @@ mFUNCTION(mUI_Bake, mPtr<mHardwareWindow> &hardwareWindow);
 mFUNCTION(mUI_Render);
 mFUNCTION(mUI_ProcessEvent, IN SDL_Event *pEvent);
 
+mFUNCTION(mUI_PushMonospacedFont);
+mFUNCTION(mUI_PopMonospacedFont);
+
 #endif // mUI_h__

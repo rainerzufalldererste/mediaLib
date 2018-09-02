@@ -9,8 +9,17 @@
 #include "mFramebuffer.h"
 #include "mScreenQuad.h"
 #include "mUI.h"
+#include "mFile.h"
 
 mFUNCTION(MainLoop);
+mFUNCTION(RenderShaderWindow);
+
+bool shaderEditWindowShown = false;
+mPtr<mShader> videoShader;
+static char vertexShader[2048];
+static char fragmentShader[2048];
+
+//////////////////////////////////////////////////////////////////////////
 
 int main(int, char **)
 {
@@ -53,7 +62,36 @@ mFUNCTION(MainLoop)
   mERROR_CHECK(mUI_Initilialize(window));
 
   bool running = true;
-  mERROR_CHECK(mHardwareWindow_OnCloseEventAdd(window, [&]() { running = false; return mR_Success; }));
+  mERROR_CHECK(mHardwareWindow_AddOnCloseEvent(window, [&]() { running = false; return mR_Success; }));
+
+  mERROR_CHECK(mHardwareWindow_AddOnAnyEvent(window,
+    [&](IN SDL_Event *pEvent)
+  {
+    mFUNCTION_SETUP();
+
+    if (pEvent->type == SDL_KEYDOWN)
+    {
+      if (pEvent->key.keysym.sym == SDLK_ESCAPE)
+      {
+        running = false;
+      }
+      else if (pEvent->key.keysym.sym == SDLK_BACKQUOTE)
+      {
+        shaderEditWindowShown = true;
+
+        mERROR_IF(videoShader == nullptr, mR_ArgumentNull);
+
+        std::string shaderText;
+        mERROR_CHECK(mFile_ReadAllText(videoShader->vertexShader, nullptr, &shaderText));
+        mERROR_CHECK(mAllocator_Copy(nullptr, vertexShader, shaderText.c_str(), mMin(shaderText.size(), mARRAYSIZE(vertexShader))));
+
+        mERROR_CHECK(mFile_ReadAllText(videoShader->fragmentShader, nullptr, &shaderText));
+        mERROR_CHECK(mAllocator_Copy(nullptr, fragmentShader, shaderText.c_str(), mMin(shaderText.size(), mARRAYSIZE(fragmentShader))));
+      }
+    }
+
+    mRETURN_SUCCESS();
+  }));
 
   mERROR_CHECK(mRenderParams_InitializeToDefault());
 
@@ -125,19 +163,7 @@ mFUNCTION(MainLoop)
   mPtr<mQueue<mPtr<mMesh>>> meshes;
   mDEFER_DESTRUCTION(&meshes, mQueue_Destroy);
   mERROR_CHECK(mQueue_Create(&meshes, nullptr));
-
-  mPtr<mShader> shader;
-  mDEFER_DESTRUCTION(&shader, mSharedPointer_Destroy);
-  mERROR_CHECK(mHardwareWindow_OnEventAdd(window,
-    [&](IN SDL_Event *pEvent)
-  {
-    if (pEvent->type == SDL_KEYDOWN && pEvent->key.keysym.sym == SDLK_ESCAPE)
-      running = false;
-    else if (pEvent->type == SDL_KEYDOWN && pEvent->key.keysym.sym == SDLK_BACKQUOTE)
-      mERROR_CHECK(mShader_ReloadFromFile(shader));
-
-    return mR_Success;
-  }));
+  mDEFER_DESTRUCTION(&videoShader, mSharedPointer_Destroy);
 
   mPtr<mMeshFactory<mMesh2dPosition, mMeshTexcoord>> meshFactory;
   mDEFER_DESTRUCTION(&meshFactory, mMeshFactory_Destroy);
@@ -159,8 +185,8 @@ mFUNCTION(MainLoop)
     mDEFER_DESTRUCTION(&positionMeshAttribute, mMeshAttributeContainer_Destroy);
     mERROR_CHECK(mMeshAttributeContainer_Create<mVec2f>(&positionMeshAttribute, nullptr, "unused", { mVec2f(0), mVec2f(0), mVec2f(0), mVec2f(0) }));
 
-    mERROR_CHECK(mSharedPointer_Allocate(&shader, nullptr, (std::function<void(mShader *)>)[](mShader *pData) { mShader_Destroy(pData); }, 1));
-    mERROR_CHECK(mShader_CreateFromFile(shader.GetPointer(), L"../shaders/yuvQuad"));
+    mERROR_CHECK(mSharedPointer_Allocate(&videoShader, nullptr, (std::function<void(mShader *)>)[](mShader *pData) { mShader_Destroy(pData); }, 1));
+    mERROR_CHECK(mShader_CreateFromFile(videoShader.GetPointer(), L"../shaders/yuvQuad"));
 
     mGL_ERROR_CHECK();
 
@@ -177,7 +203,7 @@ mFUNCTION(MainLoop)
     {
       mPtr<mMesh> mesh;
       mDEFER_DESTRUCTION(&mesh, mMesh_Destroy);
-      mERROR_CHECK(mMesh_Create(&mesh, nullptr, { positionMeshAttribute }, shader, textures, mRP_VRM_TriangleStrip));
+      mERROR_CHECK(mMesh_Create(&mesh, nullptr, { positionMeshAttribute }, videoShader, textures, mRP_VRM_TriangleStrip));
 
       mERROR_CHECK(mQueue_PushBack(meshes, mesh));
     }
@@ -250,57 +276,116 @@ mFUNCTION(MainLoop)
     mERROR_CHECK(mFramebuffer_Unbind());
     mERROR_CHECK(mHardwareWindow_SetAsActiveRenderTarget(window));
 
-    mERROR_CHECK(mUI_StartFrame(window));
+mERROR_CHECK(mUI_StartFrame(window));
+mERROR_CHECK(RenderShaderWindow());
+mERROR_CHECK(mUI_Bake(window));
 
-    bool open = true;
-    ImGui::ShowDemoWindow(&open);
+mERROR_CHECK(mRenderParams_ClearTargetDepthAndColour());
 
-    mERROR_CHECK(mUI_Bake(window));
+mERROR_CHECK(mTexture_Bind(framebuffer));
+mERROR_CHECK(mShader_SetUniform(screenQuad->shader, "texture0", framebuffer));
+mERROR_CHECK(mScreenQuad_Render(screenQuad));
 
-    mERROR_CHECK(mRenderParams_ClearTargetDepthAndColour());
+mERROR_CHECK(mMesh_Render(meshTest));
 
-    mERROR_CHECK(mTexture_Bind(framebuffer));
-    mERROR_CHECK(mShader_SetUniform(screenQuad->shader, "texture0", framebuffer));
-    mERROR_CHECK(mScreenQuad_Render(screenQuad));
+mERROR_CHECK(mUI_Render());
 
-    mERROR_CHECK(mMesh_Render(meshTest));
+if (isFirstFrame)
+{
+  isFirstFrame = false;
+  mPtr<mImageBuffer> imageBuffer;
+  mDEFER_DESTRUCTION(&imageBuffer, mImageBuffer_Destroy);
+  mERROR_CHECK(mFramebuffer_Download(framebuffer, &imageBuffer, nullptr));
+  mERROR_CHECK(mImageBuffer_SaveAsJpeg(imageBuffer, "frame.jpg"));
+}
 
-    mERROR_CHECK(mUI_Render());
+if (supportsStereo && leftEye)
+{
+  leftEye = false;
+  goto stereoEntryPoint;
+}
 
-    if (isFirstFrame)
+mGL_DEBUG_ERROR_CHECK();
+
+// Swap.
+mERROR_CHECK(mHardwareWindow_Swap(window));
+
+mTimeStamp after;
+mERROR_CHECK(mTimeStamp_Now(&after));
+
+++frames;
+
+if ((after - before).timePoint > 1)
+{
+  mPRINT("\rframes per second: %f (decoded %f video frames per second), frame time: %f ms   ", (float_t)frames / (after - before).timePoint, (float_t)decodedFrames / (after - before).timePoint, (after - before).timePoint * 1000.0 / (float_t)frames);
+
+  frames = 0;
+  decodedFrames = 0;
+  mERROR_CHECK(mTimeStamp_Now(&before));
+}
+  }
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(RenderShaderWindow)
+{
+  mFUNCTION_SETUP();
+
+  if (!shaderEditWindowShown)
+    mRETURN_SUCCESS();
+
+  if (ImGui::Begin("Shader Editor", &shaderEditWindowShown, ImVec2(0, 0), 1.0f, ImGuiWindowFlags_NoCollapse))
+  {
+    static bool vertSelected = true;
+    static bool fragSelected = false;
+
+    ImGui::Columns(2, nullptr, false);
+
+    if (ImGui::Selectable("Vertex Shader", &vertSelected, 0, ImVec2(80, 20)))
     {
-      isFirstFrame = false;
-      mPtr<mImageBuffer> imageBuffer;
-      mDEFER_DESTRUCTION(&imageBuffer, mImageBuffer_Destroy);
-      mERROR_CHECK(mFramebuffer_Download(framebuffer, &imageBuffer, nullptr));
-      mERROR_CHECK(mImageBuffer_SaveAsJpeg(imageBuffer, "frame.jpg"));
+      vertSelected = true;
+      fragSelected = false;
     }
 
-    if (supportsStereo && leftEye)
+    ImGui::SameLine(0);
+
+    if (ImGui::Selectable("Fragment Shader", &fragSelected, 0, ImVec2(97, 20)))
     {
-      leftEye = false;
-      goto stereoEntryPoint;
+      fragSelected = true;
+      vertSelected = false;
     }
 
-    mGL_DEBUG_ERROR_CHECK();
+    ImGui::Columns(1);
+    ImGui::Separator();
 
-    // Swap.
-    mERROR_CHECK(mHardwareWindow_Swap(window));
+    mERROR_CHECK(mUI_PushMonospacedFont());
+    ImGui::InputTextMultiline("", vertSelected ? vertexShader : fragmentShader, mARRAYSIZE(vertexShader), ImVec2(-1, -30));
+    mERROR_CHECK(mUI_PopMonospacedFont());
 
-    mTimeStamp after;
-    mERROR_CHECK(mTimeStamp_Now(&after));
-
-    ++frames;
-
-    if ((after - before).timePoint > 1)
+    if (ImGui::Button("Reload Shaders"))
     {
-      mPRINT("\rframes per second: %f (decoded %f video frames per second), frame time: %f ms   ", (float_t)frames / (after - before).timePoint, (float_t)decodedFrames / (after - before).timePoint, (after - before).timePoint * 1000.0 / (float_t)frames);
+      mERROR_CHECK(mFile_WriteAllText(videoShader->vertexShader, vertexShader));
+      mERROR_CHECK(mFile_WriteAllText(videoShader->fragmentShader, fragmentShader));
 
-      frames = 0;
-      decodedFrames = 0;
-      mERROR_CHECK(mTimeStamp_Now(&before));
+      mResult result = mShader_ReloadFromFile(videoShader);
+
+      if (mFAILED(result))
+        ImGui::OpenPopup("Shader Reloading Error");
+    }
+
+    if (ImGui::BeginPopupModal("Shader Reloading Error", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+    {
+      ImGui::Text("There were compilation errors. Please check the command line for details.");
+
+      if (ImGui::Button("Ok"))
+        ImGui::CloseCurrentPopup();
+
+      ImGui::EndPopup();
     }
   }
 
+  ImGui::End();
+  
   mRETURN_SUCCESS();
 }
