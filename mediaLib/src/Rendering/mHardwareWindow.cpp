@@ -180,7 +180,7 @@ mFUNCTION(mHardwareWindow_GetRenderContextId, mPtr<mHardwareWindow> &window, OUT
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mHardwareWindow_OnResizeEventAdd, mPtr<mHardwareWindow>& window, const std::function<mResult(const mVec2s&)>& callback)
+mFUNCTION(mHardwareWindow_AddOnResizeEvent, mPtr<mHardwareWindow>& window, const std::function<mResult(const mVec2s&)>& callback)
 {
   mFUNCTION_SETUP();
 
@@ -193,7 +193,7 @@ mFUNCTION(mHardwareWindow_OnResizeEventAdd, mPtr<mHardwareWindow>& window, const
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mHardwareWindow_OnCloseEventAdd, mPtr<mHardwareWindow>& window, const std::function<mResult(void)>& callback)
+mFUNCTION(mHardwareWindow_AddOnCloseEvent, mPtr<mHardwareWindow>& window, const std::function<mResult(void)>& callback)
 {
   mFUNCTION_SETUP();
 
@@ -206,7 +206,7 @@ mFUNCTION(mHardwareWindow_OnCloseEventAdd, mPtr<mHardwareWindow>& window, const 
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mHardwareWindow_OnEventAdd, mPtr<mHardwareWindow>& window, const std::function<mResult(IN SDL_Event*)>& callback)
+mFUNCTION(mHardwareWindow_AddOnAnyEvent, mPtr<mHardwareWindow>& window, const std::function<mResult(IN SDL_Event*)>& callback)
 {
   mFUNCTION_SETUP();
 

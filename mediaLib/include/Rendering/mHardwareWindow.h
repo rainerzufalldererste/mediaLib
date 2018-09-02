@@ -32,10 +32,8 @@ mFUNCTION(mHardwareWindow_SetAsActiveRenderTarget, mPtr<mHardwareWindow> &window
 mFUNCTION(mHardwareWindow_GetSdlWindowPtr, mPtr<mHardwareWindow> &window, OUT SDL_Window **ppSdlWindow);
 mFUNCTION(mHardwareWindow_GetRenderContextId, mPtr<mHardwareWindow> &window, OUT mRenderContextId *pRenderContextId);
 
-mFUNCTION(mHardwareWindow_OnResizeEventAdd, mPtr<mHardwareWindow> &window, const std::function<mResult(const mVec2s &)> &callback);
-
-mFUNCTION(mHardwareWindow_OnCloseEventAdd, mPtr<mHardwareWindow> &window, const std::function<mResult(void)> &callback);
-
-mFUNCTION(mHardwareWindow_OnEventAdd, mPtr<mHardwareWindow> &window, const std::function<mResult(SDL_Event *)> &callback);
+mFUNCTION(mHardwareWindow_AddOnResizeEvent, mPtr<mHardwareWindow> &window, const std::function<mResult(const mVec2s &)> &callback);
+mFUNCTION(mHardwareWindow_AddOnCloseEvent, mPtr<mHardwareWindow> &window, const std::function<mResult(void)> &callback);
+mFUNCTION(mHardwareWindow_AddOnAnyEvent, mPtr<mHardwareWindow> &window, const std::function<mResult(IN SDL_Event *)> &callback);
 
 #endif // mHardwareWindow_h__

@@ -24,6 +24,7 @@
 
 ImGuiIO mUI_ImguiIO;
 ImFont *pFont = nullptr;
+ImFont *pMonospacedFont = nullptr;
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -48,10 +49,12 @@ mFUNCTION(mUI_Initilialize, mPtr<mHardwareWindow> &hardwareWindow)
 
   ImGui::StyleColorsLight();
 
-  pFont = mUI_ImguiIO.Fonts->AddFontFromFileTTF("c:/windows/fonts/segoeui.ttf", 16.0f);
+  pFont = mUI_ImguiIO.Fonts->AddFontFromFileTTF("C:/Windows/Fonts/segoeui.ttf", 17.0f);
   mERROR_IF(pFont == nullptr, mR_InternalError);
 
-  mERROR_CHECK(mHardwareWindow_OnEventAdd(hardwareWindow, mUI_ProcessEvent));
+  pMonospacedFont = mUI_ImguiIO.Fonts->AddFontFromFileTTF("C:/Windows/Fonts/consola.ttf", 13.0f);
+
+  mERROR_CHECK(mHardwareWindow_AddOnAnyEvent(hardwareWindow, mUI_ProcessEvent));
 
   mRETURN_SUCCESS();
 }
@@ -112,6 +115,26 @@ mFUNCTION(mUI_ProcessEvent, IN SDL_Event *pEvent)
   mFUNCTION_SETUP();
 
   ImGui_ImplSDL2_ProcessEvent(pEvent);
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mUI_PushMonospacedFont)
+{
+  mFUNCTION_SETUP();
+
+  if (pMonospacedFont != nullptr)
+    ImGui::PushFont(pMonospacedFont);
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mUI_PopMonospacedFont)
+{
+  mFUNCTION_SETUP();
+
+  if (pMonospacedFont != nullptr)
+    ImGui::PopFont();
 
   mRETURN_SUCCESS();
 }
