@@ -48,7 +48,13 @@ mFUNCTION(MainLoop)
 
   mPtr<mHardwareWindow> window = nullptr;
   mDEFER_DESTRUCTION(&window, mHardwareWindow_Destroy);
-  mERROR_CHECK(mHardwareWindow_Create(&window, nullptr, "OpenGL Window", resolution));
+  mERROR_CHECK(mHardwareWindow_Create(&window, nullptr, "OpenGL Window", resolution, (mHardwareWindow_DisplayMode)(mHW_DM_Windowed | mHW_DM_Resizeable), true));
+
+  mERROR_CHECK(mUI_Initilialize(window));
+
+  bool running = true;
+  mERROR_CHECK(mHardwareWindow_OnCloseEventAdd(window, [&]() { running = false; return mR_Success; }));
+
   mERROR_CHECK(mRenderParams_InitializeToDefault());
 
   mERROR_CHECK(mRenderParams_SetDoubleBuffering(true));
@@ -122,6 +128,16 @@ mFUNCTION(MainLoop)
 
   mPtr<mShader> shader;
   mDEFER_DESTRUCTION(&shader, mSharedPointer_Destroy);
+  mERROR_CHECK(mHardwareWindow_OnEventAdd(window,
+    [&](IN SDL_Event *pEvent)
+  {
+    if (pEvent->type == SDL_KEYDOWN && pEvent->key.keysym.sym == SDLK_ESCAPE)
+      running = false;
+    else if (pEvent->type == SDL_KEYDOWN && pEvent->key.keysym.sym == SDLK_BACKQUOTE)
+      mERROR_CHECK(mShader_ReloadFromFile(shader));
+
+    return mR_Success;
+  }));
 
   mPtr<mMeshFactory<mMesh2dPosition, mMeshTexcoord>> meshFactory;
   mDEFER_DESTRUCTION(&meshFactory, mMeshFactory_Destroy);
@@ -176,9 +192,7 @@ mFUNCTION(MainLoop)
   mERROR_CHECK(mTimeStamp_Now(&before));
   bool isFirstFrame = true;
 
-  mERROR_CHECK(mUI_Initilialize(window));
-
-  while (true)
+  while (running)
   {
     bool isNewFrame = true;
     mResult result = mVideoPlaybackEngine_GetCurrentFrame(videoPlaybackEngine, &currentFrame, &isNewFrame);
@@ -237,6 +251,10 @@ mFUNCTION(MainLoop)
     mERROR_CHECK(mHardwareWindow_SetAsActiveRenderTarget(window));
 
     mERROR_CHECK(mUI_StartFrame(window));
+
+    bool open = true;
+    ImGui::ShowDemoWindow(&open);
+
     mERROR_CHECK(mUI_Bake(window));
 
     mERROR_CHECK(mRenderParams_ClearTargetDepthAndColour());
@@ -282,18 +300,7 @@ mFUNCTION(MainLoop)
       decodedFrames = 0;
       mERROR_CHECK(mTimeStamp_Now(&before));
     }
-
-    SDL_Event _event;
-    while (SDL_PollEvent(&_event))
-    {
-      if (_event.type == SDL_QUIT || (_event.type == SDL_KEYDOWN && _event.key.keysym.sym == SDLK_ESCAPE))
-        goto end;
-      else if (_event.type == SDL_KEYDOWN && _event.key.keysym.sym == SDLK_BACKQUOTE)
-        mERROR_CHECK(mShader_ReloadFromFile(shader));
-    }
   }
-
-end:;
 
   mRETURN_SUCCESS();
 }

@@ -9,8 +9,6 @@
 
 #include "mUI.h"
 
-#include "imgui.h"
-
 #if defined(mRENDERER_OPENGL)
 #define IMGUI_IMPL_OPENGL_LOADER_GLEW
 #include "imgui/examples/imgui_impl_sdl.h"
@@ -24,6 +22,11 @@
 #include "imgui/imgui_widgets.cpp"
 #endif
 
+ImGuiIO mUI_ImguiIO;
+ImFont *pFont = nullptr;
+
+//////////////////////////////////////////////////////////////////////////
+
 mFUNCTION(mUI_Initilialize, mPtr<mHardwareWindow> &hardwareWindow)
 {
   mFUNCTION_SETUP();
@@ -32,7 +35,7 @@ mFUNCTION(mUI_Initilialize, mPtr<mHardwareWindow> &hardwareWindow)
 
   const char glsl_version[] = "#version 150"; IMGUI_CHECKVERSION();
   ImGui::CreateContext();
-  ImGuiIO& io = ImGui::GetIO(); (void)io;
+  mUI_ImguiIO = ImGui::GetIO();
 
   SDL_Window *pWindow = nullptr;
   mERROR_CHECK(mHardwareWindow_GetSdlWindowPtr(hardwareWindow, &pWindow));
@@ -43,7 +46,12 @@ mFUNCTION(mUI_Initilialize, mPtr<mHardwareWindow> &hardwareWindow)
   ImGui_ImplSDL2_InitForOpenGL(pWindow, glContext);
   ImGui_ImplOpenGL3_Init(glsl_version);
 
-  ImGui::StyleColorsDark();
+  ImGui::StyleColorsLight();
+
+  pFont = mUI_ImguiIO.Fonts->AddFontFromFileTTF("c:/windows/fonts/segoeui.ttf", 16.0f);
+  mERROR_IF(pFont == nullptr, mR_InternalError);
+
+  mERROR_CHECK(mHardwareWindow_OnEventAdd(hardwareWindow, mUI_ProcessEvent));
 
   mRETURN_SUCCESS();
 }
@@ -82,9 +90,6 @@ mFUNCTION(mUI_Bake, mPtr<mHardwareWindow>& hardwareWindow)
 
   mERROR_IF(hardwareWindow == nullptr, mR_ArgumentNull);
 
-  bool open = true;
-  ImGui::ShowDemoWindow(&open);
-
   ImGui::Render();
 
   mRenderParams_CurrentRenderContext = (mRenderContextId)-1;
@@ -98,6 +103,15 @@ mFUNCTION(mUI_Render)
   mFUNCTION_SETUP();
 
   ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mUI_ProcessEvent, IN SDL_Event *pEvent)
+{
+  mFUNCTION_SETUP();
+
+  ImGui_ImplSDL2_ProcessEvent(pEvent);
 
   mRETURN_SUCCESS();
 }

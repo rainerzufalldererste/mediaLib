@@ -24,6 +24,7 @@ project(ProjectName)
   files { "project.lua" }
 
   includedirs { "../mediaLib/include/**" }
+  includedirs { "../mediaLib/include" }
   includedirs { "../mediaLib/3rdParty/SDL2/include" }
   includedirs { "../mediaLib/3rdParty/glew/include" }
 

@@ -44,7 +44,7 @@ mFUNCTION(mChunkedArray_Push, mPtr<mChunkedArray<T>> &chunkedArray, IN T *pItem,
 {
   mFUNCTION_SETUP();
 
-  mERROR_IF(chunkedArray == nullptr || pIndex == nullptr || pItem == nullptr, mR_ArgumentNull);
+  mERROR_IF(chunkedArray == nullptr || pItem == nullptr, mR_ArgumentNull);
 
   mERROR_CHECK(mChunkedArray_Grow_Internal(chunkedArray));
 
@@ -81,7 +81,9 @@ mFUNCTION(mChunkedArray_Push, mPtr<mChunkedArray<T>> &chunkedArray, IN T *pItem,
     }
   }
 
-  *pIndex = index;
+  if (pIndex != nullptr)
+    *pIndex = index;
+
   ++chunkedArray->itemCount;
 
   mRETURN_SUCCESS();
@@ -242,9 +244,13 @@ inline mFUNCTION(mChunkedArray_Destroy_Internal, IN mChunkedArray<T>* pChunkedAr
   
   for (size_t i = 0; i < pChunkedArray->blockCount; ++i)
   {
-    if (pChunkedArray->destructionFunction)
-      for (size_t index = pChunkedArray->pBlocks[i].blockStartIndex; index < pChunkedArray->pBlocks[i].blockEndIndex; ++index)
+    for (size_t index = pChunkedArray->pBlocks[i].blockStartIndex; index < pChunkedArray->pBlocks[i].blockEndIndex; ++index)
+    {
+      if (pChunkedArray->destructionFunction)
         mERROR_CHECK(pChunkedArray->destructionFunction(&pChunkedArray->pBlocks[i].pData[index]));
+      else
+        mERROR_CHECK(mDestruct(&pChunkedArray->pBlocks[i].pData[index]));
+    }
 
     mERROR_CHECK(mAllocator_FreePtr(pChunkedArray->pAllocator, &pChunkedArray->pBlocks[i].pData));
   }
