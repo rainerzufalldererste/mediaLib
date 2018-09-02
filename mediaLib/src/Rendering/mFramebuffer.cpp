@@ -76,6 +76,25 @@ mFUNCTION(mFramebuffer_Unbind)
   mRETURN_SUCCESS();
 }
 
+mFUNCTION(mFramebuffer_SetResolution, mPtr<mFramebuffer> &framebuffer, const mVec2s &size)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(framebuffer == nullptr, mR_ArgumentNull);
+  mERROR_IF(size.x > UINT32_MAX || size.y > UINT32_MAX, mR_ArgumentOutOfBounds);
+  mERROR_IF(mFrameBuffer_ActiveFrameBufferHandle == framebuffer->frameBufferHandle, mR_ResourceStateInvalid);
+
+  framebuffer->size = size;
+  glBindTexture(GL_TEXTURE_2D, framebuffer->texColourBuffer);
+
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, (GLsizei)size.x, (GLsizei)size.y, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+  mRETURN_SUCCESS();
+}
+
 mFUNCTION(mFramebuffer_Download, mPtr<mFramebuffer> &framebuffer, OUT mPtr<mImageBuffer> *pImageBuffer, IN mAllocator *pAllocator)
 {
   mFUNCTION_SETUP();

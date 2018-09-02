@@ -114,6 +114,8 @@ mFUNCTION(mHardwareWindow_Swap, mPtr<mHardwareWindow>& window)
       mVec2s size;
       mERROR_CHECK(mHardwareWindow_GetSize(window, &size));
 
+      mERROR_CHECK(mHardwareWindow_SetAsActiveRenderTarget(window));
+
       size_t onResizeCallbackCount = 0;
       mERROR_CHECK(mChunkedArray_GetCount(window->onResizeCallbacks, &onResizeCallbackCount));
 

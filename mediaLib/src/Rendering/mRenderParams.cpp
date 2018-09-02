@@ -146,6 +146,10 @@ mFUNCTION(mRenderParams_SetCurrentRenderResolution, const mVec2s &resolution)
   mRenderParams_CurrentRenderResolution = resolution;
   mRenderParams_CurrentRenderResolutionF = (mVec2f)resolution;
 
+#if defined (mRENDERER_OPENGL)
+  glViewport(0, 0, (GLsizei)resolution.x, (GLsizei)resolution.y);
+#endif
+
   mRETURN_SUCCESS();
 }
 
