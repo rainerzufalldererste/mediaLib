@@ -122,6 +122,23 @@ mFUNCTION(mRenderParams_DestroyRenderContext, IN_OUT mRenderContextId *pRenderCo
   mRETURN_SUCCESS();
 }
 
+#if defined(mRENDERER_OPENGL)
+mFUNCTION(mRenderParams_GetRenderContext, mPtr<mHardwareWindow> &window, OUT SDL_GLContext *pContext)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(window == nullptr || pContext == nullptr, mR_ArgumentNull);
+
+  mRenderContextId renderContextId;
+  mERROR_CHECK(mHardwareWindow_GetRenderContextId(window, &renderContextId));
+  mERROR_IF(renderContextId >= mRenderParams_RenderContextCount, mR_IndexOutOfBounds);
+  
+  *pContext = mRenderParams_pRenderContexts[renderContextId].glContext;
+
+  mRETURN_SUCCESS();
+}
+#endif
+
 mFUNCTION(mRenderParams_SetCurrentRenderResolution, const mVec2s &resolution)
 {
   mFUNCTION_SETUP();

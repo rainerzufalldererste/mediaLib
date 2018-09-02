@@ -179,7 +179,6 @@ mFUNCTION(mShader_SetTo, mPtr<mShader>& shader, const std::string & vertexShader
   mERROR_IF(!shader->initialized, mR_NotInitialized);
 
 #if defined(mRENDERER_OPENGL)
-  shader->initialized = false;
 
   GLuint subShaders[3];
   GLsizei subShaderCount;
@@ -265,8 +264,6 @@ mFUNCTION(mShader_SetTo, mPtr<mShader>& shader, const std::string & vertexShader
 
   glGetProgramiv(shader->shaderProgram, GL_LINK_STATUS, &status);
   mERROR_IF(status != GL_TRUE, mR_ResourceInvalid);
-
-  shader->initialized = true;
 
   mGL_DEBUG_ERROR_CHECK();
 #else
