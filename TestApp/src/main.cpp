@@ -110,7 +110,7 @@ mFUNCTION(MainLoop)
     mERROR_CHECK(mRenderParams_SetVsync(true));
   }
 
-  const std::wstring videoFilename = L"N:/Data/video/PublicHologram.mp4";
+  const std::wstring videoFilename = L"C:/Users/cstiller/Videos/Converted.mp4";
 
   mPtr<mThreadPool> threadPool;
   mPtr<mVideoPlaybackEngine> videoPlaybackEngine;
