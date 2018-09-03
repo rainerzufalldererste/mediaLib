@@ -16,3 +16,6 @@
 [submodule "mediaLib/3rdParty/imgui"]
 	path = mediaLib/3rdParty/imgui
 	url = https://github.com/ocornut/imgui.git
+[submodule "mediaLib/3rdParty/cJSON"]
+	path = mediaLib/3rdParty/cJSON
+	url = https://github.com/DaveGamble/cJSON.git
