@@ -29,10 +29,10 @@ struct mString
   mString();
 
   template <size_t TSize>
-  mString(char text[TSize], IN OPTIONAL mAllocator *pAllocator = nullptr);
+  mString(const char text[TSize], IN OPTIONAL mAllocator *pAllocator = nullptr);
 
-  mString(char *text, const size_t size, IN OPTIONAL mAllocator *pAllocator = nullptr);
-  mString(char *text, IN OPTIONAL mAllocator *pAllocator = nullptr);
+  mString(const char *text, const size_t size, IN OPTIONAL mAllocator *pAllocator = nullptr);
+  mString(const char *text, IN OPTIONAL mAllocator *pAllocator = nullptr);
 
   ~mString();
 
@@ -57,11 +57,11 @@ struct mString
 };
 
 template <size_t TCount>
-mFUNCTION(mString_Create, OUT mString *pString, char text[TCount], IN OPTIONAL mAllocator *pAllocator = nullptr);
+mFUNCTION(mString_Create, OUT mString *pString, const char text[TCount], IN OPTIONAL mAllocator *pAllocator = nullptr);
 
-mFUNCTION(mString_Create, OUT mString *pString, char *text, IN OPTIONAL mAllocator *pAllocator = nullptr);
+mFUNCTION(mString_Create, OUT mString *pString, const char *text, IN OPTIONAL mAllocator *pAllocator = nullptr);
 
-mFUNCTION(mString_Create, OUT mString *pString, char *text, const size_t size, IN OPTIONAL mAllocator *pAllocator = nullptr);
+mFUNCTION(mString_Create, OUT mString *pString, const char *text, const size_t size, IN OPTIONAL mAllocator *pAllocator = nullptr);
 
 template <typename ...Args>
 mFUNCTION(mString_CreateFormat, OUT mString *pString, IN OPTIONAL mAllocator *pAllocator, const char *formatString, Args&&... args);
@@ -89,7 +89,7 @@ inline mchar_t mToChar(char c[TCount])
 }
 
 template<size_t TCount>
-inline mFUNCTION(mString_Create, OUT mString *pString, char text[TCount], IN OPTIONAL mAllocator *pAllocator /* = nullptr */)
+inline mFUNCTION(mString_Create, OUT mString *pString, const char text[TCount], IN OPTIONAL mAllocator *pAllocator /* = nullptr */)
 {
   mFUNCTION_SETUP();
 
@@ -112,7 +112,7 @@ inline mFUNCTION(mString_CreateFormat, OUT mString *pString, IN OPTIONAL mAlloca
 }
 
 template<size_t TSize>
-inline mString::mString(char text[TSize], IN OPTIONAL mAllocator *pAllocator /* = nullptr */) : mString(text, TSize, pAllocator)
+inline mString::mString(const char text[TSize], IN OPTIONAL mAllocator *pAllocator /* = nullptr */) : mString(text, TSize, pAllocator)
 { }
 
 #endif // mString_h__

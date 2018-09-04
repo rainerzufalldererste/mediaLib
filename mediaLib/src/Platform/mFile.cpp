@@ -43,7 +43,28 @@ mFUNCTION(mFile_ReadAllText, const std::wstring & filename, IN OPTIONAL mAllocat
   mDEFER(mAllocator_FreePtr(nullptr, &text));
   mERROR_CHECK(mFile_ReadRaw(filename, &text, pAllocator, &count));
   text[count] = '\0';
-  new (pText) std::string(text);
+  *pText = std::string(text);
+  mERROR_CHECK(mAllocator_FreePtr(pAllocator, &text));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mFile_ReadAllText, const mString & filename, IN OPTIONAL mAllocator * pAllocator, OUT mString * pText, const mFile_Encoding /* encoding = mF_E_ASCII */)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pText == nullptr, mR_ArgumentNull);
+
+  std::wstring wstring;
+  mERROR_CHECK(mString_ToWideString(filename, &wstring));
+
+  size_t count = 0;
+  char *text = nullptr;
+
+  mDEFER(mAllocator_FreePtr(nullptr, &text));
+  mERROR_CHECK(mFile_ReadRaw(wstring, &text, pAllocator, &count));
+  text[count] = '\0';
+  *pText = mString(text);
   mERROR_CHECK(mAllocator_FreePtr(pAllocator, &text));
 
   mRETURN_SUCCESS();
@@ -63,6 +84,18 @@ mFUNCTION(mFile_WriteAllText, const std::wstring & filename, const std::string &
   mFUNCTION_SETUP();
 
   mERROR_CHECK(mFile_WriteRaw(filename, text.c_str(), text.length()));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mFile_WriteAllText, const mString &filename, const mString &text, const mFile_Encoding /* encoding = mF_E_ASCII */)
+{
+  mFUNCTION_SETUP();
+
+  std::wstring wstring;
+  mERROR_CHECK(mString_ToWideString(filename, &wstring));
+
+  mERROR_CHECK(mFile_WriteRaw(wstring, text.c_str(), text.bytes - 1));
 
   mRETURN_SUCCESS();
 }

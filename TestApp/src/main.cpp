@@ -10,6 +10,7 @@
 #include "mScreenQuad.h"
 #include "mUI.h"
 #include "mFile.h"
+#include "mJson.h"
 
 mFUNCTION(MainLoop);
 mFUNCTION(RenderShaderWindow);
@@ -99,6 +100,38 @@ mFUNCTION(MainLoop)
   mERROR_CHECK(mRenderParams_SetVsync(false));
   mERROR_CHECK(mRenderParams_ShowCursor(false));
 
+  mPtr<mJsonWriter> jsonWriter;
+  mDEFER_DESTRUCTION(&jsonWriter, mJsonWriter_Destroy);
+  mERROR_CHECK(mJsonWriter_Create(&jsonWriter, nullptr));
+
+  mERROR_CHECK(mJsonWriter_AddValue(jsonWriter, "valueA", "A"));
+  mERROR_CHECK(mJsonWriter_AddValue(jsonWriter, "valueB", 0.5));
+  mERROR_CHECK(mJsonWriter_AddValue(jsonWriter, "valueC", true));
+  mERROR_CHECK(mJsonWriter_AddValue(jsonWriter, "valueD", false));
+  mERROR_CHECK(mJsonWriter_AddValue(jsonWriter, "valueE", nullptr));
+
+  mERROR_CHECK(mJsonWriter_BeginNamed(jsonWriter, "NamedSubsection"));
+  mERROR_CHECK(mJsonWriter_AddValue(jsonWriter, "valueA", "A"));
+  mERROR_CHECK(mJsonWriter_AddValue(jsonWriter, "valueB", 0.5));
+  mERROR_CHECK(mJsonWriter_AddValue(jsonWriter, "valueC", true));
+  mERROR_CHECK(mJsonWriter_AddValue(jsonWriter, "valueD", false));
+  mERROR_CHECK(mJsonWriter_AddValue(jsonWriter, "valueE", nullptr));
+  mERROR_CHECK(mJsonWriter_EndNamed(jsonWriter));
+
+  mERROR_CHECK(mJsonWriter_BeginArray(jsonWriter, "NamedSubsection"));
+  mERROR_CHECK(mJsonWriter_AddValue(jsonWriter, "valueA", "A"));
+  mERROR_CHECK(mJsonWriter_AddValue(jsonWriter, "valueB", 0.5));
+  mERROR_CHECK(mJsonWriter_AddValue(jsonWriter, "valueC", true));
+  mERROR_CHECK(mJsonWriter_AddValue(jsonWriter, "valueD", false));
+  mERROR_CHECK(mJsonWriter_AddValue(jsonWriter, "valueE", nullptr));
+  mERROR_CHECK(mJsonWriter_AddArrayValue(jsonWriter, "A"));
+  mERROR_CHECK(mJsonWriter_AddArrayValue(jsonWriter, 0.5));
+  mERROR_CHECK(mJsonWriter_AddArrayValue(jsonWriter, true));
+  mERROR_CHECK(mJsonWriter_AddArrayValue(jsonWriter, false));
+  mERROR_CHECK(mJsonWriter_AddArrayValue(jsonWriter, nullptr));
+
+  mERROR_CHECK(mJsonWriter_ToFile(jsonWriter, "test.json"));
+
   bool supportsStereo = false;
   mERROR_CHECK(mRenderParams_SupportsStereo3d(&supportsStereo));
 
@@ -110,7 +143,7 @@ mFUNCTION(MainLoop)
     mERROR_CHECK(mRenderParams_SetVsync(true));
   }
 
-  const std::wstring videoFilename = L"C:/Users/cstiller/Videos/Converted.mp4";
+  const std::wstring videoFilename = L"C:/Users/cstiller/Videos/Insta360Pro2StaticH264_1.mp4";
 
   mPtr<mThreadPool> threadPool;
   mPtr<mVideoPlaybackEngine> videoPlaybackEngine;
