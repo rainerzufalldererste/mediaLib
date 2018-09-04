@@ -28,7 +28,7 @@ mString::mString() :
   hasFailed(false)
 { }
 
-mString::mString(char * text, const size_t size, IN OPTIONAL mAllocator * pAllocator) :
+mString::mString(const char * text, const size_t size, IN OPTIONAL mAllocator * pAllocator) :
   text(nullptr),
   pAllocator(nullptr),
   bytes(0),
@@ -65,7 +65,7 @@ epilogue:
   hasFailed = true;
 }
 
-mString::mString(char *text, IN OPTIONAL mAllocator *pAllocator) : mString(text, strlen(text) + 1, pAllocator)
+mString::mString(const char *text, IN OPTIONAL mAllocator *pAllocator) : mString(text, strlen(text) + 1, pAllocator)
 { }
 
 mString::~mString()
@@ -333,7 +333,7 @@ const char * mString::c_str() const
   return text;
 }
 
-mFUNCTION(mString_Create, OUT mString *pString, char *text, IN OPTIONAL mAllocator *pAllocator /* = nullptr */)
+mFUNCTION(mString_Create, OUT mString *pString, const char *text, IN OPTIONAL mAllocator *pAllocator /* = nullptr */)
 {
   mFUNCTION_SETUP();
 
@@ -344,11 +344,13 @@ mFUNCTION(mString_Create, OUT mString *pString, char *text, IN OPTIONAL mAllocat
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mString_Create, OUT mString *pString, char *text, const size_t size, IN OPTIONAL mAllocator *pAllocator)
+mFUNCTION(mString_Create, OUT mString *pString, const char *text, const size_t size, IN OPTIONAL mAllocator *pAllocator)
 {
   mFUNCTION_SETUP();
 
   mERROR_IF(text == nullptr, mR_ArgumentNull);
+
+  pString->pAllocator = pAllocator;
   
   if (pString->pAllocator == pAllocator)
   {
@@ -370,6 +372,8 @@ mFUNCTION(mString_Create, OUT mString *pString, char *text, const size_t size, I
     mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &pString->text, size));
     pString->capacity = pString->bytes = size;
   }
+
+  mERROR_CHECK(mAllocator_Copy(pString->pAllocator, pString->text, text, pString->bytes));
 
   size_t offset = 0;
   pString->count = 0;

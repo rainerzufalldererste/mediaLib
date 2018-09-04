@@ -8,6 +8,7 @@
 
 #include "mJson.h"
 #include "mQueue.h"
+#include "mFile.h"
 
 #include "cJSON/cJSON.h"
 #include "cJSON/cJSON_Utils.h"
@@ -50,6 +51,8 @@ mFUNCTION(mJsonWriter_Create, OUT mPtr<mJsonWriter> *pJsonWriter, IN mAllocator 
   mERROR_CHECK(mQueue_Create(&(*pJsonWriter)->currentBlock, pAllocator));
   mERROR_CHECK(mQueue_Create(&(*pJsonWriter)->currentType, pAllocator));
 
+  mERROR_CHECK(mJsonWriter_BeginUnnamed(*pJsonWriter));
+
   mRETURN_SUCCESS();
 }
 
@@ -62,7 +65,7 @@ mFUNCTION(mJsonWriter_Destroy, IN_OUT mPtr<mJsonWriter> *pJsonWriter)
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mJsonWriter_Begin, mPtr<mJsonWriter> &jsonWriter)
+mFUNCTION(mJsonWriter_BeginUnnamed, mPtr<mJsonWriter> &jsonWriter)
 {
   mFUNCTION_SETUP();
 
@@ -106,7 +109,7 @@ mFUNCTION(mJsonWriter_Begin, mPtr<mJsonWriter> &jsonWriter)
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mJsonWriter_End, mPtr<mJsonWriter> &jsonWriter)
+mFUNCTION(mJsonWriter_EndUnnamed, mPtr<mJsonWriter> &jsonWriter)
 {
   mFUNCTION_SETUP();
 
@@ -135,7 +138,7 @@ mFUNCTION(mJsonWriter_BeginArray, mPtr<mJsonWriter> &jsonWriter, const char *nam
   mJsonWriterEntryType lastType;
   mERROR_CHECK(mJsonWriter_GetLastInTypeQueue_Internal(jsonWriter, &lastType));
 
-  mERROR_CHECK(mJsonWriter_PushQueue_Internal(jsonWriter, pChild, Object));
+  mERROR_CHECK(mJsonWriter_PushQueue_Internal(jsonWriter, pChild, Array));
 
   switch (lastType)
   {
@@ -156,7 +159,7 @@ mFUNCTION(mJsonWriter_EndArray, mPtr<mJsonWriter> &jsonWriter)
 {
   mFUNCTION_SETUP();
 
-  mERROR_CHECK(mJsonWriter_End(jsonWriter));
+  mERROR_CHECK(mJsonWriter_EndUnnamed(jsonWriter));
 
   mRETURN_SUCCESS();
 }
@@ -200,7 +203,7 @@ mFUNCTION(mJsonWriter_EndNamed, mPtr<mJsonWriter> &jsonWriter)
 {
   mFUNCTION_SETUP();
 
-  mERROR_CHECK(mJsonWriter_End(jsonWriter));
+  mERROR_CHECK(mJsonWriter_EndUnnamed(jsonWriter));
 
   mRETURN_SUCCESS();
 }
@@ -226,9 +229,9 @@ mFUNCTION(mJsonWriter_AddValue, mPtr<mJsonWriter> &jsonWriter, const char *name,
     break;
 
   default:
-    mERROR_CHECK(mJsonWriter_Begin(jsonWriter));
+    mERROR_CHECK(mJsonWriter_BeginUnnamed(jsonWriter));
     mERROR_CHECK(mJsonWriter_AddValue(jsonWriter, name, value));
-    mERROR_CHECK(mJsonWriter_End(jsonWriter));
+    mERROR_CHECK(mJsonWriter_EndUnnamed(jsonWriter));
     break;
   }
 
@@ -256,11 +259,23 @@ mFUNCTION(mJsonWriter_AddValue, mPtr<mJsonWriter> &jsonWriter, const char *name,
     break;
 
   default:
-    mERROR_CHECK(mJsonWriter_Begin(jsonWriter));
+    mERROR_CHECK(mJsonWriter_BeginUnnamed(jsonWriter));
     mERROR_CHECK(mJsonWriter_AddValue(jsonWriter, name, value));
-    mERROR_CHECK(mJsonWriter_End(jsonWriter));
+    mERROR_CHECK(mJsonWriter_EndUnnamed(jsonWriter));
     break;
   }
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mJsonWriter_AddValue, mPtr<mJsonWriter>& jsonWriter, const char *name, const char *value)
+{
+  mFUNCTION_SETUP();
+
+  mString string;
+  mERROR_CHECK(mString_Create(&string, value));
+
+  mERROR_CHECK(mJsonWriter_AddValue(jsonWriter, name, string));
 
   mRETURN_SUCCESS();
 }
@@ -286,9 +301,9 @@ mFUNCTION(mJsonWriter_AddValue, mPtr<mJsonWriter> &jsonWriter, const char *name,
     break;
 
   default:
-    mERROR_CHECK(mJsonWriter_Begin(jsonWriter));
+    mERROR_CHECK(mJsonWriter_BeginUnnamed(jsonWriter));
     mERROR_CHECK(mJsonWriter_AddValue(jsonWriter, name, value));
-    mERROR_CHECK(mJsonWriter_End(jsonWriter));
+    mERROR_CHECK(mJsonWriter_EndUnnamed(jsonWriter));
     break;
   }
 
@@ -316,11 +331,167 @@ mFUNCTION(mJsonWriter_AddValue, mPtr<mJsonWriter> &jsonWriter, const char *name,
     break;
 
   default:
-    mERROR_CHECK(mJsonWriter_Begin(jsonWriter));
+    mERROR_CHECK(mJsonWriter_BeginUnnamed(jsonWriter));
     mERROR_CHECK(mJsonWriter_AddValue(jsonWriter, name, nullptr));
-    mERROR_CHECK(mJsonWriter_End(jsonWriter));
+    mERROR_CHECK(mJsonWriter_EndUnnamed(jsonWriter));
     break;
   }
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mJsonWriter_AddArrayValue, mPtr<mJsonWriter> &jsonWriter, const double_t value)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(jsonWriter == nullptr, mR_ArgumentNull);
+  mERROR_IF(jsonWriter->finalized, mR_ResourceStateInvalid);
+
+  cJSON *pJson = nullptr;
+  mERROR_CHECK(mJsonWriter_GetLastInQueue_Internal(jsonWriter, &pJson));
+  mERROR_IF(pJson == nullptr, mR_NotInitialized);
+
+  mJsonWriterEntryType lastType;
+  mERROR_CHECK(mJsonWriter_GetLastInTypeQueue_Internal(jsonWriter, &lastType));
+
+  switch (lastType)
+  {
+  case Array:
+    mERROR_IF(nullptr == cJSON_AddNumberToObject(pJson, "", value), mR_InternalError);
+    break;
+
+  default:
+    mRETURN_RESULT(mR_ResourceStateInvalid);
+    break;
+  }
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mJsonWriter_AddArrayValue, mPtr<mJsonWriter> &jsonWriter, const mString &value)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(jsonWriter == nullptr, mR_ArgumentNull);
+  mERROR_IF(jsonWriter->finalized, mR_ResourceStateInvalid);
+
+  cJSON *pJson = nullptr;
+  mERROR_CHECK(mJsonWriter_GetLastInQueue_Internal(jsonWriter, &pJson));
+  mERROR_IF(pJson == nullptr, mR_NotInitialized);
+
+  mJsonWriterEntryType lastType;
+  mERROR_CHECK(mJsonWriter_GetLastInTypeQueue_Internal(jsonWriter, &lastType));
+
+  switch (lastType)
+  {
+  case Array:
+    mERROR_IF(nullptr == cJSON_AddStringToObject(pJson, "", value.c_str()), mR_InternalError);
+    break;
+
+  default:
+    mRETURN_RESULT(mR_ResourceStateInvalid);
+    break;
+  }
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mJsonWriter_AddArrayValue, mPtr<mJsonWriter> &jsonWriter, const char *value)
+{
+  mFUNCTION_SETUP();
+
+  mString string;
+  mERROR_CHECK(mString_Create(&string, value));
+
+  mERROR_CHECK(mJsonWriter_AddArrayValue(jsonWriter, string));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mJsonWriter_AddArrayValue, mPtr<mJsonWriter> &jsonWriter, const bool value)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(jsonWriter == nullptr, mR_ArgumentNull);
+  mERROR_IF(jsonWriter->finalized, mR_ResourceStateInvalid);
+
+  cJSON *pJson = nullptr;
+  mERROR_CHECK(mJsonWriter_GetLastInQueue_Internal(jsonWriter, &pJson));
+  mERROR_IF(pJson == nullptr, mR_NotInitialized);
+
+  mJsonWriterEntryType lastType;
+  mERROR_CHECK(mJsonWriter_GetLastInTypeQueue_Internal(jsonWriter, &lastType));
+
+  switch (lastType)
+  {
+  case Array:
+    mERROR_IF(nullptr == cJSON_AddBoolToObject(pJson, "", value), mR_InternalError);
+    break;
+
+  default:
+    mRETURN_RESULT(mR_ResourceStateInvalid);
+    break;
+  }
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mJsonWriter_AddArrayValue, mPtr<mJsonWriter> &jsonWriter, nullptr_t)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(jsonWriter == nullptr, mR_ArgumentNull);
+  mERROR_IF(jsonWriter->finalized, mR_ResourceStateInvalid);
+
+  cJSON *pJson = nullptr;
+  mERROR_CHECK(mJsonWriter_GetLastInQueue_Internal(jsonWriter, &pJson));
+  mERROR_IF(pJson == nullptr, mR_NotInitialized);
+
+  mJsonWriterEntryType lastType;
+  mERROR_CHECK(mJsonWriter_GetLastInTypeQueue_Internal(jsonWriter, &lastType));
+
+  switch (lastType)
+  {
+  case Array:
+    mERROR_IF(nullptr == cJSON_AddNullToObject(pJson, ""), mR_InternalError);
+    break;
+
+  default:
+    mRETURN_RESULT(mR_ResourceStateInvalid);
+    break;
+  }
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mJsonWriter_ToString, mPtr<mJsonWriter> &jsonWriter, OUT mString *pString)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(jsonWriter == nullptr || pString == nullptr, mR_ArgumentNull);
+
+  cJSON *pJson = nullptr;
+  mERROR_CHECK(mQueue_PeekFront(jsonWriter->currentBlock, &pJson));
+
+  char *text = cJSON_Print(pJson);
+  mERROR_IF(text == nullptr, mR_InternalError);
+  mDEFER(cJSON_free(text));
+
+  mERROR_CHECK(mString_Create(pString, text));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mJsonWriter_ToFile, mPtr<mJsonWriter> &jsonWriter, const mString &filename)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(jsonWriter == nullptr, mR_ArgumentNull);
+
+  mString fileContents;
+  mERROR_CHECK(mJsonWriter_ToString(jsonWriter, &fileContents));
+
+  mERROR_CHECK(mFile_WriteAllText(filename, fileContents));
 
   mRETURN_SUCCESS();
 }
@@ -365,7 +536,7 @@ mFUNCTION(mJsonWriter_GetLastInQueue_Internal, mPtr<mJsonWriter> &jsonWriter, OU
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mJsonWriter_GetLastInTypeQueue_Internal, mPtr<mJsonWriter>& jsonWriter, OUT mJsonWriterEntryType *pJsonElement)
+mFUNCTION(mJsonWriter_GetLastInTypeQueue_Internal, mPtr<mJsonWriter> &jsonWriter, OUT mJsonWriterEntryType *pJsonElement)
 {
   mFUNCTION_SETUP();
 
