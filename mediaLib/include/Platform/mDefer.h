@@ -20,19 +20,19 @@ class mDefer
 {
 public:
   typedef void OnExitFuncVoid();
-  typedef void OnExitFuncT(T *);
+  typedef void OnExitFuncT(T);
   typedef mResult OnExitFuncResultVoid();
-  typedef mResult OnExitFuncResultT(T *);
+  typedef mResult OnExitFuncResultT(T);
 
   mDefer();
   mDefer(const std::function<void()> &onExit, const mResult *pResult = nullptr);
   mDefer(std::function<void()> &&onExit, const mResult *pResult = nullptr);
-  mDefer(const std::function<void(T*)> &onExit, T *pData, const mResult *pResult = nullptr);
-  mDefer(std::function<void(T*)> &&onExit, T *pData, const mResult *pResult = nullptr);
+  mDefer(const std::function<void(T)> &onExit, T data, const mResult *pResult = nullptr);
+  mDefer(std::function<void(T)> &&onExit, T data, const mResult *pResult = nullptr);
   mDefer(OnExitFuncVoid *pOnExit, const mResult *pResult = nullptr);
-  mDefer(OnExitFuncT *pOnExit, T *pData, const mResult *pResult = nullptr);
+  mDefer(OnExitFuncT *pOnExit, T data, const mResult *pResult = nullptr);
   mDefer(OnExitFuncResultVoid *pOnExit, const mResult *pResult = nullptr);
-  mDefer(OnExitFuncResultT *pOnExit, T *pData, const mResult *pResult = nullptr);
+  mDefer(OnExitFuncResultT *pOnExit, T data, const mResult *pResult = nullptr);
 
   mDefer(mDefer<T> &copy);
   mDefer(mDefer<T> &&move);
@@ -56,11 +56,11 @@ private:
   };
 
   mDeferType m_deferType;
-  T *m_pData;
+  T m_data;
   const mResult *m_pResult;
 
   std::function<void()> m_onExitLV;
-  std::function<void(T *)> m_onExitLP;
+  std::function<void(T)> m_onExitLP;
 
   union
   {
@@ -71,30 +71,30 @@ private:
   };
 };
 
-mDefer<void> mDefer_Create(const std::function<void()> &onExit, const mResult *pResult = nullptr);
-mDefer<void> mDefer_Create(std::function<void()> &&onExit, const mResult *pResult = nullptr);
+mDefer<size_t> mDefer_Create(const std::function<void()> &onExit, const mResult *pResult = nullptr);
+mDefer<size_t> mDefer_Create(std::function<void()> &&onExit, const mResult *pResult = nullptr);
 
 template <typename T>
-mDefer<T> mDefer_Create(const std::function<void(T *)> &onExit, T *pData, const mResult *pResult = nullptr);
+mDefer<T> mDefer_Create(const std::function<void(T)> &onExit, T data, const mResult *pResult = nullptr);
 
 template <typename T>
-mDefer<T> mDefer_Create(std::function<void(T *)> &&onExit, T *pData, const mResult *pResult = nullptr);
+mDefer<T> mDefer_Create(std::function<void(T)> &&onExit, T data, const mResult *pResult = nullptr);
 
-mDefer<void> mDefer_Create(mDefer<void>::OnExitFuncVoid *pOnExit, const mResult *pResult = nullptr);
-
-template <typename T>
-mDefer<T> mDefer_Create(typename mDefer<T>::OnExitFuncT *pOnExit, T *pData, const mResult *pResult = nullptr);
-
-mDefer<void> mDefer_Create(mDefer<void>::OnExitFuncResultVoid *pOnExit, const mResult *pResult = nullptr);
+mDefer<size_t> mDefer_Create(mDefer<size_t>::OnExitFuncVoid *pOnExit, const mResult *pResult = nullptr);
 
 template <typename T>
-mDefer<T> mDefer_Create(typename mDefer<T>::OnExitFuncResultT *pOnExit, T *pData, const mResult *pResult = nullptr);
+mDefer<T> mDefer_Create(typename mDefer<T>::OnExitFuncT *pOnExit, T data, const mResult *pResult = nullptr);
+
+mDefer<size_t> mDefer_Create(mDefer<size_t>::OnExitFuncResultVoid *pOnExit, const mResult *pResult = nullptr);
+
+template <typename T>
+mDefer<T> mDefer_Create(typename mDefer<T>::OnExitFuncResultT *pOnExit, T data, const mResult *pResult = nullptr);
 
 template<typename T>
 inline mDefer<T>::mDefer()
 {
   m_deferType = mDeferType::mDT_None;
-  m_pData = nullptr;
+  m_data = T();
   m_pResult = nullptr;
 }
 
@@ -102,7 +102,7 @@ template<typename T>
 inline mDefer<T>::mDefer(const std::function<void()> &onExit, const mResult *pResult /* = nullptr */)
 {
   m_deferType = mDeferType::mDT_LambdaVoid;
-  m_pData = nullptr;
+  m_data = T();
   m_onExitLV = onExit;
   m_pResult = pResult;
 }
@@ -111,25 +111,25 @@ template<typename T>
 inline mDefer<T>::mDefer(std::function<void()> &&onExit, const mResult *pResult /* = nullptr */)
 {
   m_deferType = mDeferType::mDT_LambdaVoid;
-  m_pData = nullptr;
+  m_data = T();
   m_onExitLV = std::move(onExit);
   m_pResult = pResult;
 }
 
 template<typename T>
-inline mDefer<T>::mDefer(const std::function<void(T*)> &onExit, T* pData, const mResult *pResult /* = nullptr */)
+inline mDefer<T>::mDefer(const std::function<void(T)> &onExit, T data, const mResult *pResult /* = nullptr */)
 {
   m_deferType = mDeferType::mDT_LambdaTPtr;
-  m_pData = pData;
+  m_data = data;
   m_onExitLP = onExit;
   m_pResult = pResult;
 }
 
 template<typename T>
-inline mDefer<T>::mDefer(std::function<void(T*)> &&onExit, T* pData, const mResult *pResult /* = nullptr */)
+inline mDefer<T>::mDefer(std::function<void(T)> &&onExit, T data, const mResult *pResult /* = nullptr */)
 {
   m_deferType = mDeferType::mDT_LambdaTPtr;
-  m_pData = pData;
+  m_data = data;
   m_onExitLP = std::move(onExit);
   m_pResult = pResult;
 }
@@ -138,16 +138,16 @@ template<typename T>
 inline mDefer<T>::mDefer(OnExitFuncVoid *pOnExit, const mResult *pResult /* = nullptr */)
 {
   m_deferType = mDeferType::mDT_FuctionPointerVoid;
-  m_pData = nullptr;
+  m_data = T();
   m_pOnExitFV = pOnExit;
   m_pResult = pResult;
 }
 
 template<typename T>
-inline mDefer<T>::mDefer(OnExitFuncT *pOnExit, T *pData, const mResult *pResult /* = nullptr */)
+inline mDefer<T>::mDefer(OnExitFuncT *pOnExit, T data, const mResult *pResult /* = nullptr */)
 {
   m_deferType = mDeferType::mDT_FuctionPointerTPtr;
-  m_pData = pData;
+  m_data = data;
   m_pOnExitFP = pOnExit;
   m_pResult = pResult;
 }
@@ -156,16 +156,16 @@ template<typename T>
 inline mDefer<T>::mDefer(OnExitFuncResultVoid *pOnExit, const mResult *pResult /* = nullptr */)
 {
   m_deferType = mDeferType::mDT_FuctionPointerResultVoid;
-  m_pData = nullptr;
+  m_data = T();
   m_pOnExitFRV = pOnExit;
   m_pResult = pResult;
 }
 
 template<typename T>
-inline mDefer<T>::mDefer(OnExitFuncResultT *pOnExit, T *pData, const mResult *pResult /* = nullptr */)
+inline mDefer<T>::mDefer(OnExitFuncResultT *pOnExit, T data, const mResult *pResult /* = nullptr */)
 {
   m_deferType = mDeferType::mDT_FuctionPointerResultTPtr;
-  m_pData = pData;
+  m_data = data;
   m_pOnExitFRP = pOnExit;
   m_pResult = pResult;
 }
@@ -174,7 +174,7 @@ inline mDefer<T>::mDefer(OnExitFuncResultT *pOnExit, T *pData, const mResult *pR
 template<typename T>
 inline mDefer<T>::mDefer(mDefer<T> &copy) :
   m_deferType(copy.m_deferType),
-  m_pData(copy.m_pData),
+  m_data(copy.m_data),
   m_pResult(copy.m_pResult),
   m_onExitLP(std::move(copy.m_onExitLP)),
   m_onExitLV(std::move(copy.m_onExitLV)),
@@ -193,7 +193,7 @@ inline mDefer<T>::mDefer(mDefer<T> &copy) :
 template<typename T>
 inline mDefer<T>::mDefer(mDefer<T> &&move) :
   m_deferType(move.m_deferType),
-  m_pData(move.m_pData),
+  m_data(move.m_data),
   m_pResult(move.m_pResult),
   m_onExitLP(std::move(move.m_onExitLP)),
   m_onExitLV(std::move(move.m_onExitLV)),
@@ -203,7 +203,7 @@ inline mDefer<T>::mDefer(mDefer<T> &&move) :
 {
   move.m_deferType = mDT_None;
   move.m_pResult = nullptr;
-  move.m_pData = nullptr;
+  move.m_data = nullptr;
   move.m_onExitLP = nullptr;
   move.m_onExitLV = nullptr;
   move.m_pOnExitFP = nullptr;
@@ -225,7 +225,7 @@ inline mDefer<T>::~mDefer()
 
   case mDefer::mDeferType::mDT_LambdaTPtr:
     if (m_onExitLP)
-      m_onExitLP(m_pData);
+      m_onExitLP(m_data);
     break;
 
   case mDefer::mDeferType::mDT_FuctionPointerVoid:
@@ -235,7 +235,7 @@ inline mDefer<T>::~mDefer()
 
   case mDefer::mDeferType::mDT_FuctionPointerTPtr:
     if (m_pOnExitFP)
-      (*m_pOnExitFP)(m_pData);
+      (*m_pOnExitFP)(m_data);
     break;
 
   case mDefer::mDeferType::mDT_FuctionPointerResultVoid:
@@ -245,7 +245,7 @@ inline mDefer<T>::~mDefer()
 
   case mDefer::mDeferType::mDT_FuctionPointerResultTPtr:
     if (m_pOnExitFRP)
-      (*m_pOnExitFRP)(m_pData);
+      (*m_pOnExitFRP)(m_data);
     break;
 
   case mDefer::mDeferType::mDT_None:
@@ -259,7 +259,7 @@ template<typename T>
 inline mDefer<T>& mDefer<T>::operator=(mDefer<T> &copy)
 {
   m_deferType = move.m_deferType;
-  m_pData = move.m_pData;
+  m_data = move.m_pData;
   m_pResult = move.m_pResult;
 
   m_onExitLV = std::move(move.m_onExitLV);
@@ -282,7 +282,7 @@ template<typename T>
 inline mDefer<T>& mDefer<T>::operator = (mDefer<T> &&move)
 {
   m_deferType = move.m_deferType;
-  m_pData = move.m_pData;
+  m_data = move.m_data;
   m_pResult = move.m_pResult;
 
   m_onExitLV = std::move(move.m_onExitLV);
@@ -293,7 +293,7 @@ inline mDefer<T>& mDefer<T>::operator = (mDefer<T> &&move)
 
   move.m_deferType = mDT_None;
   move.m_pResult = nullptr;
-  move.m_pData = nullptr;
+  move.m_data = nullptr;
   move.m_onExitLP = nullptr;
   move.m_onExitLV = nullptr;
   move.m_pOnExitFP = nullptr;
@@ -302,27 +302,47 @@ inline mDefer<T>& mDefer<T>::operator = (mDefer<T> &&move)
 }
 
 template<typename T>
-inline mDefer<T> mDefer_Create(const std::function<void(T*)> &onExit, T *pData, const mResult *pResult /* = nullptr */)
+inline mDefer<T> mDefer_Create(const std::function<void(T)> &onExit, T data, const mResult *pResult /* = nullptr */)
 {
-  return mDefer<T>(onExit, pData, pResult);
+  return mDefer<T>(onExit, data, pResult);
 }
 
 template<typename T>
-inline mDefer<T> mDefer_Create(std::function<void(T*)> &&onExit, T *pData, const mResult *pResult /* = nullptr */)
+inline mDefer<T> mDefer_Create(std::function<void(T)> &&onExit, T data, const mResult *pResult /* = nullptr */)
 {
-  return mDefer<T>(std::forward<std::function<void(T*)>>(onExit), pData, pResult);
+  return mDefer<T>(std::forward<std::function<void(T)>>(onExit), data, pResult);
 }
 
 template<typename T>
-inline mDefer<T> mDefer_Create(typename mDefer<T>::OnExitFuncT *pOnExit, T *pData, const mResult *pResult /* = nullptr */)
+inline mDefer<T> mDefer_Create(typename mDefer<T>::OnExitFuncT *pOnExit, T data, const mResult *pResult /* = nullptr */)
 {
-  return mDefer<T>(pOnExit, pData, pResult);
+  return mDefer<T>(pOnExit, data, pResult);
 }
 
 template<typename T>
-inline mDefer<T> mDefer_Create(typename mDefer<T>::OnExitFuncResultT *pOnExit, T *pData, const mResult *pResult /* = nullptr */)
+inline mDefer<T> mDefer_Create(typename mDefer<T>::OnExitFuncResultT *pOnExit, T data, const mResult *pResult /* = nullptr */)
 {
-  return mDefer<T>(pOnExit, pData, pResult);
+  return mDefer<T>(pOnExit, data, pResult);
+}
+
+inline mDefer<size_t> mDefer_Create(const std::function<void()> &onExit, const mResult *pResult /* = nullptr */)
+{
+  return mDefer<size_t>(onExit, pResult);
+}
+
+inline mDefer<size_t> mDefer_Create(std::function<void()> &&onExit, const mResult *pResult /* = nullptr */)
+{
+  return mDefer<size_t>(std::forward<std::function<void()>>(onExit), pResult);
+}
+
+inline mDefer<size_t> mDefer_Create(mDefer<size_t>::OnExitFuncVoid *pOnExit, const mResult *pResult /* = nullptr */)
+{
+  return mDefer<size_t>(pOnExit, pResult);
+}
+
+inline mDefer<size_t> mDefer_Create(mDefer<size_t>::OnExitFuncResultVoid *pOnExit, const mResult *pResult /* = nullptr */)
+{
+  return mDefer<size_t>(pOnExit, pResult);
 }
 
 #define mCOMBINE_LITERALS(x, y) x ## y

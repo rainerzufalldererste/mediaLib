@@ -84,4 +84,6 @@ mFUNCTION(mJsonReader_ReadCurrentValue, mPtr<mJsonReader> &jsonReader, OUT mStri
 mFUNCTION(mJsonReader_ReadCurrentValue, mPtr<mJsonReader> &jsonReader, OUT double_t *pValue);
 mFUNCTION(mJsonReader_ReadCurrentValue, mPtr<mJsonReader> &jsonReader, OUT bool *pValue);
 
+mFUNCTION(mJsonReader_ArrayForEach, mPtr<mJsonReader> &jsonReader, const std::function<mResult(mPtr<mJsonReader> &, const size_t index)> &callback);
+
 #endif // mJson_h__
