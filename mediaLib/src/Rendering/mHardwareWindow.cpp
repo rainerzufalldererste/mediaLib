@@ -109,7 +109,7 @@ mFUNCTION(mHardwareWindow_Swap, mPtr<mHardwareWindow>& window)
         mERROR_CHECK((*pFunction)());
       }
     }
-    else if (_event.type == SDL_WINDOWEVENT && (_event.window.type == SDL_WINDOWEVENT_MAXIMIZED || _event.window.type == SDL_WINDOWEVENT_RESIZED || _event.window.type == SDL_WINDOWEVENT_RESTORED))
+    else if (_event.type == SDL_WINDOWEVENT && (_event.window.event == SDL_WINDOWEVENT_MAXIMIZED || _event.window.event == SDL_WINDOWEVENT_RESIZED || _event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED || _event.window.event == SDL_WINDOWEVENT_RESTORED))
     {
       mVec2s size;
       mERROR_CHECK(mHardwareWindow_GetSize(window, &size));
