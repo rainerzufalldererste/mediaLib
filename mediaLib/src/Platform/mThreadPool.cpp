@@ -142,7 +142,7 @@ mFUNCTION(mTask_Execute, IN mTask *pTask)
   bool hasBeenExecuted = false;
 
   {
-    mDefer<mSemaphore> defer;
+    mDefer<mSemaphore *> defer;
 
     if (pTask->pSemaphore != nullptr)
     {

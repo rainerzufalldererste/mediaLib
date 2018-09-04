@@ -82,7 +82,7 @@ mFUNCTION(mJsonWriter_BeginUnnamed, mPtr<mJsonWriter> &jsonWriter)
   if (pJson == nullptr)
   {
     cJSON *pChild = cJSON_CreateObject();
-    const auto __defer__ = mDefer_Create<cJSON>(cJSON_Delete, pChild, &mSTDRESULT);
+    mDEFER_DESTRUCTION_ON_ERROR(pChild, (std::function<void (cJSON *)>)cJSON_Delete);
     mERROR_CHECK(mJson_CheckError_Internal(pChild));
 
     mERROR_CHECK(mJsonWriter_PushQueue_Internal(jsonWriter, pChild, Object));
@@ -90,7 +90,7 @@ mFUNCTION(mJsonWriter_BeginUnnamed, mPtr<mJsonWriter> &jsonWriter)
   else
   {
     cJSON *pChild = cJSON_CreateObject();
-    const auto __defer__ = mDefer_Create<cJSON>(cJSON_Delete, pChild, &mSTDRESULT);
+    mDEFER_DESTRUCTION_ON_ERROR(pChild, (std::function<void(cJSON *)>)cJSON_Delete);
     mERROR_CHECK(mJson_CheckError_Internal(pChild));
 
     mJsonWriterEntryType lastType;
@@ -136,7 +136,7 @@ mFUNCTION(mJsonWriter_BeginArray, mPtr<mJsonWriter> &jsonWriter, const char *nam
   mERROR_IF(pJson == nullptr, mR_NotInitialized);
 
   cJSON *pChild = cJSON_CreateArray();
-  const auto __defer__ = mDefer_Create<cJSON>(cJSON_Delete, pChild, &mSTDRESULT);
+  mDEFER_DESTRUCTION_ON_ERROR(pChild, (std::function<void(cJSON *)>)cJSON_Delete);
   mERROR_CHECK(mJson_CheckError_Internal(pChild));
 
   mJsonWriterEntryType lastType;
@@ -180,7 +180,7 @@ mFUNCTION(mJsonWriter_BeginNamed, mPtr<mJsonWriter> &jsonWriter, const char *nam
   mERROR_IF(pJson == nullptr, mR_NotInitialized);
 
   cJSON *pChild = cJSON_CreateObject();
-  const auto __defer__ = mDefer_Create<cJSON>(cJSON_Delete, pChild, &mSTDRESULT);
+  mDEFER_DESTRUCTION_ON_ERROR(pChild, (std::function<void(cJSON *)>)cJSON_Delete);
   mERROR_CHECK(mJson_CheckError_Internal(pChild));
 
   mJsonWriterEntryType lastType;
@@ -950,6 +950,30 @@ mFUNCTION(mJsonReader_ReadCurrentValue, mPtr<mJsonReader>& jsonReader, OUT bool 
   mERROR_IF(!cJSON_IsBool(pJson), mR_ResourceIncompatible);
 
   *pValue = cJSON_IsTrue(pJson) != 0;
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mJsonReader_ArrayForEach, mPtr<mJsonReader> &jsonReader, const std::function<mResult(mPtr<mJsonReader> &, const size_t index)> &callback)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(jsonReader == nullptr || callback == nullptr, mR_ArgumentNull);
+
+  cJSON *pJson;
+  mERROR_CHECK(mJsonReader_PeekLast_Internal(jsonReader, &pJson));
+
+  size_t index = 0;
+  cJSON *pElement = nullptr;
+  cJSON_ArrayForEach(pElement, pJson)
+  {
+    mERROR_CHECK(mJsonReader_PushValue_Internal(jsonReader, pElement));
+    auto _defer_ = mDefer_Create<mPtr<mJsonReader>>(mJsonReader_PopLast_Internal, jsonReader);
+
+    mERROR_CHECK(callback(jsonReader, index));
+
+    ++index;
+  }
 
   mRETURN_SUCCESS();
 }

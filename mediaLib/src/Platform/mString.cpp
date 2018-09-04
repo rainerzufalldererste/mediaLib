@@ -268,7 +268,7 @@ mString::operator std::string() const
 mString::operator std::wstring() const
 {
   wchar_t *wtext = nullptr;
-  mDefer<wchar_t *> cleanup;
+  mDefer<wchar_t **> cleanup;
 
   if (bytes < 1024)
   {
@@ -436,7 +436,7 @@ mFUNCTION(mString_ToWideString, const mString &string, std::wstring *pWideString
   mFUNCTION_SETUP();
 
   wchar_t *wtext = nullptr;
-  mDefer<wchar_t *> cleanup;
+  mDefer<wchar_t **> cleanup;
 
   if (string.bytes < 1024)
   {
