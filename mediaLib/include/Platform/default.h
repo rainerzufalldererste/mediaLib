@@ -56,6 +56,8 @@
 #define mASSERT(expression, text) do { if(!(expression)) { mPRINT("Assertion Failed: %s\n'%s'\n\nIn File '%s' : Line '%" PRIi32 "' (Function '%s')\n", #expression, text, __FILE__, __LINE__, __FUNCTION__); assert(expression); } } while (0)
 #define mFAIL(text) mPRINT("Assertion Failed: '%s'\n\nIn File '%s' : Line '%" PRIi32 "' (Function '%s')\n", text, __FILE__, __LINE__, __FUNCTION__)
 #define mPRINT(text, ...) printf(text, __VA_ARGS__)
+#define mPRINT_ERROR(text, ...) printf(text, __VA_ARGS__)
+#define mLOG(text, ...) printf(text, __VA_ARGS__)
 
 template <typename T>
 void mUnused(T unused)

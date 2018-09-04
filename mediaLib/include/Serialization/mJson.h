@@ -40,4 +40,48 @@ mFUNCTION(mJsonWriter_AddArrayValue, mPtr<mJsonWriter> &jsonWriter, nullptr_t);
 mFUNCTION(mJsonWriter_ToString, mPtr<mJsonWriter> &jsonWriter, OUT mString *pString);
 mFUNCTION(mJsonWriter_ToFile, mPtr<mJsonWriter> &jsonWriter, const mString &filename);
 
+struct mJsonReader;
+
+enum mJsonReader_EntryType
+{
+  mJR_ET_Invalid,
+  mJR_ET_Object,
+  mJR_ET_Array,
+  mJR_ET_Number,
+  mJR_ET_String,
+  mJR_ET_Bool,
+  mJR_ET_Null,
+};
+
+mFUNCTION(mJsonReader_CreateFromString, OUT mPtr<mJsonReader> *pJsonReader, IN mAllocator *pAllocator, const mString &text);
+mFUNCTION(mJsonReader_CreateFromFile, OUT mPtr<mJsonReader> *pJsonReader, IN mAllocator *pAllocator, const mString &filename);
+mFUNCTION(mJsonReader_Destroy, IN_OUT mPtr<mJsonReader> *pJsonReader);
+
+mFUNCTION(mJsonReader_StepIntoNamed, mPtr<mJsonReader> &jsonReader, const char *name);
+mFUNCTION(mJsonReader_ExitNamed, mPtr<mJsonReader> &jsonReader);
+
+mFUNCTION(mJsonReader_StepIntoArrayItem, mPtr<mJsonReader> &jsonReader, const size_t index);
+mFUNCTION(mJsonReader_ExitArrayItem, mPtr<mJsonReader> &jsonReader);
+
+mFUNCTION(mJsonReader_StepIntoArray, mPtr<mJsonReader> &jsonReader, const char *name);
+mFUNCTION(mJsonReader_ExitArray, mPtr<mJsonReader> &jsonReader);
+
+mFUNCTION(mJsonReader_GetArrayCount, mPtr<mJsonReader> &jsonReader, OUT size_t *pCount);
+
+mFUNCTION(mJsonReader_ReadNamedValue, mPtr<mJsonReader> &jsonReader, const char *name, OUT mString *pString);
+mFUNCTION(mJsonReader_ReadNamedValue, mPtr<mJsonReader> &jsonReader, const char *name, OUT double_t *pValue);
+mFUNCTION(mJsonReader_ReadNamedValue, mPtr<mJsonReader> &jsonReader, const char *name, OUT bool *pValue);
+mFUNCTION(mJsonReader_ReadNamedNull, mPtr<mJsonReader> &jsonReader, const char *name);
+
+mFUNCTION(mJsonReader_ReadArrayValue, mPtr<mJsonReader> &jsonReader, const size_t index, OUT mString *pString);
+mFUNCTION(mJsonReader_ReadArrayValue, mPtr<mJsonReader> &jsonReader, const size_t index, OUT double_t *pValue);
+mFUNCTION(mJsonReader_ReadArrayValue, mPtr<mJsonReader> &jsonReader, const size_t index, OUT bool *pValue);
+mFUNCTION(mJsonReader_ReadArrayNull, mPtr<mJsonReader> &jsonReader, const size_t index);
+
+mFUNCTION(mJsonReader_GetCurrentValueType, mPtr<mJsonReader> &jsonReader, OUT mJsonReader_EntryType *pEntryType);
+
+mFUNCTION(mJsonReader_ReadCurrentValue, mPtr<mJsonReader> &jsonReader, OUT mString *pString);
+mFUNCTION(mJsonReader_ReadCurrentValue, mPtr<mJsonReader> &jsonReader, OUT double_t *pValue);
+mFUNCTION(mJsonReader_ReadCurrentValue, mPtr<mJsonReader> &jsonReader, OUT bool *pValue);
+
 #endif // mJson_h__

@@ -110,27 +110,59 @@ mFUNCTION(MainLoop)
   mERROR_CHECK(mJsonWriter_AddValue(jsonWriter, "valueD", false));
   mERROR_CHECK(mJsonWriter_AddValue(jsonWriter, "valueE", nullptr));
 
-  mERROR_CHECK(mJsonWriter_BeginNamed(jsonWriter, "NamedSubsection"));
-  mERROR_CHECK(mJsonWriter_AddValue(jsonWriter, "valueA", "A"));
-  mERROR_CHECK(mJsonWriter_AddValue(jsonWriter, "valueB", 0.5));
+  mERROR_CHECK(mJsonWriter_BeginNamed(jsonWriter, "Named"));
+  mERROR_CHECK(mJsonWriter_AddValue(jsonWriter, "valueA", "B"));
+  mERROR_CHECK(mJsonWriter_AddValue(jsonWriter, "valueB", 0.75));
   mERROR_CHECK(mJsonWriter_AddValue(jsonWriter, "valueC", true));
   mERROR_CHECK(mJsonWriter_AddValue(jsonWriter, "valueD", false));
   mERROR_CHECK(mJsonWriter_AddValue(jsonWriter, "valueE", nullptr));
   mERROR_CHECK(mJsonWriter_EndNamed(jsonWriter));
 
-  mERROR_CHECK(mJsonWriter_BeginArray(jsonWriter, "NamedSubsection"));
-  mERROR_CHECK(mJsonWriter_AddValue(jsonWriter, "valueA", "A"));
-  mERROR_CHECK(mJsonWriter_AddValue(jsonWriter, "valueB", 0.5));
-  mERROR_CHECK(mJsonWriter_AddValue(jsonWriter, "valueC", true));
-  mERROR_CHECK(mJsonWriter_AddValue(jsonWriter, "valueD", false));
-  mERROR_CHECK(mJsonWriter_AddValue(jsonWriter, "valueE", nullptr));
-  mERROR_CHECK(mJsonWriter_AddArrayValue(jsonWriter, "A"));
-  mERROR_CHECK(mJsonWriter_AddArrayValue(jsonWriter, 0.5));
+  mERROR_CHECK(mJsonWriter_BeginArray(jsonWriter, "Array"));
+  mERROR_CHECK(mJsonWriter_AddArrayValue(jsonWriter, "D"));
+  mERROR_CHECK(mJsonWriter_AddArrayValue(jsonWriter, 0.125));
   mERROR_CHECK(mJsonWriter_AddArrayValue(jsonWriter, true));
   mERROR_CHECK(mJsonWriter_AddArrayValue(jsonWriter, false));
   mERROR_CHECK(mJsonWriter_AddArrayValue(jsonWriter, nullptr));
+  mERROR_CHECK(mJsonWriter_AddValue(jsonWriter, "valueA", "C"));
+  mERROR_CHECK(mJsonWriter_AddValue(jsonWriter, "valueB", 0.25));
+  mERROR_CHECK(mJsonWriter_AddValue(jsonWriter, "valueC", true));
+  mERROR_CHECK(mJsonWriter_AddValue(jsonWriter, "valueD", false));
+  mERROR_CHECK(mJsonWriter_AddValue(jsonWriter, "valueE", nullptr));
 
   mERROR_CHECK(mJsonWriter_ToFile(jsonWriter, "test.json"));
+
+  mPtr<mJsonReader> jsonReader;
+  mDEFER_DESTRUCTION(&jsonReader, mJsonReader_Destroy);
+  mERROR_CHECK(mJsonReader_CreateFromFile(&jsonReader, nullptr, "test.json"));
+
+  double_t value;
+  mERROR_CHECK(mJsonReader_ReadNamedValue(jsonReader, "valueB", &value));
+  mPRINT("%f", value);
+
+  mString stringValue;
+  mERROR_CHECK(mJsonReader_ReadNamedValue(jsonReader, "valueA", &stringValue));
+  mPRINT(stringValue.c_str());
+
+  mERROR_CHECK(mJsonReader_StepIntoArray(jsonReader, "Array"));
+
+  mERROR_CHECK(mJsonReader_ReadArrayValue(jsonReader, 1, &value));
+  mPRINT("%f", value);
+
+  mERROR_CHECK(mJsonReader_ReadArrayValue(jsonReader, 0, &stringValue));
+  mPRINT(stringValue.c_str());
+
+  mERROR_CHECK(mJsonReader_ExitArray(jsonReader));
+
+  mERROR_CHECK(mJsonReader_StepIntoNamed(jsonReader, "Named"));
+
+  mERROR_CHECK(mJsonReader_ReadNamedValue(jsonReader, "valueB", &value));
+  mPRINT("%f", value);
+
+  mERROR_CHECK(mJsonReader_ReadNamedValue(jsonReader, "valueA", &stringValue));
+  mPRINT(stringValue.c_str());
+
+  mERROR_CHECK(mJsonReader_ExitNamed(jsonReader));
 
   bool supportsStereo = false;
   mERROR_CHECK(mRenderParams_SupportsStereo3d(&supportsStereo));

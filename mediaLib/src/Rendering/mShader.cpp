@@ -46,12 +46,12 @@ mFUNCTION(mShader_Create, OUT mShader *pShader, const std::string &vertexShader,
 
   if (status != GL_TRUE)
   {
-    mPRINT("Error compiling vertex shader:\n");
-    mPRINT(vertexSource);
-    mPRINT("\n\nThe following error occured:\n");
+    mPRINT_ERROR("Error compiling vertex shader:\n");
+    mPRINT_ERROR(vertexSource);
+    mPRINT_ERROR("\n\nThe following error occured:\n");
     char buffer[1024];
     glGetShaderInfoLog(vertexShaderHandle, sizeof(buffer), nullptr, buffer);
-    mPRINT(buffer);
+    mPRINT_ERROR(buffer);
     mERROR_IF(true, mR_ResourceInvalid);
   }
 
@@ -77,12 +77,12 @@ mFUNCTION(mShader_Create, OUT mShader *pShader, const std::string &vertexShader,
 
   if (status != GL_TRUE)
   {
-    mPRINT("Error compiling fragment shader:\n");
-    mPRINT(fragmentSource);
-    mPRINT("\n\nThe following error occured:\n");
+    mPRINT_ERROR("Error compiling fragment shader:\n");
+    mPRINT_ERROR(fragmentSource);
+    mPRINT_ERROR("\n\nThe following error occured:\n");
     char buffer[1024];
     glGetShaderInfoLog(fragmentShaderHandle, sizeof(buffer), nullptr, buffer);
-    mPRINT(buffer);
+    mPRINT_ERROR(buffer);
     mERROR_IF(true, mR_ResourceInvalid);
   }
 
