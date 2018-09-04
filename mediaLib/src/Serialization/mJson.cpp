@@ -17,6 +17,10 @@
 
 //////////////////////////////////////////////////////////////////////////
 
+mFUNCTION(mJson_CheckError_Internal, IN cJSON *pJson);
+
+//////////////////////////////////////////////////////////////////////////
+
 enum mJsonWriterEntryType : uint8_t
 {
   Object,
@@ -79,7 +83,7 @@ mFUNCTION(mJsonWriter_BeginUnnamed, mPtr<mJsonWriter> &jsonWriter)
   {
     cJSON *pChild = cJSON_CreateObject();
     const auto __defer__ = mDefer_Create<cJSON>(cJSON_Delete, pChild, &mSTDRESULT);
-    mERROR_IF(pChild == nullptr, mR_InternalError);
+    mERROR_CHECK(mJson_CheckError_Internal(pChild));
 
     mERROR_CHECK(mJsonWriter_PushQueue_Internal(jsonWriter, pChild, Object));
   }
@@ -87,7 +91,7 @@ mFUNCTION(mJsonWriter_BeginUnnamed, mPtr<mJsonWriter> &jsonWriter)
   {
     cJSON *pChild = cJSON_CreateObject();
     const auto __defer__ = mDefer_Create<cJSON>(cJSON_Delete, pChild, &mSTDRESULT);
-    mERROR_IF(pChild == nullptr, mR_InternalError);
+    mERROR_CHECK(mJson_CheckError_Internal(pChild));
 
     mJsonWriterEntryType lastType;
     mERROR_CHECK(mJsonWriter_GetLastInTypeQueue_Internal(jsonWriter, &lastType));
@@ -133,7 +137,7 @@ mFUNCTION(mJsonWriter_BeginArray, mPtr<mJsonWriter> &jsonWriter, const char *nam
 
   cJSON *pChild = cJSON_CreateArray();
   const auto __defer__ = mDefer_Create<cJSON>(cJSON_Delete, pChild, &mSTDRESULT);
-  mERROR_IF(pChild == nullptr, mR_InternalError);
+  mERROR_CHECK(mJson_CheckError_Internal(pChild));
 
   mJsonWriterEntryType lastType;
   mERROR_CHECK(mJsonWriter_GetLastInTypeQueue_Internal(jsonWriter, &lastType));
@@ -177,7 +181,7 @@ mFUNCTION(mJsonWriter_BeginNamed, mPtr<mJsonWriter> &jsonWriter, const char *nam
 
   cJSON *pChild = cJSON_CreateObject();
   const auto __defer__ = mDefer_Create<cJSON>(cJSON_Delete, pChild, &mSTDRESULT);
-  mERROR_IF(pChild == nullptr, mR_InternalError);
+  mERROR_CHECK(mJson_CheckError_Internal(pChild));
 
   mJsonWriterEntryType lastType;
   mERROR_CHECK(mJsonWriter_GetLastInTypeQueue_Internal(jsonWriter, &lastType));
@@ -509,7 +513,7 @@ mFUNCTION(mJsonWriter_Destroy_Internal, IN mJsonWriter *pJsonWriter)
 
   if (count > 0)
   {
-    cJSON *pJson;
+    cJSON *pJson = nullptr;
     mERROR_CHECK(mQueue_PopFront(pJsonWriter->currentBlock, &pJson));
 
     cJSON_Delete(pJson);
@@ -579,6 +583,469 @@ mFUNCTION(mJsonWriter_PushQueue_Internal, mPtr<mJsonWriter> &jsonWriter, IN cJSO
 
   mERROR_CHECK(mQueue_PushBack(jsonWriter->currentBlock, pJsonElement));
   mERROR_CHECK(mQueue_PushBack(jsonWriter->currentType, type));
+
+  mRETURN_SUCCESS();
+}
+
+//////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
+
+struct mJsonReader
+{
+  mPtr<mQueue<cJSON *>> currentBlock;
+};
+
+mFUNCTION(mJsonReader_Create_Internal, OUT mPtr<mJsonReader> *pJsonReader, IN mAllocator *pAllocator);
+mFUNCTION(mJsonReader_Destroy_Internal, IN_OUT mJsonReader *pJsonReader);
+mFUNCTION(mJsonReader_PeekLast_Internal, mPtr<mJsonReader> &jsonReader, OUT cJSON **ppJson);
+mFUNCTION(mJsonReader_PopLast_Internal, mPtr<mJsonReader> &jsonReader);
+mFUNCTION(mJsonReader_PushValue_Internal, mPtr<mJsonReader> &jsonReader, IN cJSON *pJson);
+
+//////////////////////////////////////////////////////////////////////////
+
+mFUNCTION(mJsonReader_CreateFromString, OUT mPtr<mJsonReader> *pJsonReader, IN mAllocator *pAllocator, const mString &text)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_CHECK(mJsonReader_Create_Internal(pJsonReader, pAllocator));
+
+  cJSON *pJson = cJSON_Parse(text.c_str());
+  mERROR_CHECK(mJson_CheckError_Internal(pJson));
+  mERROR_CHECK(mJsonReader_PushValue_Internal(*pJsonReader, pJson));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mJsonReader_CreateFromFile, OUT mPtr<mJsonReader> *pJsonReader, IN mAllocator *pAllocator, const mString &filename)
+{
+  mFUNCTION_SETUP();
+
+  mString fileContents;
+  mERROR_CHECK(mFile_ReadAllText(filename, pAllocator, &fileContents));
+
+  mERROR_CHECK(mJsonReader_CreateFromString(pJsonReader, pAllocator, fileContents));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mJsonReader_Destroy, IN_OUT mPtr<mJsonReader> *pJsonReader)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pJsonReader == nullptr, mR_ArgumentNull);
+
+  mERROR_CHECK(mSharedPointer_Destroy(pJsonReader));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mJsonReader_StepIntoNamed, mPtr<mJsonReader> &jsonReader, const char *name)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(jsonReader == nullptr || name == nullptr, mR_ArgumentNull);
+
+  cJSON *pJson;
+  mERROR_CHECK(mJsonReader_PeekLast_Internal(jsonReader, &pJson));
+
+  cJSON *pChild = cJSON_GetObjectItemCaseSensitive(pJson, name);
+  mERROR_CHECK(mJson_CheckError_Internal(pChild));
+  mERROR_CHECK(mJsonReader_PushValue_Internal(jsonReader, pChild));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mJsonReader_ExitNamed, mPtr<mJsonReader> &jsonReader)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(jsonReader == nullptr, mR_ArgumentNull);
+
+  mERROR_CHECK(mJsonReader_PopLast_Internal(jsonReader));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mJsonReader_StepIntoArrayItem, mPtr<mJsonReader>& jsonReader, const size_t index)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(jsonReader == nullptr, mR_ArgumentNull);
+
+  cJSON *pJson;
+  mERROR_CHECK(mJsonReader_PeekLast_Internal(jsonReader, &pJson));
+
+  cJSON *pChild = cJSON_GetArrayItem(pJson, (int)index);
+  mERROR_CHECK(mJson_CheckError_Internal(pChild));
+  mERROR_CHECK(mJsonReader_PushValue_Internal(jsonReader, pChild));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mJsonReader_ExitArrayItem, mPtr<mJsonReader>& jsonReader)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(jsonReader == nullptr, mR_ArgumentNull);
+
+  mERROR_CHECK(mJsonReader_PopLast_Internal(jsonReader));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mJsonReader_StepIntoArray, mPtr<mJsonReader> &jsonReader, const char *name)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_CHECK(mJsonReader_StepIntoNamed(jsonReader, name));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mJsonReader_ExitArray, mPtr<mJsonReader> &jsonReader)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_CHECK(mJsonReader_ExitNamed(jsonReader));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mJsonReader_GetArrayCount, mPtr<mJsonReader> &jsonReader, OUT size_t *pCount)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(jsonReader == nullptr || pCount == nullptr, mR_ArgumentNull);
+
+  cJSON *pJson;
+  mERROR_CHECK(mJsonReader_PeekLast_Internal(jsonReader, &pJson));
+
+  mERROR_IF(!cJSON_IsArray(pJson), mR_ResourceStateInvalid);
+  
+  *pCount = cJSON_GetArraySize(pJson);
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mJsonReader_ReadNamedValue, mPtr<mJsonReader> &jsonReader, const char *name, OUT mString *pString)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(jsonReader == nullptr || name == nullptr || pString == nullptr, mR_ArgumentNull);
+
+  cJSON *pJson;
+  mERROR_CHECK(mJsonReader_PeekLast_Internal(jsonReader, &pJson));
+
+  cJSON *pChild = cJSON_GetObjectItemCaseSensitive(pJson, name);
+  mERROR_CHECK(mJson_CheckError_Internal(pChild));
+
+  mERROR_IF(!cJSON_IsString(pChild) || pChild->valuestring == nullptr, mR_ResourceNotFound);
+
+  mERROR_CHECK(mString_Create(pString, pChild->valuestring, nullptr));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mJsonReader_ReadNamedValue, mPtr<mJsonReader> &jsonReader, const char *name, OUT double_t *pValue)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(jsonReader == nullptr || name == nullptr || pValue == nullptr, mR_ArgumentNull);
+
+  cJSON *pJson;
+  mERROR_CHECK(mJsonReader_PeekLast_Internal(jsonReader, &pJson));
+
+  cJSON *pChild = cJSON_GetObjectItemCaseSensitive(pJson, name);
+  mERROR_CHECK(mJson_CheckError_Internal(pChild));
+
+  mERROR_IF(!cJSON_IsNumber(pChild), mR_ResourceNotFound);
+
+  *pValue = pChild->valuedouble;
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mJsonReader_ReadNamedValue, mPtr<mJsonReader> &jsonReader, const char *name, OUT bool *pValue)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(jsonReader == nullptr || name == nullptr || pValue == nullptr, mR_ArgumentNull);
+
+  cJSON *pJson;
+  mERROR_CHECK(mJsonReader_PeekLast_Internal(jsonReader, &pJson));
+
+  cJSON *pChild = cJSON_GetObjectItemCaseSensitive(pJson, name);
+  mERROR_CHECK(mJson_CheckError_Internal(pChild));
+
+  mERROR_IF(!cJSON_IsBool(pChild), mR_ResourceNotFound);
+
+  *pValue = cJSON_IsTrue(pChild) != 0;
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mJsonReader_ReadNamedNull, mPtr<mJsonReader> &jsonReader, const char *name)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(jsonReader == nullptr || name == nullptr, mR_ArgumentNull);
+
+  cJSON *pJson;
+  mERROR_CHECK(mJsonReader_PeekLast_Internal(jsonReader, &pJson));
+
+  cJSON *pChild = cJSON_GetObjectItemCaseSensitive(pJson, name);
+  mERROR_CHECK(mJson_CheckError_Internal(pChild));
+
+  mERROR_IF(!cJSON_IsNull(pChild), mR_ResourceNotFound);
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mJsonReader_ReadArrayValue, mPtr<mJsonReader> &jsonReader, const size_t index, OUT mString *pString)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(jsonReader == nullptr || pString == nullptr, mR_ArgumentNull);
+  mERROR_IF(index > INT_MAX, mR_ArgumentOutOfBounds);
+
+  cJSON *pJson;
+  mERROR_CHECK(mJsonReader_PeekLast_Internal(jsonReader, &pJson));
+
+  cJSON *pChild = cJSON_GetArrayItem(pJson, (int)index);
+  mERROR_CHECK(mJson_CheckError_Internal(pChild));
+
+  mERROR_IF(!cJSON_IsString(pChild) || pChild->valuestring == nullptr, mR_ResourceNotFound);
+
+  mERROR_CHECK(mString_Create(pString, pChild->valuestring, nullptr));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mJsonReader_ReadArrayValue, mPtr<mJsonReader> &jsonReader, const size_t index, OUT double_t *pValue)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(jsonReader == nullptr || pValue == nullptr, mR_ArgumentNull);
+  mERROR_IF(index > INT_MAX, mR_ArgumentOutOfBounds);
+
+  cJSON *pJson;
+  mERROR_CHECK(mJsonReader_PeekLast_Internal(jsonReader, &pJson));
+
+  cJSON *pChild = cJSON_GetArrayItem(pJson, (int)index);
+  mERROR_CHECK(mJson_CheckError_Internal(pChild));
+
+  mERROR_IF(!cJSON_IsNumber(pChild), mR_ResourceNotFound);
+
+  *pValue = pChild->valuedouble;
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mJsonReader_ReadArrayValue, mPtr<mJsonReader> &jsonReader, const size_t index, OUT bool *pValue)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(jsonReader == nullptr || pValue == nullptr, mR_ArgumentNull);
+  mERROR_IF(index > INT_MAX, mR_ArgumentOutOfBounds);
+
+  cJSON *pJson;
+  mERROR_CHECK(mJsonReader_PeekLast_Internal(jsonReader, &pJson));
+
+  cJSON *pChild = cJSON_GetArrayItem(pJson, (int)index);
+  mERROR_CHECK(mJson_CheckError_Internal(pChild));
+
+  mERROR_IF(!cJSON_IsBool(pChild), mR_ResourceNotFound);
+
+  *pValue = cJSON_IsTrue(pChild) != 0;
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mJsonReader_ReadArrayNull, mPtr<mJsonReader> &jsonReader, const size_t index)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(jsonReader == nullptr, mR_ArgumentNull);
+  mERROR_IF(index > INT_MAX, mR_ArgumentOutOfBounds);
+
+  cJSON *pJson;
+  mERROR_CHECK(mJsonReader_PeekLast_Internal(jsonReader, &pJson));
+
+  cJSON *pChild = cJSON_GetArrayItem(pJson, (int)index);
+  mERROR_CHECK(mJson_CheckError_Internal(pChild));
+
+  mERROR_IF(!cJSON_IsNull(pChild), mR_ResourceNotFound);
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mJsonReader_GetCurrentValueType, mPtr<mJsonReader> &jsonReader, OUT mJsonReader_EntryType *pEntryType)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(jsonReader == nullptr || pEntryType == nullptr, mR_ArgumentNull);
+
+  cJSON *pJson;
+  mERROR_CHECK(mJsonReader_PeekLast_Internal(jsonReader, &pJson));
+
+  if (cJSON_IsObject(pJson))
+    *pEntryType = mJR_ET_Object;
+  else if (cJSON_IsArray(pJson))
+    *pEntryType = mJR_ET_Array;
+  else if (cJSON_IsNumber(pJson))
+    *pEntryType = mJR_ET_Number;
+  else if (cJSON_IsString(pJson))
+    *pEntryType = mJR_ET_String;
+  else if (cJSON_IsBool(pJson))
+    *pEntryType = mJR_ET_Bool;
+  else if (cJSON_IsNull(pJson))
+    *pEntryType = mJR_ET_Null;
+  else
+    *pEntryType = mJR_ET_Invalid;
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mJsonReader_ReadCurrentValue, mPtr<mJsonReader> &jsonReader, OUT mString *pString)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(jsonReader == nullptr || pString == nullptr, mR_ArgumentNull);
+
+  cJSON *pJson;
+  mERROR_CHECK(mJsonReader_PeekLast_Internal(jsonReader, &pJson));
+
+  mERROR_IF(!cJSON_IsString(pJson) || pJson->valuestring == nullptr, mR_ResourceIncompatible);
+
+  mERROR_CHECK(mString_Create(pString, pJson->valuestring));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mJsonReader_ReadCurrentValue, mPtr<mJsonReader>& jsonReader, OUT double_t * pValue)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(jsonReader == nullptr || pValue == nullptr, mR_ArgumentNull);
+
+  cJSON *pJson;
+  mERROR_CHECK(mJsonReader_PeekLast_Internal(jsonReader, &pJson));
+
+  mERROR_IF(!cJSON_IsNumber(pJson), mR_ResourceIncompatible);
+  
+  *pValue = pJson->valuedouble;
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mJsonReader_ReadCurrentValue, mPtr<mJsonReader>& jsonReader, OUT bool * pValue)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(jsonReader == nullptr || pValue == nullptr, mR_ArgumentNull);
+
+  cJSON *pJson;
+  mERROR_CHECK(mJsonReader_PeekLast_Internal(jsonReader, &pJson));
+
+  mERROR_IF(!cJSON_IsBool(pJson), mR_ResourceIncompatible);
+
+  *pValue = cJSON_IsTrue(pJson) != 0;
+
+  mRETURN_SUCCESS();
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+mFUNCTION(mJsonReader_Create_Internal, OUT mPtr<mJsonReader> *pJsonReader, IN mAllocator *pAllocator)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pJsonReader == nullptr, mR_ArgumentNull);
+
+  mERROR_CHECK(mSharedPointer_Allocate(pJsonReader, pAllocator, (std::function<void(mJsonReader *)>)[](mJsonReader *pData) { mJsonReader_Destroy_Internal(pData); }, 1));
+
+  mERROR_CHECK(mQueue_Create(&(*pJsonReader)->currentBlock, pAllocator));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mJsonReader_Destroy_Internal, IN_OUT mJsonReader *pJsonReader)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pJsonReader == nullptr, mR_ArgumentNull);
+
+  size_t count = 0;
+  mERROR_CHECK(mQueue_GetCount(pJsonReader->currentBlock, &count));
+
+  if (count > 0)
+  {
+    cJSON *pJson = nullptr;
+    mERROR_CHECK(mQueue_PopFront(pJsonReader->currentBlock, &pJson));
+
+    cJSON_Delete(pJson);
+  }
+
+  mERROR_CHECK(mQueue_Destroy(&pJsonReader->currentBlock));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mJsonReader_PeekLast_Internal, mPtr<mJsonReader> &jsonReader, OUT cJSON **ppJson)
+{
+  mFUNCTION_SETUP();
+
+  size_t count = 0;
+  mERROR_CHECK(mQueue_GetCount(jsonReader->currentBlock, &count));
+
+  if (count == 0)
+    mRETURN_RESULT(mR_ResourceStateInvalid);
+
+  mERROR_CHECK(mQueue_PeekBack(jsonReader->currentBlock, ppJson));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mJsonReader_PopLast_Internal, mPtr<mJsonReader>& jsonReader)
+{
+  mFUNCTION_SETUP();
+
+  size_t count = 0;
+  mERROR_CHECK(mQueue_GetCount(jsonReader->currentBlock, &count));
+
+  if (count <= 1)
+    mRETURN_SUCCESS();
+
+  cJSON *pJson;
+  mERROR_CHECK(mQueue_PopBack(jsonReader->currentBlock, &pJson));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mJsonReader_PushValue_Internal, mPtr<mJsonReader> &jsonReader, IN cJSON *pJson)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_CHECK(mQueue_PushBack(jsonReader->currentBlock, pJson));
+
+  mRETURN_SUCCESS();
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+mFUNCTION(mJson_CheckError_Internal, IN cJSON *pJson)
+{
+  mFUNCTION_SETUP();
+
+  if (pJson == nullptr)
+  {
+    const char *error = cJSON_GetErrorPtr();
+
+    if (error != nullptr)
+      mPRINT_ERROR("mJsonReader Error: %s\n", error);
+
+    mRETURN_RESULT(mR_ResourceNotFound);
+  }
 
   mRETURN_SUCCESS();
 }
