@@ -19,3 +19,6 @@
 [submodule "mediaLib/3rdParty/cJSON"]
 	path = mediaLib/3rdParty/cJSON
 	url = https://github.com/DaveGamble/cJSON.git
+[submodule "premake"]
+	path = premake
+	url = https://github.com/rainerzufalldererste/premakeBuild
