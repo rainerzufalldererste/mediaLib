@@ -60,12 +60,7 @@ mFUNCTION(mDefaultAllocator_Copy, IN_OUT uint8_t *pDestimation, IN const uint8_t
 {
   mFUNCTION_SETUP();
 
-  //mERROR_CHECK(mMemcpy(pDestimation, pSource, size * count));
-
-  for (size_t i = 0; i < size * count; i++)
-  {
-    pDestimation[i] = pSource[i];
-  }
+  mERROR_CHECK(mMemcpy(pDestimation, pSource, size * count));
 
   mRETURN_SUCCESS();
 }
@@ -113,7 +108,7 @@ mFUNCTION(mAllocator_Create, OUT mAllocator *pAllocator, IN mAllocator_AllocFunc
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mAllocator_Destoy, IN_OUT mAllocator *pAllocator)
+mFUNCTION(mAllocator_Destroy, IN_OUT mAllocator *pAllocator)
 {
   mFUNCTION_SETUP();
 
