@@ -35,6 +35,7 @@ enum mResult
   mR_ResourceIncompatible,
   mR_EndOfStream,
   mR_RenderingError,
+  mR_Failure,
 
   mResult_Count
 };

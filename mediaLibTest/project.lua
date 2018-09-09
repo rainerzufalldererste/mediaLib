@@ -22,6 +22,7 @@ project(ProjectName)
   files { "src/**.cpp", "src/**.h", "src/**.inl" }
   files { "project.lua" }
 
+  includedirs { "src**" }
   includedirs { "../mediaLib/include/**" }
   includedirs { "../mediaLib/include" }
   includedirs { "3rdParty/**" }

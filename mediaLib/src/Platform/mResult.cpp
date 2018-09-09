@@ -123,6 +123,10 @@ mFUNCTION(mResult_ToString, const mResult result, OUT mString *pString)
     *pString = "mR_RenderingError";
     break;
 
+  case mR_Failure:
+    *pString = "mR_Failure";
+    break;
+
   default:
     *pString = "<Unknown mResult>";
     break;
