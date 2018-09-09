@@ -7,5 +7,8 @@ solution "mediaLib"
   dofile "mediaLib/project.lua"
     location("mediaLib")
 
-    dofile "TestApp/project.lua"
-      location("TestApp")
+  dofile "mediaLibTest/project.lua"
+    location("mediaLibTest")
+
+  dofile "TestApp/project.lua"
+    location("TestApp")
