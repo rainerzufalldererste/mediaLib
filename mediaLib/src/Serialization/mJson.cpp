@@ -968,7 +968,7 @@ mFUNCTION(mJsonReader_ArrayForEach, mPtr<mJsonReader> &jsonReader, const std::fu
   cJSON_ArrayForEach(pElement, pJson)
   {
     mERROR_CHECK(mJsonReader_PushValue_Internal(jsonReader, pElement));
-    auto _defer_ = mDefer_Create<mPtr<mJsonReader>>(mJsonReader_PopLast_Internal, jsonReader);
+    mDEFER(mJsonReader_PopLast_Internal(jsonReader));
 
     mERROR_CHECK(callback(jsonReader, index));
 

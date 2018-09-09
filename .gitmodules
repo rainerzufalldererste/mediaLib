@@ -22,3 +22,6 @@
 [submodule "premake"]
 	path = premake
 	url = https://github.com/rainerzufalldererste/premakeBuild
+[submodule "mediaLibTest/3rdParty/gtest"]
+	path = mediaLibTest/3rdParty/gtest
+	url = https://github.com/rainerzufalldererste/gtestBuild.git
