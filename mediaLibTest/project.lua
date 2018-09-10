@@ -29,8 +29,10 @@ project(ProjectName)
 
   filter { "configurations:Release" }
     links { "../mediaLib/lib/mediaLib.lib" }
+    links { "3rdParty/gtest/lib/gtest.lib" }
   filter { "configurations:Debug" }
     links { "../mediaLib/lib/mediaLibD.lib" }
+    links { "3rdParty/gtest/lib/gtestd.lib" }
   
   filter { }
   
@@ -47,7 +49,6 @@ project(ProjectName)
 filter {}
 configuration {}
 
-links { "3rdParty/gtest/lib/gtest.lib" }
 
 warnings "Extra"
 

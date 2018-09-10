@@ -162,9 +162,9 @@ inline mFUNCTION(mQueue_PushFront, mPtr<mQueue<T>>& queue, IN T * pItem)
   size_t index;
 
   if (queue->startIndex > 0)
-    index = queue.startIndex - 1;
+    index = queue->startIndex - 1;
   else
-    index = queue.size - 1;
+    index = queue->size - 1;
 
   if (!std::is_trivially_copy_constructible<T>::value)
     new (&queue->pData[index]) T(*pItem);
@@ -218,6 +218,8 @@ inline mFUNCTION(mQueue_PeekBack, mPtr<mQueue<T>>& queue, OUT T *pItem)
 {
   mFUNCTION_SETUP();
 
+  mERROR_IF(queue == nullptr || pItem == nullptr, mR_ArgumentNull);
+
   mERROR_CHECK(mQueue_PeekAt(queue, queue->count - 1, pItem));
 
   mRETURN_SUCCESS();
@@ -227,6 +229,8 @@ template<typename T>
 inline mFUNCTION(mQueue_PopBack, mPtr<mQueue<T>> &queue, OUT T *pItem)
 {
   mFUNCTION_SETUP();
+
+  mERROR_IF(queue == nullptr || pItem == nullptr, mR_ArgumentNull);
 
   mERROR_CHECK(mQueue_PopAt_Internal(queue, queue->count - 1, pItem));
 
@@ -354,7 +358,7 @@ inline mFUNCTION(mQueue_Grow_Internal, mPtr<mQueue<T>> &queue)
 }
 
 template<typename T>
-inline mFUNCTION(mQueue_PopAt_Internal, mPtr<mQueue<T>>& queue, const size_t index, OUT T * pItem)
+inline mFUNCTION(mQueue_PopAt_Internal, mPtr<mQueue<T>> &queue, const size_t index, OUT T *pItem)
 {
   mFUNCTION_SETUP();
 
