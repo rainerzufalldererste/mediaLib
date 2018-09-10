@@ -12,7 +12,7 @@
 #include "default.h"
 #include "gtest/gtest.h"
 
-//#define mDEBUG_TESTS
+#define mDEBUG_TESTS
 
 #ifdef mDEBUG_TESTS
 #define mTEST_FAIL() do { printf("Test Failed at " __FUNCTION__ " in File '" __FILE__ "' Line %" PRIi32 ".", __LINE__); __debugbreak(); } while(0)
