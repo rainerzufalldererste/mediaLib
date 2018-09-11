@@ -54,6 +54,7 @@ public:
     uint8_t inplaceConstructed : 1;
     mAllocator *pAllocator;
     std::function<void (T*)> cleanupFunction;
+    void *pUserData;
 
     PointerParams() = default;
     ~PointerParams() = default;
@@ -83,6 +84,7 @@ inline mFUNCTION(mSharedPointer_Create, OUT mSharedPointer<T> *pOutSharedPointer
   pOutSharedPointer->m_pParams->inplaceConstructed = false;
   pOutSharedPointer->m_pParams->cleanupFunction = cleanupFunction;
   pOutSharedPointer->m_pData = pData;
+  pOutSharedPointer->m_pParams->pUserData = nullptr;
 
   mRETURN_SUCCESS();
 }
@@ -145,6 +147,7 @@ inline mFUNCTION(mSharedPointer_CreateInplace, IN_OUT mSharedPointer<T> *pOutSha
   pOutSharedPointer->m_pParams->freeResource = (pAllocator != mSHARED_POINTER_FOREIGN_RESOURCE);
   pOutSharedPointer->m_pParams->cleanupFunction = cleanupFunction;
   pOutSharedPointer->m_pParams->inplaceConstructed = true;
+  pOutSharedPointer->m_pParams->pUserData = nullptr;
 
   pOutSharedPointer->m_pData = pData;
 

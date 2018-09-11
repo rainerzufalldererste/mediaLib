@@ -6,47 +6,58 @@
 // 
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-#ifndef mPool_h__
-#define mPool_h__
+#ifndef mRefPool_h__
+#define mRefPool_h__
 
 #include "default.h"
-#include "mChunkedArray.h"
+#include "mPool.h"
+#include "mMutex.h"
 
 template <typename T>
-struct mPool
+struct mRefPool
 {
-  size_t count;
-  size_t size;
-  size_t allocatedSize;
-  size_t *pIndexes;
-  mPtr<mChunkedArray<T>> data;
+  struct refPoolPtrData
+  {
+    T element;
+    typename mSharedPointer<T>::PointerParams ptrParams;
+    size_t index;
+  };
+
+  struct refPoolPtr
+  {
+    size_t dataIndex;
+    mPtr<T> ptr;
+  };
+
+  mPtr<mPool<refPoolPtrData>> data;
+  mPtr<mPool<refPoolPtr>> ptrs;
+  mMutex *pMutex;
   mAllocator *pAllocator;
+  bool keepForever;
 };
 
 template <typename T>
-mFUNCTION(mPool_Create, OUT mPtr<mPool<T>> *pPool, IN mAllocator *pAllocator);
+mFUNCTION(mRefPool_Create, mPtr<mRefPool<T>> *pRefPool, mAllocator *pAllocator, const bool keepEntriesForever = false);
 
 template <typename T>
-mFUNCTION(mPool_Destroy, IN_OUT mPtr<mPool<T>> *pPool);
+mFUNCTION(mRefPool_Destroy, mPtr<mRefPool<T>> *pRefPool);
 
 template <typename T>
-mFUNCTION(mPool_Add, mPtr<mPool<T>> &pool, IN T *pItem, OUT size_t *pIndex);
+mFUNCTION(mRefPool_Add, mPtr<mRefPool<T>> &refPool, IN T *pItem, OUT mPtr<T> *pIndex);
 
 template <typename T>
-mFUNCTION(mPool_RemoveAt, mPtr<mPool<T>> &pool, const size_t index, OUT T *pItem);
+mFUNCTION(mRefPool_AddEmpty, mPtr<mRefPool<T>> &refPool, OUT mPtr<T> *pIndex);
 
 template <typename T>
-mFUNCTION(mPool_GetCount, mPtr<mPool<T>> &pool, OUT size_t *pCount);
+mFUNCTION(mRefPool_Crush, mPtr<mRefPool<T>> &refPool);
 
 template <typename T>
-mFUNCTION(mPool_PeekAt, mPtr<mPool<T>> &pool, const size_t index, OUT T *pItem);
+mFUNCTION(mRefPool_ForEach, mPtr<mRefPool<T>> &refPool, const std::function<mResult (mPtr<T> &)> &function);
 
+// would be handled by cpp but still nicer if explicitly defined.
 template <typename T>
-mFUNCTION(mPool_PointerAt, mPtr<mPool<T>> &pool, const size_t index, OUT T **ppItem);
+mFUNCTION(mDestruct, struct mRefPool<T>::refPoolPtr *pData);
 
-template <typename T>
-mFUNCTION(mPool_ForEach, mPtr<mPool<T>> &pool, const std::function<mResult (T *, size_t)> &function);
+#include "mRefPool.inl"
 
-#include "mPool.inl"
-
-#endif // mPool_h__
+#endif // mRefPool_h__

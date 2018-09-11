@@ -14,12 +14,18 @@
 template <typename T>
 mFUNCTION(mDestruct, IN T *pData);
 
+#define mDESTRUCT_LOG_DESTRUCTIONS
+
 //////////////////////////////////////////////////////////////////////////
 
 template <typename T>
 inline mFUNCTION(mDestruct, IN T *pData)
 {
   mFUNCTION_SETUP();
+
+#ifdef mDESTRUCT_LOG_DESTRUCTIONS
+  mLOG("Destructing resource of type %s with generic destruction function.", typeid(T *).name());
+#endif
 
   if (pData != nullptr && std::is_destructible<T>::value)
     pData->~T();

@@ -53,7 +53,7 @@
 
 #define mARRAYSIZE(arrayName) (sizeof(arrayName) / sizeof(arrayName[0]))
 
-#define mASSERT(expression, text) do { if(!(expression)) { mPRINT("Assertion Failed: %s\n'%s'\n\nIn File '%s' : Line '%" PRIi32 "' (Function '%s')\n", #expression, text, __FILE__, __LINE__, __FUNCTION__); assert(expression); } } while (0)
+#define mASSERT(expression, text) do { if(!(expression)) { mPRINT("Assertion Failed: %s\n'%s'\n\nIn File '%s' : Line '%" PRIi32 "' (Function '%s')\n", #expression, text, __FILE__, __LINE__, __FUNCTION__); mAssert_Internal(#expression, text, __FUNCTION__, __FILE__, __LINE__); } } while (0)
 #define mFAIL(text) mPRINT("Assertion Failed: '%s'\n\nIn File '%s' : Line '%" PRIi32 "' (Function '%s')\n", text, __FILE__, __LINE__, __FUNCTION__)
 #define mPRINT(text, ...) printf(text, __VA_ARGS__)
 #define mPRINT_ERROR(text, ...) printf(text, __VA_ARGS__)
@@ -97,5 +97,6 @@ void mUnused(T unused, Args && ...args)
 #include "mString.h"
 
 mFUNCTION(mSleep, const size_t milliseconds = 0);
+void mAssert_Internal(const char *expression, const char *text, const char *function, const char *file, const int32_t line);
 
 #endif // default_h__

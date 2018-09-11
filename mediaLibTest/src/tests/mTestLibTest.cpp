@@ -6,30 +6,32 @@
 // 
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-#include <windows.h>
-#include <intsafe.h>
-#include <cstdio>
+#include "mTestLib.h"
 
-#include "default.h"
-
-mFUNCTION(mSleep, const size_t milliseconds)
+mTEST(TestDestructible, Destruct)
 {
-  mFUNCTION_SETUP();
+  mTEST_ALLOCATOR_SETUP();
 
-  mERROR_IF(milliseconds > DWORD_MAX, mR_ArgumentOutOfBounds);
+  mDummyDestructible dummy;
+  mTEST_ASSERT_SUCCESS(mDummyDestructible_Create(&dummy, pAllocator));
+  mTEST_ASSERT_FALSE(dummy.destructed);
 
-  Sleep((DWORD)milliseconds);
+  mTEST_ASSERT_SUCCESS(mDestruct(&dummy));
+  mTEST_ASSERT_TRUE(dummy.destructed);
 
-  mRETURN_SUCCESS();
+  mTEST_ALLOCATOR_ZERO_CHECK();
 }
 
-void mAssert_Internal(const char *expression, const char *text, const char *function, const char *file, const int32_t line)
+mTEST(TestTemplatedDestructible, Destruct)
 {
-#if defined (_DEBUG)
-  _CrtDbgReport(_CRT_ASSERT, file, line, function, "Error: '%s'.\nExpression: %s\n", text, expression);
-#else
-  mUnused(expression, text, function, file, line);
-#endif
+  mTEST_ALLOCATOR_SETUP();
 
-  __debugbreak();
+  mTemplatedDestructible<size_t> dummy;
+  mTEST_ASSERT_SUCCESS(mDummyDestructible_Create(&dummy, pAllocator));
+  mTEST_ASSERT_FALSE(dummy.destructed);
+
+  mTEST_ASSERT_SUCCESS(mDestruct(&dummy));
+  mTEST_ASSERT_TRUE(dummy.destructed);
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
 }

@@ -100,3 +100,29 @@ mFUNCTION(mTestAllocator_GetCount, mAllocator * pAllocator, size_t *pCount)
 
   mRETURN_SUCCESS();
 }
+
+mFUNCTION(mDummyDestructible_Create, mDummyDestructible *pDestructable, mAllocator *pAllocator)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pDestructable == nullptr, mR_ArgumentNull);
+  mERROR_IF(pAllocator == nullptr, mR_InvalidParameter); // should be test allocator.
+
+  pDestructable->pAllocator = pAllocator;
+  mERROR_CHECK(mAllocator_Allocate(pAllocator, &pDestructable->pData, 1));
+  pDestructable->destructed = false;
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mDestruct, mDummyDestructible *pDestructable)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pDestructable == nullptr, mR_ArgumentNull);
+
+  mERROR_CHECK(mAllocator_FreePtr(pDestructable->pAllocator, &pDestructable->pData));
+  pDestructable->destructed = true;
+
+  mRETURN_SUCCESS();
+}
