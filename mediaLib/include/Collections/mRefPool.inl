@@ -85,7 +85,7 @@ inline mFUNCTION(mRefPool_AddEmpty, mPtr<mRefPool<T>> &refPool, OUT mPtr<T> *pIn
   void *pRefPool = refPool.GetPointer();
 
 #if defined (_DEBUG)
-#define mRefPool_Internal_ERROR_CHECK(expr) do { mASSERT_DEBUG(mSUCCEEDED(expr), "Assertion Failed!"); if (mFAILED(expr)) return; } while (0)
+#define mRefPool_Internal_ERROR_CHECK(expr) do { mResult __result = (expr); mASSERT_DEBUG(mSUCCEEDED(__result), "Assertion Failed!"); if (mFAILED(__result)) return; } while (0)
 #else
 #define mRefPool_Internal_ERROR_CHECK(expr) do { if (mFAILED(expr)) return; } while (0)
 #endif

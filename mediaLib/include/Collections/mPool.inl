@@ -89,12 +89,14 @@ mFUNCTION(mPool_Add, mPtr<mPool<T>> &pool, IN T *pItem, OUT size_t *pIndex)
         pool->pIndexes[i] |= ((size_t)1 << indexOffset);
         ++pool->count;
 
-        break;
+        goto break_all_loops;
       }
 
       flags >>= 1;
     }
   }
+
+break_all_loops:
 
   mRETURN_SUCCESS();
 }
@@ -186,7 +188,7 @@ inline mFUNCTION(mPool_ForEach, mPtr<mPool<T>> &pool, const std::function<mResul
 
   size_t index = 0;
   
-  for (size_t i = 0; i < pool->count / sizeof(pool->pIndexes[0]); ++i)
+  for (size_t i = 0; i < pool->count / sizeof(pool->pIndexes[0]) + 1; ++i)
   {
     size_t flag = 1;
 
@@ -201,8 +203,13 @@ inline mFUNCTION(mPool_ForEach, mPtr<mPool<T>> &pool, const std::function<mResul
 
       flag <<= 1;
       ++index;
+
+      if (index == pool->count)
+        goto break_all_loops;
     }
   }
+
+break_all_loops:
 
   mRETURN_SUCCESS();
 }
