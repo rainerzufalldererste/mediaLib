@@ -6,30 +6,35 @@
 // 
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-#include <windows.h>
-#include <intsafe.h>
-#include <cstdio>
+#include "mTestLib.h"
+#include "mRefPool.h"
 
-#include "default.h"
-
-mFUNCTION(mSleep, const size_t milliseconds)
+mTEST(mRefPool, TestCreate)
 {
-  mFUNCTION_SETUP();
+  mTEST_ALLOCATOR_SETUP();
 
-  mERROR_IF(milliseconds > DWORD_MAX, mR_ArgumentOutOfBounds);
+  mTEST_ASSERT_EQUAL(mR_ArgumentNull, mRefPool_Create((mPtr<mRefPool<mDummyDestructible>> *)nullptr, pAllocator));
 
-  Sleep((DWORD)milliseconds);
+  mPtr<mRefPool<mDummyDestructible>> refPool;
+  mDEFER_DESTRUCTION(&refPool, mRefPool_Destroy);
+  mTEST_ASSERT_SUCCESS(mRefPool_Create(&refPool, pAllocator));
 
-  mRETURN_SUCCESS();
+  mTEST_ALLOCATOR_ZERO_CHECK();
 }
 
-void mAssert_Internal(const char *expression, const char *text, const char *function, const char *file, const int32_t line)
+mTEST(mRefPool, TestAdd)
 {
-#if defined (_DEBUG)
-  _CrtDbgReport(_CRT_ASSERT, file, line, function, "Error: '%s'.\nExpression: %s\n", text, expression);
-#else
-  mUnused(expression, text, function, file, line);
-#endif
+  mTEST_ALLOCATOR_SETUP();
 
-  __debugbreak();
+  mPtr<mRefPool<mDummyDestructible>> refPool;
+  mDEFER_DESTRUCTION(&refPool, mRefPool_Destroy);
+  mTEST_ASSERT_SUCCESS(mRefPool_Create(&refPool, pAllocator));
+
+  mDummyDestructible dummy;
+  mTEST_ASSERT_SUCCESS(mDummyDestructible_Create(&dummy, pAllocator));
+
+  mPtr<mDummyDestructible> ptr;
+  mTEST_ASSERT_SUCCESS(mRefPool_Add(refPool, &dummy, &ptr));
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
 }

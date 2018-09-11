@@ -12,6 +12,8 @@
 #include "mResult.h"
 #include "default.h"
 
+//#define mDEBUG_MEMORY_ALLOCATIONS
+
 // Parameters:
 //   OUT uint8_t **ppData: pointer to pointer to allocate to.
 //   const size_t size: size of a single object.
@@ -104,6 +106,10 @@ mFUNCTION(mAllocator_Allocate, IN OPTIONAL mAllocator *pAllocator, OUT T **ppDat
   mERROR_IF(ppData == nullptr, mR_ArgumentNull);
   mDEFER_DESTRUCTION_ON_ERROR(ppData, mSetToNullptr);
 
+#ifdef mDEBUG_MEMORY_ALLOCATIONS
+  mLOG("Allocating %" PRIu64 " bytes for %" PRIu64 " elements of type %s (to zero).\n", sizeof(T) * count, count, typeid(T).name());
+#endif
+
   if (pAllocator == nullptr || !pAllocator->initialized || (pAllocator->pAllocate == nullptr && pAllocator->pAllocateZero == nullptr))
     mERROR_CHECK(mDefaultAllocator_Alloc((uint8_t **)ppData, sizeof(T), count));
   else if (pAllocator->pAllocate != nullptr)
@@ -121,6 +127,10 @@ mFUNCTION(mAllocator_AllocateZero, IN OPTIONAL mAllocator *pAllocator, OUT T **p
 
   mERROR_IF(ppData == nullptr, mR_ArgumentNull);
   mDEFER_DESTRUCTION_ON_ERROR(ppData, mSetToNullptr);
+
+#ifdef mDEBUG_MEMORY_ALLOCATIONS
+  mLOG("Allocating %" PRIu64 " bytes for %" PRIu64 " elements of type %s.\n", sizeof(T) * count, count, typeid(T).name());
+#endif
 
   if (pAllocator == nullptr || !pAllocator->initialized || (pAllocator->pAllocate == nullptr && pAllocator->pAllocateZero == nullptr))
   {
@@ -144,6 +154,10 @@ inline mFUNCTION(mAllocator_Reallocate, IN OPTIONAL mAllocator * pAllocator, OUT
 {
   mFUNCTION_SETUP();
 
+#ifdef mDEBUG_MEMORY_ALLOCATIONS
+  mLOG("Reallocating %" PRIu64 " bytes for %" PRIu64 " elements of type %s.\n", sizeof(T) * count, count, typeid(T).name());
+#endif
+
   if (pAllocator == nullptr || !pAllocator->initialized || pAllocator->pReallocate == nullptr)
     mERROR_CHECK(mDefaultAllocator_Realloc((uint8_t **)ppData, sizeof(T), count));
   else
@@ -160,6 +174,10 @@ inline mFUNCTION(mAllocator_FreePtr, IN OPTIONAL mAllocator *pAllocator, IN_OUT 
   mERROR_IF(ppData == nullptr, mR_ArgumentNull);
 
   mDEFER_DESTRUCTION(ppData, mSetToNullptr);
+
+#ifdef mDEBUG_MEMORY_ALLOCATIONS
+  mLOG("Freeing element(s) of type %s.\n", typeid(T).name());
+#endif
 
   if (*ppData == nullptr)
     mRETURN_SUCCESS();
@@ -179,6 +197,10 @@ inline mFUNCTION(mAllocator_Free, IN OPTIONAL mAllocator *pAllocator, IN T *pDat
 
   if (pData == nullptr)
     mRETURN_SUCCESS();
+
+#ifdef mDEBUG_MEMORY_ALLOCATIONS
+  mLOG("Freeing element(s) of type %s.\n", typeid(T).name());
+#endif
 
   if (pAllocator == nullptr || !pAllocator->initialized || pAllocator->pFree == nullptr)
     mERROR_CHECK(mDefaultAllocator_Free((uint8_t *)pData));

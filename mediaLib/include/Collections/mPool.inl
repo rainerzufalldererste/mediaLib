@@ -1,3 +1,4 @@
+#include "mPool.h"
 // Copyright 2018 Christoph Stiller
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
@@ -176,6 +177,36 @@ mFUNCTION(mPool_PointerAt, mPtr<mPool<T>> &pool, const size_t index, OUT T **ppI
   mRETURN_SUCCESS();
 }
 
+template<typename T>
+inline mFUNCTION(mPool_ForEach, mPtr<mPool<T>> &pool, const std::function<mResult(T *)> &function)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pool == nullptr || function == nullptr, mR_ArgumentNull);
+
+  size_t index;
+  
+  for (size_t i = 0; i < pool->count / sizeof(pool->pIndexes[0]); ++i)
+  {
+    size_t flag = 1;
+
+    for (size_t j = 0; j < sizeof(pool->pIndexes[0]); ++j)
+    {
+      if (pool->pIndexes[i] & flag)
+      {
+        T *pItem = nullptr;
+        mERROR_CHECK(mChunkedArray_PointerAt(pool->m_pData, index, &pItem));
+        mERROR_CHECK(function(pItem, index))
+      }
+
+      flag <<= 1;
+      ++index;
+    }
+  }
+
+  mRETURN_SUCCESS();
+}
+
 //////////////////////////////////////////////////////////////////////////
 
 template<typename T>
@@ -185,10 +216,10 @@ inline mFUNCTION(mPool_Destroy_Internal, IN mPool<T> *pPool)
 
   mERROR_IF(pPool == nullptr, mR_ArgumentNull);
 
+  mERROR_CHECK(mChunkedArray_Destroy(&pPool->data));
+
   if (pPool->allocatedSize > 0)
     mERROR_CHECK(mAllocator_FreePtr(pPool->pAllocator, &pPool->pIndexes));
-
-  mERROR_CHECK(mChunkedArray_Destroy(&pPool->data));
 
   mRETURN_SUCCESS();
 }
