@@ -85,50 +85,42 @@ inline mFUNCTION(mRefPool_AddEmpty, mPtr<mRefPool<T>> &refPool, OUT mPtr<T> *pIn
   void *pRefPool = refPool.GetPointer();
 
 #if defined (_DEBUG)
-#define mRETURN_INVALID do { __debugbreak(); return; } while (0)
+#define mRefPool_Internal_ERROR_CHECK(expr) do { mASSERT_DEBUG(mSUCCEEDED(expr), "Assertion Failed!"); if (mFAILED(expr)) return; } while (0)
 #else
-#define mRETURN_INVALID return
+#define mRefPool_Internal_ERROR_CHECK(expr) do { if (mFAILED(expr)) return; } while (0)
 #endif
 
-  mERROR_CHECK(mSharedPointer_CreateInplace(&pPtr->ptr, &pPtrData->ptrParams, &pPtrData->element, mSHARED_POINTER_FOREIGN_RESOURCE, 
-    (std::function<void(T *)>)[pRefPool, index](T *pData)
+  const std::function<void(T *)> &destructionFunction = [pRefPool, index](T *pData)
   {
     mPtr<mRefPool<T>> _refPool;
     mDEFER_DESTRUCTION(&_refPool, mSharedPointer_Destroy);
 
-    if (mFAILED(mSharedPointer_Create(&_refPool, (mRefPool<T> *)pRefPool, mSHARED_POINTER_FOREIGN_RESOURCE)))
-      mRETURN_INVALID;
-
-    if (mFAILED(mMutex_Lock(_refPool->pMutex)))
-      mRETURN_INVALID;
+    mRefPool_Internal_ERROR_CHECK(mSharedPointer_Create(&_refPool, (mRefPool<T> *)pRefPool, mSHARED_POINTER_FOREIGN_RESOURCE));
+    mRefPool_Internal_ERROR_CHECK(mMutex_Lock(_refPool->pMutex));
 
     mDEFER_DESTRUCTION(_refPool->pMutex, mMutex_Unlock);
 
     typename mRefPool<T>::refPoolPtrData *_pPtrData = nullptr;
-
-    if (mFAILED(mPool_PointerAt(_refPool->data, index, &_pPtrData)))
-      mRETURN_INVALID;
+    mRefPool_Internal_ERROR_CHECK(mPool_PointerAt(_refPool->data, index, &_pPtrData));
 
     _pPtrData->ptrParams.cleanupFunction = nullptr;
 
     mASSERT(pData == &_pPtrData->element, "Reference pool corruption detected.");
-    if (mFAILED(mDestruct(pData)))
-      mRETURN_INVALID;
+    mRefPool_Internal_ERROR_CHECK(mDestruct(pData));
 
     typename mRefPool<T>::refPoolPtrData data;
-    if (mFAILED(mPool_RemoveAt(_refPool->data, index, &data)))
-      mRETURN_INVALID;
+    mRefPool_Internal_ERROR_CHECK(mPool_RemoveAt(_refPool->data, index, &data));
 
     typename mRefPool<T>::refPoolPtr *_pPtr;
-    if (mFAILED(mPool_PointerAt(_refPool->ptrs, data.index, &_pPtr)))
-      mRETURN_INVALID;
+    mRefPool_Internal_ERROR_CHECK(mPool_PointerAt(_refPool->ptrs, data.index, &_pPtr));
 
     _pPtr->ptr.m_pData = nullptr;
 
     typename mRefPool<T>::refPoolPtr _ptr;
-    if (mFAILED(mPool_RemoveAt(_refPool->ptrs, data.index, &_ptr)))
-      mRETURN_INVALID;
-  }));
+    mRefPool_Internal_ERROR_CHECK(mPool_RemoveAt(_refPool->ptrs, data.index, &_ptr));
+  };
+
+  mERROR_CHECK(mSharedPointer_CreateInplace(&pPtr->ptr, &pPtrData->ptrParams, &pPtrData->element, mSHARED_POINTER_FOREIGN_RESOURCE, destructionFunction));
 
   *pIndex = pPtr->ptr;
 
@@ -145,7 +137,12 @@ inline mFUNCTION(mRefPool_ForEach, mPtr<mRefPool<T>> &refPool, const std::functi
 
   mERROR_IF(refPool == nullptr || function == nullptr, mR_ArgumentNull);
 
-  mERROR_CHECK(mPool_ForEach(refPool->ptrs, [function](typename mRefPool<T>::refPoolPtr *pData, size_t) { return function(pData->ptr); }));
+  const std::function<mResult (typename mRefPool<T>::refPoolPtr *, size_t)> fn = [function](typename mRefPool<T>::refPoolPtr *pData, size_t) 
+  { 
+    RETURN function(pData->ptr); 
+  };
+
+  mERROR_CHECK(mPool_ForEach(refPool->ptrs, fn));
 
   mRETURN_SUCCESS();
 }

@@ -52,7 +52,7 @@ template <typename T>
 mFUNCTION(mRefPool_Crush, mPtr<mRefPool<T>> &refPool);
 
 template <typename T>
-mFUNCTION(mRefPool_ForEach, mPtr<mRefPool<T>> &refPool, const std::function<mResult (mPtr<T> &)> &function);
+mFUNCTION(mRefPool_ForEach, mPtr<mRefPool<T>> &refPool, const std::function<mResult(mPtr<T> &)> &function);
 
 // would be handled by cpp but still nicer if explicitly defined.
 template <typename T>
