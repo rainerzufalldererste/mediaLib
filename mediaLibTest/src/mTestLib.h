@@ -35,7 +35,8 @@
 #define mTEST_ASSERT_TRUE(a) mTEST_ASSERT_EQUAL(a, true)
 #define mTEST_ASSERT_FALSE(a) mTEST_ASSERT_EQUAL(a, false)
 
-#define mTEST_ASSERT_NOT_EQUAL(a, b) do \
+#define mTEST_ASSERT_NOT_EQUAL(a, b) \
+  do \
   { auto a_ = (a); \
     auto b_ = (b); \
     \
@@ -45,16 +46,31 @@
     } \
   } while(0)
 
+#define mTEST_ASSERT_SUCCESS(functionCall) \
+  do \
+  { mResult __result = (functionCall); \
+    \
+    if (mFAILED(__result)) \
+    { mString resultString; \
+      if (mFAILED(mResult_ToString(__result, &resultString))) \
+        printf("Test Failed on 'mFAILED(" #functionCall ")' with invalid result [0x%" PRIx64 "] at " __FUNCTION__ " in File '" __FILE__ "' Line %" PRIi32 ".", (uint64_t)__result, __LINE__); \
+      else \
+        printf("Test Failed on 'mFAILED(" #functionCall ")' with Result '%s' [0x%" PRIx64 "] at " __FUNCTION__ " in File '" __FILE__ "' Line %" PRIi32 ".", resultString.c_str(), (uint64_t)__result, __LINE__); \
+      __debugbreak(); \
+    } \
+  } while(0)
+  
+
 #else
 #define mTEST_FAIL() ASSERT_TRUE(false)
 #define mTEST_ASSERT_EQUAL(a, b) ASSERT_EQ(a, b)
 #define mTEST_ASSERT_TRUE(a) ASSERT_TRUE(a)
 #define mTEST_ASSERT_FALSE(a) ASSERT_FALSE(a)
 #define mTEST_ASSERT_NOT_EQUAL(a, b) ASSERT_TRUE((a) != (b))
+#define mTEST_ASSERT_SUCCESS(functionCall) mTEST_ASSERT_EQUAL(mR_Success, functionCall)
 #endif
 
 #define mTEST(Component, TestCase) TEST(Component, TestCase) 
-#define mTEST_ASSERT_SUCCESS(functionCall) mTEST_ASSERT_EQUAL(mR_Success, functionCall)
 
 #define mTEST_ALLOCATOR_SETUP() \
   mAllocator __testAllocator; \

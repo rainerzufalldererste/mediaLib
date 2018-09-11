@@ -178,13 +178,13 @@ mFUNCTION(mPool_PointerAt, mPtr<mPool<T>> &pool, const size_t index, OUT T **ppI
 }
 
 template<typename T>
-inline mFUNCTION(mPool_ForEach, mPtr<mPool<T>> &pool, const std::function<mResult(T *)> &function)
+inline mFUNCTION(mPool_ForEach, mPtr<mPool<T>> &pool, const std::function<mResult(T *, size_t)> &function)
 {
   mFUNCTION_SETUP();
 
   mERROR_IF(pool == nullptr || function == nullptr, mR_ArgumentNull);
 
-  size_t index;
+  size_t index = 0;
   
   for (size_t i = 0; i < pool->count / sizeof(pool->pIndexes[0]); ++i)
   {
@@ -195,8 +195,8 @@ inline mFUNCTION(mPool_ForEach, mPtr<mPool<T>> &pool, const std::function<mResul
       if (pool->pIndexes[i] & flag)
       {
         T *pItem = nullptr;
-        mERROR_CHECK(mChunkedArray_PointerAt(pool->m_pData, index, &pItem));
-        mERROR_CHECK(function(pItem, index))
+        mERROR_CHECK(mChunkedArray_PointerAt(pool->data, index, &pItem));
+        mERROR_CHECK(function(pItem, index));
       }
 
       flag <<= 1;

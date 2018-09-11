@@ -72,10 +72,10 @@ void mUnused(T unused, Args && ...args)
   mUnused(args...);
 }
 
-#ifndef _DEBUG
+#ifdef _DEBUG
 #define mASSERT_DEBUG(expr, text) mASSERT(expr, text)
 #define mFAIL_DEBUG(text) mFAIL(text)
-#else //_DEBUG
+#else // !_DEBUG
 #define mASSERT_DEBUG(expr, text) mUnused(expr, text)
 #define mFAIL_DEBUG(text) mUnused(text)
 #endif

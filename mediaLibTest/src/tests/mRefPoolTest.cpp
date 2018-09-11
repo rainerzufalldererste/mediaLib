@@ -38,3 +38,113 @@ mTEST(mRefPool, TestAdd)
 
   mTEST_ALLOCATOR_ZERO_CHECK();
 }
+
+mTEST(mRefPool, TestAddDestruct)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  mPtr<mRefPool<mDummyDestructible>> refPool;
+  mDEFER_DESTRUCTION(&refPool, mRefPool_Destroy);
+  mTEST_ASSERT_SUCCESS(mRefPool_Create(&refPool, pAllocator));
+
+  mDummyDestructible dummy;
+  mTEST_ASSERT_SUCCESS(mDummyDestructible_Create(&dummy, pAllocator));
+
+  mPtr<mDummyDestructible> ptr;
+  mTEST_ASSERT_SUCCESS(mRefPool_Add(refPool, &dummy, &ptr));
+  mTEST_ASSERT_SUCCESS(mSharedPointer_Destroy(&ptr));
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}
+
+mTEST(mRefPool, TestForeach)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  mPtr<mRefPool<mDummyDestructible>> refPool;
+  mDEFER_DESTRUCTION(&refPool, mRefPool_Destroy);
+  mTEST_ASSERT_SUCCESS(mRefPool_Create(&refPool, pAllocator));
+
+  mDummyDestructible dummy;
+  mTEST_ASSERT_SUCCESS(mDummyDestructible_Create(&dummy, pAllocator));
+
+  mPtr<mDummyDestructible> ptr;
+  mTEST_ASSERT_SUCCESS(mRefPool_Add(refPool, &dummy, &ptr));
+
+  mDummyDestructible dummy2;
+  mTEST_ASSERT_SUCCESS(mDummyDestructible_Create(&dummy2, pAllocator));
+
+  mPtr<mDummyDestructible> ptr2;
+  mTEST_ASSERT_SUCCESS(mRefPool_Add(refPool, &dummy2, &ptr2));
+
+  size_t count = 0;
+  mTEST_ASSERT_SUCCESS(mRefPool_ForEach(refPool,
+    (std::function<mResult(mPtr<mDummyDestructible> &)>)[&](mPtr<mDummyDestructible> &d)
+  {
+    mFUNCTION_SETUP();
+
+    mERROR_IF(d == nullptr, mR_ArgumentNull);
+    ++count;
+
+    mRETURN_SUCCESS();
+  }));
+
+  mTEST_ASSERT_EQUAL(2, count);
+
+  mTEST_ASSERT_SUCCESS(mSharedPointer_Destroy(&ptr));
+
+  count = 0;
+  mTEST_ASSERT_SUCCESS(mRefPool_ForEach(refPool,
+    (std::function<mResult(mPtr<mDummyDestructible> &)>)[&](mPtr<mDummyDestructible> &d)
+  {
+    mFUNCTION_SETUP();
+
+    mERROR_IF(d == nullptr, mR_ArgumentNull);
+    ++count;
+
+    mRETURN_SUCCESS();
+  }));
+
+  mTEST_ASSERT_EQUAL(1, count);
+
+  mTEST_ASSERT_SUCCESS(mRefPool_Add(refPool, &dummy, &ptr));
+
+  mDummyDestructible dummy3;
+  mTEST_ASSERT_SUCCESS(mDummyDestructible_Create(&dummy3, pAllocator));
+
+  mPtr<mDummyDestructible> ptr3;
+  mTEST_ASSERT_SUCCESS(mRefPool_Add(refPool, &dummy3, &ptr3));
+
+  count = 0;
+  mTEST_ASSERT_SUCCESS(mRefPool_ForEach(refPool,
+    (std::function<mResult(mPtr<mDummyDestructible> &)>)[&](mPtr<mDummyDestructible> &d)
+  {
+    mFUNCTION_SETUP();
+
+    mERROR_IF(d == nullptr, mR_ArgumentNull);
+    ++count;
+
+    mRETURN_SUCCESS();
+  }));
+
+  mTEST_ASSERT_EQUAL(3, count);
+
+  count = 0;
+  mTEST_ASSERT_SUCCESS(mRefPool_ForEach(refPool,
+    (std::function<mResult(mPtr<mDummyDestructible> &)>)[&](mPtr<mDummyDestructible> &d)
+  {
+    mFUNCTION_SETUP();
+
+    mERROR_IF(d == nullptr, mR_ArgumentNull);
+    ++count;
+
+    if (count == 2)
+      mRETURN_RESULT(mR_InternalError);
+
+    mRETURN_SUCCESS();
+  }));
+
+  mTEST_ASSERT_EQUAL(2, count);
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}
