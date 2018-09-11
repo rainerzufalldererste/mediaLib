@@ -20,7 +20,10 @@ mFUNCTION(mChunkedArray_Create, OUT mPtr<mChunkedArray<T>> *pChunkedArray, IN mA
   mFUNCTION_SETUP();
 
   mERROR_IF(pChunkedArray == nullptr, mR_ArgumentNull);
+  mERROR_IF(blockSize == 0, mR_ArgumentOutOfBounds);
+
   mERROR_CHECK(mSharedPointer_Allocate(pChunkedArray, pAllocator, (std::function<void(mChunkedArray<T> *)>) [](mChunkedArray<T> *pData) { mChunkedArray_Destroy_Internal(pData); }, 1));
+
   (*pChunkedArray)->blockSize = blockSize;
   new (&(*pChunkedArray)->destructionFunction) std::function<mResult(T *)>(nullptr);
 
@@ -148,7 +151,7 @@ mFUNCTION(mChunkedArray_PopAt, mPtr<mChunkedArray<T>> &chunkedArray, const size_
 
     const size_t blockSize = pBlock->blockEndIndex - pBlock->blockStartIndex;
 
-    if (currentIndex + blockSize < index)
+    if (currentIndex + blockSize <= index)
     {
       currentIndex += blockSize;
       continue;
@@ -208,7 +211,7 @@ mFUNCTION(mChunkedArray_PointerAt, mPtr<mChunkedArray<T>> &chunkedArray, const s
 
     const size_t blockSize = pBlock->blockEndIndex - pBlock->blockStartIndex;
 
-    if (currentIndex + blockSize < index)
+    if (currentIndex + blockSize <= index)
     {
       currentIndex += blockSize;
       continue;
