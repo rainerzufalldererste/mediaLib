@@ -55,9 +55,27 @@
 
 #define mASSERT(expression, text) do { if(!(expression)) { mPRINT("Assertion Failed: %s\n'%s'\n\nIn File '%s' : Line '%" PRIi32 "' (Function '%s')\n", #expression, text, __FILE__, __LINE__, __FUNCTION__); mAssert_Internal(#expression, text, __FUNCTION__, __FILE__, __LINE__); } } while (0)
 #define mFAIL(text) mPRINT("Assertion Failed: '%s'\n\nIn File '%s' : Line '%" PRIi32 "' (Function '%s')\n", text, __FILE__, __LINE__, __FUNCTION__)
-#define mPRINT(text, ...) printf(text, __VA_ARGS__)
-#define mPRINT_ERROR(text, ...) printf(text, __VA_ARGS__)
-#define mLOG(text, ...) printf(text, __VA_ARGS__)
+#define mPRINT(text, ...) mPrintPrepare(mPrintCallback, text, __VA_ARGS__)
+#define mLOG(text, ...) mPrintPrepare(mPrintLogCallback, text, __VA_ARGS__)
+#define mPRINT_ERROR(text, ...) mPrintPrepare(mPrintErrorCallback, text, __VA_ARGS__)
+
+//#define mTRACE_ENABLED
+
+#if defined (_DEBUG)
+#if !defined(mTRACE_ENABLED)
+#define mTRACE_ENABLED
+#endif
+
+#define mPRINT_DEBUG(text, ...) mPrintPrepare(mPrintDebugCallback, text, __VA_ARGS__)
+#else
+#define mPRINT_DEBUG(text, ...) mUnused(text, __VA_ARGS__)
+#endif
+
+#if defined (mTRACE_ENABLED)
+#define mTRACE(text, ...) mPrintPrepare(mPrintTraceCallback, text, __VA_ARGS__)
+#else
+#define mTRACE(text, ...) mUnused(text, __VA_ARGS__)
+#endif
 
 template <typename T>
 void mUnused(T unused)
@@ -71,6 +89,16 @@ void mUnused(T unused, Args && ...args)
   (void)unused;
   mUnused(args...);
 }
+
+typedef void mPrintCallbackFunc(const char *);
+extern mPrintCallbackFunc *mPrintCallback;
+extern mPrintCallbackFunc *mPrintErrorCallback;
+extern mPrintCallbackFunc *mPrintLogCallback;
+extern mPrintCallbackFunc *mPrintDebugCallback;
+extern mPrintCallbackFunc *mPrintTraceCallback;
+
+void mDefaultPrint(const char *text);
+void mPrintPrepare(mPrintCallbackFunc *pFunc, const char *format, ...);
 
 #ifdef _DEBUG
 #define mASSERT_DEBUG(expr, text) mASSERT(expr, text)

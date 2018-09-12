@@ -61,7 +61,7 @@ extern bool g_mResult_breakOnError;
 #define mBREAK_ON_FAILURE false
 #endif // _DEBUG
 
-void mDebugOut(const char *fmt, ...);
+void mDebugOut(const char *format, ...);
 void mPrintError(char *function, char *file, const int32_t line, const mResult error, const char *expression);
 
 mFUNCTION(mResult_ToString, const mResult result, OUT struct mString *pString);
