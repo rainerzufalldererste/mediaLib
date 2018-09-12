@@ -14,7 +14,7 @@
 template <typename T>
 mFUNCTION(mDestruct, IN T *pData);
 
-#define mDESTRUCT_LOG_DESTRUCTIONS
+//#define mDESTRUCT_LOG_DESTRUCTIONS
 
 //////////////////////////////////////////////////////////////////////////
 

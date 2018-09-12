@@ -15,20 +15,24 @@ mResult g_mResult_lastErrorResult = mR_Success;
 
 bool g_mResult_breakOnError = false;
 
-void mDebugOut(const char * fmt, ...)
+void mDebugOut(const char *format, ...)
 {
 #if !defined(FINAL)
-  char s[1025];
+  char buffer[1024 * 2];
+
+  mMemset(buffer, mARRAYSIZE(buffer), 0);
+
   va_list args;
-  ZeroMemory(s, 1025 * sizeof(s[0]));
-  va_start(args, fmt);
-  vsprintf_s(s, fmt, args);
+  va_start(args, format);
+  vsprintf_s(buffer, format, args);
   va_end(args);
-  s[1024] = 0;
-  printf(s);
-  OutputDebugStringA(s);
+
+  buffer[mARRAYSIZE(buffer) - 1] = 0;
+
+  mTRACE(buffer);
+  OutputDebugStringA(buffer);
 #else
-  mUnused(fmt);
+  mUnused(format);
 #endif
 }
 

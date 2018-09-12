@@ -12,6 +12,34 @@
 
 #include "default.h"
 
+void mDefaultPrint(const char *text)
+{
+  printf(text);
+}
+
+mPrintCallbackFunc *mPrintCallback = &mDefaultPrint;
+mPrintCallbackFunc *mPrintErrorCallback = &mDefaultPrint;
+mPrintCallbackFunc *mPrintLogCallback = &mDefaultPrint;
+mPrintCallbackFunc *mPrintDebugCallback = &mDefaultPrint;
+mPrintCallbackFunc *mPrintTraceCallback = &mDefaultPrint;
+
+void mPrintPrepare(mPrintCallbackFunc *pFunc, const char *format, ...)
+{
+  if (pFunc != nullptr)
+  {
+    char buffer[1024 * 8];
+
+    va_list args;
+    va_start(args, format);
+    vsprintf_s(buffer, format, args);
+    va_end(args);
+
+    buffer[mARRAYSIZE(buffer) - 1] = '\0';
+    
+    (*pFunc)(buffer);
+  }
+}
+
 mFUNCTION(mSleep, const size_t milliseconds)
 {
   mFUNCTION_SETUP();
