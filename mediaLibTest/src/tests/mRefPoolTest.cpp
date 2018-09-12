@@ -19,6 +19,8 @@ mTEST(mRefPool, TestCreate)
   mDEFER_DESTRUCTION(&refPool, mRefPool_Destroy);
   mTEST_ASSERT_SUCCESS(mRefPool_Create(&refPool, pAllocator));
 
+  mTEST_ASSERT_NOT_EQUAL(refPool, nullptr);
+
   mTEST_ALLOCATOR_ZERO_CHECK();
 }
 
@@ -52,6 +54,44 @@ mTEST(mRefPool, TestAddDestruct)
 
   mPtr<mDummyDestructible> ptr;
   mTEST_ASSERT_SUCCESS(mRefPool_Add(refPool, &dummy, &ptr));
+  mTEST_ASSERT_SUCCESS(mSharedPointer_Destroy(&ptr));
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}
+
+mTEST(mRefPool, TestAddRemove)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  mPtr<mRefPool<mDummyDestructible>> refPool;
+  mDEFER_DESTRUCTION(&refPool, mRefPool_Destroy);
+  mTEST_ASSERT_SUCCESS(mRefPool_Create(&refPool, pAllocator));
+
+  mDummyDestructible dummy;
+  mTEST_ASSERT_SUCCESS(mDummyDestructible_Create(&dummy, pAllocator));
+
+  mPtr<mDummyDestructible> ptr;
+  mTEST_ASSERT_SUCCESS(mRefPool_Add(refPool, &dummy, &ptr));
+
+  mDummyDestructible dummy2;
+  mTEST_ASSERT_SUCCESS(mDummyDestructible_Create(&dummy2, pAllocator));
+
+  mPtr<mDummyDestructible> ptr2;
+  mTEST_ASSERT_SUCCESS(mRefPool_Add(refPool, &dummy2, &ptr2));
+
+  mTEST_ASSERT_SUCCESS(mSharedPointer_Destroy(&ptr));
+
+  mTEST_ASSERT_SUCCESS(mDummyDestructible_Create(&dummy, pAllocator));
+  mTEST_ASSERT_SUCCESS(mRefPool_Add(refPool, &dummy, &ptr));
+
+  mDummyDestructible dummy3;
+  mTEST_ASSERT_SUCCESS(mDummyDestructible_Create(&dummy3, pAllocator));
+
+  mPtr<mDummyDestructible> ptr3;
+  mTEST_ASSERT_SUCCESS(mRefPool_Add(refPool, &dummy3, &ptr3));
+
+  mTEST_ASSERT_SUCCESS(mSharedPointer_Destroy(&ptr2));
+  mTEST_ASSERT_SUCCESS(mSharedPointer_Destroy(&ptr3));
   mTEST_ASSERT_SUCCESS(mSharedPointer_Destroy(&ptr));
 
   mTEST_ALLOCATOR_ZERO_CHECK();

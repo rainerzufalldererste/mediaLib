@@ -118,6 +118,7 @@ mFUNCTION(mPool_RemoveAt, mPtr<mPool<T>> &pool, const size_t index, OUT T *pItem
   mERROR_CHECK(mPool_PointerAt(pool, index, &pOutItem));
 
   *pItem = std::move(*pOutItem);
+  --pool->count;
   pool->pIndexes[lutIndex] &= ~((size_t)1 << lutSubIndex);
 
   if (lutIndex == 0 && lutIndex == pool->size - 1)
