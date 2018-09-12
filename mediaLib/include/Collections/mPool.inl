@@ -46,7 +46,7 @@ mFUNCTION(mPool_Add, mPtr<mPool<T>> &pool, IN T *pItem, OUT size_t *pIndex)
   mERROR_IF(pool == nullptr || pItem == nullptr || pIndex == nullptr, mR_ArgumentNull);
 
   // Grow if necessary
-  if (pool->count == pool->size)
+  if (pool->count == pool->size * sizeof(*pool->pIndexes))
   {
     if (pool->allocatedSize == pool->size)
     {
@@ -61,7 +61,7 @@ mFUNCTION(mPool_Add, mPtr<mPool<T>> &pool, IN T *pItem, OUT size_t *pIndex)
 
   for (size_t i = 0; i < pool->size; ++i)
   {
-    decltype(*pool->pIndexes) flags = pool->pIndexes[i];
+    std::remove_reference<decltype(*pool->pIndexes)>::type flags = pool->pIndexes[i];
 
     if (flags == (size_t)-1)
       continue;
@@ -188,7 +188,7 @@ inline mFUNCTION(mPool_ForEach, mPtr<mPool<T>> &pool, const std::function<mResul
 
   size_t index = 0;
   
-  for (size_t i = 0; i < pool->count / sizeof(pool->pIndexes[0]) + 1; ++i)
+  for (size_t i = 0; i < (pool->count - 1) / sizeof(pool->pIndexes[0]) + 1; ++i)
   {
     size_t flag = 1;
 
@@ -203,13 +203,8 @@ inline mFUNCTION(mPool_ForEach, mPtr<mPool<T>> &pool, const std::function<mResul
 
       flag <<= 1;
       ++index;
-
-      if (index == pool->count)
-        goto break_all_loops;
     }
   }
-
-break_all_loops:
 
   mRETURN_SUCCESS();
 }
