@@ -189,3 +189,58 @@ mTEST(mRefPool, TestForeach)
 
   mTEST_ALLOCATOR_ZERO_CHECK();
 }
+
+mTEST(mRefPool, TestCrush)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  mPtr<mRefPool<mDummyDestructible>> refPool;
+  mDEFER_DESTRUCTION(&refPool, mRefPool_Destroy);
+  mTEST_ASSERT_SUCCESS(mRefPool_Create(&refPool, pAllocator));
+
+  mPtr<mChunkedArray<mPtr<mDummyDestructible>>> pointerStore;
+  mDEFER_DESTRUCTION(&pointerStore, mChunkedArray_Destroy);
+  mTEST_ASSERT_SUCCESS(mChunkedArray_Create(&pointerStore, pAllocator));
+
+  const size_t maxCount = 1024;
+
+  for (size_t i = 0; i < maxCount; ++i)
+  {
+    mDummyDestructible dummy;
+    mTEST_ASSERT_SUCCESS(mDummyDestructible_Create(&dummy, pAllocator));
+
+    mPtr<mDummyDestructible> dummyPtr;
+    mDEFER_DESTRUCTION(&dummyPtr, mSharedPointer_Destroy);
+    mTEST_ASSERT_SUCCESS(mRefPool_Add(refPool, &dummy, &dummyPtr));
+
+    mTEST_ASSERT_SUCCESS(mChunkedArray_PushBack(pointerStore, &dummyPtr));
+  }
+
+  for (size_t i = 0; i < maxCount; i += 2)
+  {
+    mPtr<mDummyDestructible> dummyPtr;
+    mDEFER_DESTRUCTION(&dummyPtr, mSharedPointer_Destroy);
+
+    mTEST_ASSERT_SUCCESS(mChunkedArray_PopAt(pointerStore, i, &dummyPtr));
+  }
+
+  mTEST_ASSERT_SUCCESS(mRefPool_Crush(refPool));
+
+  size_t count = (size_t)-1;
+  mTEST_ASSERT_SUCCESS(mRefPool_GetCount(refPool, &count));
+
+  mTEST_ASSERT_EQUAL(count, maxCount / 2);
+
+  std::function<mResult(mPtr<mDummyDestructible> &)> indexChecker =
+    [count](mPtr<mDummyDestructible> &d)
+  {
+    mFUNCTION_SETUP();
+
+    mERROR_IF(d.m_pParams->pUserData == nullptr, mR_ArgumentNull);
+    mERROR_IF(*(size_t *)d.m_pParams->pUserData >= count, mR_InternalError);
+
+    mRETURN_SUCCESS();
+  };
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}

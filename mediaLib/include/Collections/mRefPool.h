@@ -37,10 +37,10 @@ struct mRefPool
 };
 
 template <typename T>
-mFUNCTION(mRefPool_Create, mPtr<mRefPool<T>> *pRefPool, mAllocator *pAllocator, const bool keepEntriesForever = false);
+mFUNCTION(mRefPool_Create, OUT mPtr<mRefPool<T>> *pRefPool, IN mAllocator *pAllocator, const bool keepEntriesForever = false);
 
 template <typename T>
-mFUNCTION(mRefPool_Destroy, mPtr<mRefPool<T>> *pRefPool);
+mFUNCTION(mRefPool_Destroy, IN_OUT mPtr<mRefPool<T>> *pRefPool);
 
 template <typename T>
 mFUNCTION(mRefPool_Add, mPtr<mRefPool<T>> &refPool, IN T *pItem, OUT mPtr<T> *pIndex);
@@ -54,9 +54,15 @@ mFUNCTION(mRefPool_Crush, mPtr<mRefPool<T>> &refPool);
 template <typename T>
 mFUNCTION(mRefPool_ForEach, mPtr<mRefPool<T>> &refPool, const std::function<mResult(mPtr<T> &)> &function);
 
+template <typename T>
+mFUNCTION(mRefPool_PeekAt, mPtr<mRefPool<T>> &refPool, const size_t index, OUT mPtr<T> *pIndex);
+
+template <typename T>
+mFUNCTION(mRefPool_GetCount, mPtr<mRefPool<T>> &refPool, OUT size_t *pCount);
+
 // would be handled by cpp but still nicer if explicitly defined.
 template <typename T>
-mFUNCTION(mDestruct, struct mRefPool<T>::refPoolPtr *pData);
+mFUNCTION(mDestruct, IN struct mRefPool<T>::refPoolPtr *pData);
 
 #include "mRefPool.inl"
 
