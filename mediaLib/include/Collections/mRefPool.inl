@@ -9,12 +9,12 @@
 #include "mRefPool.h"
 
 template <typename T>
-mFUNCTION(mRefPool_Destroy_Internal, mRefPool<T> *pRefPool);
+mFUNCTION(mRefPool_Destroy_Internal, IN mRefPool<T> *pRefPool);
 
 //////////////////////////////////////////////////////////////////////////
 
 template<typename T>
-inline mFUNCTION(mRefPool_Create, mPtr<mRefPool<T>> *pRefPool, mAllocator *pAllocator, const bool keepEntriesForever /* = false */)
+inline mFUNCTION(mRefPool_Create, OUT mPtr<mRefPool<T>> *pRefPool, IN mAllocator *pAllocator, const bool keepEntriesForever /* = false */)
 {
   mFUNCTION_SETUP();
 
@@ -32,7 +32,7 @@ inline mFUNCTION(mRefPool_Create, mPtr<mRefPool<T>> *pRefPool, mAllocator *pAllo
 }
 
 template<typename T>
-inline mFUNCTION(mRefPool_Destroy, mPtr<mRefPool<T>> *pRefPool)
+inline mFUNCTION(mRefPool_Destroy, IN_OUT mPtr<mRefPool<T>> *pRefPool)
 {
   mFUNCTION_SETUP();
 
@@ -66,6 +66,9 @@ inline mFUNCTION(mRefPool_AddEmpty, mPtr<mRefPool<T>> &refPool, OUT mPtr<T> *pIn
   mFUNCTION_SETUP();
 
   mERROR_IF(refPool == nullptr || pIndex == nullptr, mR_ArgumentNull);
+
+  mERROR_CHECK(mMutex_Lock(refPool->pMutex));
+  mDEFER_DESTRUCTION(refPool->pMutex, mMutex_Unlock);
 
   size_t index;
   typename mRefPool<T>::refPoolPtrData empty;
@@ -133,6 +136,42 @@ inline mFUNCTION(mRefPool_AddEmpty, mPtr<mRefPool<T>> &refPool, OUT mPtr<T> *pIn
 }
 
 template<typename T>
+inline mFUNCTION(mRefPool_Crush, mPtr<mRefPool<T>> &refPool)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(refPool == nullptr, mR_ArgumentNull);
+
+  mERROR_CHECK(mMutex_Lock(refPool->pMutex));
+  mDEFER_DESTRUCTION(refPool->pMutex, mMutex_Unlock);
+
+  mPtr<mPool<typename mRefPool<T>::refPoolPtr>> crushedPtrs;
+  mDEFER_DESTRUCTION(&crushedPtrs, mPool_Destroy);
+  mERROR_CHECK(mPool_Create(&crushedPtrs, refPool->pAllocator));
+
+  std::function<mResult(typename mRefPool<T>::refPoolPtr *, size_t)> addAllItems = 
+    [&](typename mRefPool<T>::refPoolPtr *pItem, size_t)
+  {
+    mFUNCTION_SETUP();
+
+    mERROR_IF(pItem->ptr.m_pParams->pUserData == nullptr, mR_InternalError);
+
+    size_t newIndex;
+    mERROR_CHECK(mPool_Add(crushedPtrs, pItem, &newIndex));
+    *(size_t *)pItem->ptr.m_pParams->pUserData = newIndex;
+
+    mRETURN_SUCCESS();
+  };
+  
+  mERROR_CHECK(mPool_ForEach(refPool->ptrs, addAllItems));
+
+  mERROR_CHECK(mPool_Destroy(&refPool->ptrs));
+  refPool->ptrs = crushedPtrs;
+
+  mRETURN_SUCCESS();
+}
+
+template<typename T>
 inline mFUNCTION(mRefPool_ForEach, mPtr<mRefPool<T>> &refPool, const std::function<mResult(mPtr<T> &)> &function)
 {
   mFUNCTION_SETUP();
@@ -150,7 +189,34 @@ inline mFUNCTION(mRefPool_ForEach, mPtr<mRefPool<T>> &refPool, const std::functi
 }
 
 template<typename T>
-inline mFUNCTION(mDestruct, struct mRefPool<T>::refPoolPtr *pData)
+inline mFUNCTION(mRefPool_PeekAt, mPtr<mRefPool<T>> &refPool, const size_t index, OUT mPtr<T> *pIndex)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(refPool == nullptr || pIndex == nullptr, mR_ArgumentNull);
+
+  mERROR_CHECK(mMutex_Lock(refPool->mutex));
+  mDEFER_DESTRUCTION(refPool->mutex, mMutex_Unlock);
+
+  mERROR_CHECK(refPool->ptrs(refPool, index, pIndex));
+
+  mRETURN_SUCCESS();
+}
+
+template<typename T>
+inline mFUNCTION(mRefPool_GetCount, mPtr<mRefPool<T>> &refPool, OUT size_t *pCount)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(refPool == nullptr || pCount == nullptr, mR_ArgumentNull);
+
+  mERROR_CHECK(mPool_GetCount(refPool->ptrs, pCount));
+
+  mRETURN_SUCCESS();
+}
+
+template<typename T>
+inline mFUNCTION(mDestruct, IN struct mRefPool<T>::refPoolPtr *pData)
 {
   mFUNCTION_SETUP();
 
@@ -164,7 +230,7 @@ inline mFUNCTION(mDestruct, struct mRefPool<T>::refPoolPtr *pData)
 //////////////////////////////////////////////////////////////////////////
 
 template<typename T>
-inline mFUNCTION(mRefPool_Destroy_Internal, mRefPool<T> *pRefPool)
+inline mFUNCTION(mRefPool_Destroy_Internal, IN mRefPool<T> *pRefPool)
 {
   mFUNCTION_SETUP();
 
