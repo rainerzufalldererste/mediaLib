@@ -98,5 +98,17 @@ mTEST(mPool, TestAddRemove)
   size_t index2;
   mTEST_ASSERT_SUCCESS(mPool_Add(pool, &dummy2, &index2));
 
+  mTEST_ASSERT_SUCCESS(mPool_GetCount(pool, &count));
+  mTEST_ASSERT_EQUAL(count, 3);
+
+  mTEST_ASSERT_SUCCESS(mPool_RemoveAt(pool, index0, &dummy0));
+  mTEST_ASSERT_SUCCESS(mDestruct(&dummy0));
+
+  mTEST_ASSERT_SUCCESS(mPool_RemoveAt(pool, index2, &dummy2));
+  mTEST_ASSERT_SUCCESS(mDestruct(&dummy2));
+
+  mTEST_ASSERT_SUCCESS(mPool_RemoveAt(pool, index1, &dummy1));
+  mTEST_ASSERT_SUCCESS(mDestruct(&dummy1));
+
   mTEST_ALLOCATOR_ZERO_CHECK();
 }

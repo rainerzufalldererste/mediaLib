@@ -53,8 +53,26 @@
 
 #define mARRAYSIZE(arrayName) (sizeof(arrayName) / sizeof(arrayName[0]))
 
-#define mASSERT(expression, text) do { if(!(expression)) { mPRINT("Assertion Failed: %s\n'%s'\n\nIn File '%s' : Line '%" PRIi32 "' (Function '%s')\n", #expression, text, __FILE__, __LINE__, __FUNCTION__); mAssert_Internal(#expression, text, __FUNCTION__, __FILE__, __LINE__); } } while (0)
-#define mFAIL(text) mPRINT("Assertion Failed: '%s'\n\nIn File '%s' : Line '%" PRIi32 "' (Function '%s')\n", text, __FILE__, __LINE__, __FUNCTION__)
+#define mASSERT(expression, text, ...) \
+  do \
+  { if(!(expression)) \
+    { char buffer[1024 * 8]; \
+      sprintf_s(buffer, text, __VA_ARGS__); \
+      buffer[mARRAYSIZE(buffer) - 1] = '\0'; \
+      mPRINT_ERROR("Assertion Failed: %s\n'%s'\n\nIn File '%s' : Line '%" PRIi32 "' (Function '%s')\n", #expression, buffer, __FILE__, __LINE__, __FUNCTION__); \
+      mAssert_Internal(#expression, buffer, __FUNCTION__, __FILE__, __LINE__); \
+    } \
+  } while (0)
+
+#define mFAIL(text, ...) \
+  do \
+  { char buffer[1024 * 8]; \
+    sprintf_s(buffer, text, __VA_ARGS__); \
+    buffer[mARRAYSIZE(buffer) - 1] = '\0'; \
+    mPRINT_ERROR("Assertion Failed: '%s'\n\nIn File '%s' : Line '%" PRIi32 "' (Function '%s')\n", buffer, __FILE__, __LINE__, __FUNCTION__); \
+    __debugbreak(); \
+  } while (0)
+
 #define mPRINT(text, ...) mPrintPrepare(mPrintCallback, text, __VA_ARGS__)
 #define mLOG(text, ...) mPrintPrepare(mPrintLogCallback, text, __VA_ARGS__)
 #define mPRINT_ERROR(text, ...) mPrintPrepare(mPrintErrorCallback, text, __VA_ARGS__)
@@ -101,11 +119,11 @@ void mDefaultPrint(const char *text);
 void mPrintPrepare(mPrintCallbackFunc *pFunc, const char *format, ...);
 
 #ifdef _DEBUG
-#define mASSERT_DEBUG(expr, text) mASSERT(expr, text)
-#define mFAIL_DEBUG(text) mFAIL(text)
+#define mASSERT_DEBUG(expr, text, ...) mASSERT(expr, text, __VA_ARGS__)
+#define mFAIL_DEBUG(text, ...) mFAIL(text, __VA_ARGS__)
 #else // !_DEBUG
-#define mASSERT_DEBUG(expr, text) mUnused(expr, text)
-#define mFAIL_DEBUG(text) mUnused(text)
+#define mASSERT_DEBUG(expr, text, ...) mUnused(expr, text, __VA_ARGS__)
+#define mFAIL_DEBUG(text, ...) mUnused(text, __VA_ARGS__)
 #endif
 
 #endif // !_DEPENDENCIES_DEFINED

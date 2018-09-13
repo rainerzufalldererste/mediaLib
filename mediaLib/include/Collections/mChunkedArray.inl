@@ -24,6 +24,7 @@ mFUNCTION(mChunkedArray_Create, OUT mPtr<mChunkedArray<T>> *pChunkedArray, IN mA
 
   mERROR_CHECK(mSharedPointer_Allocate(pChunkedArray, pAllocator, (std::function<void(mChunkedArray<T> *)>) [](mChunkedArray<T> *pData) { mChunkedArray_Destroy_Internal(pData); }, 1));
 
+  (*pChunkedArray)->pAllocator = pAllocator;
   (*pChunkedArray)->blockSize = blockSize;
   new (&(*pChunkedArray)->destructionFunction) std::function<mResult(T *)>(nullptr);
 
