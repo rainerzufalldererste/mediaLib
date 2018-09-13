@@ -107,7 +107,7 @@ mFUNCTION(mPool_RemoveAt, mPtr<mPool<T>> &pool, const size_t index, OUT T *pItem
   mFUNCTION_SETUP();
 
   mERROR_IF(pool == nullptr || pItem == nullptr, mR_ArgumentNull);
-  mERROR_IF(index >= pool->count, mR_IndexOutOfBounds);
+  mERROR_IF(index >= pool->size * sizeof(pool->pIndexes[0]), mR_IndexOutOfBounds);
 
   const size_t lutIndex = index / sizeof(pool->pIndexes[0]);
   const size_t lutSubIndex = index - lutIndex * sizeof(pool->pIndexes[0]);
@@ -118,18 +118,19 @@ mFUNCTION(mPool_RemoveAt, mPtr<mPool<T>> &pool, const size_t index, OUT T *pItem
   mERROR_CHECK(mPool_PointerAt(pool, index, &pOutItem));
 
   *pItem = std::move(*pOutItem);
+  mERROR_CHECK(mMemset(pOutItem, 1));
   --pool->count;
   pool->pIndexes[lutIndex] &= ~((size_t)1 << lutSubIndex);
 
-  if (lutIndex == 0 && lutIndex == pool->size - 1)
+  if (lutIndex == pool->size - 1)
   {
-    int64_t lutFilledIndex = pool->size - 2;
-
-    for (; lutFilledIndex >= 0; --lutFilledIndex)
-      if (pool->pIndexes[lutFilledIndex] != 0)
+    for (int64_t lutFilledIndex = pool->size - 1; lutFilledIndex >= 0; --lutFilledIndex)
+    {
+      if (pool->pIndexes[lutFilledIndex] == 0)
+        --pool->size;
+      else
         break;
-
-    pool->size = (size_t)lutFilledIndex + 1;
+    }
   }
 
   mRETURN_SUCCESS();
@@ -168,7 +169,7 @@ mFUNCTION(mPool_PointerAt, mPtr<mPool<T>> &pool, const size_t index, OUT T **ppI
   mFUNCTION_SETUP();
 
   mERROR_IF(pool == nullptr || ppItem == nullptr, mR_ArgumentNull);
-  mERROR_IF(index >= pool->count, mR_IndexOutOfBounds);
+  mERROR_IF(index >= pool->size * sizeof(pool->pIndexes[0]), mR_IndexOutOfBounds);
 
   const size_t lutIndex = index / sizeof(pool->pIndexes[0]);
   const size_t lutSubIndex = index - lutIndex * sizeof(pool->pIndexes[0]);

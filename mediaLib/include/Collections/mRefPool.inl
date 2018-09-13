@@ -51,7 +51,11 @@ inline mFUNCTION(mRefPool_Add, mPtr<mRefPool<T>> &refPool, IN T *pItem, OUT mPtr
   mERROR_IF(refPool == nullptr || pItem == nullptr || pIndex == nullptr, mR_ArgumentNull);
 
   mERROR_CHECK(mRefPool_AddEmpty(refPool, pIndex));
-  **pIndex = *pItem;
+
+  if (std::is_trivially_copy_constructible<T>::value)
+    new (pIndex->GetPointer()) T(*pItem);
+  else
+    mERROR_CHECK(mAllocator_Copy(refPool->pAllocator, pIndex->GetPointer(), pItem, 1));
 
   mRETURN_SUCCESS();
 }
@@ -85,7 +89,7 @@ inline mFUNCTION(mRefPool_AddEmpty, mPtr<mRefPool<T>> &refPool, OUT mPtr<T> *pIn
   void *pRefPool = refPool.GetPointer();
 
 #if defined (_DEBUG)
-#define mRefPool_Internal_ERROR_CHECK(expr) do { mResult __result = (expr); mASSERT_DEBUG(mSUCCEEDED(__result), "Assertion Failed!"); if (mFAILED(__result)) return; } while (0)
+#define mRefPool_Internal_ERROR_CHECK(expr) do { mResult __result = (expr); mASSERT_DEBUG(mSUCCEEDED(__result), "Assertion Failed! [Result is %" PRIi32 "]", __result); if (mFAILED(__result)) return; } while (0)
 #else
 #define mRefPool_Internal_ERROR_CHECK(expr) do { if (mFAILED(expr)) return; } while (0)
 #endif
@@ -96,14 +100,12 @@ inline mFUNCTION(mRefPool_AddEmpty, mPtr<mRefPool<T>> &refPool, OUT mPtr<T> *pIn
     mDEFER_DESTRUCTION(&_refPool, mSharedPointer_Destroy);
 
     mRefPool_Internal_ERROR_CHECK(mSharedPointer_Create(&_refPool, (mRefPool<T> *)pRefPool, mSHARED_POINTER_FOREIGN_RESOURCE));
-    mRefPool_Internal_ERROR_CHECK(mMutex_Lock(_refPool->pMutex));
 
+    mRefPool_Internal_ERROR_CHECK(mMutex_Lock(_refPool->pMutex));
     mDEFER_DESTRUCTION(_refPool->pMutex, mMutex_Unlock);
 
     typename mRefPool<T>::refPoolPtrData *_pPtrData = nullptr;
     mRefPool_Internal_ERROR_CHECK(mPool_PointerAt(_refPool->data, index, &_pPtrData));
-
-    _pPtrData->ptrParams.cleanupFunction = nullptr;
 
     mASSERT(pData == &_pPtrData->element, "Reference pool corruption detected.");
     mRefPool_Internal_ERROR_CHECK(mDestruct(pData));

@@ -17,6 +17,10 @@ mFUNCTION(mTestLib_RunAllTests, int * pArgc, char ** pArgv)
 
 //////////////////////////////////////////////////////////////////////////
 
+size_t mTestDestructible_Count = 0;
+
+//////////////////////////////////////////////////////////////////////////
+
 mFUNCTION(mTestAllocator_Alloc, OUT uint8_t **ppData, const size_t size, const size_t count, IN void *pUserData)
 {
   mFUNCTION_SETUP();
@@ -111,6 +115,8 @@ mFUNCTION(mDummyDestructible_Create, mDummyDestructible *pDestructable, mAllocat
   pDestructable->pAllocator = pAllocator;
   mERROR_CHECK(mAllocator_Allocate(pAllocator, &pDestructable->pData, 1));
   pDestructable->destructed = false;
+  *pDestructable->pData = mTestDestructible_Count;
+  pDestructable->index = mTestDestructible_Count++;
 
   mRETURN_SUCCESS();
 }

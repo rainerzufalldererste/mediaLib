@@ -12,7 +12,7 @@
 #include "default.h"
 #include "gtest/gtest.h"
 
-#define mDEBUG_TESTS
+//#define mDEBUG_TESTS
 
 #ifdef mDEBUG_TESTS
 #define mTEST_FAIL() \
@@ -72,7 +72,10 @@
 
 #define mTEST(Component, TestCase) TEST(Component, TestCase) 
 
+extern size_t mTestDestructible_Count;
+
 #define mTEST_ALLOCATOR_SETUP() \
+  mTestDestructible_Count = 0; \
   mAllocator __testAllocator; \
   mTEST_ASSERT_SUCCESS(mTestAllocator_Create(&__testAllocator)); \
   mDEFER_DESTRUCTION(&__testAllocator, mAllocator_Destroy); \
@@ -98,6 +101,7 @@ struct mDummyDestructible
   bool destructed;
   size_t *pData;
   mAllocator *pAllocator;
+  size_t index;
 };
 
 mFUNCTION(mDummyDestructible_Create, mDummyDestructible *pDestructable, mAllocator *pAllocator);
@@ -109,6 +113,7 @@ struct mTemplatedDestructible
   bool destructed;
   T *pData;
   mAllocator *pAllocator;
+  size_t index;
 };
 
 template <typename T>
@@ -122,6 +127,8 @@ inline mFUNCTION(mDummyDestructible_Create, mTemplatedDestructible<T> *pDestruct
   pDestructable->pAllocator = pAllocator;
   mERROR_CHECK(mAllocator_Allocate(pAllocator, &pDestructable->pData, 1));
   pDestructable->destructed = false;
+  *pDestructable->pData = mTestDestructible_Count;
+  pDestructable->index = mTestDestructible_Count++;
 
   mRETURN_SUCCESS();
 }

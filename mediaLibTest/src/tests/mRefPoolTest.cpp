@@ -147,6 +147,7 @@ mTEST(mRefPool, TestForeach)
 
   mTEST_ASSERT_EQUAL(1, count);
 
+  mTEST_ASSERT_SUCCESS(mDummyDestructible_Create(&dummy, pAllocator));
   mTEST_ASSERT_SUCCESS(mRefPool_Add(refPool, &dummy, &ptr));
 
   mDummyDestructible dummy3;
@@ -170,7 +171,7 @@ mTEST(mRefPool, TestForeach)
   mTEST_ASSERT_EQUAL(3, count);
 
   count = 0;
-  mTEST_ASSERT_SUCCESS(mRefPool_ForEach(refPool,
+  mTEST_ASSERT_EQUAL(mR_InternalError, mRefPool_ForEach(refPool,
     (std::function<mResult(mPtr<mDummyDestructible> &)>)[&](mPtr<mDummyDestructible> &d)
   {
     mFUNCTION_SETUP();
