@@ -52,6 +52,7 @@
 #define mINLINE __forceinline
 
 #define mARRAYSIZE(arrayName) (sizeof(arrayName) / sizeof(arrayName[0]))
+#define mBYTES_OF(type) (sizeof(type) << 3)
 
 #define mASSERT(expression, text, ...) \
   do \
