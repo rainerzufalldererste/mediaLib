@@ -45,7 +45,7 @@ enum mResult
 #define mFAILED(result) (!mSUCCEEDED(result))
 
 #define mFUNCTION(FunctionName, ...) mResult FunctionName(__VA_ARGS__)
-#define mFUNCTION_SETUP() mResult mSTDRESULT = mR_Success
+#define mFUNCTION_SETUP() mResult mSTDRESULT = mR_Success; mUnused(mSTDRESULT)
 #define mRETURN_RESULT(result) do { mSTDRESULT = result; return mSTDRESULT; } while (0)
 #define mRETURN_SUCCESS() mRETURN_RESULT(mR_Success)
 

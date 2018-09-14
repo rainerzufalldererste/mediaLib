@@ -24,7 +24,7 @@ inline mFUNCTION(mRefPool_Create, OUT mPtr<mRefPool<T>> *pRefPool, IN mAllocator
 
   mERROR_CHECK(mPool_Create(&(*pRefPool)->data, pAllocator));
   mERROR_CHECK(mPool_Create(&(*pRefPool)->ptrs, pAllocator));
-  mERROR_CHECK(mMutex_Create(&(*pRefPool)->pMutex, pAllocator));
+  mERROR_CHECK(mRecursiveMutex_Create(&(*pRefPool)->pMutex, pAllocator));
   (*pRefPool)->pAllocator = pAllocator;
   (*pRefPool)->keepForever = keepEntriesForever;
 
@@ -67,8 +67,8 @@ inline mFUNCTION(mRefPool_AddEmpty, mPtr<mRefPool<T>> &refPool, OUT mPtr<T> *pIn
 
   mERROR_IF(refPool == nullptr || pIndex == nullptr, mR_ArgumentNull);
 
-  mERROR_CHECK(mMutex_Lock(refPool->pMutex));
-  mDEFER_DESTRUCTION(refPool->pMutex, mMutex_Unlock);
+  mERROR_CHECK(mRecursiveMutex_Lock(refPool->pMutex));
+  mDEFER_DESTRUCTION(refPool->pMutex, mRecursiveMutex_Unlock);
 
   size_t index;
   typename mRefPool<T>::refPoolPtrData empty;
@@ -82,7 +82,6 @@ inline mFUNCTION(mRefPool_AddEmpty, mPtr<mRefPool<T>> &refPool, OUT mPtr<T> *pIn
   mERROR_CHECK(mPool_Add(refPool->ptrs, &ptr, &ptrIndex));
 
   pPtrData->index = ptrIndex;
-  pPtrData->ptrParams.pUserData = &pPtrData->index;
 
   typename mRefPool<T>::refPoolPtr *pPtr = nullptr;
   mERROR_CHECK(mPool_PointerAt(refPool->ptrs, ptrIndex, &pPtr));
@@ -104,8 +103,8 @@ inline mFUNCTION(mRefPool_AddEmpty, mPtr<mRefPool<T>> &refPool, OUT mPtr<T> *pIn
 
     mRefPool_Internal_ERROR_CHECK(mSharedPointer_Create(&_refPool, (mRefPool<T> *)pRefPool, mSHARED_POINTER_FOREIGN_RESOURCE));
 
-    mRefPool_Internal_ERROR_CHECK(mMutex_Lock(_refPool->pMutex));
-    mDEFER_DESTRUCTION(_refPool->pMutex, mMutex_Unlock);
+    mRefPool_Internal_ERROR_CHECK(mRecursiveMutex_Lock(_refPool->pMutex));
+    mDEFER_DESTRUCTION(_refPool->pMutex, mRecursiveMutex_Unlock);
 
     typename mRefPool<T>::refPoolPtrData *_pPtrData = nullptr;
     mRefPool_Internal_ERROR_CHECK(mPool_PointerAt(_refPool->data, index, &_pPtrData));
@@ -127,6 +126,8 @@ inline mFUNCTION(mRefPool_AddEmpty, mPtr<mRefPool<T>> &refPool, OUT mPtr<T> *pIn
 
   mERROR_CHECK(mSharedPointer_CreateInplace(&pPtr->ptr, &pPtrData->ptrParams, &pPtrData->element, mSHARED_POINTER_FOREIGN_RESOURCE, destructionFunction));
 
+  pPtrData->ptrParams.pUserData = &pPtrData->index;
+
   *pIndex = pPtr->ptr;
 
   if (!refPool->keepForever)
@@ -142,8 +143,8 @@ inline mFUNCTION(mRefPool_Crush, mPtr<mRefPool<T>> &refPool)
 
   mERROR_IF(refPool == nullptr, mR_ArgumentNull);
 
-  mERROR_CHECK(mMutex_Lock(refPool->pMutex));
-  mDEFER_DESTRUCTION(refPool->pMutex, mMutex_Unlock);
+  mERROR_CHECK(mRecursiveMutex_Lock(refPool->pMutex));
+  mDEFER_DESTRUCTION(refPool->pMutex, mRecursiveMutex_Unlock);
 
   mPtr<mPool<typename mRefPool<T>::refPoolPtr>> crushedPtrs;
   mDEFER_DESTRUCTION(&crushedPtrs, mPool_Destroy);
@@ -195,8 +196,8 @@ inline mFUNCTION(mRefPool_PeekAt, mPtr<mRefPool<T>> &refPool, const size_t index
 
   mERROR_IF(refPool == nullptr || pIndex == nullptr, mR_ArgumentNull);
 
-  mERROR_CHECK(mMutex_Lock(refPool->mutex));
-  mDEFER_DESTRUCTION(refPool->mutex, mMutex_Unlock);
+  mERROR_CHECK(mRecursiveMutex_Lock(refPool->mutex));
+  mDEFER_DESTRUCTION(refPool->mutex, mRecursiveMutex_Unlock);
 
   mERROR_CHECK(refPool->ptrs(refPool, index, pIndex));
 
@@ -238,7 +239,7 @@ inline mFUNCTION(mRefPool_Destroy_Internal, IN mRefPool<T> *pRefPool)
 
   mERROR_CHECK(mPool_Destroy(&pRefPool->ptrs));
   mERROR_CHECK(mPool_Destroy(&pRefPool->data));
-  mERROR_CHECK(mMutex_Destroy(&pRefPool->pMutex));
+  mERROR_CHECK(mRecursiveMutex_Destroy(&pRefPool->pMutex));
 
   mRETURN_SUCCESS();
 }

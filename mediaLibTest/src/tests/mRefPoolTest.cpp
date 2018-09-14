@@ -216,7 +216,12 @@ mTEST(mRefPool, TestCrush)
     mTEST_ASSERT_SUCCESS(mChunkedArray_PushBack(pointerStore, &dummyPtr));
   }
 
-  for (size_t i = 0; i < maxCount; i += 2)
+  size_t count = (size_t)-1;
+  mTEST_ASSERT_SUCCESS(mRefPool_GetCount(refPool, &count));
+
+  mTEST_ASSERT_EQUAL(count, maxCount);
+
+  for (size_t i = 0; i < maxCount / 2; ++i)
   {
     mPtr<mDummyDestructible> dummyPtr;
     mDEFER_DESTRUCTION(&dummyPtr, mSharedPointer_Destroy);
@@ -226,7 +231,7 @@ mTEST(mRefPool, TestCrush)
 
   mTEST_ASSERT_SUCCESS(mRefPool_Crush(refPool));
 
-  size_t count = (size_t)-1;
+  count = (size_t)-1;
   mTEST_ASSERT_SUCCESS(mRefPool_GetCount(refPool, &count));
 
   mTEST_ASSERT_EQUAL(count, maxCount / 2);
@@ -241,6 +246,8 @@ mTEST(mRefPool, TestCrush)
 
     mRETURN_SUCCESS();
   };
+
+  mTEST_ASSERT_SUCCESS(mRefPool_ForEach(refPool, indexChecker));
 
   mTEST_ALLOCATOR_ZERO_CHECK();
 }
