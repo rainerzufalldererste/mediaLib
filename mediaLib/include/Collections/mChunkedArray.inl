@@ -50,7 +50,14 @@ mFUNCTION(mChunkedArray_Push, mPtr<mChunkedArray<T>> &chunkedArray, IN T *pItem,
 
   mERROR_IF(chunkedArray == nullptr || pItem == nullptr, mR_ArgumentNull);
 
-  mERROR_CHECK(mChunkedArray_Grow_Internal(chunkedArray));
+  if (chunkedArray->pBlocks == nullptr || chunkedArray->itemCapacity <= chunkedArray->itemCount)
+  {
+    mERROR_CHECK(mChunkedArray_PushBack(chunkedArray, pItem));
+
+    *pIndex = chunkedArray->itemCount - 1;
+
+    mRETURN_SUCCESS();
+  }
 
   size_t index = 0;
 
@@ -100,7 +107,8 @@ mFUNCTION(mChunkedArray_PushBack, mPtr<mChunkedArray<T>> &chunkedArray, IN T *pI
 
   mERROR_IF(chunkedArray == nullptr || pItem == nullptr, mR_ArgumentNull);
 
-  mERROR_CHECK(mChunkedArray_Grow_Internal(chunkedArray));
+  if (chunkedArray->pBlocks == nullptr || chunkedArray->pBlocks[chunkedArray->blockCount - 1].blockEndIndex >= chunkedArray->blockSize)
+    mERROR_CHECK(mChunkedArray_Grow_Internal(chunkedArray));
 
   new (&chunkedArray->pBlocks[chunkedArray->blockCount - 1].pData[chunkedArray->pBlocks[chunkedArray->blockCount - 1].blockEndIndex]) T (*pItem);
   ++chunkedArray->pBlocks[chunkedArray->blockCount - 1].blockEndIndex;
@@ -267,7 +275,7 @@ inline mFUNCTION(mChunkedArray_Destroy_Internal, IN mChunkedArray<T>* pChunkedAr
 }
 
 template<typename T>
-inline mFUNCTION(mChunkedArray_Grow_Internal, mPtr<mChunkedArray<T>>& chunkedArray)
+inline mFUNCTION(mChunkedArray_Grow_Internal, mPtr<mChunkedArray<T>> &chunkedArray)
 {
   mFUNCTION_SETUP();
 

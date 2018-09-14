@@ -31,7 +31,7 @@ struct mRefPool
 
   mPtr<mPool<refPoolPtrData>> data;
   mPtr<mPool<refPoolPtr>> ptrs;
-  mMutex *pMutex;
+  mRecursiveMutex *pMutex;
   mAllocator *pAllocator;
   bool keepForever;
 };

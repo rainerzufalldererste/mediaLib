@@ -224,15 +224,18 @@ inline mSharedPointer<T>::~mSharedPointer()
     if (m_pParams->cleanupFunction)
       m_pParams->cleanupFunction(m_pData);
 
-    mAllocator *pAllocator = m_pParams->pAllocator;
+    if (m_pParams)
+    {
+      mAllocator *pAllocator = m_pParams->pAllocator;
 
-    if (m_pParams->freeResource)
-      mAllocator_FreePtr(m_pParams->pAllocator, &m_pData);
+      if (m_pParams->freeResource)
+        mAllocator_FreePtr(m_pParams->pAllocator, &m_pData);
 
-    m_pParams->~PointerParams();
-    
-    if(m_pParams->freeParameters)
-      mAllocator_FreePtr(pAllocator, &m_pParams);
+      m_pParams->~PointerParams();
+
+      if (m_pParams->freeParameters)
+        mAllocator_FreePtr(pAllocator, &m_pParams);
+    }
   }
 
   m_pParams = nullptr;
