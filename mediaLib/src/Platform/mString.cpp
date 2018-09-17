@@ -9,7 +9,7 @@
 #include "mString.h"
 #include "utf8proc.h"
 
-mchar_t mToChar(char *c, const size_t size)
+mchar_t mToChar(const char *c, const size_t size)
 {
   utf8proc_int32_t codePoint;
   utf8proc_iterate((uint8_t *)c, size, &codePoint);
@@ -57,6 +57,8 @@ mString::mString(const char * text, const size_t size, IN OPTIONAL mAllocator * 
     offset += (size_t)characterSize;
     this->count++;
   }
+
+  this->count += 1;
 
   return;
 
@@ -195,12 +197,23 @@ mString mString::operator+(const mString &s) const
   mString ret;
   mResult result = mR_Success;
 
+  if (s.bytes <= 1 || s.count <= 1)
+  {
+    ret = *this;
+    return ret;
+  }
+  else if (this->bytes <= 1 || this->count <= 1)
+  {
+    ret = s;
+    return ret;
+  }
+
   mERROR_CHECK_GOTO(mAllocator_AllocateZero(this->pAllocator, &ret.text, this->bytes + s.bytes - 1), result, epilogue);
   ret.capacity = this->bytes + s.bytes - 1;
   mERROR_CHECK_GOTO(mAllocator_Copy(this->pAllocator, ret.text, this->text, this->bytes - 1), result, epilogue);
   mERROR_CHECK_GOTO(mAllocator_Copy(s.pAllocator, ret.text + this->bytes - 1, s.text, s.bytes), result, epilogue);
   ret.bytes = ret.capacity;
-  ret.count = s.count + count;
+  ret.count = s.count + count - 1;
   ret.pAllocator = pAllocator;
 
   return ret;
@@ -248,7 +261,7 @@ mString mString::operator+=(const mString &s)
 
   mERROR_CHECK_GOTO(mAllocator_Copy(pAllocator, text + bytes - 1, s.text, s.bytes), result, epilogue);
 
-  count += s.count;
+  count += s.count - 1;
   bytes += s.bytes - 1;
 
   mERROR_CHECK_GOTO(mAllocator_Copy(pAllocator, text + bytes, s.text, s.bytes), result, epilogue);
@@ -351,7 +364,7 @@ mFUNCTION(mString_Create, OUT mString *pString, const char *text, const size_t s
   mERROR_IF(text == nullptr, mR_ArgumentNull);
 
   pString->pAllocator = pAllocator;
-  
+
   if (pString->pAllocator == pAllocator)
   {
     *pString = mString();
@@ -525,7 +538,7 @@ mFUNCTION(mString_Substring, const mString & text, OUT mString * pSubstring, con
   *pSubstring = mString();
   char utf8char[5] = { 0, 0, 0, 0, 0 };
 
-  while (character - startCharacter <= length)
+  while (character - startCharacter < length)
   {
     utf8proc_int32_t codePoint;
     ptrdiff_t characterSize;
@@ -608,8 +621,31 @@ mFUNCTION(mString_Append, mString &text, const mString &appendedText)
 
   mERROR_CHECK(mAllocator_Copy(text.pAllocator, text.text + text.bytes - 1, appendedText.text, appendedText.bytes));
 
-  text.count += appendedText.count;
+  text.count += appendedText.count - 1;
   text.bytes += appendedText.bytes - 1;
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mInplaceString_GetCount_Internal, const char * text, const size_t maxSize, OUT size_t * pCount, OUT size_t * pSize)
+{
+  mFUNCTION_SETUP();
+
+  size_t offset = 0;
+  size_t count = 0;
+
+  while (offset + 1 < maxSize)
+  {
+    utf8proc_int32_t codePoint;
+    ptrdiff_t characterSize;
+    mERROR_IF((characterSize = utf8proc_iterate((uint8_t *)text + offset, maxSize - offset, &codePoint)) < 0, mR_InternalError);
+    mERROR_IF(codePoint < 0, mR_InternalError);
+    offset += (size_t)characterSize;
+    count++;
+  }
+
+  *pCount = count + 1;
+  *pSize = offset + 1;
 
   mRETURN_SUCCESS();
 }
