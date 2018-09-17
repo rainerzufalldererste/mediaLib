@@ -60,6 +60,9 @@ mFUNCTION(mRefPool_PeekAt, mPtr<mRefPool<T>> &refPool, const size_t index, OUT m
 template <typename T>
 mFUNCTION(mRefPool_GetCount, mPtr<mRefPool<T>> &refPool, OUT size_t *pCount);
 
+template <typename T>
+mFUNCTION(mRefPool_RemoveOwnReference, mPtr<mRefPool<T>> &refPool);
+
 // would be handled by cpp but still nicer if explicitly defined.
 template <typename T>
 mFUNCTION(mDestruct, IN struct mRefPool<T>::refPoolPtr *pData);

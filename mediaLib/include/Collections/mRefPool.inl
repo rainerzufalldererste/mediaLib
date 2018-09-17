@@ -196,10 +196,10 @@ inline mFUNCTION(mRefPool_PeekAt, mPtr<mRefPool<T>> &refPool, const size_t index
 
   mERROR_IF(refPool == nullptr || pIndex == nullptr, mR_ArgumentNull);
 
-  mERROR_CHECK(mRecursiveMutex_Lock(refPool->mutex));
-  mDEFER_DESTRUCTION(refPool->mutex, mRecursiveMutex_Unlock);
+  mERROR_CHECK(mRecursiveMutex_Lock(refPool->pMutex));
+  mDEFER_DESTRUCTION(refPool->pMutex, mRecursiveMutex_Unlock);
 
-  mERROR_CHECK(refPool->ptrs(refPool, index, pIndex));
+  mERROR_CHECK(mPool_PeekAt(refPool->ptrs, index, pIndex));
 
   mRETURN_SUCCESS();
 }
@@ -212,6 +212,35 @@ inline mFUNCTION(mRefPool_GetCount, mPtr<mRefPool<T>> &refPool, OUT size_t *pCou
   mERROR_IF(refPool == nullptr || pCount == nullptr, mR_ArgumentNull);
 
   mERROR_CHECK(mPool_GetCount(refPool->ptrs, pCount));
+
+  mRETURN_SUCCESS();
+}
+
+template<typename T>
+inline mFUNCTION(mRefPool_RemoveOwnReference, mPtr<mRefPool<T>> &refPool)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(refPool == nullptr, mR_ArgumentNull);
+  mERROR_IF(!refPool->keepForever, mR_ResourceStateInvalid);
+  refPool->keepForever = false;
+
+  mERROR_CHECK(mRecursiveMutex_Lock(refPool->pMutex));
+  mDEFER_DESTRUCTION(refPool->pMutex, mRecursiveMutex_Unlock);
+
+  std::function<mResult(typename mRefPool<T>::refPoolPtr *, size_t)> removeOwnRef =
+    [](typename mRefPool<T>::refPoolPtr *pItem, size_t)
+  {
+    mFUNCTION_SETUP();
+
+    mERROR_IF(pItem == nullptr || pItem->ptr == nullptr, mR_ArgumentNull);
+
+    mERROR_CHECK(mSharedPointer_Destroy(&pItem->ptr));
+
+    mRETURN_SUCCESS();
+  };
+
+  mERROR_CHECK(mPool_ForEach(refPool->ptrs, removeOwnRef));
 
   mRETURN_SUCCESS();
 }
@@ -236,6 +265,24 @@ inline mFUNCTION(mRefPool_Destroy_Internal, IN mRefPool<T> *pRefPool)
   mFUNCTION_SETUP();
 
   mERROR_IF(pRefPool == nullptr, mR_ArgumentNull);
+
+  if (pRefPool->keepForever)
+  {
+    std::function<mResult(typename mRefPool<T>::refPoolPtr *, size_t)> removeOwnRef =
+      [](typename mRefPool<T>::refPoolPtr *pItem, size_t)
+    {
+      mFUNCTION_SETUP();
+
+      mERROR_IF(pItem == nullptr || pItem->ptr == nullptr, mR_ArgumentNull);
+      
+      mERROR_IF(pItem->ptr.m_pParams->referenceCount > 1, mR_ResourceStateInvalid); // this lambda also owns it.
+      mERROR_CHECK(mSharedPointer_Destroy(&pItem->ptr));
+
+      mRETURN_SUCCESS();
+    };
+
+    mERROR_CHECK(mPool_ForEach(pRefPool->ptrs, removeOwnRef));
+  }
 
   mERROR_CHECK(mPool_Destroy(&pRefPool->ptrs));
   mERROR_CHECK(mPool_Destroy(&pRefPool->data));

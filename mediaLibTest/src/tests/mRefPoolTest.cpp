@@ -251,3 +251,66 @@ mTEST(mRefPool, TestCrush)
 
   mTEST_ALLOCATOR_ZERO_CHECK();
 }
+
+mTEST(mRefPool, TestRemoveOwnReference)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  {
+    mPtr<mRefPool<mDummyDestructible>> refPool;
+    mDEFER_DESTRUCTION(&refPool, mRefPool_Destroy);
+    mTEST_ASSERT_SUCCESS(mRefPool_Create(&refPool, pAllocator, false));
+
+    mTEST_ASSERT_EQUAL(mR_ResourceStateInvalid, mRefPool_RemoveOwnReference(refPool));
+  }
+
+  {
+    mPtr<mRefPool<mDummyDestructible>> refPool;
+    mDEFER_DESTRUCTION(&refPool, mRefPool_Destroy);
+    mTEST_ASSERT_SUCCESS(mRefPool_Create(&refPool, pAllocator, true));
+
+    const size_t maxCount = 1024;
+
+    for (size_t i = 0; i < maxCount; i++)
+    {
+      mDummyDestructible dummy;
+      mTEST_ASSERT_SUCCESS(mDummyDestructible_Create(&dummy, pAllocator));
+
+      mPtr<mDummyDestructible> ptr;
+      mDEFER_DESTRUCTION(&ptr, mSharedPointer_Destroy);
+      mTEST_ASSERT_SUCCESS(mRefPool_Add(refPool, &dummy, &ptr));
+    }
+
+    size_t count = (size_t)-1;
+    mTEST_ASSERT_SUCCESS(mRefPool_GetCount(refPool, &count));
+    mTEST_ASSERT_EQUAL(count, maxCount);
+
+    mTEST_ASSERT_SUCCESS(mRefPool_RemoveOwnReference(refPool));
+    mTEST_ASSERT_SUCCESS(mRefPool_Crush(refPool));
+
+    mTEST_ASSERT_SUCCESS(mRefPool_GetCount(refPool, &count));
+    mTEST_ASSERT_EQUAL(count, 0);
+
+    mTEST_ASSERT_EQUAL(mR_ResourceStateInvalid, mRefPool_RemoveOwnReference(refPool));
+  }
+
+  {
+    mPtr<mRefPool<mDummyDestructible>> refPool;
+    mDEFER_DESTRUCTION(&refPool, mRefPool_Destroy);
+    mTEST_ASSERT_SUCCESS(mRefPool_Create(&refPool, pAllocator, true));
+
+    const size_t maxCount = 1024;
+
+    for (size_t i = 0; i < maxCount; i++)
+    {
+      mDummyDestructible dummy;
+      mTEST_ASSERT_SUCCESS(mDummyDestructible_Create(&dummy, pAllocator));
+
+      mPtr<mDummyDestructible> ptr;
+      mDEFER_DESTRUCTION(&ptr, mSharedPointer_Destroy);
+      mTEST_ASSERT_SUCCESS(mRefPool_Add(refPool, &dummy, &ptr));
+    }
+  }
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}
