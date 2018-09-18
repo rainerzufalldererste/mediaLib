@@ -137,6 +137,7 @@ mString & mString::operator=(const mString &copy)
   {
     mERROR_CHECK_GOTO(mAllocator_Reallocate(pAllocator, &text, copy.bytes), result, epilogue);
     this->capacity = copy.bytes;
+    mERROR_CHECK_GOTO(mAllocator_Copy(pAllocator, text, copy.text, copy.bytes), result, epilogue);
   }
   else if(copy.bytes > 0)
   {
@@ -273,6 +274,20 @@ epilogue:
   return *this;
 }
 
+bool mString::operator==(const mString &s) const
+{
+  bool ret;
+
+  mString_Equals(*this, s, &ret);
+
+  return ret;
+}
+
+bool mString::operator!=(const mString & s) const
+{
+  return !(*this == s);
+}
+
 mString::operator std::string() const
 {
   return std::string(text);
@@ -363,11 +378,10 @@ mFUNCTION(mString_Create, OUT mString *pString, const char *text, const size_t s
 
   mERROR_IF(text == nullptr, mR_ArgumentNull);
 
-  pString->pAllocator = pAllocator;
-
   if (pString->pAllocator == pAllocator)
   {
     *pString = mString();
+    pString->pAllocator = pAllocator;
 
     if (pString->capacity < size)
     {
@@ -418,6 +432,19 @@ mFUNCTION(mString_Destroy, IN_OUT mString * pString)
   pString->count = 0;
   pString->hasFailed = false;
   pString->pAllocator = nullptr;
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mString_Reserve, mString &string, const size_t size)
+{
+  mFUNCTION_SETUP();
+
+  if (string.capacity < size)
+  {
+    mERROR_CHECK(mAllocator_Reallocate(string.pAllocator, &string.text, size));
+    string.capacity = size;
+  }
 
   mRETURN_SUCCESS();
 }
@@ -623,6 +650,172 @@ mFUNCTION(mString_Append, mString &text, const mString &appendedText)
 
   text.count += appendedText.count - 1;
   text.bytes += appendedText.bytes - 1;
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mString_ToDirectoryPath, OUT mString *pString, const mString &text)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pString == nullptr, mR_ArgumentNull);
+
+  if (pString->pAllocator != text.pAllocator && pString->capacity > 0)
+  {
+    mERROR_CHECK(mAllocator_FreePtr(pString->pAllocator, &pString->text));
+    pString->bytes = 0;
+    pString->capacity = 0;
+    pString->count = 0;
+  }
+
+  pString->pAllocator = text.pAllocator;
+
+  mERROR_CHECK(mString_Reserve(*pString, text.bytes + 1));
+  *pString = text;
+  mERROR_IF(pString->hasFailed, mR_InternalError);
+
+  size_t offset = 0;
+  bool lastWasSlash = false;
+
+  for (size_t i = 0; i < pString->count; ++i)
+  {
+    utf8proc_int32_t codePoint;
+    ptrdiff_t characterSize;
+    mERROR_IF((characterSize = utf8proc_iterate((uint8_t *)pString->text + offset, pString->bytes - offset, &codePoint)) < 0, mR_InternalError);
+    mERROR_IF(codePoint < 0, mR_InternalError);
+
+    if (characterSize == 1)
+    {
+      if (lastWasSlash && (pString->text[offset] == '/' || pString->text[offset] == '\\'))
+      {
+        pString->bytes -= characterSize;
+        mERROR_CHECK(mAllocator_Move(pString->pAllocator, &pString->text[offset], &pString->text[offset + characterSize], pString->bytes - offset));
+        --pString->count;
+        --i;
+        continue;
+      }
+      else if (pString->text[offset] == '/')
+      {
+        pString->text[offset] = '\\';
+        lastWasSlash = true;
+      }
+      else if (pString->text[offset] == '\\')
+      {
+        lastWasSlash = true;
+      }
+      else if (pString->text[offset] == '\0')
+      {
+        ; // don't chang `lastWasSlash`.
+      }
+      else
+      {
+        lastWasSlash = false;
+      }
+    }
+    else
+    {
+      lastWasSlash = false;
+    }
+
+    offset += (size_t)characterSize;
+  }
+
+  if (!lastWasSlash)
+  {
+    pString->text[offset - 1] = '\\';
+    pString->text[offset] = '\0';
+    ++pString->bytes;
+    ++pString->count;
+  }
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mString_ToFilePath, OUT mString *pString, const mString &text)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pString == nullptr, mR_ArgumentNull);
+
+  *pString = text;
+  mERROR_IF(pString->hasFailed, mR_InternalError);
+
+  size_t offset = 0;
+  bool lastWasSlash = false;
+
+  for (size_t i = 0; i < pString->count; ++i)
+  {
+    utf8proc_int32_t codePoint;
+    ptrdiff_t characterSize;
+    mERROR_IF((characterSize = utf8proc_iterate((uint8_t *)pString->text + offset, pString->bytes - offset, &codePoint)) < 0, mR_InternalError);
+    mERROR_IF(codePoint < 0, mR_InternalError);
+
+    if (characterSize == 1)
+    {
+      if (lastWasSlash && (pString->text[offset] == '/' || pString->text[offset] == '\\'))
+      {
+        pString->bytes -= characterSize;
+        mERROR_CHECK(mAllocator_Move(pString->pAllocator, &pString->text[offset], &pString->text[offset + characterSize], pString->bytes - offset));
+        --pString->count;
+        continue;
+      }
+      else if (pString->text[offset] == '/')
+      {
+        pString->text[offset] = '\\';
+        lastWasSlash = true;
+      }
+      else if (pString->text[offset] == '\\')
+      {
+        lastWasSlash = true;
+      }
+      else
+      {
+        lastWasSlash = false;
+      }
+    }
+    else
+    {
+      lastWasSlash = false;
+    }
+
+    offset += (size_t)characterSize;
+  }
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mString_Equals, const mString &stringA, const mString &stringB, bool *pAreEqual)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pAreEqual == nullptr, mR_ArgumentNull);
+
+  if (stringA.bytes != stringB.bytes || stringA.count != stringB.count)
+  {
+    *pAreEqual = false;
+    mRETURN_SUCCESS();
+  }
+
+  size_t offset = 0;
+  
+  for (size_t i = 0; i < stringA.count; ++i)
+  {
+    utf8proc_int32_t codePointA;
+    ptrdiff_t characterSizeA = utf8proc_iterate((uint8_t *)stringA.text + offset, stringA.bytes - offset, &codePointA);
+
+    utf8proc_int32_t codePointB;
+    utf8proc_iterate((uint8_t *)stringB.text + offset, stringA.bytes - offset, &codePointB);
+
+    if (codePointA != codePointB)
+    {
+      *pAreEqual = false;
+      mRETURN_SUCCESS();
+    }
+
+    offset += characterSizeA;
+  }
+
+  *pAreEqual = true;
 
   mRETURN_SUCCESS();
 }

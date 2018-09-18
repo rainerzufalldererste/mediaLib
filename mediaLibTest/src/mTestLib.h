@@ -12,7 +12,7 @@
 #include "default.h"
 #include "gtest/gtest.h"
 
-#define mDEBUG_TESTS
+//#define mDEBUG_TESTS
 
 #ifdef mDEBUG_TESTS
 #define mTEST_FAIL() \
@@ -26,7 +26,7 @@
   { auto a_ = (a); \
     auto b_ = (b); \
     \
-    if (a_ != b_) \
+    if (!(a_ == b_)) \
     { printf("Test Failed on '" #a " == " #b "' at " __FUNCTION__ " in File '" __FILE__ "' Line %" PRIi32 ".", __LINE__); \
       __debugbreak(); \
     } \
@@ -40,7 +40,7 @@
   { auto a_ = (a); \
     auto b_ = (b); \
     \
-    if (a_ == b_) \
+    if (!(a_ != b_)) \
     { printf("Test Failed on '" #a " != " #b "' at " __FUNCTION__ " in File '" __FILE__ "' Line %" PRIi32 ".", __LINE__); \
       __debugbreak(); \
     } \

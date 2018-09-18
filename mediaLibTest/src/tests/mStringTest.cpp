@@ -384,3 +384,150 @@ mTEST(mString, TestSubstring)
 
   mTEST_ALLOCATOR_ZERO_CHECK();
 }
+
+mTEST(mString, TestEquals)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  mString stringA;
+  mDEFER_DESTRUCTION(&stringA, mString_Destroy);
+  mTEST_ASSERT_SUCCESS(mString_Create(&stringA, "", pAllocator));
+
+  mString stringB;
+  mDEFER_DESTRUCTION(&stringB, mString_Destroy);
+  mTEST_ASSERT_SUCCESS(mString_Create(&stringB, "", pAllocator));
+
+  mTEST_ASSERT_EQUAL(stringA, stringB);
+  mTEST_ASSERT_FALSE(stringA != stringB);
+  mTEST_ASSERT_TRUE(stringA == stringB);
+
+  bool equal;
+  mTEST_ASSERT_SUCCESS(mString_Equals(stringA, stringB, &equal));
+  mTEST_ASSERT_TRUE(equal);
+
+  mTEST_ASSERT_SUCCESS(mString_Create(&stringA, "🌵🦎🎅testמⴲx", pAllocator));
+  mTEST_ASSERT_SUCCESS(mString_Create(&stringB, "🌵🦎🎅testמⴲx", pAllocator));
+
+  mTEST_ASSERT_EQUAL(stringA, stringB);
+  mTEST_ASSERT_FALSE(stringA != stringB);
+  mTEST_ASSERT_TRUE(stringA == stringB);
+
+  mTEST_ASSERT_SUCCESS(mString_Equals(stringA, stringB, &equal));
+  mTEST_ASSERT_TRUE(equal);
+
+  mTEST_ASSERT_SUCCESS(mString_Create(&stringA, "🌵🦎🎅 estמⴲx", pAllocator));
+  mTEST_ASSERT_SUCCESS(mString_Create(&stringB, "🌵🦎🎅testמⴲx", pAllocator));
+
+  mTEST_ASSERT_NOT_EQUAL(stringA, stringB);
+  mTEST_ASSERT_TRUE(stringA != stringB);
+  mTEST_ASSERT_FALSE(stringA == stringB);
+
+  mTEST_ASSERT_SUCCESS(mString_Equals(stringA, stringB, &equal));
+  mTEST_ASSERT_FALSE(equal);
+
+  mTEST_ASSERT_SUCCESS(mString_Create(&stringA, "🌵🦎🎅testמⴲ", pAllocator));
+  mTEST_ASSERT_SUCCESS(mString_Create(&stringB, "🌵🦎🎅testמⴲx", pAllocator));
+
+  mTEST_ASSERT_NOT_EQUAL(stringA, stringB);
+  mTEST_ASSERT_TRUE(stringA != stringB);
+  mTEST_ASSERT_FALSE(stringA == stringB);
+
+  mTEST_ASSERT_SUCCESS(mString_Equals(stringA, stringB, &equal));
+  mTEST_ASSERT_FALSE(equal);
+
+  mTEST_ASSERT_SUCCESS(mString_Create(&stringA, "🌵🦎🎅testמⴲy", pAllocator));
+  mTEST_ASSERT_SUCCESS(mString_Create(&stringB, "🌵🦎🎅testמⴲx", pAllocator));
+
+  mTEST_ASSERT_NOT_EQUAL(stringA, stringB);
+  mTEST_ASSERT_TRUE(stringA != stringB);
+  mTEST_ASSERT_FALSE(stringA == stringB);
+
+  mTEST_ASSERT_SUCCESS(mString_Equals(stringA, stringB, &equal));
+  mTEST_ASSERT_FALSE(equal);
+
+  mTEST_ASSERT_SUCCESS(mString_Create(&stringA, "🌵🦎🎅testמⴲ🌵מk", pAllocator));
+  mTEST_ASSERT_SUCCESS(mString_Create(&stringB, "🌵🦎🎅testמⴲמ🌵k", pAllocator));
+
+  mTEST_ASSERT_NOT_EQUAL(stringA, stringB);
+  mTEST_ASSERT_TRUE(stringA != stringB);
+  mTEST_ASSERT_FALSE(stringA == stringB);
+
+  mTEST_ASSERT_SUCCESS(mString_Equals(stringA, stringB, &equal));
+  mTEST_ASSERT_FALSE(equal);
+
+  mTEST_ASSERT_SUCCESS(mString_Create(&stringA, "🌵🦎🎅testמⴲמ", pAllocator));
+  mTEST_ASSERT_SUCCESS(mString_Create(&stringB, "🦎🌵🎅testמⴲמ", pAllocator));
+
+  mTEST_ASSERT_NOT_EQUAL(stringA, stringB);
+  mTEST_ASSERT_TRUE(stringA != stringB);
+  mTEST_ASSERT_FALSE(stringA == stringB);
+
+  mTEST_ASSERT_SUCCESS(mString_Equals(stringA, stringB, &equal));
+  mTEST_ASSERT_FALSE(equal);
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}
+
+mTEST(mString, TestToDirectoryPath)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  mString string;
+  mDEFER_DESTRUCTION(&string, mString_Destroy);
+  mTEST_ASSERT_SUCCESS(mString_Create(&string, "C:/Some Folder🌵//Path/\\p", pAllocator));
+
+  mString path;
+  mDEFER_DESTRUCTION(&path, mString_Destroy);
+  mTEST_ASSERT_SUCCESS(mString_ToDirectoryPath(&path, string));
+
+  mTEST_ASSERT_EQUAL(path, "C:\\Some Folder🌵\\Path\\p\\");
+
+  mTEST_ASSERT_SUCCESS(mString_Create(&string, "../Some Folder//Path\\\\p/", pAllocator));
+  mTEST_ASSERT_SUCCESS(mString_ToDirectoryPath(&path, string));
+
+  mTEST_ASSERT_EQUAL(path, "..\\Some Folder\\Path\\p\\");
+
+  mTEST_ASSERT_SUCCESS(mString_Create(&string, "/Some Folder//Path/\\/p\\", pAllocator));
+  mTEST_ASSERT_SUCCESS(mString_ToDirectoryPath(&path, string));
+
+  mTEST_ASSERT_EQUAL(path, "\\Some Folder\\Path\\p\\");
+
+  mTEST_ASSERT_SUCCESS(mString_Create(&string, "test", pAllocator));
+  mTEST_ASSERT_SUCCESS(mString_ToDirectoryPath(&path, string));
+
+  mTEST_ASSERT_EQUAL(path, "test\\");
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}
+
+mTEST(mString, TestToFilePath)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  mString string;
+  mDEFER_DESTRUCTION(&string, mString_Destroy);
+  mTEST_ASSERT_SUCCESS(mString_Create(&string, "C:/Some Folder//Path/\\p", pAllocator));
+
+  mString path;
+  mDEFER_DESTRUCTION(&path, mString_Destroy);
+  mTEST_ASSERT_SUCCESS(mString_ToFilePath(&path, string));
+
+  mTEST_ASSERT_EQUAL(path, "C:\\Some Folder\\Path\\p");
+
+  mTEST_ASSERT_SUCCESS(mString_Create(&string, "../Some Folder//Path\\\\p", pAllocator));
+  mTEST_ASSERT_SUCCESS(mString_ToFilePath(&path, string));
+
+  mTEST_ASSERT_EQUAL(path, "..\\Some Folder\\Path\\p");
+
+  mTEST_ASSERT_SUCCESS(mString_Create(&string, "/Some Folder//Path/\\/p", pAllocator));
+  mTEST_ASSERT_SUCCESS(mString_ToFilePath(&path, string));
+
+  mTEST_ASSERT_EQUAL(path, "\\Some Folder\\Path\\p");
+
+  mTEST_ASSERT_SUCCESS(mString_Create(&string, "test", pAllocator));
+  mTEST_ASSERT_SUCCESS(mString_ToFilePath(&path, string));
+
+  mTEST_ASSERT_EQUAL(path, "test");
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}
