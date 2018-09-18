@@ -50,6 +50,9 @@ struct mString
   mString operator +(const mString &s) const;
   mString operator +=(const mString &s);
 
+  bool operator == (const mString &s) const;
+  bool operator != (const mString &s) const;
+
   explicit operator std::string() const;
   explicit operator std::wstring() const;
 
@@ -68,6 +71,8 @@ mFUNCTION(mString_CreateFormat, OUT mString *pString, IN OPTIONAL mAllocator *pA
 
 mFUNCTION(mString_Destroy, IN_OUT mString *pString);
 
+mFUNCTION(mString_Reserve, mString &string, const size_t size);
+
 mFUNCTION(mString_GetByteSize, const mString &string, OUT size_t *pSize);
 
 mFUNCTION(mString_GetCount, const mString &string, OUT size_t *pLength);
@@ -79,6 +84,12 @@ mFUNCTION(mString_Substring, const mString &text, OUT mString *pSubstring, const
 mFUNCTION(mString_Substring, const mString &text, OUT mString *pSubstring, const size_t startCharacter, const size_t length);
 
 mFUNCTION(mString_Append, mString &text, const mString &appendedText);
+
+mFUNCTION(mString_ToDirectoryPath, OUT mString *pString, const mString &text);
+
+mFUNCTION(mString_ToFilePath, OUT mString *pString, const mString &text);
+
+mFUNCTION(mString_Equals, const mString &stringA, const mString &stringB, bool *pAreEqual);
 
 //////////////////////////////////////////////////////////////////////////
 
