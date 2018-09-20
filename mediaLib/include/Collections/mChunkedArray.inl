@@ -54,7 +54,8 @@ mFUNCTION(mChunkedArray_Push, mPtr<mChunkedArray<T>> &chunkedArray, IN T *pItem,
   {
     mERROR_CHECK(mChunkedArray_PushBack(chunkedArray, pItem));
 
-    *pIndex = chunkedArray->itemCount - 1;
+    if (pIndex != nullptr)
+      *pIndex = chunkedArray->itemCount - 1;
 
     mRETURN_SUCCESS();
   }
