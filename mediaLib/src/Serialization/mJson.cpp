@@ -344,6 +344,63 @@ mFUNCTION(mJsonWriter_AddValue, mPtr<mJsonWriter> &jsonWriter, const char *name,
   mRETURN_SUCCESS();
 }
 
+mFUNCTION(mJsonWriter_AddValueX, mPtr<mJsonWriter> &jsonWriter, const char *name, const mVec2f &value)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_CHECK(mJsonWriter_BeginArray(jsonWriter, name));
+  mDEFER(mJsonWriter_EndArray(jsonWriter));
+
+  mERROR_CHECK(mJsonWriter_AddArrayValue(jsonWriter, value.x));
+  mERROR_CHECK(mJsonWriter_AddArrayValue(jsonWriter, value.y));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mJsonWriter_AddValueX, mPtr<mJsonWriter> &jsonWriter, const char *name, const mVec3f &value)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_CHECK(mJsonWriter_BeginArray(jsonWriter, name));
+  mDEFER(mJsonWriter_EndArray(jsonWriter));
+
+  mERROR_CHECK(mJsonWriter_AddArrayValue(jsonWriter, value.x));
+  mERROR_CHECK(mJsonWriter_AddArrayValue(jsonWriter, value.y));
+  mERROR_CHECK(mJsonWriter_AddArrayValue(jsonWriter, value.z));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mJsonWriter_AddValueX, mPtr<mJsonWriter> &jsonWriter, const char *name, const mVec4f &value)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_CHECK(mJsonWriter_BeginArray(jsonWriter, name));
+  mDEFER(mJsonWriter_EndArray(jsonWriter));
+
+  mERROR_CHECK(mJsonWriter_AddArrayValue(jsonWriter, value.x));
+  mERROR_CHECK(mJsonWriter_AddArrayValue(jsonWriter, value.y));
+  mERROR_CHECK(mJsonWriter_AddArrayValue(jsonWriter, value.z));
+  mERROR_CHECK(mJsonWriter_AddArrayValue(jsonWriter, value.w));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mJsonWriter_AddValueX, mPtr<mJsonWriter> &jsonWriter, const char *name, const mVector &value)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_CHECK(mJsonWriter_BeginArray(jsonWriter, name));
+  mDEFER(mJsonWriter_EndArray(jsonWriter));
+
+  mERROR_CHECK(mJsonWriter_AddArrayValue(jsonWriter, value.x));
+  mERROR_CHECK(mJsonWriter_AddArrayValue(jsonWriter, value.y));
+  mERROR_CHECK(mJsonWriter_AddArrayValue(jsonWriter, value.z));
+  mERROR_CHECK(mJsonWriter_AddArrayValue(jsonWriter, value.w));
+
+  mRETURN_SUCCESS();
+}
+
 mFUNCTION(mJsonWriter_AddArrayValue, mPtr<mJsonWriter> &jsonWriter, const double_t value)
 {
   mFUNCTION_SETUP();
@@ -468,6 +525,63 @@ mFUNCTION(mJsonWriter_AddArrayValue, mPtr<mJsonWriter> &jsonWriter, nullptr_t)
   mRETURN_SUCCESS();
 }
 
+mFUNCTION(mJsonWriter_AddArrayValueX, mPtr<mJsonWriter> &jsonWriter, const mVec2f &value)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_CHECK(mJsonWriter_BeginUnnamed(jsonWriter));
+  mDEFER(mJsonWriter_EndUnnamed(jsonWriter));
+
+  mERROR_CHECK(mJsonWriter_AddArrayValue(jsonWriter, value.x));
+  mERROR_CHECK(mJsonWriter_AddArrayValue(jsonWriter, value.y));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mJsonWriter_AddArrayValueX, mPtr<mJsonWriter> &jsonWriter, const mVec3f &value)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_CHECK(mJsonWriter_BeginUnnamed(jsonWriter));
+  mDEFER(mJsonWriter_EndUnnamed(jsonWriter));
+
+  mERROR_CHECK(mJsonWriter_AddArrayValue(jsonWriter, value.x));
+  mERROR_CHECK(mJsonWriter_AddArrayValue(jsonWriter, value.y));
+  mERROR_CHECK(mJsonWriter_AddArrayValue(jsonWriter, value.z));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mJsonWriter_AddArrayValueX, mPtr<mJsonWriter> &jsonWriter, const mVec4f &value)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_CHECK(mJsonWriter_BeginUnnamed(jsonWriter));
+  mDEFER(mJsonWriter_EndUnnamed(jsonWriter));
+
+  mERROR_CHECK(mJsonWriter_AddArrayValue(jsonWriter, value.x));
+  mERROR_CHECK(mJsonWriter_AddArrayValue(jsonWriter, value.y));
+  mERROR_CHECK(mJsonWriter_AddArrayValue(jsonWriter, value.z));
+  mERROR_CHECK(mJsonWriter_AddArrayValue(jsonWriter, value.w));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mJsonWriter_AddArrayValueX, mPtr<mJsonWriter> &jsonWriter, const mVector &value)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_CHECK(mJsonWriter_BeginUnnamed(jsonWriter));
+  mDEFER(mJsonWriter_EndUnnamed(jsonWriter));
+
+  mERROR_CHECK(mJsonWriter_AddArrayValue(jsonWriter, value.x));
+  mERROR_CHECK(mJsonWriter_AddArrayValue(jsonWriter, value.y));
+  mERROR_CHECK(mJsonWriter_AddArrayValue(jsonWriter, value.z));
+  mERROR_CHECK(mJsonWriter_AddArrayValue(jsonWriter, value.w));
+
+  mRETURN_SUCCESS();
+}
+
 mFUNCTION(mJsonWriter_ToString, mPtr<mJsonWriter> &jsonWriter, OUT mString *pString)
 {
   mFUNCTION_SETUP();
@@ -492,10 +606,17 @@ mFUNCTION(mJsonWriter_ToFile, mPtr<mJsonWriter> &jsonWriter, const mString &file
 
   mERROR_IF(jsonWriter == nullptr, mR_ArgumentNull);
 
+  cJSON *pJson = nullptr;
+  mERROR_CHECK(mQueue_PeekFront(jsonWriter->currentBlock, &pJson));
+
+  char *text = cJSON_Print(pJson);
+  mERROR_IF(text == nullptr, mR_InternalError);
+  mDEFER(cJSON_free(text));
+
   mString fileContents;
   mERROR_CHECK(mJsonWriter_ToString(jsonWriter, &fileContents));
 
-  mERROR_CHECK(mFile_WriteAllText(filename, fileContents));
+  mERROR_CHECK(mFile_WriteAllText(filename, text));
 
   mRETURN_SUCCESS();
 }

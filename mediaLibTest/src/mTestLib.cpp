@@ -8,8 +8,16 @@
 
 #include "mTestLib.h"
 
+void _CallCouninitialize()
+{
+  CoUninitialize();
+}
+
 mFUNCTION(mTestLib_RunAllTests, int * pArgc, char ** pArgv)
 {
+  CoInitialize(nullptr);
+  atexit(_CallCouninitialize);
+
   ::testing::InitGoogleTest(pArgc, pArgv);
 
   return RUN_ALL_TESTS() == 0 ? mR_Success : mR_Failure;

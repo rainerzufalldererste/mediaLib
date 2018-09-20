@@ -241,8 +241,9 @@ mTEST(mRefPool, TestCrush)
   {
     mFUNCTION_SETUP();
 
-    mERROR_IF(d.m_pParams->pUserData == nullptr, mR_ArgumentNull);
-    mERROR_IF(*(size_t *)d.m_pParams->pUserData >= count, mR_InternalError);
+    size_t index = (size_t)-1;
+    mERROR_CHECK(mRefPool_GetPointerIndex(d, &index));
+    mERROR_IF(index >= count, mR_InternalError);
 
     mRETURN_SUCCESS();
   };

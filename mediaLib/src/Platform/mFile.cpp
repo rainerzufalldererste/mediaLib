@@ -8,6 +8,7 @@
 
 #include "mFile.h"
 #include <sys\stat.h>
+#include <shobjidl.h>
 
 mFUNCTION(mFile_Exists, const std::wstring &filename, OUT bool *pExists)
 {
@@ -96,6 +97,103 @@ mFUNCTION(mFile_WriteAllText, const mString &filename, const mString &text, cons
   mERROR_CHECK(mString_ToWideString(filename, &wstring));
 
   mERROR_CHECK(mFile_WriteRaw(wstring, text.c_str(), text.bytes - 1));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mFile_CreateDirectory, const mString &folderPath)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(folderPath.hasFailed, mR_InvalidParameter);
+
+  mString path;
+  mERROR_CHECK(mString_ToDirectoryPath(&path, folderPath));
+
+  mString pathWithoutLastSlash;
+  mERROR_CHECK(mString_Substring(path, &pathWithoutLastSlash, 0, path.Count() - 2));
+
+  std::wstring directoryName;
+  mERROR_CHECK(mString_ToWideString(pathWithoutLastSlash, &directoryName));
+
+  if (0 == CreateDirectoryW(directoryName.c_str(), NULL))
+  {
+    const DWORD error = GetLastError();
+
+    switch (error)
+    {
+    case ERROR_ALREADY_EXISTS:
+      break;
+
+    case ERROR_PATH_NOT_FOUND:
+      mERROR_IF(true, mR_ResourceNotFound);
+      break;
+
+    default:
+      mERROR_IF(true, mR_InternalError);
+      break;
+    }
+  }
+
+  mRETURN_SUCCESS();
+}
+
+HRESULT CreateAndInitializeFileOperation(REFIID riid, void **ppFileOperation)
+{
+  *ppFileOperation = nullptr;
+
+  // Create the IFileOperation object
+  IFileOperation *pfo;
+
+  HRESULT hr = CoCreateInstance(__uuidof(FileOperation), NULL, CLSCTX_ALL, IID_PPV_ARGS(&pfo));
+
+  if (SUCCEEDED(hr))
+  {
+    // Set the operation flags. Turn off all UI from being shown to the user during the operation. This includes error, confirmation and progress dialogs.
+    hr = pfo->SetOperationFlags(FOF_NO_UI);
+
+    if (SUCCEEDED(hr))
+    {
+      hr = pfo->QueryInterface(riid, ppFileOperation);
+    }
+
+    pfo->Release();
+  }
+
+  return hr;
+}
+
+mFUNCTION(mFile_DeleteFolder, const mString &folderPath)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(folderPath.hasFailed, mR_InvalidParameter);
+
+  mString path;
+  mERROR_CHECK(mString_ToDirectoryPath(&path, folderPath));
+
+  mString pathWithoutLastSlash;
+  mERROR_CHECK(mString_Substring(path, &pathWithoutLastSlash, 0, path.Count() - 2));
+
+  std::wstring directoryName;
+  mERROR_CHECK(mString_ToWideString(pathWithoutLastSlash, &directoryName));
+
+  HRESULT hr = S_OK;
+
+  wchar_t absolutePath[1024 * 4];
+  DWORD length = GetFullPathNameW(directoryName.c_str(), mARRAYSIZE(absolutePath), absolutePath, nullptr);
+  mUnused(length);
+
+  IShellItem *pItem = nullptr;
+  mERROR_IF(FAILED(hr = SHCreateItemFromParsingName(absolutePath, nullptr, IID_PPV_ARGS(&pItem))), mR_InternalError);
+  mDEFER(pItem->Release());
+
+  IFileOperation *pFileOperation = nullptr;
+  mERROR_IF(FAILED(hr = CreateAndInitializeFileOperation(IID_PPV_ARGS(&pFileOperation))), mR_InternalError);
+  mDEFER(pFileOperation->Release());
+
+  mERROR_IF(FAILED(hr = pFileOperation->DeleteItem(pItem, nullptr)), mR_InternalError);
+  mERROR_IF(FAILED(hr = pFileOperation->PerformOperations()), mR_InternalError);
 
   mRETURN_SUCCESS();
 }

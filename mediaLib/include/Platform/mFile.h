@@ -36,6 +36,9 @@ mFUNCTION(mFile_ReadRaw, const std::wstring &filename, OUT T **ppData, IN mAlloc
 template <typename T>
 mFUNCTION(mFile_WriteRaw, const std::wstring &filename, IN T *pData, const size_t count);
 
+mFUNCTION(mFile_CreateDirectory, const mString &folderPath);
+mFUNCTION(mFile_DeleteFolder, const mString &folderPath);
+
 //////////////////////////////////////////////////////////////////////////
 
 template<typename T>
