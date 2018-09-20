@@ -246,6 +246,19 @@ inline mFUNCTION(mRefPool_RemoveOwnReference, mPtr<mRefPool<T>> &refPool)
 }
 
 template<typename T>
+inline mFUNCTION(mRefPool_GetPointerIndex, mPtr<T> &ptr, size_t *pIndex)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pIndex == nullptr || ptr == nullptr, mR_ArgumentNull);
+  mERROR_IF(ptr.m_pParams->pUserData == nullptr, mR_ResourceStateInvalid);
+
+  *pIndex = *(size_t *)ptr.m_pParams->pUserData;
+
+  mRETURN_SUCCESS();
+}
+
+template<typename T>
 inline mFUNCTION(mDestruct, IN struct mRefPool<T>::refPoolPtr *pData)
 {
   mFUNCTION_SETUP();

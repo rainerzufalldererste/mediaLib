@@ -26,6 +26,11 @@ mFUNCTION(mHash, const std::basic_string<T> &string, OUT uint64_t *pHash);
 template <typename T>
 mFUNCTION(mHash, const T *pData, OUT uint64_t *pHash, const size_t count = 1);
 
+inline mFUNCTION(mHash, const mString &string, OUT uint64_t *pHash);
+
+template<size_t TCount>
+inline mFUNCTION(mHash, const mInplaceString<TCount> &string, OUT uint64_t *pHash);
+
 uint64_t mMurmurHash2(const void *pData, const size_t length, const uint64_t seed = 0xD0D93DEADC0FFEE5);
 
 //////////////////////////////////////////////////////////////////////////
@@ -66,6 +71,25 @@ inline mFUNCTION(mHash, const std::basic_string<T> &string, OUT uint64_t *pHash)
   mFUNCTION_SETUP();
 
   mERROR_CHECK(mHash(string.c_str(), pHash, string.length()));
+
+  mRETURN_SUCCESS();
+}
+
+inline mFUNCTION(mHash, const mString &string, OUT uint64_t *pHash)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_CHECK(mHash(string.c_str(), pHash, string.bytes));
+
+  mRETURN_SUCCESS();
+}
+
+template<size_t TCount>
+inline mFUNCTION(mHash, const mInplaceString<TCount> &string, OUT uint64_t *pHash)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_CHECK(mHash(string.c_str(), pHash, string.bytes));
 
   mRETURN_SUCCESS();
 }

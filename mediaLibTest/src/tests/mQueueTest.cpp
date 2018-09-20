@@ -201,3 +201,34 @@ mTEST(mQueue, TestPushPop)
 
   mTEST_ALLOCATOR_ZERO_CHECK();
 }
+
+mTEST(mQueue, TestClear)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  mPtr<mQueue<mDummyDestructible>> queue;
+  mDEFER_DESTRUCTION(&queue, mQueue_Destroy);
+  mTEST_ASSERT_SUCCESS(mQueue_Create(&queue, pAllocator));
+
+  for (size_t i = 0; i < 1024; i++)
+  {
+    mDummyDestructible dummy;
+    mTEST_ASSERT_SUCCESS(mDummyDestructible_Create(&dummy, pAllocator));
+    mTEST_ASSERT_SUCCESS(mQueue_PushBack(queue, &dummy));
+  }
+
+  mTEST_ASSERT_SUCCESS(mQueue_Clear(queue));
+
+  size_t count = (size_t)-1;
+  mTEST_ASSERT_SUCCESS(mQueue_GetCount(queue, &count));
+  mTEST_ASSERT_EQUAL(0, count);
+
+  for (size_t i = 0; i < 1024; i++)
+  {
+    mDummyDestructible dummy;
+    mTEST_ASSERT_SUCCESS(mDummyDestructible_Create(&dummy, pAllocator));
+    mTEST_ASSERT_SUCCESS(mQueue_PushBack(queue, &dummy));
+  }
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}

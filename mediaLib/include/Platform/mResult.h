@@ -99,8 +99,8 @@ template <typename ...Args> void mDeinit(const std::function<void(void)> &param,
         if (g_mResult_breakOnError && mBREAK_ON_FAILURE) \
         { __debugbreak(); \
         } \
-        mRETURN_RESULT(mSTDRESULT); \
       } \
+      mRETURN_RESULT(mSTDRESULT); \
     } \
   } while (0)
 
@@ -131,8 +131,8 @@ template <typename ...Args> void mDeinit(const std::function<void(void)> &param,
         if (g_mResult_breakOnError && mBREAK_ON_FAILURE) \
         { __debugbreak(); \
         } \
-        goto label; \
       } \
+      goto label; \
     } \
   } while (0)
 

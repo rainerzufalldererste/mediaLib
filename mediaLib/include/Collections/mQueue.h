@@ -62,6 +62,9 @@ mFUNCTION(mQueue_GetCount, mPtr<mQueue<T>> &queue, OUT size_t *pCount);
 template <typename T>
 mFUNCTION(mQueue_Reserve, mPtr<mQueue<T>> &queue, const size_t count);
 
+template <typename T>
+mFUNCTION(mQueue_Clear, mPtr<mQueue<T>> &queue);
+
 //////////////////////////////////////////////////////////////////////////
 
 template<typename T>
@@ -302,6 +305,33 @@ inline mFUNCTION(mQueue_Reserve, mPtr<mQueue<T>> &queue, const size_t count)
 
   mRETURN_SUCCESS();
 }
+
+template<typename T>
+inline mFUNCTION(mQueue_Clear, mPtr<mQueue<T>> &queue)
+{
+  mFUNCTION_SETUP();
+  
+  mERROR_IF(queue == nullptr, mR_ArgumentNull);
+
+  if (queue->pData != nullptr)
+  {
+    size_t index = queue->startIndex;
+
+    for (size_t i = 0; i < queue->count; ++i)
+    {
+      mERROR_CHECK(mDestruct(queue->pData + index));
+
+      index = (index + 1) % queue->size;
+    }
+
+    queue->startIndex = 0;
+    queue->count = 0;
+  }
+
+  mRETURN_SUCCESS();
+}
+
+//////////////////////////////////////////////////////////////////////////
 
 template<typename T>
 inline mFUNCTION(mQueue_Destroy_Internal, IN mQueue<T> *pQueue)
