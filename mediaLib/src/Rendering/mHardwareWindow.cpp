@@ -19,10 +19,12 @@ struct mHardwareWindow
   mPtr<mChunkedArray<std::function<mResult(const mVec2s &)>>> onResizeCallbacks;
 };
 
-mFUNCTION(mHardwareWindow_Create_Internal, IN_OUT mHardwareWindow *pWindow, IN mAllocator *pAllocator, const std::string & title, const mVec2s & size, const mHardwareWindow_DisplayMode displaymode, const bool stereo3dIfAvailable);
+mFUNCTION(mHardwareWindow_Create_Internal, IN_OUT mHardwareWindow *pWindow, IN mAllocator *pAllocator, const mString & title, const mVec2s & size, const mHardwareWindow_DisplayMode displaymode, const bool stereo3dIfAvailable);
 mFUNCTION(mHardwareWindow_Destroy_Internal, IN mHardwareWindow *pWindow);
 
-mFUNCTION(mHardwareWindow_Create, OUT mPtr<mHardwareWindow> *pWindow, IN mAllocator *pAllocator, const std::string &title, const mVec2s &size, const mHardwareWindow_DisplayMode displaymode /* = mHW_DM_Windowed */, const bool stereo3dIfAvailable /* = false */)
+//////////////////////////////////////////////////////////////////////////
+
+mFUNCTION(mHardwareWindow_Create, OUT mPtr<mHardwareWindow> *pWindow, IN mAllocator *pAllocator, const mString &title, const mVec2s &size, const mHardwareWindow_DisplayMode displaymode /* = mHW_DM_Windowed */, const bool stereo3dIfAvailable /* = false */)
 {
   mFUNCTION_SETUP();
 
@@ -223,7 +225,7 @@ mFUNCTION(mHardwareWindow_AddOnAnyEvent, mPtr<mHardwareWindow>& window, const st
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mHardwareWindow_Create_Internal, IN_OUT mHardwareWindow *pWindow, IN mAllocator *pAllocator, const std::string &title, const mVec2s &size, const mHardwareWindow_DisplayMode displaymode, const bool stereo3dIfAvailable)
+mFUNCTION(mHardwareWindow_Create_Internal, IN_OUT mHardwareWindow *pWindow, IN mAllocator *pAllocator, const mString &title, const mVec2s &size, const mHardwareWindow_DisplayMode displaymode, const bool stereo3dIfAvailable)
 {
   mFUNCTION_SETUP();
   mUnused(displaymode);

@@ -10,7 +10,6 @@
 #ifndef mHardwareWindow_h__
 #define mHardwareWindow_h__
 
-#include "default.h"
 #include "mRenderParams.h"
 
 enum mHardwareWindow_DisplayMode
@@ -19,11 +18,15 @@ enum mHardwareWindow_DisplayMode
   mHW_DM_Fullscreen = SDL_WINDOW_FULLSCREEN,
   mHW_DM_FullscreenDesktop = SDL_WINDOW_FULLSCREEN_DESKTOP,
   mHW_DM_Resizeable = SDL_WINDOW_RESIZABLE,
+  mHW_DM_Maximized = SDL_WINDOW_MAXIMIZED,
+  mHW_DM_Minimized = SDL_WINDOW_MINIMIZED,
+  mHW_DM_Hidden = SDL_WINDOW_HIDDEN,
+  mHW_DM_NotInTaskbar = SDL_WINDOW_SKIP_TASKBAR,
 };
 
 struct mHardwareWindow;
 
-mFUNCTION(mHardwareWindow_Create, OUT mPtr<mHardwareWindow> *pWindow, IN mAllocator *pAllocator, const std::string &title, const mVec2s &size, const mHardwareWindow_DisplayMode displaymode = mHW_DM_Windowed, const bool stereo3dIfAvailable = false);
+mFUNCTION(mHardwareWindow_Create, OUT mPtr<mHardwareWindow> *pWindow, IN mAllocator *pAllocator, const mString &title, const mVec2s &size, const mHardwareWindow_DisplayMode displaymode = mHW_DM_Windowed, const bool stereo3dIfAvailable = false);
 mFUNCTION(mHardwareWindow_Destroy, IN_OUT mPtr<mHardwareWindow> *pWindow);
 mFUNCTION(mHardwareWindow_GetSize, mPtr<mHardwareWindow> &window, OUT mVec2s *pSize);
 mFUNCTION(mHardwareWindow_Swap, mPtr<mHardwareWindow> &window);
