@@ -41,7 +41,7 @@ mFUNCTION(mTexture_Create, OUT mTexture * pTexture, mPtr<mImageBuffer>& imageBuf
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mTexture_Create, OUT mTexture *pTexture, const std::string &filename, const bool upload /* = true */, const size_t textureUnit /* = 0 */)
+mFUNCTION(mTexture_Create, OUT mTexture *pTexture, const mString &filename, const bool upload /* = true */, const size_t textureUnit /* = 0 */)
 {
   mFUNCTION_SETUP();
 
@@ -226,7 +226,7 @@ mFUNCTION(mTexture_SetTo, mTexture &texture, const uint8_t *pData, const mVec2s 
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mCreateResource, OUT mTexture * pTexture, const std::string & filename)
+mFUNCTION(mCreateResource, OUT mTexture * pTexture, const mString & filename)
 {
   mFUNCTION_SETUP();
 

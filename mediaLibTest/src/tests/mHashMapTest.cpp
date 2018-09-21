@@ -6,31 +6,35 @@
 // 
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-#ifndef mDestruct_h__
-#define mDestruct_h__
+#include "mTestLib.h"
+#include "mHashMap.h"
 
-#include "mResult.h"
-
-template <typename T>
-mFUNCTION(mDestruct, IN T *pData);
-
-//#define mDESTRUCT_LOG_DESTRUCTIONS
-
-//////////////////////////////////////////////////////////////////////////
-
-template <typename T>
-inline mFUNCTION(mDestruct, IN T *pData)
+mTEST(mHashMap, TestCreate)
 {
-  mFUNCTION_SETUP();
+  mTEST_ALLOCATOR_SETUP();
 
-#ifdef mDESTRUCT_LOG_DESTRUCTIONS
-  mLOG("Destructing resource of type %s with generic destruction function.\n", typeid(T *).name());
-#endif
+  mPtr<mHashMap<size_t, mDummyDestructible>> hashMap;
+  mDEFER_DESTRUCTION(&hashMap, mHashMap_Destroy);
+  mTEST_ASSERT_EQUAL(mR_ArgumentNull, mHashMap_Create((mPtr<mHashMap<size_t, size_t>> *)nullptr, pAllocator, 1024));
+  mTEST_ASSERT_SUCCESS(mHashMap_Create(&hashMap, pAllocator, 1024));
 
-  if (pData != nullptr && std::is_destructible<T>::value)
-    pData->~T();
-
-  mRETURN_SUCCESS();
+  mTEST_ALLOCATOR_ZERO_CHECK();
 }
 
-#endif // mDestruct_h__
+mTEST(mHashMap, TestCleanup)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  mPtr<mHashMap<size_t, mDummyDestructible>> hashMap;
+  mDEFER_DESTRUCTION(&hashMap, mHashMap_Destroy);
+  mTEST_ASSERT_SUCCESS(mHashMap_Create(&hashMap, pAllocator, 1024));
+
+  for (size_t i = 0; i < 1024 * 8; i++)
+  {
+    mDummyDestructible dummy;
+    mTEST_ASSERT_SUCCESS(mDummyDestructible_Create(&dummy, pAllocator));
+    mTEST_ASSERT_SUCCESS(mHashMap_Add(hashMap, i, &dummy));
+  }
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}

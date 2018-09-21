@@ -24,4 +24,28 @@ mFUNCTION(mUI_ProcessEvent, IN SDL_Event *pEvent);
 mFUNCTION(mUI_PushMonospacedFont);
 mFUNCTION(mUI_PopMonospacedFont);
 
+template <typename T>
+inline ImVec2 cast(const mVec2t<T> &vec2t)
+{
+  ImVec2 v;
+
+  v.x = (float_t)vec2t.x;
+  v.y = (float_t)vec2t.y;
+
+  return v;
+}
+
+template <typename T>
+inline ImVec4 cast(const mVec4t<T> &vec4t)
+{
+  ImVec4 v;
+
+  v.x = (float_t)vec4t.x;
+  v.y = (float_t)vec4t.y;
+  v.z = (float_t)vec4t.z;
+  v.w = (float_t)vec4t.w;
+
+  return v;
+}
+
 #endif // mUI_h__

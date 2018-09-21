@@ -56,6 +56,9 @@ mString::mString(const char * text, const size_t size, IN OPTIONAL mAllocator * 
     mERROR_IF_GOTO(codePoint < 0, mR_InternalError, result, epilogue);
     offset += (size_t)characterSize;
     this->count++;
+
+    if (characterSize == 0)
+      break;
   }
 
   this->count += 1;
@@ -188,6 +191,9 @@ mchar_t mString::operator[](const size_t index) const
       return codePoint;
 
     offset += (size_t)characterSize;
+
+    if (characterSize == 0)
+      break;
   }
 
   return codePoint;
@@ -346,6 +352,9 @@ mString::operator std::wstring() const
     }
 
     offset += (size_t)characterSize;
+
+    if (characterSize == 0)
+      break;
   }
 
   wtext[wstrIndex] = (wchar_t)0;
@@ -413,6 +422,9 @@ mFUNCTION(mString_Create, OUT mString *pString, const char *text, const size_t s
     mERROR_IF(codePoint < 0, mR_InternalError);
     offset += (size_t)characterSize;
     pString->count++;
+
+    if (characterSize == 0)
+      break;
   }
 
   mRETURN_SUCCESS();
@@ -521,6 +533,9 @@ mFUNCTION(mString_ToWideString, const mString &string, std::wstring *pWideString
     }
 
     offset += (size_t)characterSize;
+
+    if (characterSize == 0)
+      break;
   }
 
   wtext[wstrIndex] = (wchar_t)0;
@@ -718,6 +733,9 @@ mFUNCTION(mString_ToDirectoryPath, OUT mString *pString, const mString &text)
     }
 
     offset += (size_t)characterSize;
+
+    if (characterSize == 0)
+      break;
   }
 
   if (!lastWasSlash)
@@ -779,6 +797,9 @@ mFUNCTION(mString_ToFilePath, OUT mString *pString, const mString &text)
     }
 
     offset += (size_t)characterSize;
+
+    if (characterSize == 0)
+      break;
   }
 
   mRETURN_SUCCESS();
@@ -813,6 +834,9 @@ mFUNCTION(mString_Equals, const mString &stringA, const mString &stringB, bool *
     }
 
     offset += characterSizeA;
+
+    if (characterSizeA == 0)
+      break;
   }
 
   *pAreEqual = true;
@@ -835,10 +859,39 @@ mFUNCTION(mInplaceString_GetCount_Internal, const char * text, const size_t maxS
     mERROR_IF(codePoint < 0, mR_InternalError);
     offset += (size_t)characterSize;
     count++;
+
+    if(characterSize == 0)
+      break;
   }
 
   *pCount = count + 1;
   *pSize = offset + 1;
 
   mRETURN_SUCCESS();
+}
+
+bool mInplaceString_StringsAreEqual_Internal(const char * textA, const char * textB, const size_t bytes, const size_t count)
+{
+  size_t offset = 0;
+
+  for (size_t i = 0; i < count; ++i)
+  {
+    utf8proc_int32_t codePointA;
+    ptrdiff_t characterSizeA = utf8proc_iterate((uint8_t *)textA + offset, bytes - offset, &codePointA);
+
+    utf8proc_int32_t codePointB;
+    utf8proc_iterate((uint8_t *)textB + offset, bytes - offset, &codePointB);
+
+    if (codePointA != codePointB)
+    {
+      return false;
+    }
+
+    offset += characterSizeA;
+
+    if (characterSizeA == 0)
+      break;
+  }
+
+  return true;
 }

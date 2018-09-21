@@ -94,7 +94,7 @@ inline mFUNCTION(mResourceManager_GetResource, OUT mPtr<TValue> *pValue, TKey ke
   {
     mAllocator *pAllocator;
     mERROR_CHECK((mResourceGetPreferredAllocator<TValue>)(&pAllocator));
-    mERROR_CHECK((mResourceManager_CreateRessourceManager_Explicit<TKey, TValue>(pAllocator)));
+    mERROR_CHECK((mResourceManager_CreateResourceManager_Explicit<TKey, TValue>(pAllocator)));
   }
 
   mERROR_CHECK(mMutex_Lock(CurrentResourceManagerType::Instance()->pMutex));
@@ -121,24 +121,34 @@ inline mFUNCTION(mResourceManager_GetResource, OUT mPtr<TValue> *pValue, TKey ke
   CurrentResourceManagerType::ResourceData *pRetrievedResourceData = nullptr;
   mERROR_CHECK(mPool_PointerAt(CurrentResourceManagerType::Instance()->data, resourceIndex, &pRetrievedResourceData));
 
+  std::function<void(TValue *)> cleanupFunc = [=](TValue *pData)
+  {
+    //mPRINT("Destroying Resource %" PRIu64 " of type %s.\n", resourceIndex, typeid(TValue *).name());
+    mDestroyResource(pData);
+
+    size_t resourceIndex0 = 0;
+    mResult result = mHashMap_Remove(CurrentResourceManagerType::Instance()->keys, key, &resourceIndex0);
+
+    if (mFAILED(result))
+      return;
+
+    mASSERT(resourceIndex == resourceIndex0, "Corrupted ResourceManager data.");
+
+    CurrentResourceManagerType::ResourceData resourceData0; // we don't care.
+    result = mPool_RemoveAt(CurrentResourceManagerType::Instance()->data, resourceIndex, &resourceData0);
+
+    if (mFAILED(result))
+      return;
+
+    mDestroyResource(&resourceData0.resource);
+  };
+
   mERROR_CHECK(mSharedPointer_CreateInplace(
     &pRetrievedResourceData->sharedPointer,
     &pRetrievedResourceData->pointerParams,
     &pRetrievedResourceData->resource,
     mSHARED_POINTER_FOREIGN_RESOURCE, 
-    (std::function<void (TValue *)>)[=](TValue *pData)
-      {
-        //mPRINT("Destroying Resource %" PRIu64 " of type %s.\n", resourceIndex, typeid(TValue *).name());
-        mDestroyResource(pData);
-        
-        size_t resourceIndex0 = 0;
-        mResult result = mHashMap_Remove(CurrentResourceManagerType::Instance()->keys, key, &resourceIndex0);
-
-        mASSERT_DEBUG(resourceIndex == resourceIndex0, "Corrupted ResourceManager data.");
-
-        CurrentResourceManagerType::ResourceData resourceData0; // we don't care.
-        result = mPool_RemoveAt(CurrentResourceManagerType::Instance()->data, resourceIndex, &resourceData0);
-      }));
+    cleanupFunc));
 
   mERROR_CHECK(mCreateResource(&pRetrievedResourceData->resource, key));
   *pValue = pRetrievedResourceData->sharedPointer;
@@ -150,7 +160,7 @@ inline mFUNCTION(mResourceManager_GetResource, OUT mPtr<TValue> *pValue, TKey ke
 }
 
 template<typename TKey, typename TValue>
-inline mFUNCTION(mResourceManager_CreateRessourceManager_Explicit, IN mAllocator *pAllocator)
+inline mFUNCTION(mResourceManager_CreateResourceManager_Explicit, IN mAllocator *pAllocator)
 {
   mFUNCTION_SETUP();
 
@@ -166,8 +176,8 @@ inline mFUNCTION(mResourceManager_CreateRessourceManager_Explicit, IN mAllocator
     nullptr, 
     (std::function<void(CurrentResourceManagerType *)>)[](CurrentResourceManagerType *pData) 
       {
-        mHashMap_Destroy(&pData->keys);
         mPool_Destroy(&pData->data);
+        mHashMap_Destroy(&pData->keys);
         mMutex_Destroy(&pData->pMutex); 
       }, 
     1));

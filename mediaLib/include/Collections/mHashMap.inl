@@ -143,7 +143,6 @@ mFUNCTION(mHashMap_Add, mPtr<mHashMap<TKey, TValue>> &hashMap, TKey key, IN TVal
   mERROR_CHECK(mQueue_PeekAt(hashMap->data, index, &chunkedArray));
 
   mKeyValuePair<TKey, TValue> kvpair;
-  mDEFER_DESTRUCTION(&kvpair, mKeyValuePair_Destroy); // does nothing.
   mERROR_CHECK(mKeyValuePair_Create(&kvpair, key, *pValue));
 
   size_t chunkedArrayIndex = 0; // we don't care anyways.

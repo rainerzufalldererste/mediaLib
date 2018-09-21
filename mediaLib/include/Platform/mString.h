@@ -131,11 +131,25 @@ inline mString::mString(const char text[TSize], IN OPTIONAL mAllocator *pAllocat
 template <size_t TCount>
 struct mInplaceString
 {
-  char text[TCount + 1];
-  size_t bytes;
-  size_t count;
+  char text[TCount + 1] = "";
+  size_t bytes = 0;
+  size_t count = 0;
+
+  mInplaceString() = default;
+
+  mInplaceString(const mInplaceString<TCount> &copy);
+  mInplaceString(mInplaceString<TCount> &&move);
+  
+  mInplaceString<TCount> & operator = (const mInplaceString<TCount> &copy);
+  mInplaceString<TCount> & operator = (mInplaceString<TCount> &&move);
 
   const char * c_str() const;
+
+  template <size_t TOtherCount>
+  bool operator == (const mInplaceString<TOtherCount> &other) const;
+
+  template <size_t TOtherCount>
+  bool operator != (const mInplaceString<TOtherCount> &other) const;
 };
 
 template <size_t TCount>
@@ -166,13 +180,67 @@ template <size_t TCount>
 mFUNCTION(mInplaceString_GetCount, const mInplaceString<TCount> &string, OUT size_t *pLength);
 
 mFUNCTION(mInplaceString_GetCount_Internal, const char *text, const size_t maxSize, OUT size_t *pCount, OUT size_t *pSize);
+bool mInplaceString_StringsAreEqual_Internal(const char *textA, const char *textB, const size_t bytes, const size_t count);
 
 //////////////////////////////////////////////////////////////////////////
+
+template<size_t TCount>
+inline mInplaceString<TCount>::mInplaceString(const mInplaceString<TCount> & copy) :
+  bytes(copy.bytes),
+  count(copy.count)
+{
+  mMemcpy(text, copy.text, bytes / sizeof(char));
+}
+
+template<size_t TCount>
+inline mInplaceString<TCount>::mInplaceString(mInplaceString<TCount> && move) :
+  bytes(move.bytes),
+  count(move.count)
+{
+  mMemmove(text, move.text, bytes / sizeof(char));
+}
+
+template<size_t TCount>
+inline mInplaceString<TCount> & mInplaceString<TCount>::operator=(const mInplaceString<TCount> & copy)
+{
+  bytes = copy.bytes;
+  count = copy.count;
+  mMemcpy(text, copy.text, bytes / sizeof(char));
+
+  return *this;
+}
+
+template<size_t TCount>
+inline mInplaceString<TCount> & mInplaceString<TCount>::operator=(mInplaceString<TCount> && move)
+{
+  bytes = move.bytes;
+  count = move.count;
+  mMemmove(text, move.text, bytes / sizeof(char));
+
+  return *this;
+}
 
 template<size_t TCount>
 inline const char * mInplaceString<TCount>::c_str() const
 {
   return this->text;
+}
+
+template<size_t TCount>
+template<size_t TOtherCount>
+inline bool mInplaceString<TCount>::operator==(const mInplaceString<TOtherCount> &other) const
+{
+  if (other.bytes != bytes || other.count != this->count)
+    return false;
+
+  return mInplaceString_StringsAreEqual_Internal(text, other.text, bytes, count);
+}
+
+template<size_t TCount>
+template<size_t TOtherCount>
+inline bool mInplaceString<TCount>::operator!=(const mInplaceString<TOtherCount> &other) const
+{
+  return !(*this == other);
 }
 
 template<size_t TCount>

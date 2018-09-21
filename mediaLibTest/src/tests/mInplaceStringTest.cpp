@@ -122,3 +122,37 @@ mTEST(mInplaceString, TestCastTo_mString)
 
   mTEST_ALLOCATOR_ZERO_CHECK();
 }
+
+mTEST(mInplaceString, TestCreateTooLong)
+{
+  mInplaceString<5> string;
+  char text[] = "🌵🦎🎅testמⴲ";
+  mTEST_ASSERT_EQUAL(mR_ArgumentOutOfBounds, mInplaceString_CreateRaw(&string, (char *)text));
+  mTEST_ASSERT_EQUAL(mR_ArgumentOutOfBounds, mInplaceString_Create(&string, text));
+  mTEST_ASSERT_EQUAL(mR_ArgumentOutOfBounds, mInplaceString_Create(&string, (mString)text));
+  mTEST_ASSERT_EQUAL(mR_ArgumentOutOfBounds, mInplaceString_Create(&string, text, mARRAYSIZE(text)));
+}
+
+mTEST(mInplaceString, TestSet)
+{
+  mInplaceString<128> stringA;
+  mInplaceString<128> stringB;
+  mInplaceString<128> stringC;
+  
+  char text[] = "🌵🦎🎅testמⴲ";
+  mTEST_ASSERT_SUCCESS(mInplaceString_Create(&stringA, (char *)text, mARRAYSIZE(text)));
+  mTEST_ASSERT_SUCCESS(mInplaceString_Create(&stringC, (char *)text, mARRAYSIZE(text)));
+
+  stringB = stringA;
+  mTEST_ASSERT_EQUAL(stringA, stringB);
+  stringB = std::move(stringA);
+  mTEST_ASSERT_EQUAL(stringA, stringB);
+
+  mTEST_ASSERT_SUCCESS(mInplaceString_Create(&stringA, (char *)text, mARRAYSIZE(text)));
+
+  new (&stringB) mInplaceString<128>(stringA);
+  mTEST_ASSERT_EQUAL(stringC, stringB);
+
+  new (&stringB) mInplaceString<128>(std::move(stringA));
+  mTEST_ASSERT_EQUAL(stringC, stringB);
+}
