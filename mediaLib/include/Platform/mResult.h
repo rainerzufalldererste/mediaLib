@@ -19,6 +19,8 @@ enum mResult
 {
   mR_Success,
 
+  mR_Break,
+
   mR_InvalidParameter,
   mR_ArgumentNull,
   mR_InternalError,
@@ -36,6 +38,7 @@ enum mResult
   mR_EndOfStream,
   mR_RenderingError,
   mR_Failure,
+  mR_NotSupported,
 
   mResult_Count
 };

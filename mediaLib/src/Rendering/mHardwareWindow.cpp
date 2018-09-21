@@ -95,7 +95,15 @@ mFUNCTION(mHardwareWindow_Swap, mPtr<mHardwareWindow>& window)
       std::function<mResult(IN SDL_Event *)> *pFunction = nullptr;
       mERROR_CHECK(mChunkedArray_PointerAt(window->onEventCallbacks, i, &pFunction));
 
-      mERROR_CHECK((*pFunction)(&_event));
+      mResult result = ((*pFunction)(&_event));
+
+      if (mFAILED(result))
+      {
+        if (result == mR_Break)
+          break;
+        else
+          mRETURN_RESULT(result);
+      }
     }
 
     if (_event.type == SDL_QUIT)
@@ -108,7 +116,15 @@ mFUNCTION(mHardwareWindow_Swap, mPtr<mHardwareWindow>& window)
         std::function<mResult(void)> *pFunction = nullptr;
         mERROR_CHECK(mChunkedArray_PointerAt(window->onExitCallbacks, i, &pFunction));
 
-        mERROR_CHECK((*pFunction)());
+        mResult result = ((*pFunction)());
+
+        if (mFAILED(result))
+        {
+          if (result == mR_Break)
+            break;
+          else
+            mRETURN_RESULT(result);
+        }
       }
     }
     else if (_event.type == SDL_WINDOWEVENT && (_event.window.event == SDL_WINDOWEVENT_MAXIMIZED || _event.window.event == SDL_WINDOWEVENT_RESIZED || _event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED || _event.window.event == SDL_WINDOWEVENT_RESTORED))
@@ -126,7 +142,15 @@ mFUNCTION(mHardwareWindow_Swap, mPtr<mHardwareWindow>& window)
         std::function<mResult(const mVec2s &)> *pFunction = nullptr;
         mERROR_CHECK(mChunkedArray_PointerAt(window->onResizeCallbacks, i, &pFunction));
 
-        mERROR_CHECK((*pFunction)(size));
+        mResult result = ((*pFunction)(size));
+
+        if (mFAILED(result))
+        {
+          if (result == mR_Break)
+            break;
+          else
+            mRETURN_RESULT(result);
+        }
       }
     }
   }
