@@ -167,21 +167,23 @@ mFUNCTION(mChunkedArray_PopAt, mPtr<mChunkedArray<T>> &chunkedArray, const size_
       continue;
     }
 
-    const size_t innerItemIndex = index - currentIndex;
+    size_t innerItemIndex = index - currentIndex;
 
     *pItem = std::move(pBlock->pData[pBlock->blockStartIndex + innerItemIndex]);
+
+    innerItemIndex += pBlock->blockStartIndex;
 
     if (innerItemIndex - pBlock->blockStartIndex <= pBlock->blockEndIndex - innerItemIndex)
     {
       if (innerItemIndex - pBlock->blockStartIndex > 0)
-        mERROR_CHECK(mAllocator_Move(chunkedArray->pAllocator, &pBlock->pData[pBlock->blockStartIndex], &pBlock->pData[pBlock->blockStartIndex + 1], innerItemIndex - pBlock->blockStartIndex));
+        mERROR_CHECK(mAllocator_Move(chunkedArray->pAllocator, &pBlock->pData[pBlock->blockStartIndex + 1], &pBlock->pData[pBlock->blockStartIndex], innerItemIndex - pBlock->blockStartIndex));
 
       ++pBlock->blockStartIndex;
     }
     else
     {
       if (pBlock->blockEndIndex - innerItemIndex - 1 > 0)
-        mERROR_CHECK(mAllocator_Move(chunkedArray->pAllocator, &pBlock->pData[innerItemIndex + 1], &pBlock->pData[innerItemIndex + 1], pBlock->blockEndIndex - innerItemIndex - 1));
+        mERROR_CHECK(mAllocator_Move(chunkedArray->pAllocator, &pBlock->pData[innerItemIndex], &pBlock->pData[innerItemIndex + 1], pBlock->blockEndIndex - innerItemIndex - 1));
 
       --pBlock->blockEndIndex;
     }

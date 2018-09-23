@@ -65,7 +65,7 @@ mTEST(mChunkedArray, TestPushBackPointerAt)
     mTEST_ASSERT_EQUAL(i, count);
     mDummyDestructible dummy;
     mTEST_ASSERT_SUCCESS(mDummyDestructible_Create(&dummy, pAllocator));
-    //*dummy.pData = i;
+    *dummy.pData = i;
     mTEST_ASSERT_SUCCESS(mChunkedArray_PushBack(chunkedArray, &dummy));
   }
 
@@ -73,7 +73,50 @@ mTEST(mChunkedArray, TestPushBackPointerAt)
   {
     mDummyDestructible *pDummy = nullptr;
     mTEST_ASSERT_SUCCESS(mChunkedArray_PointerAt(chunkedArray, i, &pDummy));
-    //mTEST_ASSERT_EQUAL(i, *pDummy->pData);
+    mTEST_ASSERT_EQUAL(i, *pDummy->pData);
+  }
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}
+
+mTEST(mChunkedArray, TestPopAt)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  mPtr<mChunkedArray<mDummyDestructible>> chunkedArray;
+  mDEFER_DESTRUCTION(&chunkedArray, mChunkedArray_Destroy);
+  mTEST_ASSERT_SUCCESS(mChunkedArray_Create(&chunkedArray, pAllocator));
+
+  const size_t maxCount = 1024;
+
+  for (size_t i = 0; i < maxCount; ++i)
+  {
+    mDummyDestructible dummy;
+    mTEST_ASSERT_SUCCESS(mDummyDestructible_Create(&dummy, pAllocator));
+    mTEST_ASSERT_SUCCESS(mChunkedArray_PushBack(chunkedArray, &dummy));
+  }
+
+  for (size_t i = 0; i < maxCount / 2; ++i) // remove all even entries.
+  {
+    mDummyDestructible dummy;
+    mTEST_ASSERT_SUCCESS(mChunkedArray_PopAt(chunkedArray, i, &dummy));
+    mTEST_ASSERT_EQUAL(dummy.index, i * 2);
+    mTEST_ASSERT_SUCCESS(mDestruct(&dummy));
+    
+    for (size_t j = 0; j <= i; ++j)
+    {
+      mDummyDestructible *pDummy = nullptr;
+      mTEST_ASSERT_SUCCESS(mChunkedArray_PointerAt(chunkedArray, j, &pDummy));
+      mTEST_ASSERT_EQUAL(pDummy->index, j * 2 + 1);
+    }
+  }
+
+  for (int64_t i = maxCount / 2 - 1; i >= 0; i -= 2)
+  {
+    mDummyDestructible dummy;
+    mTEST_ASSERT_SUCCESS(mChunkedArray_PopAt(chunkedArray, i, &dummy));
+    mTEST_ASSERT_EQUAL(dummy.index & 0b11, 0b11);
+    mTEST_ASSERT_SUCCESS(mDestruct(&dummy));
   }
 
   mTEST_ALLOCATOR_ZERO_CHECK();

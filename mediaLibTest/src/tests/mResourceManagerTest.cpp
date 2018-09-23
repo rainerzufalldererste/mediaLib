@@ -38,11 +38,13 @@ mTEST(mResourceManager, CleanupTest)
 
   mTEST_ASSERT_SUCCESS((mResourceManager_CreateResourceManager_Explicit<mString, mDummyDestructible>)(pAllocator));
   
+  mString key = "don't care";
   mPtr<mDummyDestructible> dummyDestructible0;
-  mTEST_ASSERT_SUCCESS(mResourceManager_GetResource(&dummyDestructible0, (mString)"don't care"));
+  mTEST_ASSERT_SUCCESS(mResourceManager_GetResource(&dummyDestructible0, key));
 
+  mString keyCopy = mString(key);
   mPtr<mDummyDestructible> dummyDestructible1;
-  mTEST_ASSERT_SUCCESS(mResourceManager_GetResource(&dummyDestructible1, (mString)"don't care"));
+  mTEST_ASSERT_SUCCESS(mResourceManager_GetResource(&dummyDestructible1, keyCopy));
 
   mTEST_ASSERT_EQUAL(dummyDestructible0->index, dummyDestructible1->index);
 

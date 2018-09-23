@@ -85,6 +85,25 @@ inline mFUNCTION(mHash, const mString &string, OUT uint64_t *pHash)
 }
 
 template<size_t TCount>
+inline mFUNCTION(mHash, const mInplaceString<TCount> *pString, OUT uint64_t *pHash)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_CHECK(mHash(pString->c_str(), pHash, pString->bytes));
+
+  mRETURN_SUCCESS();
+}
+
+inline mFUNCTION(mHash, const mString *pString, OUT uint64_t *pHash)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_CHECK(mHash(pString->c_str(), pHash, pString->bytes));
+
+  mRETURN_SUCCESS();
+}
+
+template<size_t TCount>
 inline mFUNCTION(mHash, const mInplaceString<TCount> &string, OUT uint64_t *pHash)
 {
   mFUNCTION_SETUP();
