@@ -531,3 +531,35 @@ mTEST(mString, TestToFilePath)
 
   mTEST_ALLOCATOR_ZERO_CHECK();
 }
+
+mTEST(mString, TestToDirectoryPathEmpty)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  mString string;
+  mDEFER_DESTRUCTION(&string, mString_Destroy);
+
+  mString path;
+  mDEFER_DESTRUCTION(&path, mString_Destroy);
+  mTEST_ASSERT_SUCCESS(mString_ToDirectoryPath(&path, string));
+
+  mTEST_ASSERT_EQUAL(path, "");
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}
+
+mTEST(mString, TestToFilePathEmpty)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  mString string;
+  mDEFER_DESTRUCTION(&string, mString_Destroy);
+
+  mString path;
+  mDEFER_DESTRUCTION(&path, mString_Destroy);
+  mTEST_ASSERT_SUCCESS(mString_ToFilePath(&path, string));
+
+  mTEST_ASSERT_EQUAL(path, "");
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}

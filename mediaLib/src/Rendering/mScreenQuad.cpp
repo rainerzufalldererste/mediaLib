@@ -59,6 +59,17 @@ mFUNCTION(mScreenQuad_Create, OUT mPtr<mScreenQuad> *pScreenQuad, IN mAllocator 
   mRETURN_SUCCESS();
 }
 
+mFUNCTION(mScreenQuad_Create, OUT mPtr<mScreenQuad> *pScreenQuad, IN mAllocator *pAllocator)
+{
+  mFUNCTION_SETUP();
+
+  const std::string defaultShader = "#version 150 core\n\nout vec4 outColour0;\n\nuniform sampler2D _texture0;\nin vec2 _texCoord0;\nvoid main()\n{\n\toutColour0 = texture(_texture0, _texCoord0);\n}\n";
+
+  mERROR_CHECK(mScreenQuad_Create(pScreenQuad, pAllocator, defaultShader, 1));
+
+  mRETURN_SUCCESS();
+}
+
 mFUNCTION(mScreenQuad_CreateFrom, OUT mPtr<mScreenQuad> *pScreenQuad, IN mAllocator *pAllocator, const std::wstring &fragmentShaderPath, const size_t textureCount /* = 1 */)
 {
   mFUNCTION_SETUP();

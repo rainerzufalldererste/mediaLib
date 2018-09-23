@@ -24,6 +24,9 @@ mFUNCTION(mUI_ProcessEvent, IN SDL_Event *pEvent);
 mFUNCTION(mUI_PushMonospacedFont);
 mFUNCTION(mUI_PopMonospacedFont);
 
+mFUNCTION(mUI_PushHeadlineFont);
+mFUNCTION(mUI_PopHeadlineFont);
+
 template <typename T>
 inline ImVec2 cast(const mVec2t<T> &vec2t)
 {

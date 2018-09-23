@@ -675,6 +675,12 @@ mFUNCTION(mString_ToDirectoryPath, OUT mString *pString, const mString &text)
 
   mERROR_IF(pString == nullptr, mR_ArgumentNull);
 
+  if (text.text == nullptr || text.bytes <= 1 || text.count <= 1)
+  {
+    *pString = "";
+    mRETURN_SUCCESS();
+  }
+
   if (pString->pAllocator != text.pAllocator && pString->capacity > 0)
   {
     mERROR_CHECK(mAllocator_FreePtr(pString->pAllocator, &pString->text));
@@ -754,6 +760,12 @@ mFUNCTION(mString_ToFilePath, OUT mString *pString, const mString &text)
   mFUNCTION_SETUP();
 
   mERROR_IF(pString == nullptr, mR_ArgumentNull);
+
+  if (text.text == nullptr || text.bytes <= 1 || text.count <= 1)
+  {
+    *pString = "";
+    mRETURN_SUCCESS();
+  }
 
   *pString = text;
   mERROR_IF(pString->hasFailed, mR_InternalError);
