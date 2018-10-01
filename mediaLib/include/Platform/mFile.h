@@ -1,0 +1,97 @@
+#ifndef mFile_h__
+#define mFile_h__
+
+#include "mediaLib.h"
+#include "mArray.h"
+
+enum mFile_Encoding
+{
+  mF_E_ASCII,
+};
+
+mFUNCTION(mFile_Exists, const std::wstring &filename, OUT bool *pExists);
+
+mFUNCTION(mFile_ReadAllBytes, const std::wstring &filename, IN OPTIONAL mAllocator *pAllocator, OUT mArray<uint8_t> *pBytes);
+mFUNCTION(mFile_ReadAllText, const std::wstring &filename, IN OPTIONAL mAllocator *pAllocator, OUT std::string *pText, const mFile_Encoding encoding = mF_E_ASCII);
+mFUNCTION(mFile_ReadAllText, const mString &filename, IN OPTIONAL mAllocator *pAllocator, OUT mString *pText, const mFile_Encoding encoding = mF_E_ASCII);
+
+mFUNCTION(mFile_WriteAllBytes, const std::wstring &filename, mArray<uint8_t> &bytes);
+mFUNCTION(mFile_WriteAllText, const std::wstring &filename, const std::string &text, const mFile_Encoding encoding = mF_E_ASCII);
+mFUNCTION(mFile_WriteAllText, const mString &filename, const mString &text, const mFile_Encoding encoding = mF_E_ASCII);
+
+template <typename T>
+mFUNCTION(mFile_ReadAllItems, const std::wstring &filename, IN OPTIONAL mAllocator *pAllocator, OUT mArray<T> *pData);
+
+template <typename T>
+mFUNCTION(mFile_ReadRaw, const std::wstring &filename, OUT T **ppData, IN mAllocator *pAllocator, OUT size_t *pCount);
+
+template <typename T>
+mFUNCTION(mFile_WriteRaw, const std::wstring &filename, IN T *pData, const size_t count);
+
+mFUNCTION(mFile_CreateDirectory, const mString &folderPath);
+mFUNCTION(mFile_DeleteFolder, const mString &folderPath);
+
+//////////////////////////////////////////////////////////////////////////
+
+template<typename T>
+inline mFUNCTION(mFile_ReadAllItems, const std::wstring &filename, IN OPTIONAL mAllocator *pAllocator, OUT mArray<T> *pData)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pData == nullptr, mR_ArgumentNull);
+
+  if(pData->pData)
+    mERROR_CHECK(mArray_Destroy(pData));
+
+  pData->pAllocator = pAllocator;
+
+  mERROR_CHECK(mFile_ReadRaw(filename, &pData->pData, pAllocator, &pData->count));
+
+  mRETURN_SUCCESS();
+}
+
+template<typename T>
+inline mFUNCTION(mFile_ReadRaw, const std::wstring &filename, OUT T **ppData, IN mAllocator *pAllocator, OUT size_t *pCount)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(ppData == nullptr || pCount == nullptr, mR_ArgumentNull);
+
+  FILE *pFile = _wfopen(filename.c_str(), L"r");
+  mDEFER(if (pFile) { fclose(pFile); });
+  mERROR_IF(pFile == nullptr, mR_ResourceNotFound);
+
+  mERROR_IF(0 != fseek(pFile, 0, SEEK_END), mR_InternalError);
+  
+  const size_t length = ftell(pFile);
+  const size_t count = length / sizeof(T);
+
+  mERROR_IF(0 != fseek(pFile, 0, SEEK_SET), mR_InternalError);
+
+  mERROR_CHECK(mAllocator_Allocate(pAllocator, (uint8_t **)ppData, length + 1));
+  const size_t readLength = fread(*ppData, 1, length, pFile);
+
+  *pCount = readLength / sizeof(T);
+
+  mRETURN_SUCCESS();
+}
+
+template<typename T>
+inline mFUNCTION(mFile_WriteRaw, const std::wstring &filename, IN T *pData, const size_t count)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pData == nullptr, mR_ArgumentNull);
+
+  FILE *pFile = _wfopen(filename.c_str(), L"w");
+  mDEFER(if (pFile) fclose(pFile););
+  mERROR_IF(pFile == nullptr, mR_ResourceNotFound);
+
+  const size_t writeCount = fwrite(pData, sizeof(T), count, pFile);
+
+  mERROR_IF(writeCount != count, mR_InternalError);
+
+  mRETURN_SUCCESS();
+}
+
+#endif // mFile_h__
