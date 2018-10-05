@@ -312,7 +312,7 @@ mString::operator std::wstring() const
 
   mResult result;
 
-  mDEFER(mAllocator_FreePtr(nullptr, &wtext));
+  mDEFER(mAllocator_FreePtr(&mDefaultTempAllocator, &wtext));
   mERROR_CHECK_GOTO(mAllocator_AllocateZero(&mDefaultTempAllocator, &wtext, bytes * 2), result, epilogue);
 
   mERROR_IF_GOTO(0 == MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, text, (int)bytes, wtext, (int)bytes * 2), mR_InternalError, result, epilogue);
@@ -512,7 +512,7 @@ mFUNCTION(mString_ToWideString, const mString &string, std::wstring *pWideString
   wchar_t *wtext = nullptr;
   mDefer<wchar_t **> cleanup;
 
-  mDEFER(mAllocator_FreePtr(nullptr, &wtext));
+  mDEFER(mAllocator_FreePtr(&mDefaultTempAllocator, &wtext));
   mERROR_CHECK(mAllocator_AllocateZero(&mDefaultTempAllocator, &wtext, string.bytes * 2));
 
   mERROR_IF(0 == MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, string.text, (int)string.bytes, wtext, (int)string.bytes * 2), mR_InternalError);
