@@ -309,62 +309,13 @@ mString::operator std::string() const
 mString::operator std::wstring() const
 {
   wchar_t *wtext = nullptr;
-  mDefer<wchar_t **> cleanup;
-
-  if (bytes < 1024)
-  {
-    cleanup = mDefer_Create(mFreePtrStack, &wtext);
-
-    if (mFAILED(mAllocStackZero(&wtext, bytes * 2)))
-      goto epilogue;
-  }
-  else
-  {
-    cleanup = mDefer_Create((std::function<void(wchar_t **)>)[&](wchar_t **) { mAllocator_FreePtr(nullptr, &wtext); }, (wchar_t **)nullptr);
-
-    if (mFAILED(mAllocator_AllocateZero(nullptr, &wtext, bytes * 2)))
-      goto epilogue;
-  }
 
   mResult result;
-  size_t offset = 0;
-  size_t wstrIndex = 0;
 
-  while (offset + 1 < bytes)
-  {
-    utf8proc_int32_t codePoint;
-    ptrdiff_t characterSize;
-    mERROR_IF_GOTO((characterSize = utf8proc_iterate((uint8_t *)this->text + offset, this->bytes - offset, &codePoint)) < 0, mR_InternalError, result, epilogue);
-    mERROR_IF_GOTO(codePoint < 0, mR_InternalError, result, epilogue);
+  mDEFER(mAllocator_FreePtr(&mDefaultTempAllocator, &wtext));
+  mERROR_CHECK_GOTO(mAllocator_AllocateZero(&mDefaultTempAllocator, &wtext, bytes * 2), result, epilogue);
 
-    switch (characterSize)
-    {
-    case 4:
-      wtext[wstrIndex++] = *(wchar_t *)((char *)text + offset + 2);
-      wtext[wstrIndex++] = *(wchar_t *)((char *)text + offset + 0);
-      break;
-
-    case 3:
-      wtext[wstrIndex++] = *((char *)text + offset + 2);
-      wtext[wstrIndex++] = *(wchar_t *)((char *)text + offset + 0);
-      break;
-
-    case 2:
-      wtext[wstrIndex++] = *(wchar_t *)((char *)text + offset + 0);
-      break;
-
-    case 1:
-      wtext[wstrIndex++] = *((char *)text + offset + 0);
-      break;
-    }
-
-    offset += (size_t)characterSize;
-
-    if (characterSize == 0)
-      break;
-  }
-
-  wtext[wstrIndex] = (wchar_t)0;
+  mERROR_IF_GOTO(0 == MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, text, (int)bytes, wtext, (int)bytes * 2), mR_InternalError, result, epilogue);
 
   return std::wstring(wtext);
 
@@ -561,55 +512,10 @@ mFUNCTION(mString_ToWideString, const mString &string, std::wstring *pWideString
   wchar_t *wtext = nullptr;
   mDefer<wchar_t **> cleanup;
 
-  if (string.bytes < 1024)
-  {
-    cleanup = mDefer_Create(mFreePtrStack, &wtext);
-    mERROR_CHECK(mAllocStackZero(&wtext, string.bytes * 2));
-  }
-  else
-  {
-    cleanup = mDefer_Create((std::function<void(wchar_t **)>)[&](wchar_t **) { mAllocator_FreePtr(nullptr, &wtext); }, (wchar_t **)nullptr);
-    mERROR_CHECK(mAllocator_AllocateZero(nullptr, &wtext, string.bytes * 2));
-  }
+  mDEFER(mAllocator_FreePtr(&mDefaultTempAllocator, &wtext));
+  mERROR_CHECK(mAllocator_AllocateZero(&mDefaultTempAllocator, &wtext, string.bytes * 2));
 
-  size_t offset = 0;
-  size_t wstrIndex = 0;
-
-  while (offset + 1 < string.bytes)
-  {
-    utf8proc_int32_t codePoint;
-    ptrdiff_t characterSize;
-    mERROR_IF((characterSize = utf8proc_iterate((uint8_t *)string.text + offset, string.bytes - offset, &codePoint)) < 0, mR_InternalError);
-    mERROR_IF(codePoint < 0, mR_InternalError);
-
-    switch (characterSize)
-    {
-    case 4:
-      wtext[wstrIndex++] = *(wchar_t *)((char *)string.text + offset + 2);
-      wtext[wstrIndex++] = *(wchar_t *)((char *)string.text + offset + 0);
-      break;
-
-    case 3:
-      wtext[wstrIndex++] = *((char *)string.text + offset + 2);
-      wtext[wstrIndex++] = *(wchar_t *)((char *)string.text + offset + 0);
-      break;
-
-    case 2:
-      wtext[wstrIndex++] = *(wchar_t *)((char *)string.text + offset + 0);
-      break;
-
-    case 1:
-      wtext[wstrIndex++] = *((char *)string.text + offset + 0);
-      break;
-    }
-
-    offset += (size_t)characterSize;
-
-    if (characterSize == 0)
-      break;
-  }
-
-  wtext[wstrIndex] = (wchar_t)0;
+  mERROR_IF(0 == MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, string.text, (int)string.bytes, wtext, (int)string.bytes * 2), mR_InternalError);
 
   *pWideString = std::wstring(wtext);
 
