@@ -479,7 +479,6 @@ mFUNCTION(mMediaFileInputHandler_Create_Internal, IN mMediaFileInputHandler *pIn
   pInputHandler->iteratorCreated = false;
 
   HRESULT hr = S_OK;
-  mUnused(hr);
 
   mERROR_CHECK(mMediaFoundation_AddReference());
 

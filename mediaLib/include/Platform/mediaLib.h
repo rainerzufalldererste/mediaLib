@@ -17,6 +17,10 @@
 #include <inttypes.h>
 #include <float.h>
 
+#ifdef _MSC_VER
+#include <windows.h>
+#endif // !_MSC_VER
+
 #ifndef _DEPENDENCIES_DEFINED
 #define _DEPENDENCIES_DEFINED
 
@@ -117,6 +121,19 @@ void mPrintPrepare(mPrintCallbackFunc *pFunc, const char *format, ...);
 #else // !_DEBUG
 #define mASSERT_DEBUG(expr, text, ...) mUnused(expr, text, __VA_ARGS__)
 #define mFAIL_DEBUG(text, ...) mUnused(text, __VA_ARGS__)
+#endif
+
+#define mCONCAT_LITERALS_INTERNAL(x, y) x ## y
+#define mCONCAT_LITERALS(x, y) mCONCAT_LITERALS_INTERNAL(x, y)
+
+#ifdef _MSC_VER
+#define mDLL_FUNC_PREFIX __dll__
+#define mDLL_TYPEDEF_POSTFIX __dll__FUNC_TYPE__
+
+#define mTYPEDEF_DLL_FUNC(name, returnType, ...) typedef returnType mCONCAT_LITERALS(name, mDLL_TYPEDEF_POSTFIX) (__VA_ARGS__)
+#define mLOAD_FROM_DLL(symbol, module) do { mCONCAT_LITERALS(mDLL_FUNC_PREFIX, symbol) = (mCONCAT_LITERALS(symbol, mDLL_TYPEDEF_POSTFIX) *)GetProcAddress(module, #symbol); if(mCONCAT_LITERALS(mDLL_FUNC_PREFIX, symbol) == nullptr) { DWORD errorCode = GetLastError(); mASSERT(mCONCAT_LITERALS(mDLL_FUNC_PREFIX, symbol) != nullptr, "Symbol '" #symbol "' could not be loaded from dynamic library. (errorcode: 0x%" PRIx64 ")", (uint64_t)errorCode); } } while (0)
+#define mDLL_DEFINE_SYMBOL(symbol) mCONCAT_LITERALS(symbol, mDLL_TYPEDEF_POSTFIX) *mCONCAT_LITERALS(mDLL_FUNC_PREFIX, symbol) = nullptr
+#define mDLL_CALL(symbol, ...) ((*mCONCAT_LITERALS(mDLL_FUNC_PREFIX, symbol))(__VA_ARGS__))
 #endif
 
 #endif // !_DEPENDENCIES_DEFINED

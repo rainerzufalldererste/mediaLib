@@ -15,7 +15,7 @@ mFUNCTION(mFile_Exists, const std::wstring &filename, OUT bool *pExists)
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mFile_ReadAllBytes, const std::wstring & filename, IN OPTIONAL mAllocator * pAllocator, OUT mArray<uint8_t>* pBytes)
+mFUNCTION(mFile_ReadAllBytes, const std::wstring &filename, IN OPTIONAL mAllocator *pAllocator, OUT mArray<uint8_t> *pBytes)
 {
   mFUNCTION_SETUP();
 
@@ -24,7 +24,7 @@ mFUNCTION(mFile_ReadAllBytes, const std::wstring & filename, IN OPTIONAL mAlloca
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mFile_ReadAllText, const std::wstring & filename, IN OPTIONAL mAllocator * pAllocator, OUT std::string * pText, const mFile_Encoding /* encoding = mF_E_ASCII */)
+mFUNCTION(mFile_ReadAllText, const std::wstring &filename, IN OPTIONAL mAllocator *pAllocator, OUT std::string *pText, const mFile_Encoding /* encoding = mF_E_ASCII */)
 {
   mFUNCTION_SETUP();
 
@@ -42,7 +42,7 @@ mFUNCTION(mFile_ReadAllText, const std::wstring & filename, IN OPTIONAL mAllocat
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mFile_ReadAllText, const mString & filename, IN OPTIONAL mAllocator * pAllocator, OUT mString * pText, const mFile_Encoding /* encoding = mF_E_ASCII */)
+mFUNCTION(mFile_ReadAllText, const mString & filename, IN OPTIONAL mAllocator * pAllocator, OUT mString *pText, const mFile_Encoding /* encoding = mF_E_ASCII */)
 {
   mFUNCTION_SETUP();
 
@@ -63,7 +63,7 @@ mFUNCTION(mFile_ReadAllText, const mString & filename, IN OPTIONAL mAllocator * 
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mFile_WriteAllBytes, const std::wstring & filename, mArray<uint8_t> &bytes)
+mFUNCTION(mFile_WriteAllBytes, const std::wstring &filename, mArray<uint8_t> &bytes)
 {
   mFUNCTION_SETUP();
 
@@ -72,7 +72,7 @@ mFUNCTION(mFile_WriteAllBytes, const std::wstring & filename, mArray<uint8_t> &b
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mFile_WriteAllText, const std::wstring & filename, const std::string &text, const mFile_Encoding /* encoding = mF_E_ASCII */)
+mFUNCTION(mFile_WriteAllText, const std::wstring &filename, const std::string &text, const mFile_Encoding /* encoding = mF_E_ASCII */)
 {
   mFUNCTION_SETUP();
 

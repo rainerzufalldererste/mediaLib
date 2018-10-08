@@ -337,21 +337,18 @@ inline mDefer<size_t> mDefer_Create(mDefer<size_t>::OnExitFuncResultVoid *pOnExi
   return mDefer<size_t>(pOnExit, pResult);
 }
 
-#define mCOMBINE_LITERALS(x, y) x ## y
-#define mCOMBINE_LITERALS_INDIRECTION(x, y) mCOMBINE_LITERALS(x, y)
-
 #ifdef __COUNTER__
-#define mDEFER(...) const auto mCOMBINE_LITERALS_INDIRECTION(__defer__, __COUNTER__) = mDefer_Create([&](){ __VA_ARGS__; })
-#define mDEFER_IF(conditional, ...) const auto mCOMBINE_LITERALS_INDIRECTION(__defer__, __COUNTER__) = mDefer_Create([&](){ if (conditional) { __VA_ARGS__; } })
-#define mDEFER_ON_ERROR(...) const auto mCOMBINE_LITERALS_INDIRECTION(__defer__, __COUNTER__) = mDefer_Create([&](){ { __VA_ARGS__; } }, &(mSTDRESULT))
-#define mDEFER_CALL(Ressource, DestructionFunction) const auto mCOMBINE_LITERALS_INDIRECTION(__defer__, __COUNTER__) = mDefer_Create((DestructionFunction), (Ressource))
-#define mDEFER_CALL_ON_ERROR(Ressource, DestructionFunction) const auto mCOMBINE_LITERALS_INDIRECTION(__defer__, __COUNTER__) = mDefer_Create((DestructionFunction), (Ressource), &(mSTDRESULT))
+#define mDEFER(...) const auto mCONCAT_LITERALS(__defer__, __COUNTER__) = mDefer_Create([&](){ __VA_ARGS__; })
+#define mDEFER_IF(conditional, ...) const auto mCONCAT_LITERALS(__defer__, __COUNTER__) = mDefer_Create([&](){ if (conditional) { __VA_ARGS__; } })
+#define mDEFER_ON_ERROR(...) const auto mCONCAT_LITERALS(__defer__, __COUNTER__) = mDefer_Create([&](){ { __VA_ARGS__; } }, &(mSTDRESULT))
+#define mDEFER_CALL(Ressource, DestructionFunction) const auto mCONCAT_LITERALS(__defer__, __COUNTER__) = mDefer_Create((DestructionFunction), (Ressource))
+#define mDEFER_CALL_ON_ERROR(Ressource, DestructionFunction) const auto mCONCAT_LITERALS(__defer__, __COUNTER__) = mDefer_Create((DestructionFunction), (Ressource), &(mSTDRESULT))
 #else
-#define mDEFER(...) const auto mCOMBINE_LITERALS_INDIRECTION(__defer__, __LINE__) = mDefer_Create([&](){ __VA_ARGS__; })
-#define mDEFER_IF(conditional, ...) const auto mCOMBINE_LITERALS_INDIRECTION(__defer__, __LINE__) = mDefer_Create([&](){ if (conditional) { __VA_ARGS__; } })
-#define mDEFER_ON_ERROR(...) const auto mCOMBINE_LITERALS_INDIRECTION(__defer__, __LINE__) = mDefer_Create([&](){ { __VA_ARGS__; } }, &(mSTDRESULT))
-#define mDEFER_CALL(Ressource, DestructionFunction) const auto mCOMBINE_LITERALS_INDIRECTION(__defer__, __LINE__) = mDefer_Create((DestructionFunction), (Ressource))
-#define mDEFER_CALL_ON_ERROR(Ressource, DestructionFunction) const auto mCOMBINE_LITERALS_INDIRECTION(__defer__, __LINE__) = mDefer_Create((DestructionFunction), (Ressource), &(mSTDRESULT))
+#define mDEFER(...) const auto mCONCAT_LITERALS(__defer__, __LINE__) = mDefer_Create([&](){ __VA_ARGS__; })
+#define mDEFER_IF(conditional, ...) const auto mCONCAT_LITERALS(__defer__, __LINE__) = mDefer_Create([&](){ if (conditional) { __VA_ARGS__; } })
+#define mDEFER_ON_ERROR(...) const auto mCONCAT_LITERALS(__defer__, __LINE__) = mDefer_Create([&](){ { __VA_ARGS__; } }, &(mSTDRESULT))
+#define mDEFER_CALL(Ressource, DestructionFunction) const auto mCONCAT_LITERALS(__defer__, __LINE__) = mDefer_Create((DestructionFunction), (Ressource))
+#define mDEFER_CALL_ON_ERROR(Ressource, DestructionFunction) const auto mCONCAT_LITERALS(__defer__, __LINE__) = mDefer_Create((DestructionFunction), (Ressource), &(mSTDRESULT))
 #endif
 
 #endif // mDefer_h__
