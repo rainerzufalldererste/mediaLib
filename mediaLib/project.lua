@@ -83,4 +83,6 @@ filter { "system:windows", "configurations:Release" }
 	flags { "NoIncrementalLink" }
 
 filter {}
-  flags { "NoFramePointer", "NoBufferSecurityCheck" }
+  flags { "NoFramePointer", "NoBufferSecurityCheck", "NoIncrementalLink" }
+
+editandcontinue "Off"
