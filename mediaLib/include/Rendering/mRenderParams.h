@@ -91,6 +91,12 @@ mFUNCTION(mRenderParams_ClearTargetDepthAndColour, const mVector &colour = mVect
 
 mFUNCTION(mRenderParams_SetBlendingEnabled, const bool enabled = true);
 
+#if defined(mRENDERER_OPENGL) && defined(_WIN32)
+mFUNCTION(mRenderParams_GetCurrentGLContext_WGLRC, HGLRC *pGLContext);
+mFUNCTION(mRenderParams_GetCurrentGLContext_HDC, HDC *pGLDrawable);
+mFUNCTION(mRenderParams_GetCurrentGLContext_HWND, HWND *pGLWindow);
+#endif
+
 enum mRenderParams_UploadState
 {
   mRP_US_NotInitialized,

@@ -324,3 +324,36 @@ mFUNCTION(mRenderParams_SetBlendingEnabled, const bool enabled /*= true*/)
 
   mRETURN_SUCCESS();
 }
+
+mFUNCTION(mRenderParams_GetCurrentGLContext_WGLRC, HGLRC *pGLContext)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pGLContext == nullptr, mR_ArgumentNull);
+
+  *pGLContext = wglGetCurrentContext();
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mRenderParams_GetCurrentGLContext_HDC, HDC *pGLDrawable)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pGLDrawable == nullptr, mR_ArgumentNull);
+
+  *pGLDrawable = wglGetCurrentDC();
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mRenderParams_GetCurrentGLContext_HWND, HWND *pGLWindow)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pGLWindow == nullptr, mR_ArgumentNull);
+
+  *pGLWindow = WindowFromDC(wglGetCurrentDC());
+
+  mRETURN_SUCCESS();
+}
