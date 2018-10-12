@@ -72,7 +72,6 @@ inline mFUNCTION(mQueue_PopBack, mPtr<mQueue<T>> &queue, OUT T *pItem)
  * For longer or more complex functions use the following scheme to help with readability:
  
 ```c++
-
 // Parse command line arguments.
 {
   ParseCommandLineArguments();
@@ -85,7 +84,6 @@ inline mFUNCTION(mQueue_PopBack, mPtr<mQueue<T>> &queue, OUT T *pItem)
   while (hasInput)
   DecodeInput(&hasInput);
 }
-
 ```
 
  * Function implementations should include all qualifiers for the parameters (e.g. `const`) and the default parameters (commented out from the equals sign: `void mSomeObject_SomeFunction(const size_t someVariable /* = defaultValue */)`).
@@ -106,7 +104,7 @@ Lambda Functions:
     std::function<bool (void)> lambda = [&, i]() // `i` is passed as a copy, all other captured objects are passed by reference.
     {
       // Use captured resources.
-    a = b = c = i;
+      a = b = c = i;
 
       RETURN true;
     };
@@ -122,6 +120,34 @@ Lambda Functions:
  * If applicable use the `TODO: ` or `HACK: ` tags in your comments.
  * Name your variables something meaningful so that your code is self-explanatory and you don't need a lot of comments.
  * Generally prefer using `//` over `/**/`.
+
+```c++
+  // Calculate the one-dimensional discrete cosine transform.
+  {
+    float_t a07 = pBuffer[0] + pBuffer[7];
+    float_t a16 = pBuffer[1] + pBuffer[6];
+    float_t a25 = pBuffer[2] + pBuffer[5];
+    float_t a34 = pBuffer[3] + pBuffer[4];
+    
+    float_t s07 = pBuffer[0] - pBuffer[7];
+    float_t s61 = pBuffer[6] - pBuffer[1];
+    float_t s25 = pBuffer[2] - pBuffer[5];
+    float_t s43 = pBuffer[4] - pBuffer[3];
+    
+    float_t v0 = a07 + a34;
+    float_t v1 = a07 - a34;
+    float_t v2 = a16 + a25;
+    float_t v3 = a16 - a25;
+
+    // ...
+  }
+```
+
+```c++
+// Removes the last element from the collection.
+template <typename T>
+mFUNCTION(mCollection_PopBack, mPtr<mCollection<T>> &collection, OUT T *pItem);
+```
 
 ## Types
  * When interfacing with other libraries use their native types in your implementation files (like `GLint`, `HANDLE`, ...).
@@ -238,7 +264,6 @@ for (;;)
  * Group code sections by logical or semantical differences.
  
 ```c++
- 
 // Statements grouped by different categories
 {
   const size_t a = 0;
@@ -301,18 +326,28 @@ for (;;)
 }
 
 // The lines before and after a loop or if-else-block should be empty (or a comment, where the line above the comment is empty).
+// If we just entered a new scope or are leaving the current scope afterwards this does not apply. (See example) 
 {
   if (a == b)
     b = c;
   
   if (c != b)
   {
+    if (a == (b - c))
+      ++c;
+    
     a = c;
     b = a;
   }
   else
   {
     c = a;
+
+    for (size_t i = 0; i < b; ++i)
+    {
+      ++a;
+      --c;
+    }
   }
   
   for (size_t i; i < a; ++i)
@@ -324,7 +359,6 @@ for (;;)
     ++c;
   }
 }
-
 ```
 
 ## Projects and libraries
