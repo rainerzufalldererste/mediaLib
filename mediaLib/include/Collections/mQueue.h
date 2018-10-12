@@ -44,7 +44,10 @@ mFUNCTION(mQueue_PopBack, mPtr<mQueue<T>> &queue, OUT T *pItem);
 template <typename T>
 mFUNCTION(mQueue_PeekAt, mPtr<mQueue<T>> &queue, const size_t index, OUT T *pItem);
 
-// Handle with care. This will only be valid until the queue grows.
+template <typename T>
+mFUNCTION(mQueue_PopAt, mPtr<mQueue<T>> &queue, size_t index, OUT T *pItem);
+
+// Handle with care. The retrieved pointer will just be valid until the size changes or an element is removed.
 template <typename T>
 mFUNCTION(mQueue_PointerAt, mPtr<mQueue<T>> &queue, const size_t index, OUT T **ppItem);
 
@@ -245,6 +248,51 @@ inline mFUNCTION(mQueue_PeekAt, mPtr<mQueue<T>> &queue, const size_t index, OUT 
   const size_t queueIndex = (queue->startIndex + index) % queue->size;
 
   *pItem = queue->pData[queueIndex];
+
+  mRETURN_SUCCESS();
+}
+
+template<typename T>
+inline mFUNCTION(mQueue_PopAt, mPtr<mQueue<T>> &queue, size_t index, OUT T *pItem)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(queue == nullptr || pItem == nullptr, mR_ArgumentNull);
+  mERROR_IF(queue->count <= index, mR_IndexOutOfBounds);
+
+  if (index == 0)
+  {
+    mERROR_CHECK(mQueue_PopFront(queue, pItem));
+    mRETURN_SUCCESS();
+  }
+  else if (index == queue->count - 1)
+  {
+    mERROR_CHECK(mQueue_PopBack(queue, pItem));
+    mRETURN_SUCCESS();
+  }
+
+  const size_t queueIndex = (queue->startIndex + index) % queue->size;
+  *pItem = std::move(queue->pData[queueIndex]);
+
+  if (queue->startIndex + index < queue->size)
+  {
+    if (queueIndex + 1 != queue->size)
+      mERROR_CHECK(mAllocator_Move(queue->pAllocator, &queue->pData[queueIndex], &queue->pData[queueIndex + 1], queue->size - (queue->startIndex + index)));
+
+    if (queue->startIndex + queue->count > queue->size)
+    {
+      new (&queue->pData[queue->size - 1]) T(std::move(queue->pData[0]));
+
+      if (queue->startIndex + queue->count - 1 > queue->size)
+        mERROR_CHECK(mAllocator_Move(queue->pAllocator, &queue->pData[0], &queue->pData[1], queue->count - (queue->size - queue->startIndex)));
+    }
+  }
+  else
+  {
+    mERROR_CHECK(mAllocator_Move(queue->pAllocator, &queue->pData[queueIndex], &queue->pData[queueIndex + 1], queue->count - (queue->size - queue->startIndex) - queueIndex - 1));
+  }
+
+  --queue->count;
 
   mRETURN_SUCCESS();
 }

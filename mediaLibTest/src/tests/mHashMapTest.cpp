@@ -39,7 +39,7 @@ mTEST(mHashMap, TestGetValues)
   mDEFER_CALL(&hashMap, mHashMap_Destroy);
   mTEST_ASSERT_SUCCESS(mHashMap_Create(&hashMap, pAllocator, 128));
 
-  const size_t maxCount = 1024;
+  const size_t maxCount = 512;
 
   for (size_t i = 0; i < maxCount; i++)
   {

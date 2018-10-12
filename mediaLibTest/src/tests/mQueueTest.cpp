@@ -224,3 +224,242 @@ mTEST(mQueue, TestClear)
 
   mTEST_ALLOCATOR_ZERO_CHECK();
 }
+
+mTEST(mQueue, TestPopAt)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  mPtr<mQueue<mDummyDestructible>> queue;
+  mDEFER_CALL(&queue, mQueue_Destroy);
+
+  // Test for argument null error.
+  {
+    mDummyDestructible unused;
+    mTEST_ASSERT_EQUAL(mR_ArgumentNull, mQueue_PopAt(queue, 0, &unused));
+  }
+
+  mTEST_ASSERT_SUCCESS(mQueue_Create(&queue, pAllocator));
+
+  std::vector<size_t> comparisonVector;
+
+  // Test for out of bounds error.
+  {
+    mDummyDestructible unused;
+    mTEST_ASSERT_EQUAL(mR_IndexOutOfBounds, mQueue_PopAt(queue, 0, &unused));
+  }
+
+  const size_t maxCount = 128;
+  mTEST_ASSERT_SUCCESS(mQueue_Reserve(queue, maxCount));
+
+  int64_t number = 0;
+  size_t count = 0;
+
+  while (count++ < maxCount)
+  {
+    mDummyDestructible dummy;
+    mTEST_ASSERT_SUCCESS(mDummyDestructible_Create(&dummy, pAllocator));
+    dummy.index = (size_t)(number + (int64_t)maxCount);
+
+    if (number > 0)
+    {
+      mTEST_ASSERT_SUCCESS(mQueue_PushBack(queue, &dummy));
+      comparisonVector.push_back(dummy.index);
+    }
+    else
+    {
+      mTEST_ASSERT_SUCCESS(mQueue_PushFront(queue, &dummy));
+      comparisonVector.insert(comparisonVector.begin(), dummy.index);
+    }
+
+    number = -number;
+
+    if (number >= 0)
+      ++number;
+  }
+
+  // Test for argument null value (for the parameter).
+  {
+    mTEST_ASSERT_EQUAL(mR_ArgumentNull, mQueue_PopAt(queue, 0, (mDummyDestructible *)nullptr));
+  }
+
+  // Make sure test data is what we expect it to be.
+  {
+    size_t queueCount;
+    mTEST_ASSERT_SUCCESS(mQueue_GetCount(queue, &queueCount));
+    mTEST_ASSERT_EQUAL(queueCount, maxCount);
+
+    for (size_t i = 0; i < maxCount - 1; i++)
+    {
+      mDummyDestructible *pDummy0;
+      mTEST_ASSERT_SUCCESS(mQueue_PointerAt(queue, i, &pDummy0));
+
+      mDummyDestructible *pDummy1;
+      mTEST_ASSERT_SUCCESS(mQueue_PointerAt(queue, i + 1, &pDummy1));
+
+      mTEST_ASSERT_TRUE(pDummy0->index < pDummy1->index);
+      mTEST_ASSERT_EQUAL(pDummy0->index, pDummy1->index - 1);
+      mTEST_ASSERT_EQUAL(pDummy0->index, comparisonVector[i]);
+      mTEST_ASSERT_EQUAL(pDummy1->index, comparisonVector[i + 1]);
+    }
+  }
+
+  // Start popping
+  {
+    // Pop around wrap.
+    {
+      size_t index = queue->size - queue->startIndex - 1;
+
+      for (size_t i = 0; i < 5; i++)
+      {
+        mDummyDestructible dummy;
+        mTEST_ASSERT_SUCCESS(mQueue_PopAt(queue, index + i, &dummy));
+
+        const size_t comparisonNumber = comparisonVector[index + i];
+        mTEST_ASSERT_EQUAL(comparisonNumber, dummy.index);
+        mTEST_ASSERT_SUCCESS(mDestruct(&dummy));
+
+        comparisonVector.erase(comparisonVector.begin() + (index + i));
+
+        size_t queueCount;
+        mTEST_ASSERT_SUCCESS(mQueue_GetCount(queue, &queueCount));
+        mTEST_ASSERT_EQUAL(queueCount, comparisonVector.size());
+
+        for (size_t j = 0; j < comparisonVector.size(); j++)
+        {
+          mDummyDestructible *pDummy;
+          mTEST_ASSERT_SUCCESS(mQueue_PointerAt(queue, j, &pDummy));
+
+          mTEST_ASSERT_EQUAL(pDummy->index, comparisonVector[j]);
+        }
+      }
+    }
+
+    {
+      size_t remainingSize;
+      mTEST_ASSERT_SUCCESS(mQueue_GetCount(queue, &remainingSize));
+
+      while (remainingSize-- > 1)
+      {
+        mTEST_ASSERT_EQUAL(comparisonVector.size() - 1, remainingSize);
+
+        mDummyDestructible dummy;
+        mTEST_ASSERT_SUCCESS(mQueue_PopAt(queue, remainingSize - 1, &dummy)); // second last.
+
+        const size_t comparisonNumber = comparisonVector[remainingSize - 1];
+        mTEST_ASSERT_EQUAL(comparisonNumber, dummy.index);
+        mTEST_ASSERT_SUCCESS(mDestruct(&dummy));
+
+        comparisonVector.erase(comparisonVector.begin() + (remainingSize - 1));
+
+        mTEST_ASSERT_SUCCESS(mQueue_GetCount(queue, &remainingSize));
+        mTEST_ASSERT_EQUAL(remainingSize, comparisonVector.size());
+
+        for (size_t j = 0; j < comparisonVector.size(); j++)
+        {
+          mDummyDestructible *pDummy;
+          mTEST_ASSERT_SUCCESS(mQueue_PointerAt(queue, j, &pDummy));
+
+          mTEST_ASSERT_EQUAL(pDummy->index, comparisonVector[j]);
+        }
+      }
+    }
+  }
+
+  mTEST_ASSERT_SUCCESS(mQueue_Clear(queue));
+  comparisonVector.clear();
+  
+  // Pop first & pop last
+  {
+    for (size_t i = 0; i < 3; i++)
+    {
+      mDummyDestructible dummy;
+      mTEST_ASSERT_SUCCESS(mDummyDestructible_Create(&dummy, pAllocator));
+      mTEST_ASSERT_SUCCESS(mQueue_PushBack(queue, &dummy));
+      comparisonVector.push_back(dummy.index);
+    }
+
+    // Pop first.
+    {
+      mDummyDestructible dummy;
+      mTEST_ASSERT_SUCCESS(mQueue_PopAt(queue, 0, &dummy));
+
+      const size_t comparisonNumber = comparisonVector[0];
+      mTEST_ASSERT_EQUAL(comparisonNumber, dummy.index);
+      mTEST_ASSERT_SUCCESS(mDestruct(&dummy));
+
+      comparisonVector.erase(comparisonVector.begin());
+
+      size_t queueCount;
+      mTEST_ASSERT_SUCCESS(mQueue_GetCount(queue, &queueCount));
+      mTEST_ASSERT_EQUAL(queueCount, comparisonVector.size());
+    }
+
+    // Pop last.
+    {
+      mDummyDestructible dummy;
+      mTEST_ASSERT_SUCCESS(mQueue_PopAt(queue, comparisonVector.size() - 1, &dummy));
+
+      const size_t comparisonNumber = comparisonVector[comparisonVector.size() - 1];
+      mTEST_ASSERT_EQUAL(comparisonNumber, dummy.index);
+      mTEST_ASSERT_SUCCESS(mDestruct(&dummy));
+
+      comparisonVector.erase(comparisonVector.begin() + (comparisonVector.size() - 1));
+
+      size_t queueCount;
+      mTEST_ASSERT_SUCCESS(mQueue_GetCount(queue, &queueCount));
+      mTEST_ASSERT_EQUAL(queueCount, comparisonVector.size());
+    }
+
+    mTEST_ASSERT_SUCCESS(mQueue_Clear(queue));
+    comparisonVector.clear();
+  }
+
+  // Add data again.
+  {
+    for (size_t i = 0; i < maxCount; i++)
+    {
+      mDummyDestructible dummy;
+      mTEST_ASSERT_SUCCESS(mDummyDestructible_Create(&dummy, pAllocator));
+
+      if ((i & 1) != 0 || (i & 8) != 0) // to get an odd distribution.
+      {
+        mTEST_ASSERT_SUCCESS(mQueue_PushBack(queue, &dummy));
+        comparisonVector.push_back(dummy.index);
+      }
+      else
+      {
+        mTEST_ASSERT_SUCCESS(mQueue_PushFront(queue, &dummy));
+        comparisonVector.insert(comparisonVector.begin(), dummy.index);
+      }
+    }
+  }
+
+  // Pop in a different way.
+  {
+    for (size_t i = 0; i < maxCount - 10; i++)
+    {
+      mDummyDestructible dummy;
+      mTEST_ASSERT_SUCCESS(mQueue_PopAt(queue, 5, &dummy)); // second last.
+
+      const size_t comparisonNumber = comparisonVector[5];
+      mTEST_ASSERT_EQUAL(comparisonNumber, dummy.index);
+      mTEST_ASSERT_SUCCESS(mDestruct(&dummy));
+
+      comparisonVector.erase(comparisonVector.begin() + 5);
+
+      size_t queueCount;
+      mTEST_ASSERT_SUCCESS(mQueue_GetCount(queue, &queueCount));
+      mTEST_ASSERT_EQUAL(queueCount, comparisonVector.size());
+
+      for (size_t j = 0; j < comparisonVector.size(); j++)
+      {
+        mDummyDestructible *pDummy;
+        mTEST_ASSERT_SUCCESS(mQueue_PointerAt(queue, j, &pDummy));
+
+        mTEST_ASSERT_EQUAL(pDummy->index, comparisonVector[j]);
+      }
+    }
+  }
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}

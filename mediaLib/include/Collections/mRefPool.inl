@@ -238,7 +238,10 @@ inline mFUNCTION(mRefPool_PeekAt, mPtr<mRefPool<T>> &refPool, const size_t index
   mERROR_CHECK(mRecursiveMutex_Lock(refPool->pMutex));
   mDEFER_CALL(refPool->pMutex, mRecursiveMutex_Unlock);
 
-  mERROR_CHECK(mPool_PeekAt(refPool->ptrs, index, pIndex));
+  typename mRefPool<T>::refPoolPtr refPoolPointer;
+  mERROR_CHECK(mPool_PeekAt(refPool->ptrs, index, &refPoolPointer));
+
+  *pIndex = refPoolPointer.ptr;
 
   mRETURN_SUCCESS();
 }
