@@ -570,3 +570,4 @@ mTEST(mString, TestToFilePathEmpty)
 
   mTEST_ALLOCATOR_ZERO_CHECK();
 }
+

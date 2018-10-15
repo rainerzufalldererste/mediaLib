@@ -16,8 +16,13 @@ mFUNCTION(mTestLib_RunAllTests, int * pArgc, char ** pArgv)
 }
 
 //////////////////////////////////////////////////////////////////////////
-
+                                
 size_t mTestDestructible_Count = 0;
+const size_t mTestAllocator_BeginOffset = 16;
+const size_t mTestAllocator_EndOffset = 16;
+const uint8_t mTestAllocator_TestFlag = 0xCE;
+uint8_t mTestAllocator_TestFlagChunk[mTestAllocator_EndOffset];
+
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -25,8 +30,13 @@ mFUNCTION(mTestAllocator_Alloc, OUT uint8_t **ppData, const size_t size, const s
 {
   mFUNCTION_SETUP();
 
-  mERROR_CHECK(mAlloc(ppData, size * count));
+  mERROR_CHECK(mAlloc(ppData, size * count + mTestAllocator_BeginOffset + mTestAllocator_EndOffset));
   ++(*(volatile size_t *)pUserData);
+
+  *(size_t *)*ppData = size * count;
+  *ppData += mTestAllocator_BeginOffset;
+
+  mERROR_CHECK(mMemset(*ppData + size * count, mTestAllocator_EndOffset, mTestAllocator_TestFlag));
 
   mRETURN_SUCCESS();
 }
@@ -35,8 +45,13 @@ mFUNCTION(mTestAllocator_AllocZero, OUT uint8_t **ppData, const size_t size, con
 {
   mFUNCTION_SETUP();
 
-  mERROR_CHECK(mAllocZero(ppData, size * count));
+  mERROR_CHECK(mAllocZero(ppData, size * count + mTestAllocator_BeginOffset + mTestAllocator_EndOffset));
   ++(*(volatile size_t *)pUserData);
+
+  *(size_t *)*ppData = size * count;
+  *ppData += mTestAllocator_BeginOffset;
+
+  mERROR_CHECK(mMemset(*ppData + size * count, mTestAllocator_EndOffset, mTestAllocator_TestFlag));
 
   mRETURN_SUCCESS();
 }
@@ -46,9 +61,23 @@ mFUNCTION(mTestAllocator_Realloc, OUT uint8_t **ppData, const size_t size, const
   mFUNCTION_SETUP();
 
   if (*ppData == nullptr)
+  {
     ++(*(volatile size_t *)pUserData);
+  }
+  else
+  {
+    const size_t oldSize = *(size_t *)(*ppData - mTestAllocator_BeginOffset);
+    mASSERT(memcmp(mTestAllocator_TestFlagChunk, *ppData + oldSize, mTestAllocator_EndOffset) == 0, "Memory override detected");
 
-  mERROR_CHECK(mRealloc(ppData, size * count));
+    *ppData -= mTestAllocator_BeginOffset;
+  }
+
+  mERROR_CHECK(mRealloc(ppData, size * count + mTestAllocator_BeginOffset + mTestAllocator_EndOffset));
+
+  *(size_t *)*ppData = size * count;
+  *ppData += mTestAllocator_BeginOffset;
+
+  mERROR_CHECK(mMemset(*ppData + size * count, mTestAllocator_EndOffset, mTestAllocator_TestFlag));
 
   mRETURN_SUCCESS();
 }
@@ -57,6 +86,13 @@ mFUNCTION(mTestAllocator_Free, OUT uint8_t *pData, IN void *pUserData)
 {
   mFUNCTION_SETUP();
 
+  if (pData != nullptr)
+  {
+    const size_t oldSize = *(size_t *)(pData - mTestAllocator_BeginOffset);
+    mASSERT(memcmp(mTestAllocator_TestFlagChunk, pData + oldSize, mTestAllocator_EndOffset) == 0, "Memory override detected");
+  }
+
+  pData -= mTestAllocator_BeginOffset;
   mERROR_CHECK(mFree(pData));
 
   if(pData != nullptr)
@@ -94,6 +130,8 @@ mFUNCTION(mTestAllocator_Create, mAllocator *pTestAllocator)
   mFUNCTION_SETUP();
 
   mERROR_IF(pTestAllocator == nullptr, mR_ArgumentNull);
+
+  mERROR_CHECK(mMemset(mTestAllocator_TestFlagChunk, mTestAllocator_EndOffset, mTestAllocator_TestFlag));
 
   size_t *pUserData = nullptr;
   mERROR_CHECK(mAllocZero(&pUserData, 1));
