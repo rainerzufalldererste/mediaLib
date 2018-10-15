@@ -127,6 +127,34 @@ inline mFUNCTION(mSpriteBatch_DrawWithDepth, mPtr<mSpriteBatch<Args...>>& sprite
 }
 
 template<typename ...Args>
+inline mFUNCTION(mSpriteBatch_DrawWithDepth, mPtr<mSpriteBatch<Args...>> &spriteBatch, mTexture *pTexture, const mVec2f &position, const float_t depth, Args && ...args)
+{
+  mFUNCTION_SETUP();
+
+  mPtr<mTexture> texture;
+  mDEFER_CALL(&texture, mSharedPointer_Destroy);
+  mERROR_CHECK(mSharedPointer_Create(&texture, pTexture, mSHARED_POINTER_FOREIGN_RESOURCE));
+
+  mERROR_CHECK(mSpriteBatch_DrawWithDepth(spriteBatch, texture, position, depth, std::forward<Args>(args)...));
+
+  mRETURN_SUCCESS();
+}
+
+template<typename ...Args>
+inline mFUNCTION(mSpriteBatch_DrawWithDepth, mPtr<mSpriteBatch<Args...>> &spriteBatch, mTexture *pTexture, const mRectangle2D<float_t> &rect, const float_t depth, Args && ...args)
+{
+  mFUNCTION_SETUP();
+
+  mPtr<mTexture> texture;
+  mDEFER_CALL(&texture, mSharedPointer_Destroy);
+  mERROR_CHECK(mSharedPointer_Create(&texture, pTexture, mSHARED_POINTER_FOREIGN_RESOURCE));
+
+  mERROR_CHECK(mSpriteBatch_DrawWithDepth(spriteBatch, texture, rect, depth, std::forward<Args>(args)...));
+
+  mRETURN_SUCCESS();
+}
+
+template<typename ...Args>
 inline mFUNCTION(mSpriteBatch_Draw, mPtr<mSpriteBatch<Args...>>& spriteBatch, mPtr<mTexture> &texture, const mVec2f & position, Args && ...args)
 {
   mFUNCTION_SETUP();
@@ -142,6 +170,20 @@ inline mFUNCTION(mSpriteBatch_Draw, mPtr<mSpriteBatch<Args...>>& spriteBatch, mP
   mFUNCTION_SETUP();
 
   mERROR_CHECK(mSpriteBatch_DrawWithDepth(spriteBatch, texture, rect, 0, std::forward<Args>(args)...));
+
+  mRETURN_SUCCESS();
+}
+
+template<typename ...Args>
+inline mFUNCTION(mSpriteBatch_Draw, mPtr<mSpriteBatch<Args...>> &spriteBatch, mTexture *pTexture, const mVec2f &position, Args && ...args)
+{
+  mFUNCTION_SETUP();
+
+  mPtr<mTexture> texture;
+  mDEFER_CALL(&texture, mSharedPointer_Destroy);
+  mERROR_CHECK(mSharedPointer_Create(&texture, pTexture, mSHARED_POINTER_FOREIGN_RESOURCE));
+
+  mERROR_CHECK(mSpriteBatch_DrawWithDepth(spriteBatch, texture, position, 0, std::forward<Args>(args)...));
 
   mRETURN_SUCCESS();
 }
@@ -202,6 +244,20 @@ mFUNCTION(mSpriteBatch_QuickSortRenderObjects, mPtr<mQueue<mSpriteBatch_Internal
 
   if (l < right)
     mERROR_CHECK(mSpriteBatch_QuickSortRenderObjects(queue, l, right));
+
+  mRETURN_SUCCESS();
+}
+
+template<typename ...Args>
+inline mFUNCTION(mSpriteBatch_Draw, mPtr<mSpriteBatch<Args...>> &spriteBatch, mTexture *pTexture, const mRectangle2D<float_t> &rect, Args && ...args)
+{
+  mFUNCTION_SETUP();
+
+  mPtr<mTexture> texture;
+  mDEFER_CALL(&texture, mSharedPointer_Destroy);
+  mERROR_CHECK(mSharedPointer_Create(&texture, pTexture, mSHARED_POINTER_FOREIGN_RESOURCE));
+
+  mERROR_CHECK(mSpriteBatch_DrawWithDepth(spriteBatch, texture, rect, 0, std::forward<Args>(args)...));
 
   mRETURN_SUCCESS();
 }
