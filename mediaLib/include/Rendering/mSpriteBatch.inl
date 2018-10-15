@@ -435,7 +435,7 @@ inline mFUNCTION(mSpriteBatch_Create_Internal, IN_OUT mSpriteBatch<Args...>* pSp
   if (pSpriteBatch->shaderParams.matrixTransform)
     mERROR_IF(0 > sprintf_s(vertexShader, "%s\n\tposition *= " mSBEMatrixTransform_UniformName ";", vertexShader), mR_InternalError);
   
-  mERROR_IF(0 > sprintf_s(vertexShader, "%s\n\tposition.xy = position.xy * 2 - 1;\n\tposition.z = startOffset0.z;\n\n\tgl_Position = position;\n}\n", vertexShader), mR_InternalError);
+  mERROR_IF(0 > sprintf_s(vertexShader, "%s\n\tposition.y = 1 - position.y;\n\tposition.xy = position.xy * 2 - 1;\n\tposition.z = startOffset0.z;\n\n\tgl_Position = position;\n}\n", vertexShader), mR_InternalError);
 
   // Fragment Shader.
   char fragmentShader[1024] = "";
@@ -451,7 +451,7 @@ inline mFUNCTION(mSpriteBatch_Create_Internal, IN_OUT mSpriteBatch<Args...>* pSp
   if (pSpriteBatch->shaderParams.textureCrop)
     mERROR_IF(0 > sprintf_s(fragmentShader, "%s\nuniform vec4 " mSBETextureCrop_UniformName ";", fragmentShader), mR_InternalError);
   
-  mERROR_IF(0 > sprintf_s(fragmentShader, "%s\n\nvoid main()\n{\n\tvec2 texturePosition = _texCoord0;", fragmentShader), mR_InternalError);
+  mERROR_IF(0 > sprintf_s(fragmentShader, "%s\n\nvoid main()\n{\n\tvec2 texturePosition = vec2(1) - _texCoord0;", fragmentShader), mR_InternalError);
   
   if (pSpriteBatch->shaderParams.textureFlip)
     mERROR_IF(0 > sprintf_s(fragmentShader, "%s\n\ttexturePosition = texturePosition * (1 - 2 * " mSBETextureFlip_UniformName ") + " mSBETextureFlip_UniformName ";", fragmentShader), mR_InternalError);

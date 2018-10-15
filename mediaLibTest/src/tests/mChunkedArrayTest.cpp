@@ -114,3 +114,63 @@ mTEST(mChunkedArray, TestPopAt)
   mTEST_ALLOCATOR_ZERO_CHECK();
 }
 
+mTEST(mChunkedArray, TestFillEmptyBlockCount)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  mPtr<mChunkedArray<mDummyDestructible>> chunkedArray;
+  mDEFER_CALL(&chunkedArray, mChunkedArray_Destroy);
+  mTEST_ASSERT_SUCCESS(mChunkedArray_Create(&chunkedArray, pAllocator));
+
+  const size_t dummyTestIndex = 0xFFAFAFAF;
+  size_t index = 0;
+  mDummyDestructible dummy;
+  mTEST_ASSERT_SUCCESS(mDummyDestructible_Create(&dummy, pAllocator));
+
+  dummy.index = dummyTestIndex;
+
+  mTEST_ASSERT_SUCCESS(mChunkedArray_Push(chunkedArray, &dummy, &index));
+
+  dummy.index = 0;
+
+  mTEST_ASSERT_SUCCESS(mChunkedArray_PopAt(chunkedArray, index, &dummy));
+
+  mTEST_ASSERT_EQUAL(dummy.index, dummyTestIndex);
+  mTEST_ASSERT_EQUAL(0, chunkedArray->blockCount);
+
+  mDummyDestructible *pDummy = nullptr;
+  mTEST_ASSERT_EQUAL(mR_IndexOutOfBounds, mChunkedArray_PointerAt(chunkedArray, index, &pDummy));
+  mTEST_ASSERT_EQUAL(pDummy, nullptr);
+
+  mTEST_ASSERT_SUCCESS(mChunkedArray_Push(chunkedArray, &dummy, &index));
+  mTEST_ASSERT_SUCCESS(mChunkedArray_PointerAt(chunkedArray, index, &pDummy));
+  mTEST_ASSERT_NOT_EQUAL(pDummy, nullptr);
+  mTEST_ASSERT_EQUAL(pDummy->index, dummyTestIndex);
+
+  mTEST_ASSERT_SUCCESS(mChunkedArray_PopAt(chunkedArray, index, &dummy));
+  pDummy = nullptr;
+
+  mTEST_ASSERT_EQUAL(mR_IndexOutOfBounds, mChunkedArray_PointerAt(chunkedArray, index, &pDummy));
+  mTEST_ASSERT_EQUAL(pDummy, nullptr);
+
+  mTEST_ASSERT_SUCCESS(mChunkedArray_PushBack(chunkedArray, &dummy));
+  index = chunkedArray->itemCount - 1;
+  mTEST_ASSERT_SUCCESS(mChunkedArray_PointerAt(chunkedArray, index, &pDummy));
+  mTEST_ASSERT_NOT_EQUAL(pDummy, nullptr);
+  mTEST_ASSERT_EQUAL(pDummy->index, dummyTestIndex);
+
+  mTEST_ASSERT_SUCCESS(mChunkedArray_PopAt(chunkedArray, index, &dummy));
+  pDummy = nullptr;
+
+  mTEST_ASSERT_EQUAL(mR_IndexOutOfBounds, mChunkedArray_PointerAt(chunkedArray, index, &pDummy));
+  mTEST_ASSERT_EQUAL(pDummy, nullptr);
+
+  mTEST_ASSERT_SUCCESS(mChunkedArray_PushBack(chunkedArray, std::move(dummy)));
+  index = chunkedArray->itemCount - 1;
+  mTEST_ASSERT_SUCCESS(mChunkedArray_PointerAt(chunkedArray, index, &pDummy));
+  mTEST_ASSERT_NOT_EQUAL(pDummy, nullptr);
+  mTEST_ASSERT_EQUAL(pDummy->index, dummyTestIndex);
+  mTEST_ASSERT_EQUAL(chunkedArray->blockSize, chunkedArray->itemCapacity);
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}

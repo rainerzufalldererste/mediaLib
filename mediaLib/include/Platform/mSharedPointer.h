@@ -253,6 +253,12 @@ inline mSharedPointer<T>& mSharedPointer<T>::operator=(const mSharedPointer<T> &
 template<typename T>
 inline mSharedPointer<T>& mSharedPointer<T>::operator=(mSharedPointer<T> &&move)
 {
+  if (move != nullptr && *this != nullptr && move.m_pData == m_pData)
+  {
+    move.~mSharedPointer<T>();
+    return *this;
+  }
+
   this->~mSharedPointer<T>();
 
   if (move == nullptr)

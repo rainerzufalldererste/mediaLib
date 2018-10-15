@@ -100,7 +100,7 @@ mFUNCTION(mChunkedArray_PushBack, mPtr<mChunkedArray<T>> &chunkedArray, IN T *pI
 
   mERROR_IF(chunkedArray == nullptr || pItem == nullptr, mR_ArgumentNull);
 
-  if (chunkedArray->pBlocks == nullptr || chunkedArray->pBlocks[chunkedArray->blockCount - 1].blockEndIndex >= chunkedArray->blockSize)
+  if (chunkedArray->pBlocks == nullptr || chunkedArray->pBlocks[chunkedArray->blockCount - 1].blockEndIndex >= chunkedArray->blockSize || chunkedArray->itemCapacity <= chunkedArray->itemCount)
     mERROR_CHECK(mChunkedArray_Grow_Internal(chunkedArray));
 
   new (&chunkedArray->pBlocks[chunkedArray->blockCount - 1].pData[chunkedArray->pBlocks[chunkedArray->blockCount - 1].blockEndIndex]) T(*pItem);
@@ -117,7 +117,7 @@ mFUNCTION(mChunkedArray_PushBack, mPtr<mChunkedArray<T>> &chunkedArray, IN T &&i
 
   mERROR_IF(chunkedArray == nullptr, mR_ArgumentNull);
 
-  if (chunkedArray->pBlocks == nullptr || chunkedArray->pBlocks[chunkedArray->blockCount - 1].blockEndIndex >= chunkedArray->blockSize)
+  if (chunkedArray->pBlocks == nullptr || chunkedArray->pBlocks[chunkedArray->blockCount - 1].blockEndIndex >= chunkedArray->blockSize || chunkedArray->itemCapacity <= chunkedArray->itemCount)
     mERROR_CHECK(mChunkedArray_Grow_Internal(chunkedArray));
 
   new (&chunkedArray->pBlocks[chunkedArray->blockCount - 1].pData[chunkedArray->pBlocks[chunkedArray->blockCount - 1].blockEndIndex]) T(std::move(item));
@@ -205,8 +205,8 @@ mFUNCTION(mChunkedArray_PopAt, mPtr<mChunkedArray<T>> &chunkedArray, const size_
       if (blockIndex < chunkedArray->blockCount - 1)
         mERROR_CHECK(mAllocator_Move(chunkedArray->pAllocator, pBlock, pBlock + 1, chunkedArray->blockCount - blockIndex - 1));
 
+      chunkedArray->itemCapacity -= pBlock->blockSize;
       --chunkedArray->blockCount;
-      pBlock = nullptr;
     }
 
     --chunkedArray->itemCount;
