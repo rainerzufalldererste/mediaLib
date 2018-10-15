@@ -83,7 +83,18 @@ template <typename T> mINLINE T mClamp(T value, const T &min, const T &max)
 template <typename T>
 struct mVec2t
 {
-  T x, y;
+#pragma warning(push)
+#pragma warning(disable: 4201)
+  union
+  {
+    T asArray[2];
+
+    struct
+    {
+      T x, y;
+    };
+  };
+#pragma warning(pop)
 
   __host__ __device__ inline mVec2t() : x(0), y(0) {}
   __host__ __device__ inline explicit mVec2t(T _v) : x(_v), y(_v) {}
@@ -132,7 +143,18 @@ typedef mVec2t<double_t> mVec2d;
 template <typename T>
 struct mVec3t
 {
-  T x, y, z;
+#pragma warning(push)
+#pragma warning(disable: 4201)
+  union
+  {
+    T asArray[3];
+
+    struct
+    {
+      T x, y, z;
+    };
+  };
+#pragma warning(pop)
 
   __host__ __device__ inline mVec3t() : x(0), y(0), z(0) {}
   __host__ __device__ inline explicit mVec3t(T _v) : x(_v), y(_v), z(_v) {}
@@ -180,7 +202,18 @@ typedef mVec3t<double_t> mVec3d;
 template <typename T>
 struct mVec4t
 {
-  T x, y, z, w;
+#pragma warning(push)
+#pragma warning(disable: 4201)
+  union
+  {
+    T asArray[4];
+
+    struct
+    {
+      T x, y, z, w;
+    };
+  };
+#pragma warning(pop)
 
   __host__ __device__ inline mVec4t() : x(0), y(0), z(0), w(0) {}
   __host__ __device__ inline explicit mVec4t(T _v) : x(_v), y(_v), z(_v), w(_v) {}
