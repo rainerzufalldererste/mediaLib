@@ -267,3 +267,4 @@ __pycache__/
 # Additional Files
 mediaLib/lib/*.lib
 enc_temp_folder/*
+*.lastcode*
