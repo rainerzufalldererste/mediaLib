@@ -17,6 +17,7 @@
 ImGuiIO mUI_ImguiIO;
 ImFont *pFont = nullptr;
 ImFont *pHeadline = nullptr;
+ImFont *pSubHeadline = nullptr;
 ImFont *pMonospacedFont = nullptr;
 
 //////////////////////////////////////////////////////////////////////////
@@ -48,6 +49,8 @@ mFUNCTION(mUI_Initilialize, mPtr<mHardwareWindow> &hardwareWindow)
   pMonospacedFont = mUI_ImguiIO.Fonts->AddFontFromFileTTF("C:/Windows/Fonts/consola.ttf", 13.0f, nullptr, mUI_ImguiIO.Fonts->GetGlyphRangesDefault());
 
   pHeadline = mUI_ImguiIO.Fonts->AddFontFromFileTTF("C:/Windows/Fonts/seguibl.ttf", 52.0f, nullptr, mUI_ImguiIO.Fonts->GetGlyphRangesDefault());
+
+  pSubHeadline = mUI_ImguiIO.Fonts->AddFontFromFileTTF("C:/Windows/Fonts/seguisb.ttf", 28.0f, nullptr, mUI_ImguiIO.Fonts->GetGlyphRangesDefault());
 
   mERROR_CHECK(mHardwareWindow_AddOnAnyEvent(hardwareWindow, mUI_ProcessEvent));
 
@@ -154,6 +157,17 @@ mFUNCTION(mUI_ProcessEvent, IN SDL_Event *pEvent)
   mRETURN_SUCCESS();
 }
 
+mFUNCTION(mUI_GetIO, OUT ImGuiIO **ppIO)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(ppIO == nullptr, mR_ArgumentNull);
+
+  *ppIO = &mUI_ImguiIO;
+
+  mRETURN_SUCCESS();
+}
+
 mFUNCTION(mUI_PushMonospacedFont)
 {
   mFUNCTION_SETUP();
@@ -189,6 +203,26 @@ mFUNCTION(mUI_PopHeadlineFont)
   mFUNCTION_SETUP();
 
   if (pHeadline != nullptr)
+    ImGui::PopFont();
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mUI_PushSubHeadlineFont)
+{
+  mFUNCTION_SETUP();
+
+  if (pSubHeadline != nullptr)
+    ImGui::PushFont(pSubHeadline);
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mUI_PopSubHeadlineFont)
+{
+  mFUNCTION_SETUP();
+
+  if (pSubHeadline != nullptr)
     ImGui::PopFont();
 
   mRETURN_SUCCESS();
