@@ -12,12 +12,16 @@ mFUNCTION(mUI_Shutdown);
 mFUNCTION(mUI_Bake);
 mFUNCTION(mUI_Render);
 mFUNCTION(mUI_ProcessEvent, IN SDL_Event *pEvent);
+mFUNCTION(mUI_GetIO, OUT ImGuiIO **ppIO);
 
 mFUNCTION(mUI_PushMonospacedFont);
 mFUNCTION(mUI_PopMonospacedFont);
 
 mFUNCTION(mUI_PushHeadlineFont);
 mFUNCTION(mUI_PopHeadlineFont);
+
+mFUNCTION(mUI_PushSubHeadlineFont);
+mFUNCTION(mUI_PopSubHeadlineFont);
 
 template <typename T>
 inline ImVec2 cast(const mVec2t<T> &vec2t)
