@@ -148,7 +148,7 @@ mFUNCTION(mUI_Render)
 mFUNCTION(mUI_ProcessEvent, IN SDL_Event *pEvent)
 {
   mFUNCTION_SETUP();
-
+  
   ImGui_ImplSDL2_ProcessEvent(pEvent);
 
   mRETURN_SUCCESS();
