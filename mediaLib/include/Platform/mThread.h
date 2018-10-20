@@ -54,10 +54,19 @@ struct _mThread_ThreadInternal_Decay<mResult>
   }
 };
 
+template <typename TFunction>
+struct _mThread_ThreadInternal_ReturnTypeOf;
+
+template <typename TReturnType, typename... Args>
+struct _mThread_ThreadInternal_ReturnTypeOf<TReturnType(*)(Args...)>
+{
+  typedef TReturnType type;
+};
+
 template<class TFunction, class Args, size_t ...TCountArgs>
 void _mThread_ThreadInternal_CallFunctionUnpack(mThread *pThread, TFunction function, Args params, _mThread_ThreadInternalSequence<TCountArgs...>)
 {
-  pThread->result = _mThread_ThreadInternal_Decay<std::decay<TFunction>::type>::CallFunction(function, std::get<TCountArgs>(params) ...);
+  pThread->result = _mThread_ThreadInternal_Decay<_mThread_ThreadInternal_ReturnTypeOf<TFunction>::type>::CallFunction(function, std::get<TCountArgs>(params) ...);
 }
 
 template<class TFunction, class Args>
