@@ -209,7 +209,7 @@ mFUNCTION(mSystemError_ShowMessageBox_Internal, const mSystemError_Type type, HW
       break;
 
     case IDYES:
-      *pResponse = mSE_MBR_Ok;
+      *pResponse = mSE_MBR_Yes;
       break;
 
     case IDNO:
