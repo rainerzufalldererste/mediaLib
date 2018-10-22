@@ -92,6 +92,8 @@
 #define mTRACE(text, ...) mUnused(text, __VA_ARGS__)
 #endif
 
+#define mSTATIC_ASSERT(expression, text) static_assert(expression, __FUNCSIG__ " : " text)
+
 template <typename T>
 void mUnused(T unused)
 {
@@ -141,6 +143,7 @@ void mPrintPrepare(mPrintCallbackFunc *pFunc, const char *format, ...);
 #ifndef default_h__
 #define default_h__
 
+#include "mTypeTraits.h"
 #include "mResult.h"
 #include "mDefer.h"
 #include "mDestruct.h"
