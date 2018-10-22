@@ -205,6 +205,8 @@ inline mFUNCTION(mAllocator_Reallocate, IN OPTIONAL mAllocator *pAllocator, OUT 
   mLOG("Reallocating %" PRIu64 " bytes for %" PRIu64 " elements of type %s.\n", sizeof(T) * count, count, typeid(T).name());
 #endif
 
+  mSTATIC_ASSERT(mIsTriviallyMemoryMovable<T>::value, "This type is not trivially memory movable.");
+
   if (pAllocator == nullptr || !pAllocator->initialized || pAllocator->pReallocate == nullptr)
     mERROR_CHECK(mDefaultAllocator_Realloc((uint8_t **)ppData, sizeof(T), count));
   else
@@ -314,10 +316,17 @@ inline mFUNCTION(mAllocator_Move, IN OPTIONAL mAllocator *pAllocator, IN_OUT T *
 
   mERROR_IF(pDestination == nullptr || pSource == nullptr, mR_ArgumentNull);
 
-  if (pAllocator == nullptr || !pAllocator->initialized || pAllocator->pMove == nullptr)
-    mERROR_CHECK(mDefaultAllocator_Move((uint8_t *)pDestination, (uint8_t *)pSource, sizeof(T), count));
+  if (mIsTriviallyMemoryMovable<T>::value)
+  {
+    if (pAllocator == nullptr || !pAllocator->initialized || pAllocator->pMove == nullptr)
+      mERROR_CHECK(mDefaultAllocator_Move((uint8_t *)pDestination, (uint8_t *)pSource, sizeof(T), count));
+    else
+      mERROR_CHECK(pAllocator->pMove((uint8_t *)pDestination, (uint8_t *)pSource, sizeof(T), count, pAllocator->pUserData));
+  }
   else
-    mERROR_CHECK(pAllocator->pMove((uint8_t *)pDestination, (uint8_t *)pSource, sizeof(T), count, pAllocator->pUserData));
+  {
+    mMoveConstructMultiple(pDestination, pSource, count);
+  }
 
   mRETURN_SUCCESS();
 }

@@ -381,4 +381,10 @@ inline mFUNCTION(mDestruct, IN mPtr<T> *pData)
   mRETURN_SUCCESS();
 }
 
+template <typename T>
+struct mIsTriviallyMemoryMovable<mPtr<T>>
+{
+  static constexpr bool value = true;
+};
+
 #endif // mSharedPointer_h__

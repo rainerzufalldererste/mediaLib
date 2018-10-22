@@ -57,4 +57,10 @@ mFUNCTION(mDestruct, IN_OUT mKeyValuePair<TKey, TValue> *pPair)
   mRETURN_SUCCESS();
 }
 
+template <typename TKey, typename TValue>
+struct mIsTriviallyMemoryMovable<mKeyValuePair<TKey, TValue>>
+{
+  static constexpr bool value = mIsTriviallyMemoryMovable<TKey>::value && mIsTriviallyMemoryMovable<TValue>::value;
+};
+
 #endif // mKeyValuePair_h__

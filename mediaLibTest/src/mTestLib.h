@@ -142,4 +142,134 @@ inline mFUNCTION(mDestruct, mTemplatedDestructible<T> *pDestructable)
   mRETURN_SUCCESS();
 }
 
+class mTestCppClass
+{
+public:
+  inline static size_t & GlobalCount()
+  {
+    static size_t count = 0;
+    return count;
+  };
+
+  struct Data
+  {
+    size_t data = 0;
+
+    struct RefCountContainer
+    {
+      size_t copied = 0;
+      size_t moved = 0;
+      size_t copyConstructed = 0;
+      size_t moveConstructed = 0;
+      size_t referenceCount = 0;
+    } *pRef = nullptr;
+
+  } *pData = nullptr;
+
+  inline mTestCppClass(const size_t data = (size_t)-1)
+  {
+    pData = new Data();
+    pData->data = data;
+
+    pData->pRef = new Data::RefCountContainer();
+    ++pData->pRef->referenceCount;
+
+    GlobalCount()++;
+  }
+
+  inline mTestCppClass(const mTestCppClass &copy)
+  {
+    if (copy.pData == nullptr)
+      return;
+
+    pData = new Data();
+    *pData = *copy.pData;
+    ++pData->pRef->referenceCount;
+    ++pData->pRef->copyConstructed;
+
+    GlobalCount()++;
+  }
+
+  inline mTestCppClass(mTestCppClass &&move)
+  {
+    if (move.pData == nullptr)
+      return;
+
+    pData = new Data();
+    *pData = *move.pData;
+
+    ++pData->pRef->moveConstructed;
+    ++pData->pRef->referenceCount;
+
+    move.~mTestCppClass();
+
+    GlobalCount()++;
+  }
+
+  inline mTestCppClass & operator = (const mTestCppClass &copy)
+  {
+    if (copy.pData == nullptr)
+    {
+      this->~mTestCppClass();
+      return *this;
+    }
+
+    this->~mTestCppClass();
+    pData = new Data();
+
+    *pData = *copy.pData;
+    ++pData->pRef->referenceCount;
+    ++pData->pRef->copied;
+
+    GlobalCount()++;
+
+    return *this;
+  }
+
+  inline mTestCppClass & operator = (mTestCppClass &&move)
+  {
+    if (move.pData == nullptr)
+    {
+      this->~mTestCppClass();
+      return *this;
+    }
+
+    this->~mTestCppClass();
+    pData = new Data();
+
+    *pData = *move.pData;
+    ++pData->pRef->moved;
+    ++pData->pRef->referenceCount;
+
+    move.~mTestCppClass();
+
+    GlobalCount()++;
+
+    return *this;
+  }
+
+  inline ~mTestCppClass()
+  {
+    if (pData == nullptr)
+      return;
+
+    --pData->pRef->referenceCount;
+
+    if (pData->pRef->referenceCount == 0)
+      delete pData->pRef;
+
+    delete pData;
+
+    pData = nullptr;
+
+    GlobalCount()--;
+  }
+};
+
+template <>
+struct mIsTriviallyMemoryMovable<mTestCppClass>
+{
+  static constexpr bool value = true;
+};
+
 #endif // mTestLib_h__

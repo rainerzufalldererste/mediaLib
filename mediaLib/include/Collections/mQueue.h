@@ -116,7 +116,7 @@ inline mFUNCTION(mQueue_PushBack, mPtr<mQueue<T>> &queue, IN T *pItem)
 {
   mFUNCTION_SETUP();
 
-  mERROR_IF(queue == nullptr, mR_ArgumentNull);
+  mERROR_IF(queue == nullptr || pItem == nullptr, mR_ArgumentNull);
 
   if (queue->pData == nullptr)
     mERROR_CHECK(mQueue_Reserve(queue, 1));
@@ -146,11 +146,11 @@ inline mFUNCTION(mQueue_PushBack, mPtr<mQueue<T>> &queue, IN T item)
 }
 
 template<typename T>
-inline mFUNCTION(mQueue_PushFront, mPtr<mQueue<T>>& queue, IN T * pItem)
+inline mFUNCTION(mQueue_PushFront, mPtr<mQueue<T>> &queue, IN T *pItem)
 {
   mFUNCTION_SETUP();
 
-  mERROR_IF(queue == nullptr, mR_ArgumentNull);
+  mERROR_IF(queue == nullptr || pItem == nullptr, mR_ArgumentNull);
 
   if (queue->pData == nullptr)
     mERROR_CHECK(mQueue_Reserve(queue, 1));
@@ -212,7 +212,7 @@ inline mFUNCTION(mQueue_PeekFront, mPtr<mQueue<T>> &queue, OUT T *pItem)
 }
 
 template<typename T>
-inline mFUNCTION(mQueue_PeekBack, mPtr<mQueue<T>>& queue, OUT T *pItem)
+inline mFUNCTION(mQueue_PeekBack, mPtr<mQueue<T>> &queue, OUT T *pItem)
 {
   mFUNCTION_SETUP();
 
@@ -337,9 +337,40 @@ inline mFUNCTION(mQueue_Reserve, mPtr<mQueue<T>> &queue, const size_t count)
     mRETURN_SUCCESS();
 
   if (queue->pData == nullptr)
+  {
     mERROR_CHECK(mAllocator_Allocate(queue->pAllocator, &queue->pData, count));
+  }
   else
-    mERROR_CHECK(mAllocator_Reallocate(queue->pAllocator, &queue->pData, count));
+  {
+    mStaticIf<mIsTriviallyMemoryMovable<T>::value>([&](auto)
+    {
+      mSTDRESULT = mAllocator_Reallocate(queue->pAllocator, &queue->pData, count);
+    })
+      .Else([&](auto)
+    {
+      T *pNewData = nullptr;
+      mDEFER(mAllocator_FreePtr(queue->pAllocator, &pNewData));
+      mSTDRESULT = mAllocator_Allocate(queue->pAllocator, &pNewData, count);
+
+      if (mFAILED(mSTDRESULT))
+        RETURN;
+
+      if (queue->startIndex + queue->count <= queue->size)
+      {
+        mMoveConstructMultiple(&pNewData[queue->startIndex], &queue->pData[queue->startIndex], queue->count);
+      }
+      else
+      {
+        mMoveConstructMultiple(&pNewData[queue->startIndex], &queue->pData[queue->startIndex], queue->size - queue->startIndex);
+        mMoveConstructMultiple(pNewData, queue->pData, queue->count - (queue->size - queue->startIndex));
+      }
+
+      std::swap(queue->pData, pNewData);
+    });
+
+    if (mFAILED(mSTDRESULT))
+      mRETURN_RESULT(mSTDRESULT);
+  }
 
   queue->size = count;
 
@@ -415,7 +446,35 @@ inline mFUNCTION(mQueue_Grow_Internal, mPtr<mQueue<T>> &queue)
 
   const size_t doubleSize = originalSize * 2;
 
-  mERROR_CHECK(mAllocator_Reallocate(queue->pAllocator, &queue->pData, doubleSize));
+  mStaticIf<mIsTriviallyMemoryMovable<T>::value>([&](auto)
+  {
+    mSTDRESULT = mAllocator_Reallocate(queue->pAllocator, &queue->pData, doubleSize);
+  })
+    .Else([&](auto)
+  {
+    T *pNewData = nullptr;
+    mDEFER(mAllocator_FreePtr(queue->pAllocator, &pNewData));
+    mSTDRESULT = mAllocator_Allocate(queue->pAllocator, &pNewData, doubleSize);
+
+    if (mFAILED(mSTDRESULT))
+      RETURN;
+
+    if (queue->startIndex + queue->count <= queue->size)
+    {
+      mMoveConstructMultiple(&pNewData[queue->startIndex], &queue->pData[queue->startIndex], queue->count);
+    }
+    else
+    {
+      mMoveConstructMultiple(&pNewData[queue->startIndex], &queue->pData[queue->startIndex], queue->size - queue->startIndex);
+      mMoveConstructMultiple(pNewData, queue->pData, queue->count - (queue->size - queue->startIndex));
+    }
+
+    std::swap(queue->pData, pNewData);
+  });
+
+  if (mFAILED(mSTDRESULT))
+    mRETURN_RESULT(mSTDRESULT);
+
   queue->size = doubleSize;
 
   if (queue->startIndex > 0 && queue->startIndex + queue->count > originalSize)

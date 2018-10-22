@@ -463,3 +463,83 @@ mTEST(mQueue, TestPopAt)
 
   mTEST_ALLOCATOR_ZERO_CHECK();
 }
+
+mTEST(mQueue, TestContainCppClass)
+{
+  mTEST_ASSERT_EQUAL(0, mTestCppClass::GlobalCount());
+  mTEST_ALLOCATOR_SETUP();
+
+  mPtr<mQueue<mTestCppClass>> queue = nullptr;
+  mDEFER_CALL(&queue, mQueue_Destroy);
+
+  {
+    mTEST_ASSERT_SUCCESS(mQueue_Create(&queue, pAllocator));
+
+    mTEST_ASSERT_SUCCESS(mQueue_PushFront(queue, mTestCppClass(1)));
+    mTEST_ASSERT_SUCCESS(mQueue_PushFront(queue, mTestCppClass(2)));
+    mTEST_ASSERT_SUCCESS(mQueue_PushFront(queue, mTestCppClass(3)));
+
+    mTestCppClass t0;
+    mTestCppClass t1;
+    mTestCppClass t2;
+
+    mTEST_ASSERT_SUCCESS(mQueue_PopFront(queue, &t0));
+    mTEST_ASSERT_SUCCESS(mQueue_PopFront(queue, &t1));
+    mTEST_ASSERT_SUCCESS(mQueue_PopFront(queue, &t2));
+  }
+
+  {
+    mTEST_ASSERT_SUCCESS(mQueue_Create(&queue, pAllocator));
+
+    for (size_t i = 0; i < 100; i++)
+      mTEST_ASSERT_SUCCESS(mQueue_PushFront(queue, mTestCppClass(i)));
+  }
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+  mTEST_ASSERT_EQUAL(0, mTestCppClass::GlobalCount());
+}
+
+mTEST(mQueue, TestContainLambda)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  mPtr<mQueue<std::function<void(void)>>> queue = nullptr;
+  mDEFER_CALL(&queue, mQueue_Destroy);
+
+  {
+    mTEST_ASSERT_SUCCESS(mQueue_Create(&queue, pAllocator));
+
+    size_t n0 = 0;
+    size_t n1 = 0;
+    size_t n2 = 0;
+
+    mTEST_ASSERT_SUCCESS(mQueue_PushFront(queue, (std::function<void(void)>)[&]() { n0 = 1; }));
+    mTEST_ASSERT_SUCCESS(mQueue_PushFront(queue, (std::function<void(void)>)[&]() { n1 = 1; }));
+    mTEST_ASSERT_SUCCESS(mQueue_PushFront(queue, (std::function<void(void)>)[&]() { n2 = 1; }));
+
+    std::function<void(void)> functionA;
+    std::function<void(void)> functionB;
+    std::function<void(void)> functionC;
+
+    mTEST_ASSERT_SUCCESS(mQueue_PopFront(queue, &functionA));
+    mTEST_ASSERT_SUCCESS(mQueue_PopFront(queue, &functionB));
+    mTEST_ASSERT_SUCCESS(mQueue_PopFront(queue, &functionC));
+
+    functionA();
+    functionB();
+    functionC();
+
+    mTEST_ASSERT_EQUAL(n0, 1);
+    mTEST_ASSERT_EQUAL(n1, 1);
+    mTEST_ASSERT_EQUAL(n2, 1);
+  }
+
+  {
+    mTEST_ASSERT_SUCCESS(mQueue_Create(&queue, pAllocator));
+
+    for (size_t i = 0; i < 100; i++)
+      mTEST_ASSERT_SUCCESS(mQueue_PushFront(queue, (std::function<void(void)>)[=]() {printf("%" PRIu64 "\n", i);}));
+  }
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}

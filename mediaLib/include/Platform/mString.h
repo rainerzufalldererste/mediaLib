@@ -107,6 +107,12 @@ mFUNCTION(mString_Equals, const mString &stringA, const mString &stringB, bool *
 //   size_t: bytes of the utf-8 char.
 mFUNCTION(mString_ForEachChar, const mString &string, const std::function<mResult(mchar_t, char *, size_t)> &function);
 
+template <>
+struct mIsTriviallyMemoryMovable<mString>
+{
+  static constexpr bool value = true;
+};
+
 //////////////////////////////////////////////////////////////////////////
 
 template<size_t TCount>
@@ -211,6 +217,12 @@ mFUNCTION(mInplaceString_GetCount, const mInplaceString<TCount> &string, OUT siz
 
 mFUNCTION(mInplaceString_GetCount_Internal, const char *text, const size_t maxSize, OUT size_t *pCount, OUT size_t *pSize);
 bool mInplaceString_StringsAreEqual_Internal(const char *textA, const char *textB, const size_t bytes, const size_t count);
+
+template <size_t TCount>
+struct mIsTriviallyMemoryMovable<mInplaceString<TCount>>
+{
+  static constexpr bool value = true;
+};
 
 //////////////////////////////////////////////////////////////////////////
 
