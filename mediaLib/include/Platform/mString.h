@@ -71,6 +71,8 @@ mFUNCTION(mString_Create, OUT mString *pString, const wchar_t *text, IN OPTIONAL
 
 mFUNCTION(mString_Create, OUT mString *pString, const wchar_t *text, const size_t size, IN OPTIONAL mAllocator *pAllocator = nullptr);
 
+mFUNCTION(mString_Create, OUT mString *pString, const mString &from, IN OPTIONAL mAllocator *pAllocator = nullptr);
+
 template <typename ...Args>
 mFUNCTION(mString_CreateFormat, OUT mString *pString, IN OPTIONAL mAllocator *pAllocator, const char *formatString, Args&&... args);
 
