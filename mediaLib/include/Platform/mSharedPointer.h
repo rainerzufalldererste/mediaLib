@@ -121,6 +121,26 @@ inline mFUNCTION(mSharedPointer_Allocate, OUT mSharedPointer<T> *pOutSharedPoint
   mRETURN_SUCCESS();
 }
 
+template <typename T, typename TInherited>
+inline mFUNCTION(mSharedPointer_AllocateInherited, OUT mSharedPointer<T> *pOutSharedPointer, IN mAllocator *pAllocator, const std::function<void(TInherited *)> &function, OUT OPTIONAL TInherited **ppInherited)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pOutSharedPointer == nullptr, mR_ArgumentNull);
+
+  TInherited *pData = nullptr;
+  mDEFER(mAllocator_FreePtr(pAllocator, &pData));
+  mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &pData, 1));
+  mERROR_CHECK(mSharedPointer_Create(pOutSharedPointer, (T *)pData, (std::function<void(T *)>)[function](T *pDestructData) { function((TInherited *)pDestructData); }, pAllocator));
+  
+  if (ppInherited != nullptr)
+    *ppInherited = pData;
+
+  pData = nullptr; // to not get released on destruction.
+
+  mRETURN_SUCCESS();
+}
+
 template <typename T>
 inline mFUNCTION(mSharedPointer_CreateInplace, IN_OUT mSharedPointer<T> *pOutSharedPointer, IN typename mSharedPointer<T>::PointerParams *pPointerParams, IN T *pData, IN mAllocator *pAllocator, const std::function<void(T *)> &cleanupFunction)
 {
