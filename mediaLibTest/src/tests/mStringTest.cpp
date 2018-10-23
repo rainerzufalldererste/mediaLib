@@ -111,6 +111,33 @@ mTEST(mString, TestCreateFromWchar)
   mTEST_ALLOCATOR_ZERO_CHECK();
 }
 
+mTEST(mString, TestCreateFromString)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  mString stringA;
+  mDEFER_CALL(&stringA, mString_Destroy);
+  mTEST_ASSERT_SUCCESS(mString_Create(&stringA, "🌵🦎🎅testמⴲ", pAllocator));
+
+  mString stringB;
+  mDEFER_CALL(&stringB, mString_Destroy);
+  mTEST_ASSERT_SUCCESS(mString_Create(&stringB, stringA));
+
+  mTEST_ASSERT_EQUAL(stringA.bytes, stringB.bytes);
+  mTEST_ASSERT_EQUAL(stringA.count, stringB.count);
+  mTEST_ASSERT_NOT_EQUAL((void *)stringA.text, (void *)stringB.text);
+  mTEST_ASSERT_TRUE(stringA == stringB);
+
+  mTEST_ASSERT_SUCCESS(mString_Create(&stringA, stringB));
+
+  mTEST_ASSERT_EQUAL(stringA.bytes, stringB.bytes);
+  mTEST_ASSERT_EQUAL(stringA.count, stringB.count);
+  mTEST_ASSERT_NOT_EQUAL((void *)stringA.text, (void *)stringB.text);
+  mTEST_ASSERT_TRUE(stringA == stringB);
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}
+
 mTEST(mString, TestAt)
 {
   mTEST_ALLOCATOR_SETUP();

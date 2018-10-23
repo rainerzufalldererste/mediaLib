@@ -452,7 +452,42 @@ mFUNCTION(mString_Create, OUT mString *pString, const wchar_t *text, const size_
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mString_Destroy, IN_OUT mString * pString)
+mFUNCTION(mString_Create, OUT mString *pString, const mString &from, IN OPTIONAL mAllocator *pAllocator /* = nullptr */)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pString == nullptr, mR_ArgumentNull);
+
+  if (pString->pAllocator == pAllocator)
+  {
+    *pString = mString();
+    pString->pAllocator = pAllocator;
+
+    if (pString->capacity < from.bytes)
+    {
+      mERROR_CHECK(mAllocator_Reallocate(pString->pAllocator, &pString->text, from.bytes));
+      pString->capacity = pString->bytes = from.bytes;
+    }
+  }
+  else
+  {
+    pString->~mString();
+    *pString = mString();
+
+    pString->pAllocator = pAllocator;
+
+    mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &pString->text, from.bytes));
+    pString->capacity = pString->bytes = from.bytes;
+  }
+
+  mERROR_CHECK(mAllocator_Copy(pString->pAllocator, pString->text, from.text, pString->bytes));
+
+  pString->count = from.count;
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mString_Destroy, IN_OUT mString *pString)
 {
   mFUNCTION_SETUP();
 
