@@ -3,6 +3,7 @@
 
 #include "mRenderParams.h"
 #include "mImageBuffer.h"
+#include "mTexture.h"
 
 #if defined (mRENDERER_OPENGL)
 extern GLuint mFrameBuffer_ActiveFrameBufferHandle;
@@ -31,5 +32,6 @@ mFUNCTION(mFramebuffer_SetResolution, mPtr<mFramebuffer> &framebuffer, const mVe
 mFUNCTION(mFramebuffer_Download, mPtr<mFramebuffer> &framebuffer, OUT mPtr<mImageBuffer> *pImageBuffer, IN mAllocator *pAllocator);
 
 mFUNCTION(mTexture_Bind, mPtr<mFramebuffer> &framebuffer, const size_t textureUnit = 0);
+mFUNCTION(mTexture_Copy, mTexture &destination, mPtr<mFramebuffer> &source);
 
 #endif // mFramebuffer_h__

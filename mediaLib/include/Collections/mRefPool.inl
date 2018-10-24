@@ -126,6 +126,8 @@ inline mFUNCTION(mRefPool_AddEmpty, mPtr<mRefPool<T>> &refPool, OUT mPtr<T> *pIn
   if (!refPool->keepForever)
     --pPtrData->ptrParams.referenceCount;
 
+  mERROR_CHECK(mMemset(pIndex->GetPointer(), 1));
+
   mRETURN_SUCCESS();
 }
 
