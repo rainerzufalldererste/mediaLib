@@ -2,6 +2,20 @@
 #include <sys\stat.h>
 #include <shobjidl.h>
 
+mFUNCTION(mFile_Exists, const mString &filename, OUT bool *pExists)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pExists == nullptr, mR_ArgumentNull);
+
+  std::wstring wfilename;
+  mERROR_CHECK(mString_ToWideString(filename, &wfilename));
+
+  mERROR_CHECK(mFile_Exists(wfilename, pExists));
+
+  mRETURN_SUCCESS();
+}
+
 mFUNCTION(mFile_Exists, const std::wstring &filename, OUT bool *pExists)
 {
   mFUNCTION_SETUP();
@@ -188,4 +202,79 @@ mFUNCTION(mFile_DeleteFolder, const mString &folderPath)
   mERROR_IF(FAILED(hr = pFileOperation->PerformOperations()), mR_InternalError);
 
   mRETURN_SUCCESS();
+}
+
+mFUNCTION(mFile_Copy, const mString &destinationFileName, const mString &sourceFileName, const bool overrideFileIfExistent /* = false */)
+{
+  mFUNCTION_SETUP();
+
+  std::wstring source;
+  mERROR_CHECK(mString_ToWideString(sourceFileName, &source));
+
+  std::wstring target;
+  mERROR_CHECK(mString_ToWideString(destinationFileName, &target));
+
+  const BOOL succeeded = CopyFileW(source.c_str(), target.c_str(), !overrideFileIfExistent);
+  mERROR_IF(succeeded, mR_Success);
+
+  const DWORD errorCode = GetLastError();
+
+  switch (errorCode)
+  {
+  case ERROR_ACCESS_DENIED:
+    mRETURN_RESULT(mR_ResourceAlreadyExists);
+
+  default:
+    mRETURN_RESULT(mR_Failure);
+  }
+}
+
+mFUNCTION(mFile_Move, const mString &destinationFileName, const mString &sourceFileName, const bool overrideFileIfExistent /* = true */)
+{
+  mFUNCTION_SETUP();
+
+  bool destinationFileExists = false;
+  mERROR_CHECK(mFile_Exists(destinationFileName, &destinationFileExists));
+
+  if (destinationFileExists)
+  {
+    mERROR_IF(!overrideFileIfExistent, mR_ResourceAlreadyExists);
+    mERROR_CHECK(mFile_Delete(destinationFileName));
+  }
+
+  std::wstring source;
+  mERROR_CHECK(mString_ToWideString(sourceFileName, &source));
+
+  std::wstring target;
+  mERROR_CHECK(mString_ToWideString(destinationFileName, &target));
+
+  const BOOL succeeded = MoveFileW(source.c_str(), target.c_str());
+  mERROR_IF(succeeded, mR_Success);
+
+  const DWORD errorCode = GetLastError();
+  mUnused(errorCode);
+
+  mRETURN_RESULT(mR_Failure);
+}
+
+mFUNCTION(mFile_Delete, const mString &fileName)
+{
+  mFUNCTION_SETUP();
+
+  std::wstring wfile;
+  mERROR_CHECK(mString_ToWideString(fileName, &wfile));
+
+  const BOOL succeeded = DeleteFileW(wfile.c_str());
+  mERROR_IF(succeeded, mR_Success);
+
+  const DWORD errorCode = GetLastError();
+
+  switch (errorCode)
+  {
+  case ERROR_FILE_NOT_FOUND:
+    mRETURN_RESULT(mR_ResourceNotFound);
+
+  default:
+    mRETURN_RESULT(mR_Failure);
+  }
 }
