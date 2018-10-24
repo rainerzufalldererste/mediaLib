@@ -134,7 +134,7 @@ inline mFUNCTION(mString_Create, OUT mString *pString, const char text[TCount], 
 }
 
 template<size_t TCount>
-inline mFUNCTION(mString_Create, OUT mString * pString, const wchar_t text[TCount], IN OPTIONAL mAllocator * pAllocator)
+inline mFUNCTION(mString_Create, OUT mString *pString, const wchar_t text[TCount], IN OPTIONAL mAllocator *pAllocator)
 {
   mFUNCTION_SETUP();
 
@@ -229,7 +229,7 @@ struct mIsTriviallyMemoryMovable<mInplaceString<TCount>>
 //////////////////////////////////////////////////////////////////////////
 
 template<size_t TCount>
-inline mInplaceString<TCount>::mInplaceString(const mInplaceString<TCount> & copy) :
+inline mInplaceString<TCount>::mInplaceString(const mInplaceString<TCount> &copy) :
   bytes(copy.bytes),
   count(copy.count)
 {
@@ -237,7 +237,7 @@ inline mInplaceString<TCount>::mInplaceString(const mInplaceString<TCount> & cop
 }
 
 template<size_t TCount>
-inline mInplaceString<TCount>::mInplaceString(mInplaceString<TCount> && move) :
+inline mInplaceString<TCount>::mInplaceString(mInplaceString<TCount> &&move) :
   bytes(move.bytes),
   count(move.count)
 {
@@ -245,7 +245,7 @@ inline mInplaceString<TCount>::mInplaceString(mInplaceString<TCount> && move) :
 }
 
 template<size_t TCount>
-inline mInplaceString<TCount> & mInplaceString<TCount>::operator=(const mInplaceString<TCount> & copy)
+inline mInplaceString<TCount> & mInplaceString<TCount>::operator=(const mInplaceString<TCount> &copy)
 {
   bytes = copy.bytes;
   count = copy.count;
@@ -255,7 +255,7 @@ inline mInplaceString<TCount> & mInplaceString<TCount>::operator=(const mInplace
 }
 
 template<size_t TCount>
-inline mInplaceString<TCount> & mInplaceString<TCount>::operator=(mInplaceString<TCount> && move)
+inline mInplaceString<TCount> & mInplaceString<TCount>::operator=(mInplaceString<TCount> &&move)
 {
   bytes = move.bytes;
   count = move.count;
@@ -324,7 +324,7 @@ inline mFUNCTION(mInplaceString_CreateRaw, OUT mInplaceString<TCount> *pStackStr
 }
 
 template<size_t TCount>
-inline mFUNCTION(mInplaceString_Create, OUT mInplaceString<TCount>* pStackString, const char * text, const size_t size)
+inline mFUNCTION(mInplaceString_Create, OUT mInplaceString<TCount> *pStackString, const char *text, const size_t size)
 {
   mFUNCTION_SETUP();
 
@@ -359,7 +359,7 @@ inline mFUNCTION(mInplaceString_Create, OUT mInplaceString<TCount> *pStackString
 }
 
 template<size_t TCount>
-inline mFUNCTION(mInplaceString_Create, OUT mInplaceString<TCount>* pStackString, const mString & text)
+inline mFUNCTION(mInplaceString_Create, OUT mInplaceString<TCount> *pStackString, const mString &text)
 {
   mFUNCTION_SETUP();
 
@@ -384,7 +384,7 @@ inline mFUNCTION(mString_Create, OUT mString * pString, const mInplaceString<TCo
 }
 
 template<size_t TCount>
-inline mFUNCTION(mInplaceString_GetByteSize, const mInplaceString<TCount>& string, OUT size_t * pSize)
+inline mFUNCTION(mInplaceString_GetByteSize, const mInplaceString<TCount> &string, OUT size_t *pSize)
 {
   mFUNCTION_SETUP();
 
@@ -396,7 +396,7 @@ inline mFUNCTION(mInplaceString_GetByteSize, const mInplaceString<TCount>& strin
 }
 
 template<size_t TCount>
-inline mFUNCTION(mInplaceString_GetCount, const mInplaceString<TCount>& string, OUT size_t * pLength)
+inline mFUNCTION(mInplaceString_GetCount, const mInplaceString<TCount> &string, OUT size_t *pLength)
 {
   mFUNCTION_SETUP();
 

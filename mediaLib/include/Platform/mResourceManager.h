@@ -72,7 +72,7 @@ struct mResourceManager
 template <typename TValue, typename TKey>
 mFUNCTION(mCreateResource, OUT TValue *pResource, TKey param)
 {
-  static_assert(false, "This type does not support resource creation yet.");
+  mSTATIC_ASSERT(false, "This type does not support resource creation yet.");
 }
 
 // To be available for the resource manager, expose two functions: 
@@ -83,7 +83,7 @@ mFUNCTION(mCreateResource, OUT TValue *pResource, TKey param)
 template <typename TValue>
 mFUNCTION(mDestroyResource, IN_OUT TValue *pResource)
 {
-  static_assert(false, "This type does not support resource destruction yet.");
+  mSTATIC_ASSERT(false, "This type does not support resource destruction yet.");
 }
 
 template <typename TValue>
