@@ -20,7 +20,7 @@ mString::mString() :
   hasFailed(false)
 { }
 
-mString::mString(const char * text, const size_t size, IN OPTIONAL mAllocator * pAllocator) :
+mString::mString(const char *text, const size_t size, IN OPTIONAL mAllocator *pAllocator) :
   text(nullptr),
   pAllocator(nullptr),
   bytes(0),
@@ -49,11 +49,14 @@ mString::mString(const char * text, const size_t size, IN OPTIONAL mAllocator * 
     offset += (size_t)characterSize;
     this->count++;
 
-    if (characterSize == 0)
+    if (characterSize == 0 || codePoint == 0)
+    {
+      this->count--;
       break;
+    }
   }
 
-  this->count += 1;
+  this->count++;
 
   return;
 
@@ -296,7 +299,7 @@ bool mString::operator==(const mString &s) const
   return ret;
 }
 
-bool mString::operator!=(const mString & s) const
+bool mString::operator!=(const mString &s) const
 {
   return !(*this == s);
 }
@@ -323,7 +326,7 @@ epilogue:
   return std::wstring();
 }
 
-const char * mString::c_str() const
+const char *mString::c_str() const
 {
   return text;
 }
@@ -557,7 +560,7 @@ mFUNCTION(mString_ToWideString, const mString &string, std::wstring *pWideString
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mString_Substring, const mString & text, OUT mString * pSubstring, const size_t startCharacter)
+mFUNCTION(mString_Substring, const mString &text, OUT mString *pSubstring, const size_t startCharacter)
 {
   mFUNCTION_SETUP();
 
@@ -569,7 +572,7 @@ mFUNCTION(mString_Substring, const mString & text, OUT mString * pSubstring, con
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mString_Substring, const mString & text, OUT mString * pSubstring, const size_t startCharacter, const size_t length)
+mFUNCTION(mString_Substring, const mString &text, OUT mString *pSubstring, const size_t startCharacter, const size_t length)
 {
   mFUNCTION_SETUP();
 
@@ -945,7 +948,7 @@ mFUNCTION(mString_ForEachChar, const mString &string, const std::function<mResul
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mInplaceString_GetCount_Internal, const char * text, const size_t maxSize, OUT size_t * pCount, OUT size_t * pSize)
+mFUNCTION(mInplaceString_GetCount_Internal, const char *text, const size_t maxSize, OUT size_t *pCount, OUT size_t *pSize)
 {
   mFUNCTION_SETUP();
 
@@ -961,8 +964,12 @@ mFUNCTION(mInplaceString_GetCount_Internal, const char * text, const size_t maxS
     offset += (size_t)characterSize;
     count++;
 
-    if(characterSize == 0)
+    if (characterSize == 0 || codePoint == 0)
+    {
+      count--;
+      offset--;
       break;
+    }
   }
 
   *pCount = count + 1;
@@ -971,7 +978,7 @@ mFUNCTION(mInplaceString_GetCount_Internal, const char * text, const size_t maxS
   mRETURN_SUCCESS();
 }
 
-bool mInplaceString_StringsAreEqual_Internal(const char * textA, const char * textB, const size_t bytes, const size_t count)
+bool mInplaceString_StringsAreEqual_Internal(const char *textA, const char *textB, const size_t bytes, const size_t count)
 {
   size_t offset = 0;
 

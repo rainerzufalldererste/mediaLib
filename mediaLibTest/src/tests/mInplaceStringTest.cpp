@@ -76,7 +76,7 @@ mTEST(mInplaceString, TestCreateFromCharPtr)
 mTEST(mInplaceString, TestCreateFromCharPtrSize)
 {
   mInplaceString<128> string;
-  char text[] = "🌵🦎🎅test";
+  char text[32] = "🌵🦎🎅test";
   mTEST_ASSERT_SUCCESS(mInplaceString_Create(&string, (char *)text, mARRAYSIZE(text)));
 
   size_t count;
