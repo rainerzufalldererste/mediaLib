@@ -123,6 +123,10 @@ mFUNCTION(mResult_ToString, const mResult result, OUT mString *pString)
     *pString = "mR_Failure";
     break;
 
+  case mR_ResourceAlreadyExists:
+    *pString = "mR_ResourceAlreadyExists";
+    break;
+
   default:
     *pString = "<Unknown mResult>";
     break;

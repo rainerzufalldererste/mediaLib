@@ -9,6 +9,7 @@ enum mFile_Encoding
   mF_E_ASCII,
 };
 
+mFUNCTION(mFile_Exists, const mString &filename, OUT bool *pExists);
 mFUNCTION(mFile_Exists, const std::wstring &filename, OUT bool *pExists);
 
 mFUNCTION(mFile_ReadAllBytes, const std::wstring &filename, IN OPTIONAL mAllocator *pAllocator, OUT mArray<uint8_t> *pBytes);
@@ -30,6 +31,9 @@ mFUNCTION(mFile_WriteRaw, const std::wstring &filename, IN T *pData, const size_
 
 mFUNCTION(mFile_CreateDirectory, const mString &folderPath);
 mFUNCTION(mFile_DeleteFolder, const mString &folderPath);
+mFUNCTION(mFile_Copy, const mString &destinationFileName, const mString &sourceFileName, const bool overrideFileIfExistent = false);
+mFUNCTION(mFile_Move, const mString &destinationFileName, const mString &sourceFileName, const bool overrideFileIfExistent = false);
+mFUNCTION(mFile_Delete, const mString &fileName);
 
 //////////////////////////////////////////////////////////////////////////
 

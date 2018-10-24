@@ -31,6 +31,7 @@ enum mResult
   mR_RenderingError,
   mR_Failure,
   mR_NotSupported,
+  mR_ResourceAlreadyExists,
 
   mResult_Count
 };
