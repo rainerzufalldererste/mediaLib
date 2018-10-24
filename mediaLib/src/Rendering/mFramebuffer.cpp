@@ -1,4 +1,5 @@
 #include "mFramebuffer.h"
+#include "mScreenQuad.h"
 
 #if defined (mRENDERER_OPENGL)
 GLuint mFrameBuffer_ActiveFrameBufferHandle = 0;
@@ -149,7 +150,7 @@ mFUNCTION(mFramebuffer_Download, mPtr<mFramebuffer> &framebuffer, OUT mPtr<mImag
 {
   mFUNCTION_SETUP();
 
-  mERROR_IF(framebuffer == nullptr, mR_ArgumentNull);
+  mERROR_IF(framebuffer == nullptr || pImageBuffer == nullptr, mR_ArgumentNull);
 
 #if defined(mRENDERER_OPENGL)
   mERROR_IF(mFrameBuffer_ActiveFrameBufferHandle == framebuffer->frameBufferHandle, mR_ResourceStateInvalid);
@@ -189,6 +190,55 @@ mFUNCTION(mTexture_Bind, mPtr<mFramebuffer> &framebuffer, const size_t textureUn
   mRETURN_SUCCESS();
 }
 
+mFUNCTION(mTexture_Copy, mTexture &destination, mPtr<mFramebuffer> &source)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(destination.uploadState != mRP_US_Ready, mR_ResourceStateInvalid);
+
+#if defined(mRENDERER_OPENGL)
+  {
+    GLuint framebufferHandle;
+    glGenFramebuffers(1, &framebufferHandle);
+    mDEFER(glDeleteFramebuffers(1, &framebufferHandle));
+
+    glBindFramebuffer(GL_FRAMEBUFFER, framebufferHandle);
+    mDEFER(glBindFramebuffer(GL_FRAMEBUFFER, 0));
+
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, destination.textureId, 0);
+
+    mPtr<mScreenQuad> screenQuadRenderer;
+    mDEFER_CALL(&screenQuadRenderer, mScreenQuad_Destroy);
+    mERROR_CHECK(mScreenQuad_Create(&screenQuadRenderer, &mDefaultTempAllocator));
+
+    mERROR_CHECK(mTexture_Bind(source));
+    mERROR_CHECK(mShader_SetUniform(screenQuadRenderer->shader, "_texture0", source));
+    mERROR_CHECK(mScreenQuad_Render(screenQuadRenderer));
+    
+    // TODO: Get a solution to work using the this:
+    //glBlitFramebuffer(source->frameBufferHandle, destination.textureId, (GLsizei)source->size.x, (GLsizei)source->size.y, 0, 0, (GLsizei)destination.resolution.x, (GLsizei)destination.resolution.y, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+  }
+#else
+  mRETURN_RESULT(mR_NotImplemented);
+#endif
+
+  mGL_DEBUG_ERROR_CHECK();
+
+  size_t queueCount = 0;
+  mERROR_CHECK(mQueue_GetCount(mFramebuffer_Queue, &queueCount));
+
+  // bind previous framebuffer (if any)
+  if (queueCount > 0)
+  {
+    mPtr<mFramebuffer> framebuffer;
+    mDEFER_CALL(&framebuffer, mFramebuffer_Destroy);
+    mERROR_CHECK(mQueue_PeekBack(mFramebuffer_Queue, &framebuffer));
+    mERROR_CHECK(mFramebuffer_Bind(framebuffer));
+  }
+
+  mRETURN_SUCCESS();
+}
+
 //////////////////////////////////////////////////////////////////////////
 
 mFUNCTION(mFramebuffer_Create_Internal, mFramebuffer *pFramebuffer, const mVec2s &size)
@@ -220,6 +270,18 @@ mFUNCTION(mFramebuffer_Create_Internal, mFramebuffer *pFramebuffer, const mVec2s
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
   mGL_ERROR_CHECK();
+
+  size_t queueCount = 0;
+  mERROR_CHECK(mQueue_GetCount(mFramebuffer_Queue, &queueCount));
+
+  // bind previous framebuffer (if any)
+  if (queueCount > 0)
+  {
+    mPtr<mFramebuffer> framebuffer;
+    mDEFER_CALL(&framebuffer, mFramebuffer_Destroy);
+    mERROR_CHECK(mQueue_PeekBack(mFramebuffer_Queue, &framebuffer));
+    mERROR_CHECK(mFramebuffer_Bind(framebuffer));
+  }
 
   mRETURN_SUCCESS();
 }
