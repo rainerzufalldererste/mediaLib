@@ -76,9 +76,9 @@ mFUNCTION(mUI_Initilialize, mPtr<mHardwareWindow> &hardwareWindow)
   pColors[ImGuiCol_CheckMark] = ImVec4(0.16f, 0.16f, 0.16f, 1.00f);
   pColors[ImGuiCol_SliderGrab] = ImVec4(0.25f, 0.25f, 0.25f, 0.78f);
   pColors[ImGuiCol_SliderGrabActive] = ImVec4(0.47f, 0.47f, 0.47f, 0.60f);
-  pColors[ImGuiCol_Button] = ImVec4(0.87f, 0.87f, 0.87f, 1.00f);
-  pColors[ImGuiCol_ButtonHovered] = ImVec4(0.85f, 0.85f, 0.85f, 1.00f);
-  pColors[ImGuiCol_ButtonActive] = ImVec4(0.75f, 0.75f, 0.75f, 1.00f);
+  pColors[ImGuiCol_Button] = ImVec4(0.28f, 0.28f, 0.28f, 0.11f);
+  pColors[ImGuiCol_ButtonHovered] = ImVec4(0.24f, 0.24f, 0.24f, 0.15f);
+  pColors[ImGuiCol_ButtonActive] = ImVec4(0.16f, 0.16f, 0.16f, 0.22f);
   pColors[ImGuiCol_Header] = ImVec4(0.46f, 0.46f, 0.46f, 0.31f);
   pColors[ImGuiCol_HeaderHovered] = ImVec4(0.63f, 0.63f, 0.63f, 0.80f);
   pColors[ImGuiCol_HeaderActive] = ImVec4(0.82f, 0.82f, 0.82f, 1.00f);
@@ -319,5 +319,39 @@ namespace ImGui
     window->DrawList->PathStroke(color, false, thickness);
 
     return true;
+  }
+
+  size_t TabBar(const std::initializer_list<const char *> &names, const size_t activeBefore)
+  {
+    size_t returnedIndex = activeBefore;
+    
+    if (returnedIndex >= names.size())
+      returnedIndex = 0;
+
+    size_t index = 0;
+
+    for (auto &name : names)
+    {
+      if (returnedIndex == index)
+      {
+        ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyle().Colors[ImGuiCol_ChildBg]);
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImGui::GetStyle().Colors[ImGuiCol_ChildBg]);
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImGui::GetStyle().Colors[ImGuiCol_ChildBg]);
+        ImGui::Button(name);
+        ImGui::PopStyleColor(3);
+      }
+      else
+      {
+        if (ImGui::Button(name))
+          returnedIndex = index;
+      }
+
+      index++;
+
+      if (index != names.size())
+        ImGui::SameLine();
+    }
+
+    return returnedIndex;
   }
 }
