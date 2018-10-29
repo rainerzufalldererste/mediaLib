@@ -52,6 +52,7 @@ namespace ImGui
 {
   bool BufferingBar(const char *label, float_t value, const ImVec2 &size_arg, const ImU32 &bg_col, const ImU32 &fg_col);
   bool Spinner(const char *label, float_t radius, float_t thickness, const ImU32 &color);
+  size_t TabBar(const std::initializer_list<const char *> &names, const size_t activeBefore);
 }
 
 #endif // mUI_h__
