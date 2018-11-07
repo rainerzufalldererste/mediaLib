@@ -46,6 +46,7 @@
 
 #define mVECTORCALL __vectorcall
 #define mINLINE __forceinline
+#define mALIGN(x) __declspec(align(x))
 
 #define mARRAYSIZE(arrayName) (sizeof(arrayName) / sizeof(arrayName[0]))
 #define mBYTES_OF(type) (sizeof(type) << 3)

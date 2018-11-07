@@ -66,6 +66,8 @@ static_assert(false, "mDEBUG_TESTS has to be turned off for Buildserver builds."
 #define mTEST_ASSERT_SUCCESS(functionCall) mTEST_ASSERT_EQUAL(mR_Success, functionCall)
 #endif
 
+#define mTEST_STATIC_ASSERT(x) static_assert(x, "ASSERTION FAILED: " #x)
+
 #define mTEST(Component, TestCase) TEST(Component, TestCase) 
 
 extern size_t mTestDestructible_Count;

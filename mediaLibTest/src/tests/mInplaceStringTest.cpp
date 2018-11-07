@@ -148,3 +148,39 @@ mTEST(mInplaceString, TestSet)
   new (&stringB) mInplaceString<128>(std::move(stringA));
   mTEST_ASSERT_EQUAL(stringC, stringB);
 }
+
+mTEST(mInplaceString, TestEqual)
+{
+  mInplaceString<255> stringA;
+  mInplaceString<255> stringB;
+
+  mTEST_ASSERT_SUCCESS(mInplaceString_Create(&stringA, "C:/Windows/Fonts/seguiemj.ttf"));
+  mTEST_ASSERT_SUCCESS(mInplaceString_Create(&stringB, stringA));
+  mTEST_ASSERT_EQUAL(stringA, stringB);
+}
+
+mTEST(mInplaceString, TestIterate)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  mInplaceString<255> string;
+  mTEST_ASSERT_SUCCESS(mInplaceString_Create(&string, "🌵🦎🎅testמⴲx"));
+
+  size_t charSize[] = { 4, 4, 4, 1, 1, 1, 1, 2, 3, 1 };
+
+  size_t count = 0;
+
+  for (auto &&_char : string.begin())
+  {
+    if (count == 0)
+      mTEST_ASSERT_EQUAL(*(uint32_t *)string.text, *(uint32_t *)_char.character);
+
+    mTEST_ASSERT_EQUAL(_char.index, count);
+    mTEST_ASSERT_EQUAL(_char.characterSize, charSize[count]);
+    count++;
+  }
+
+  mTEST_ASSERT_EQUAL(string.count - 1, count); // we don't care about the '\0' character.
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}

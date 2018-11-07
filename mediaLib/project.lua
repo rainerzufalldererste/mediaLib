@@ -50,6 +50,9 @@ configuration {}
 linkoptions { "3rdParty/utf8proc/lib/utf8proc_static.lib" }
 defines { "UTF8PROC_STATIC" }
 
+linkoptions { "3rdParty/freetype-gl/lib/freetype-gl.lib" }
+linkoptions { "3rdParty/freetype/lib/freetype.lib" }
+
 warnings "Extra"
 
 filter {"configurations:Release"}

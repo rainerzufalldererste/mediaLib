@@ -25,6 +25,8 @@ struct mVector
   };
 #pragma warning(pop)
 
+  mVector();
+  mVector(const mVector &a);
   explicit mVector(const float_t s);
   static mVector Scalar(const float_t s);
 

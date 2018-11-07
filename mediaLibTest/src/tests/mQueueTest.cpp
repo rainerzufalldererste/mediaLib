@@ -543,3 +543,141 @@ mTEST(mQueue, TestContainLambda)
 
   mTEST_ALLOCATOR_ZERO_CHECK();
 }
+
+mTEST(mQueue, TestIterateForward)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  mPtr<mQueue<int64_t>> numberQueue = nullptr;
+  mDEFER_CALL(&numberQueue, mQueue_Destroy);
+  mTEST_ASSERT_SUCCESS(mQueue_Create(&numberQueue, pAllocator));
+
+  mTEST_ASSERT_SUCCESS(mQueue_PushBack(numberQueue, 0LL));
+
+  for (int64_t i = 1; i < 100; i++)
+  {
+    mTEST_ASSERT_SUCCESS(mQueue_PushBack(numberQueue, i));
+    mTEST_ASSERT_SUCCESS(mQueue_PushFront(numberQueue, -i));
+  }
+
+  int64_t lastCount = -100;
+  size_t count = 0;
+
+  for (int64_t i : *numberQueue)
+  {
+    mTEST_ASSERT_EQUAL(i, lastCount + 1);
+    lastCount = i;
+    count++;
+  }
+
+  mTEST_ASSERT_EQUAL(lastCount, 99);
+  mTEST_ASSERT_EQUAL(count, 99 * 2 + 1);
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}
+
+mTEST(mQueue, TestIterateBackwardsManual)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  mPtr<mQueue<int64_t>> numberQueue = nullptr;
+  mDEFER_CALL(&numberQueue, mQueue_Destroy);
+  mTEST_ASSERT_SUCCESS(mQueue_Create(&numberQueue, pAllocator));
+
+  mTEST_ASSERT_SUCCESS(mQueue_PushBack(numberQueue, 0LL));
+
+  for (int64_t i = 1; i < 100; i++)
+  {
+    mTEST_ASSERT_SUCCESS(mQueue_PushBack(numberQueue, i));
+    mTEST_ASSERT_SUCCESS(mQueue_PushFront(numberQueue, -i));
+  }
+
+  int64_t lastCount = 100;
+  size_t count = 0;
+
+  for (auto it = numberQueue->end(); it != numberQueue->begin(); ++it)
+  {
+    mTEST_ASSERT_EQUAL(*it, lastCount - 1);
+    lastCount = *it;
+    count++;
+  }
+
+  mTEST_ASSERT_EQUAL(lastCount, -99);
+  mTEST_ASSERT_EQUAL(count, 99 * 2 + 1);
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}
+
+mTEST(mQueue, TestIterateBackwards)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  mPtr<mQueue<int64_t>> numberQueue = nullptr;
+  mDEFER_CALL(&numberQueue, mQueue_Destroy);
+  mTEST_ASSERT_SUCCESS(mQueue_Create(&numberQueue, pAllocator));
+
+  mTEST_ASSERT_SUCCESS(mQueue_PushBack(numberQueue, 0LL));
+
+  for (int64_t i = 1; i < 100; i++)
+  {
+    mTEST_ASSERT_SUCCESS(mQueue_PushBack(numberQueue, i));
+    mTEST_ASSERT_SUCCESS(mQueue_PushFront(numberQueue, -i));
+  }
+
+  int64_t lastCount = 100;
+  size_t count = 0;
+
+  for (int64_t i : numberQueue->IterateReverse())
+  {
+    mTEST_ASSERT_EQUAL(i, lastCount - 1);
+    lastCount = i;
+    count++;
+  }
+
+  mTEST_ASSERT_EQUAL(lastCount, -99);
+  mTEST_ASSERT_EQUAL(count, 99 * 2 + 1);
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}
+
+mTEST(mQueue, TestIterateEmptyForward)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  mPtr<mQueue<int64_t>> numberQueue = nullptr;
+  mDEFER_CALL(&numberQueue, mQueue_Destroy);
+  mTEST_ASSERT_SUCCESS(mQueue_Create(&numberQueue, pAllocator));
+
+  size_t count = 0;
+
+  for (int64_t i : *numberQueue)
+  {
+    mUnused(i);
+    count += 1;
+  }
+
+  mTEST_ASSERT_EQUAL(count, 0);
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}
+
+mTEST(mQueue, TestIterateEmptyBackwards)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  mPtr<mQueue<int64_t>> numberQueue = nullptr;
+  mDEFER_CALL(&numberQueue, mQueue_Destroy);
+  mTEST_ASSERT_SUCCESS(mQueue_Create(&numberQueue, pAllocator));
+
+  size_t count = 0;
+
+  for (int64_t i : numberQueue->IterateReverse())
+  {
+    mUnused(i);
+    count++;
+  }
+
+  mTEST_ASSERT_EQUAL(count, 0);
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}

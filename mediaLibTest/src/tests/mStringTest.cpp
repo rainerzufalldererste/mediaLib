@@ -598,3 +598,118 @@ mTEST(mString, TestToFilePathEmpty)
   mTEST_ALLOCATOR_ZERO_CHECK();
 }
 
+mTEST(mString, TestAppendEqualsStringFunction)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  mString string;
+  mDEFER_CALL(&string, mString_Destroy);
+  mTEST_ASSERT_SUCCESS(mString_Create(&string, "", pAllocator));
+
+  mString appendedString;
+  mDEFER_CALL(&appendedString, mString_Destroy);
+  mTEST_ASSERT_SUCCESS(mString_Create(&appendedString, "test string 1 2 3", pAllocator));
+
+  for (size_t i = 0; i < 1024; i++)
+    mTEST_ASSERT_SUCCESS(mString_Append(string, appendedString));
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}
+
+mTEST(mString, TestAppendEqualsStringOperator)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  mString string;
+  mDEFER_CALL(&string, mString_Destroy);
+  mTEST_ASSERT_SUCCESS(mString_Create(&string, "", pAllocator));
+
+  for (size_t i = 0; i < 1024; i++)
+    string += "test string 1 2 3";
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}
+
+mTEST(mString, TestAppendStringOperator)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  mString string;
+  mDEFER_CALL(&string, mString_Destroy);
+  mTEST_ASSERT_SUCCESS(mString_Create(&string, "", pAllocator));
+
+  for (size_t i = 0; i < 8; i++)
+    string += string + "test string 1 2 3" + string + "test";
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}
+
+mTEST(mString, TestIterate)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  mString string;
+  mDEFER_CALL(&string, mString_Destroy);
+  mTEST_ASSERT_SUCCESS(mString_Create(&string, "🌵🦎🎅testמⴲx", pAllocator));
+
+  size_t charSize[] = { 4, 4, 4, 1, 1, 1, 1, 2, 3, 1 };
+
+  size_t count = 0;
+
+  for (auto &&_char : string.begin())
+  {
+    if (count == 0)
+      mTEST_ASSERT_EQUAL(*(uint32_t *)string.text, *(uint32_t *)_char.character);
+
+    mTEST_ASSERT_EQUAL(_char.index, count);
+    mTEST_ASSERT_EQUAL(_char.characterSize, charSize[count]);
+    count++;
+  }
+
+  mTEST_ASSERT_EQUAL(string.Count() - 1, count); // we don't care about the '\0' character.
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}
+
+mTEST(mString, TestCreateFromEmpty)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  mString emptyString;
+  mDEFER_CALL(&emptyString, mString_Destroy);
+
+  mString string;
+  mDEFER_CALL(&string, mString_Destroy);
+  mTEST_ASSERT_SUCCESS(mString_Create(&string, emptyString, pAllocator));
+
+  mTEST_ASSERT_EQUAL(string.bytes, 0);
+  mTEST_ASSERT_EQUAL(string.count, 0);
+  mTEST_ASSERT_EQUAL(string.text, nullptr);
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}
+
+mTEST(mString, TestCreateFromTooBigInvalidUTF8)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  char text[] = { '\xf0', '\x9f', '\x8c', '\xb5', 'X', '\0', 'A', '\x9D', '\x8C', '\x86', '\x20' };
+
+  mString string;
+  mDEFER_CALL(&string, mString_Destroy);
+  mTEST_ASSERT_SUCCESS(mString_Create(&string, text, pAllocator));
+
+  mTEST_ASSERT_EQUAL(string.bytes, 6);
+  mTEST_ASSERT_EQUAL(string.count, 3);
+
+  string = "";
+  mTEST_ASSERT_EQUAL(string.bytes, 1);
+  mTEST_ASSERT_EQUAL(string.count, 1);
+
+  mTEST_ASSERT_SUCCESS(mString_Create(&string, text, mARRAYSIZE(text), pAllocator));
+
+  mTEST_ASSERT_EQUAL(string.bytes, 6);
+  mTEST_ASSERT_EQUAL(string.count, 3);
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}

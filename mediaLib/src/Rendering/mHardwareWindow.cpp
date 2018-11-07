@@ -6,9 +6,9 @@ struct mHardwareWindow
 {
   SDL_Window *pWindow;
   mRenderContextId renderContextID;
-  mPtr<mChunkedArray<std::function<mResult (IN SDL_Event *)>>> onEventCallbacks;
-  mPtr<mChunkedArray<std::function<mResult (void)>>> onExitCallbacks;
-  mPtr<mChunkedArray<std::function<mResult(const mVec2s &)>>> onResizeCallbacks;
+  mPtr<mQueue<std::function<mResult (IN SDL_Event *)>>> onEventCallbacks;
+  mPtr<mQueue<std::function<mResult (void)>>> onExitCallbacks;
+  mPtr<mQueue<std::function<mResult(const mVec2s &)>>> onResizeCallbacks;
 };
 
 mFUNCTION(mHardwareWindow_Create_Internal, IN_OUT mHardwareWindow *pWindow, IN mAllocator *pAllocator, const mString & title, const mVec2s & size, const mHardwareWindow_DisplayMode displaymode, const bool stereo3dIfAvailable);
@@ -80,12 +80,12 @@ mFUNCTION(mHardwareWindow_Swap, mPtr<mHardwareWindow>& window)
   while (SDL_PollEvent(&_event))
   {
     size_t onEventCount = 0;
-    mERROR_CHECK(mChunkedArray_GetCount(window->onEventCallbacks, &onEventCount));
+    mERROR_CHECK(mQueue_GetCount(window->onEventCallbacks, &onEventCount));
 
     for (size_t i = 0; i < onEventCount; ++i)
     {
       std::function<mResult(IN SDL_Event *)> *pFunction = nullptr;
-      mERROR_CHECK(mChunkedArray_PointerAt(window->onEventCallbacks, i, &pFunction));
+      mERROR_CHECK(mQueue_PointerAt(window->onEventCallbacks, i, &pFunction));
 
       mResult result = ((*pFunction)(&_event));
 
@@ -101,12 +101,12 @@ mFUNCTION(mHardwareWindow_Swap, mPtr<mHardwareWindow>& window)
     if (_event.type == SDL_QUIT)
     {
       size_t onExitCallbackCount = 0;
-      mERROR_CHECK(mChunkedArray_GetCount(window->onExitCallbacks, &onExitCallbackCount));
+      mERROR_CHECK(mQueue_GetCount(window->onExitCallbacks, &onExitCallbackCount));
 
       for (size_t i = 0; i < onExitCallbackCount; ++i)
       {
         std::function<mResult(void)> *pFunction = nullptr;
-        mERROR_CHECK(mChunkedArray_PointerAt(window->onExitCallbacks, i, &pFunction));
+        mERROR_CHECK(mQueue_PointerAt(window->onExitCallbacks, i, &pFunction));
 
         mResult result = ((*pFunction)());
 
@@ -127,12 +127,12 @@ mFUNCTION(mHardwareWindow_Swap, mPtr<mHardwareWindow>& window)
       mERROR_CHECK(mHardwareWindow_SetAsActiveRenderTarget(window));
 
       size_t onResizeCallbackCount = 0;
-      mERROR_CHECK(mChunkedArray_GetCount(window->onResizeCallbacks, &onResizeCallbackCount));
+      mERROR_CHECK(mQueue_GetCount(window->onResizeCallbacks, &onResizeCallbackCount));
 
       for (size_t i = 0; i < onResizeCallbackCount; ++i)
       {
         std::function<mResult(const mVec2s &)> *pFunction = nullptr;
-        mERROR_CHECK(mChunkedArray_PointerAt(window->onResizeCallbacks, i, &pFunction));
+        mERROR_CHECK(mQueue_PointerAt(window->onResizeCallbacks, i, &pFunction));
 
         mResult result = ((*pFunction)(size));
 
@@ -162,7 +162,7 @@ mFUNCTION(mHardwareWindow_SetSize, mPtr<mHardwareWindow>& window, const mVec2s &
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mHardwareWindow_SetAsActiveRenderTarget, mPtr<mHardwareWindow>& window)
+mFUNCTION(mHardwareWindow_SetAsActiveRenderTarget, mPtr<mHardwareWindow> &window)
 {
   mFUNCTION_SETUP();
 
@@ -200,7 +200,7 @@ mFUNCTION(mHardwareWindow_GetRenderContextId, mPtr<mHardwareWindow> &window, OUT
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mHardwareWindow_AddOnResizeEvent, mPtr<mHardwareWindow>& window, const std::function<mResult(const mVec2s&)>& callback)
+mFUNCTION(mHardwareWindow_AddOnResizeEvent, mPtr<mHardwareWindow>& window, const std::function<mResult(const mVec2s&)> &callback)
 {
   mFUNCTION_SETUP();
 
@@ -208,12 +208,12 @@ mFUNCTION(mHardwareWindow_AddOnResizeEvent, mPtr<mHardwareWindow>& window, const
 
   std::function<mResult(const mVec2s&)> function = callback;
 
-  mERROR_CHECK(mChunkedArray_Push(window->onResizeCallbacks, &function, nullptr));
+  mERROR_CHECK(mQueue_PushBack(window->onResizeCallbacks, &function));
 
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mHardwareWindow_AddOnCloseEvent, mPtr<mHardwareWindow>& window, const std::function<mResult(void)>& callback)
+mFUNCTION(mHardwareWindow_AddOnCloseEvent, mPtr<mHardwareWindow>& window, const std::function<mResult(void)> &callback)
 {
   mFUNCTION_SETUP();
 
@@ -221,12 +221,12 @@ mFUNCTION(mHardwareWindow_AddOnCloseEvent, mPtr<mHardwareWindow>& window, const 
 
   std::function<mResult(void)> function = callback;
 
-  mERROR_CHECK(mChunkedArray_Push(window->onExitCallbacks, &function, nullptr));
+  mERROR_CHECK(mQueue_PushBack(window->onExitCallbacks, &function));
 
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mHardwareWindow_AddOnAnyEvent, mPtr<mHardwareWindow>& window, const std::function<mResult(IN SDL_Event*)>& callback)
+mFUNCTION(mHardwareWindow_AddOnAnyEvent, mPtr<mHardwareWindow>& window, const std::function<mResult(IN SDL_Event*)> &callback)
 {
   mFUNCTION_SETUP();
 
@@ -234,7 +234,20 @@ mFUNCTION(mHardwareWindow_AddOnAnyEvent, mPtr<mHardwareWindow>& window, const st
 
   std::function<mResult(IN SDL_Event*)> function = callback;
 
-  mERROR_CHECK(mChunkedArray_Push(window->onEventCallbacks, &function, nullptr));
+  mERROR_CHECK(mQueue_PushBack(window->onEventCallbacks, &function));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mHardwareWindow_ClearEventHandlers, mPtr<mHardwareWindow> &window)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(window == nullptr, mR_ArgumentNull);
+
+  mERROR_CHECK(mQueue_Clear(window->onEventCallbacks));
+  mERROR_CHECK(mQueue_Clear(window->onExitCallbacks));
+  mERROR_CHECK(mQueue_Clear(window->onResizeCallbacks));
 
   mRETURN_SUCCESS();
 }
@@ -267,9 +280,9 @@ retry_without_3d:
 
   mERROR_IF(pWindow->pWindow == nullptr, mR_InternalError);
 
-  mERROR_CHECK(mChunkedArray_Create(&pWindow->onEventCallbacks, pAllocator));
-  mERROR_CHECK(mChunkedArray_Create(&pWindow->onResizeCallbacks, pAllocator));
-  mERROR_CHECK(mChunkedArray_Create(&pWindow->onExitCallbacks, pAllocator));
+  mERROR_CHECK(mQueue_Create(&pWindow->onEventCallbacks, pAllocator));
+  mERROR_CHECK(mQueue_Create(&pWindow->onResizeCallbacks, pAllocator));
+  mERROR_CHECK(mQueue_Create(&pWindow->onExitCallbacks, pAllocator));
 
   mRETURN_SUCCESS();
 }
@@ -285,9 +298,9 @@ mFUNCTION(mHardwareWindow_Destroy_Internal, IN mHardwareWindow * pWindow)
   SDL_DestroyWindow(pWindow->pWindow);
   pWindow->pWindow = nullptr;
 
-  mERROR_CHECK(mChunkedArray_Destroy(&pWindow->onEventCallbacks));
-  mERROR_CHECK(mChunkedArray_Destroy(&pWindow->onResizeCallbacks));
-  mERROR_CHECK(mChunkedArray_Destroy(&pWindow->onExitCallbacks));
+  mERROR_CHECK(mQueue_Destroy(&pWindow->onEventCallbacks));
+  mERROR_CHECK(mQueue_Destroy(&pWindow->onResizeCallbacks));
+  mERROR_CHECK(mQueue_Destroy(&pWindow->onExitCallbacks));
 
   mRETURN_SUCCESS();
 }
