@@ -47,6 +47,18 @@ inline ImVec4 cast(const mVec4t<T> &vec4t)
   return v;
 }
 
+inline ImVec4 cast(const mVector &vec)
+{
+  ImVec4 v;
+
+  v.x = vec.x;
+  v.y = vec.y;
+  v.z = vec.z;
+  v.w = vec.w;
+
+  return v;
+}
+
 // Imgui Extentions:
 namespace ImGui
 {

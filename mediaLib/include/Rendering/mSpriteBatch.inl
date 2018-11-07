@@ -469,6 +469,9 @@ inline mFUNCTION(mSpriteBatch_Create_Internal, IN_OUT mSpriteBatch<Args...>* pSp
   mERROR_CHECK(mSharedPointer_Allocate(&pSpriteBatch->shader, nullptr, (std::function<void(mShader *)>)[](mShader *pData) {mShader_Destroy(pData);}, 1));
   mERROR_CHECK(mShader_Create(pSpriteBatch->shader.GetPointer(), vertexShader, fragmentShader, "fragColour0"));
 
+  printf("VERTEX:\n%s\n\n", vertexShader);
+  printf("FRAGMENT:\n%s\n\n", fragmentShader);
+
   mRETURN_SUCCESS();
 }
 
@@ -594,7 +597,7 @@ inline mFUNCTION(mSpriteBatch_Internal_InitializeMesh, mPtr<mSpriteBatch<Args...
 {
   mFUNCTION_SETUP();
 
-  mVec2f buffer[8] = { {-1, -1}, {0, 0}, {-1, 1}, {0, 1}, {1, -1}, {1, 0}, {1, 1}, {1, 1} };
+  mVec2f buffer[8] = { {-1, -1}, {1, 1}, {-1, 1}, {1, 0}, {1, -1}, {0, 1}, {1, 1}, {0, 0} };
 
   glGenBuffers(1, &spriteBatch->vbo);
   glBindBuffer(GL_ARRAY_BUFFER, spriteBatch->vbo);

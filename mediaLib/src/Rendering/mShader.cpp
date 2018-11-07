@@ -24,23 +24,20 @@ mFUNCTION(mShader_Create, OUT mShader *pShader, const mString &vertexShader, con
 
   const mchar_t carriageReturn = mToChar<1>("\r");
 
-  mERROR_CHECK(mString_ForEachChar(vertexShader, 
-    [&](mchar_t c, const char *utf8char, size_t bytes) 
+  for (auto &&_char : vertexShader)
   {
-    if (c != carriageReturn)
+    if (_char.codePoint != carriageReturn)
     {
-      char *s = (char *)utf8char;
+      char *s = (char *)_char.character;
 
-      for (size_t i = 0; i < bytes; i++)
+      for (size_t i = 0; i < _char.characterSize; i++)
       {
         vertexSource[position] = *s;
         position++;
         s++;
       }
     }
-    
-    return mR_Success;
-  }));
+  }
 
   vertexSource[position] = '\0';
 
@@ -69,23 +66,20 @@ mFUNCTION(mShader_Create, OUT mShader *pShader, const mString &vertexShader, con
 
   position = 0;
 
-  mERROR_CHECK(mString_ForEachChar(fragmentShader,
-    [&](mchar_t c, const char *utf8char, size_t bytes)
+  for (auto &&_char : fragmentShader)
   {
-    if (c != carriageReturn)
+    if (_char.codePoint != carriageReturn)
     {
-      char *s = (char *)utf8char;
+      char *s = (char *)_char.character;
 
-      for (size_t i = 0; i < bytes; i++)
+      for (size_t i = 0; i < _char.characterSize; i++)
       {
         fragmentSource[position] = *s;
         position++;
         s++;
       }
     }
-
-    return mR_Success;
-  }));
+  }
 
   fragmentSource[position] = '\0';
 
@@ -193,7 +187,7 @@ mFUNCTION(mShader_Destroy, IN_OUT mShader *pShader)
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mShader_SetTo, mPtr<mShader>& shader, const mString & vertexShader, const mString & fragmentShader, IN OPTIONAL const char *fragDataLocation)
+mFUNCTION(mShader_SetTo, mPtr<mShader> &shader, const mString &vertexShader, const mString &fragmentShader, IN OPTIONAL const char *fragDataLocation)
 {
   mFUNCTION_SETUP();
 
@@ -220,23 +214,20 @@ mFUNCTION(mShader_SetTo, mPtr<mShader>& shader, const mString & vertexShader, co
 
   const mchar_t carriageReturn = mToChar<1>("\r");
 
-  mERROR_CHECK(mString_ForEachChar(vertexShader,
-    [&](mchar_t c, const char *utf8char, size_t bytes)
+  for (auto &&_char : vertexShader)
   {
-    if (c != carriageReturn)
+    if (_char.codePoint != carriageReturn)
     {
-      char *s = (char *)utf8char;
+      char *s = (char *)_char.character;
 
-      for (size_t i = 0; i < bytes; i++)
+      for (size_t i = 0; i < _char.characterSize; i++)
       {
         vertexSource[position] = *s;
         position++;
         s++;
       }
     }
-
-    return mR_Success;
-  }));
+  }
 
   vertexSource[position] = '\0';
 
@@ -265,24 +256,20 @@ mFUNCTION(mShader_SetTo, mPtr<mShader>& shader, const mString & vertexShader, co
 
   position = 0;
 
-
-  mERROR_CHECK(mString_ForEachChar(fragmentShader,
-    [&](mchar_t c, const char *utf8char, size_t bytes)
+  for (auto &&_char : fragmentShader)
   {
-    if (c != carriageReturn)
+    if (_char.codePoint != carriageReturn)
     {
-      char *s = (char *)utf8char;
+      char *s = (char *)_char.character;
 
-      for (size_t i = 0; i < bytes; i++)
+      for (size_t i = 0; i < _char.characterSize; i++)
       {
         fragmentSource[position] = *s;
         position++;
         s++;
       }
     }
-
-    return mR_Success;
-  }));
+  }
 
   fragmentSource[position] = '\0';
 
@@ -397,6 +384,32 @@ mFUNCTION(mShader_Bind, mShader &shader)
 
 //////////////////////////////////////////////////////////////////////////
 
+mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex_t index, const int32_t v)
+{
+  mFUNCTION_SETUP();
+  mERROR_CHECK(mShader_Bind(shader));
+
+#if defined (mRENDERER_OPENGL)
+  glUniform1i(index, v);
+#else 
+  mRETURN_RESULT(mR_NotImplemented);
+#endif
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex_t index, const uint32_t v)
+{
+  mFUNCTION_SETUP();
+  mERROR_CHECK(mShader_Bind(shader));
+
+#if defined (mRENDERER_OPENGL)
+  glUniform1ui(index, v);
+#else 
+  mRETURN_RESULT(mR_NotImplemented);
+#endif
+  mRETURN_SUCCESS();
+}
+
 mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex_t index, const float_t v)
 {
   mFUNCTION_SETUP();
@@ -472,7 +485,7 @@ mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex
   mERROR_CHECK(mShader_Bind(shader));
 
 #if defined (mRENDERER_OPENGL)
-  glUniformMatrix4fv(index, 4, false, &v._11);
+  glUniformMatrix4fv(index, 1, false, &v._11);
 #else 
   mRETURN_RESULT(mR_NotImplemented);
 #endif
@@ -515,6 +528,34 @@ mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex
 
 #if defined (mRENDERER_OPENGL)
   glUniform1i(index, (GLint)v->textureUnit);
+#else 
+  mRETURN_RESULT(mR_NotImplemented);
+#endif
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex_t index, const int32_t *pV, const size_t count)
+{
+  mFUNCTION_SETUP();
+  mERROR_CHECK(mShader_Bind(shader));
+
+#if defined (mRENDERER_OPENGL)
+  glUniform1iv(index, (GLsizei)count, pV);
+#else 
+  mRETURN_RESULT(mR_NotImplemented);
+#endif
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex_t index, const uint32_t *pV, const size_t count)
+{
+  mFUNCTION_SETUP();
+  mERROR_CHECK(mShader_Bind(shader));
+
+#if defined (mRENDERER_OPENGL)
+  glUniform1uiv(index, (GLsizei)count, pV);
 #else 
   mRETURN_RESULT(mR_NotImplemented);
 #endif

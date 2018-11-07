@@ -69,15 +69,9 @@ T mTriLerp(const T a, const T b, const T c, const T d, const T e, const T f, con
 
 //////////////////////////////////////////////////////////////////////////
 
-template <typename T> mINLINE T mClamp(T value, const T &min, const T &max)
+template <typename T> mINLINE T constexpr mClamp(const T value, const T min, const T max)
 {
-  if (value > max)
-    value = max;
-
-  if (value < min)
-    value = min;
-
-  return value;
+  return value <= max ? (value >= min ? value : min) : max;
 };
 
 template <typename T>
@@ -184,7 +178,7 @@ struct mVec3t
   __host__ __device__ inline double Length() const { return mSqrt(x * x + y * y + z * z); };
   __host__ __device__ inline T LengthSquared() const { return x * x + y * y + z * z; };
 
-  __host__ __device__ inline mVec2t<T> ToVector2() const { return mVec2t<T>(x, y) };
+  __host__ __device__ inline mVec2t<T> ToVector2() const { return mVec2t<T>(x, y); };
 };
 
 template <typename T>
@@ -243,8 +237,8 @@ struct mVec4t
   __host__ __device__ inline double Length() const { return mSqrt(x * x + y * y + z * z + w * w); };
   __host__ __device__ inline T LengthSquared() const { return x * x + y * y + z * z + w * w; };
 
-  __host__ __device__ inline mVec2t<T> ToVector2() const { return mVec2t<T>(x, y) };
-  __host__ __device__ inline mVec3t<T> ToVector3() const { return mVec3t<T>(x, y, z) };
+  __host__ __device__ inline mVec2t<T> ToVector2() const { return mVec2t<T>(x, y); };
+  __host__ __device__ inline mVec3t<T> ToVector3() const { return mVec3t<T>(x, y, z); };
 };
 
 template <typename T>
@@ -303,7 +297,7 @@ __host__ __device__ inline uint32_t mColor_HueToBgra(const float_t hue)
 }
 
 template<typename T, typename U>
-inline mVec2t<T> mBarycentricInterpolationFactors(const T &p, const T &q, const U &x)
+inline mVec2t<U> mBarycentricInterpolationFactors(const T &p, const T &q, const U &x)
 {
   const U wp = (x - q) / (q - p);
   return mVec2t<U>(wp, 1 - wp);

@@ -1,6 +1,17 @@
 #include "mediaLib.h"
 #include "mFastMath.h"
 
+mVector::mVector() :
+  x(0),
+  y(0),
+  z(0),
+  w(1)
+{ }
+
+mVector::mVector(const mVector &a) :
+  v(a.v)
+{ }
+
 mVector::mVector(const float_t s)
 {
   const DirectX::XMFLOAT4 f(s, s, s, s);
@@ -27,9 +38,9 @@ mVector::mVector(const float_t x, const float_t y, const float_t z, const float_
   v = DirectX::XMLoadFloat4(&f);
 }
 
-mVector::mVector(const mVec2f & v) : mVector(v.x, v.y) { }
-mVector::mVector(const mVec3f & v) : mVector(v.x, v.y, v.z) { }
-mVector::mVector(const mVec4f & v) : mVector(v.x, v.y, v.z, v.w) { }
+mVector::mVector(const mVec2f &v) : mVector(v.x, v.y) { }
+mVector::mVector(const mVec3f &v) : mVector(v.x, v.y, v.z) { }
+mVector::mVector(const mVec4f &v) : mVector(v.x, v.y, v.z, v.w) { }
 
 mVector::mVector(DirectX::XMVECTOR _v) : v(_v) { }
 

@@ -43,7 +43,7 @@ mSBEMatrixTransform::operator mMatrix() const
   return matrix;
 }
 
-mSBETextureFlip::mSBETextureFlip(const bool flipX, const bool flipY) : textureFlip(flipX ? 0.0f : 1.0f, flipY ? 0.0f : 1.0f)
+mSBETextureFlip::mSBETextureFlip(const bool flipX, const bool flipY) : textureFlip(flipX ? 1.0f : 0.0f, flipY ? 1.0f : 0.0f)
 { }
 
 mSBETextureFlip::operator mVec2f() const

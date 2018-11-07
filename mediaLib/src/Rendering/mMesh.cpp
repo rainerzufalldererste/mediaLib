@@ -110,8 +110,6 @@ mFUNCTION(mMesh_Create, OUT mPtr<mMesh> *pMesh, IN mAllocator *pAllocator, mPtr<
   glBindBuffer(GL_ARRAY_BUFFER, (*pMesh)->vbo);
   glBufferData(GL_ARRAY_BUFFER, data->writeBytes, data->pData, GL_STATIC_DRAW);
 
-  GLuint index = 0;
-
   for (size_t i = 0; i < attributeCount; ++i)
   {
     mMeshAttribute attrInfo;
@@ -120,8 +118,7 @@ mFUNCTION(mMesh_Create, OUT mPtr<mMesh> *pMesh, IN mAllocator *pAllocator, mPtr<
     if (attrInfo.dataEntrySize > 0)
     {
       glEnableVertexAttribArray((GLuint)attrInfo.attributeIndex);
-      glVertexAttribPointer((GLuint)index, (GLint)(attrInfo.dataEntrySize / attrInfo.dataEntrySubComponentSize), attrInfo.dataType, GL_FALSE, (GLsizei)(*pMesh)->dataSize, (const void *)attrInfo.offset);
-      ++index;
+      glVertexAttribPointer((GLuint)attrInfo.attributeIndex, (GLint)(attrInfo.dataEntrySize / attrInfo.dataEntrySubComponentSize), attrInfo.dataType, GL_FALSE, (GLsizei)(*pMesh)->dataSize, (const void *)attrInfo.offset);
     }
 
     mGL_DEBUG_ERROR_CHECK();
@@ -183,8 +180,6 @@ mFUNCTION(mMesh_Create, OUT mPtr<mMesh> *pMesh, IN mAllocator *pAllocator, mPtr<
   glBindBuffer(GL_ARRAY_BUFFER, (*pMesh)->vbo);
   glBufferData(GL_ARRAY_BUFFER, data->writeBytes, data->pData, GL_STATIC_DRAW);
 
-  GLuint index = 0;
-
   for (size_t i = 0; i < attributeCount; ++i)
   {
     mMeshAttribute info;
@@ -193,8 +188,7 @@ mFUNCTION(mMesh_Create, OUT mPtr<mMesh> *pMesh, IN mAllocator *pAllocator, mPtr<
     if (info.dataEntrySize > 0)
     {
       glEnableVertexAttribArray((GLuint)info.attributeIndex);
-      glVertexAttribPointer((GLuint)index, (GLint)(info.dataEntrySize / info.dataEntrySubComponentSize), info.dataType, GL_FALSE, (GLsizei)(*pMesh)->dataSize, (const void *)info.offset);
-      ++index;
+      glVertexAttribPointer((GLuint)info.attributeIndex, (GLint)(info.dataEntrySize / info.dataEntrySubComponentSize), info.dataType, GL_FALSE, (GLsizei)(*pMesh)->dataSize, (const void *)info.offset);
     }
 
     mGL_DEBUG_ERROR_CHECK();
@@ -284,7 +278,7 @@ mFUNCTION(mMesh_Upload, mPtr<mMesh> &data)
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mMesh_GetUploadState, mPtr<mMesh>& data, OUT mRenderParams_UploadState * pUploadState)
+mFUNCTION(mMesh_GetUploadState, mPtr<mMesh> &data, OUT mRenderParams_UploadState *pUploadState)
 {
   mFUNCTION_SETUP();
 
@@ -295,7 +289,7 @@ mFUNCTION(mMesh_GetUploadState, mPtr<mMesh>& data, OUT mRenderParams_UploadState
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mMesh_Render, mPtr<mMesh>& data)
+mFUNCTION(mMesh_Render, mPtr<mMesh> &data)
 {
   mFUNCTION_SETUP();
 
@@ -317,7 +311,7 @@ mFUNCTION(mMesh_Render, mPtr<mMesh>& data)
     mERROR_CHECK(mShader_SetUniform(*data->shader, pTexture->key.c_str(), *pTexture->value));
   }
 
-  mERROR_CHECK(mShader_Bind(*data->shader.GetPointer()));
+  mERROR_CHECK(mShader_Bind(*data->shader));
 
   mGL_DEBUG_ERROR_CHECK();
 
@@ -327,8 +321,6 @@ mFUNCTION(mMesh_Render, mPtr<mMesh>& data)
   size_t informationCount;
   mERROR_CHECK(mQueue_GetCount(data->information, &informationCount));
 
-  GLuint index = 0;
-
   for (size_t i = 0; i < informationCount; ++i)
   {
     mMeshAttribute info;
@@ -337,8 +329,7 @@ mFUNCTION(mMesh_Render, mPtr<mMesh>& data)
     if (info.dataEntrySize > 0)
     {
       glEnableVertexAttribArray((GLuint)info.attributeIndex);
-      glVertexAttribPointer((GLuint)index, (GLint)(info.dataEntrySize / info.dataEntrySubComponentSize), info.dataType, GL_FALSE, (GLsizei)data->dataSize, (const void *)info.offset);
-      ++index;
+      glVertexAttribPointer((GLuint)info.attributeIndex, (GLint)(info.dataEntrySize / info.dataEntrySubComponentSize), info.dataType, GL_FALSE, (GLsizei)data->dataSize, (const void *)info.offset);
     }
 
     mGL_DEBUG_ERROR_CHECK();
@@ -400,7 +391,7 @@ mFUNCTION(mMesh_Render, mPtr<mMesh>& data)
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mMesh_Render, mPtr<mMesh>& data, mMatrix & matrix)
+mFUNCTION(mMesh_Render, mPtr<mMesh> &data, mMatrix &matrix)
 {
   mFUNCTION_SETUP();
 

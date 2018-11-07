@@ -9,6 +9,38 @@ template <size_t TCount>
 mchar_t mToChar(const char c[TCount]);
 mchar_t mToChar(const char *c, const size_t size);
 
+struct mIteratedString
+{
+  char *character;
+  mchar_t codePoint;
+  size_t characterSize;
+  size_t index;
+  size_t offset;
+
+  mIteratedString(char *character, const mchar_t codePoint, const size_t characterSize, const size_t index, const size_t offset);
+};
+
+struct mUtf8StringIterator
+{
+  char *string;
+  size_t bytes;
+  size_t position = 0;
+  size_t charCount = 0;
+  mchar_t codePoint = 0;
+  ptrdiff_t characterSize = 0;
+
+  mUtf8StringIterator(char *string);
+  mUtf8StringIterator(char *string, size_t bytes);
+
+  mUtf8StringIterator& begin();
+  mUtf8StringIterator end();
+
+  bool operator!=(const mUtf8StringIterator &b);
+  mUtf8StringIterator& operator++();
+
+  mIteratedString operator*();
+};
+
 struct mString
 {
   char *text;
@@ -54,6 +86,9 @@ struct mString
   explicit operator std::string() const;
   explicit operator std::wstring() const;
 
+  mUtf8StringIterator begin() const;
+  mUtf8StringIterator end() const;
+
   const char * c_str() const;
 };
 
@@ -61,16 +96,13 @@ template <size_t TCount>
 mFUNCTION(mString_Create, OUT mString *pString, const char text[TCount], IN OPTIONAL mAllocator *pAllocator = nullptr);
 
 mFUNCTION(mString_Create, OUT mString *pString, const char *text, IN OPTIONAL mAllocator *pAllocator = nullptr);
-
 mFUNCTION(mString_Create, OUT mString *pString, const char *text, const size_t size, IN OPTIONAL mAllocator *pAllocator = nullptr);
 
 template <size_t TCount>
 mFUNCTION(mString_Create, OUT mString *pString, const wchar_t text[TCount], IN OPTIONAL mAllocator *pAllocator = nullptr);
 
 mFUNCTION(mString_Create, OUT mString *pString, const wchar_t *text, IN OPTIONAL mAllocator *pAllocator = nullptr);
-
 mFUNCTION(mString_Create, OUT mString *pString, const wchar_t *text, const size_t size, IN OPTIONAL mAllocator *pAllocator = nullptr);
-
 mFUNCTION(mString_Create, OUT mString *pString, const mString &from, IN OPTIONAL mAllocator *pAllocator = nullptr);
 
 template <typename ...Args>
@@ -81,13 +113,11 @@ mFUNCTION(mString_Destroy, IN_OUT mString *pString);
 mFUNCTION(mString_Reserve, mString &string, const size_t size);
 
 mFUNCTION(mString_GetByteSize, const mString &string, OUT size_t *pSize);
-
 mFUNCTION(mString_GetCount, const mString &string, OUT size_t *pLength);
 
 mFUNCTION(mString_ToWideString, const mString &string, std::wstring *pWideString);
 
 mFUNCTION(mString_Substring, const mString &text, OUT mString *pSubstring, const size_t startCharacter);
-
 mFUNCTION(mString_Substring, const mString &text, OUT mString *pSubstring, const size_t startCharacter, const size_t length);
 
 mFUNCTION(mString_Append, mString &text, const mString &appendedText);
@@ -98,7 +128,6 @@ mFUNCTION(mString_AppendBool, mString &text, const bool value);
 mFUNCTION(mString_AppendDouble, mString &text, const double_t value);
 
 mFUNCTION(mString_ToDirectoryPath, OUT mString *pString, const mString &text);
-
 mFUNCTION(mString_ToFilePath, OUT mString *pString, const mString &text);
 
 mFUNCTION(mString_Equals, const mString &stringA, const mString &stringB, bool *pAreEqual);
@@ -188,6 +217,9 @@ struct mInplaceString
 
   template <size_t TOtherCount>
   bool operator != (const mInplaceString<TOtherCount> &other) const;
+
+  mUtf8StringIterator begin() const;
+  mUtf8StringIterator end() const;
 };
 
 template <size_t TCount>
@@ -271,6 +303,18 @@ inline const char * mInplaceString<TCount>::c_str() const
 }
 
 template<size_t TCount>
+inline mUtf8StringIterator mInplaceString<TCount>::begin() const
+{
+  return mUtf8StringIterator((char *)text, bytes);
+}
+
+template<size_t TCount>
+inline mUtf8StringIterator mInplaceString<TCount>::end() const
+{
+  return mUtf8StringIterator(nullptr, 0);
+}
+
+template<size_t TCount>
 template<size_t TOtherCount>
 inline bool mInplaceString<TCount>::operator==(const mInplaceString<TOtherCount> &other) const
 {
@@ -351,7 +395,7 @@ inline mFUNCTION(mInplaceString_Create, OUT mInplaceString<TCount> *pStackString
   mERROR_IF(pStackString == nullptr, mR_ArgumentNull);
   mERROR_IF(TCount < text.bytes, mR_ArgumentOutOfBounds);
 
-  pStackString->bytes = text.bytes + 1;
+  pStackString->bytes = text.bytes;
   pStackString->count = text.count;
   mERROR_CHECK(mMemcpy(pStackString->text, text.text, pStackString->bytes + 1));
 

@@ -45,35 +45,8 @@ inline mFUNCTION(mBinaryChunk_Write, mPtr<mBinaryChunk> &binaryChunk, T *pItem)
 
   mERROR_CHECK(mBinaryChunk_GrowBack(binaryChunk, sizeof(T)));
 
-  uint8_t *pData = &binaryChunk->pData[binaryChunk->writeBytes];
-  size_t writtenSize = 0;
-  uint8_t *pItemData = (uint8_t *)pItem;
-
-#if defined(SSE2)
-  while (writtenSize + sizeof(__m128i) <= sizeof(T))
-  {
-    *((__m128i *)pData) = *(__m128i *)pItemData;
-    writtenSize += sizeof(__m128i);
-    pData += sizeof(__m128i);
-    pItemData += sizeof(__m128i);
-  }
-#else
-  while (writtenSize + sizeof(size_t) <= sizeof(T))
-  {
-    *((size_t *)pData) = *(size_t *)pItemData;
-    writtenSize += sizeof(size_t);
-    pData += sizeof(size_t);
-    pItemData += sizeof(size_t);
-  }
-#endif
-
-  while (writtenSize < sizeof(T))
-  {
-    *pData = *pItemData;
-    ++writtenSize;
-    ++pData;
-    ++pItemData;
-  }
+  T *pData = (T *)&(binaryChunk->pData[binaryChunk->writeBytes]);
+  *pData = *pItem;
 
   binaryChunk->writeBytes += sizeof(T);
 
@@ -85,7 +58,14 @@ inline mFUNCTION(mBinaryChunk_WriteData, mPtr<mBinaryChunk> &binaryChunk, T item
 {
   mFUNCTION_SETUP();
 
-  mERROR_CHECK(mBinaryChunk_Write<T>(binaryChunk, &item));
+  mERROR_IF(binaryChunk == nullptr, mR_ArgumentNull);
+
+  mERROR_CHECK(mBinaryChunk_GrowBack(binaryChunk, sizeof(T)));
+
+  T *pData = (T *)&(binaryChunk->pData[binaryChunk->writeBytes]);
+  *pData = item;
+
+  binaryChunk->writeBytes += sizeof(T);
 
   mRETURN_SUCCESS();
 }
@@ -98,35 +78,8 @@ inline mFUNCTION(mBinaryChunk_Read, mPtr<mBinaryChunk>& binaryChunk, T *pItem)
   mERROR_IF(binaryChunk == nullptr || pItem == nullptr, mR_ArgumentNull);
   mERROR_IF(binaryChunk->readBytes + sizeof(T) > binaryChunk->writeBytes, mR_IndexOutOfBounds);
 
-  uint8_t *pData = &binaryChunk->pData[binaryChunk->writeBytes];
-  size_t writtenSize = 0;
-  uint8_t *pItemData = (uint8_t *)pItem;
-
-#if defined(SSE2)
-  while (writtenSize + sizeof(__m128i) <= sizeof(T))
-  {
-    *(__m128i *)pItemData = *((__m128i *)pData);
-    writtenSize += sizeof(__m128i);
-    pData += sizeof(__m128i);
-    pItemData += sizeof(__m128i);
-  }
-#else
-  while (writtenSize + sizeof(size_t) <= sizeof(T))
-  {
-    *(size_t *)pItemData = *((size_t *)pData);
-    writtenSize += sizeof(size_t);
-    pData += sizeof(size_t);
-    pItemData += sizeof(size_t);
-  }
-#endif
-
-  while (writtenSize < sizeof(T))
-  {
-    *pItemData = *pData;
-    ++writtenSize;
-    ++pData;
-    ++pItemData;
-  }
+  T *pData = (T *)&(binaryChunk->pData[binaryChunk->readBytes]);
+  *pItem = *pData;
 
   binaryChunk->readBytes += sizeof(T);
 

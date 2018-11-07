@@ -2,6 +2,8 @@
 
 #include <vector>
 
+mTEST_STATIC_ASSERT(true);
+
 mTEST(TestDestructible, Destruct)
 {
   mTEST_ALLOCATOR_SETUP();

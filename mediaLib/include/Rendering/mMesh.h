@@ -330,7 +330,14 @@ struct mMeshAttribute
 #if defined(mRENDERER_OPENGL)
   GLenum dataType;
 
-  inline mMeshAttribute(const size_t attributeIndex, const size_t dataEntrySize, const size_t dataEntrySubComponentSize, const size_t count, const size_t offset, const GLenum dataType) : attributeIndex(attributeIndex), dataEntrySize(dataEntrySize), dataEntrySubComponentSize(dataEntrySubComponentSize), count(count), offset(offset), dataType(dataType) {}
+  inline mMeshAttribute(const size_t attributeIndex, const size_t dataEntrySize, const size_t dataEntrySubComponentSize, const size_t count, const size_t offset, const GLenum dataType) :
+    attributeIndex(attributeIndex),
+    dataEntrySize(dataEntrySize),
+    dataEntrySubComponentSize(dataEntrySubComponentSize),
+    count(count),
+    offset(offset),
+    dataType(dataType)
+  {}
 #endif
 
   inline mMeshAttribute() = default;
@@ -609,8 +616,6 @@ inline mFUNCTION(mMeshFactory_CreateMesh, mPtr<mMeshFactory<Args...>> &factory, 
   glBindBuffer(GL_ARRAY_BUFFER, (*pMesh)->vbo);
   glBufferData(GL_ARRAY_BUFFER, factory->values->writeBytes, factory->values->pData, GL_STATIC_DRAW);
 
-  GLuint index = 0;
-
   for (size_t i = 0; i < attributeInformationCount; ++i)
   {
     mMeshAttribute info;
@@ -619,8 +624,7 @@ inline mFUNCTION(mMeshFactory_CreateMesh, mPtr<mMeshFactory<Args...>> &factory, 
     if (info.dataEntrySize > 0)
     {
       glEnableVertexAttribArray((GLuint)info.attributeIndex);
-      glVertexAttribPointer((GLuint)index, (GLint)(info.dataEntrySize / info.dataEntrySubComponentSize), info.dataType, GL_FALSE, (GLsizei)(*pMesh)->dataSize, (const void *)info.offset);
-      ++index;
+      glVertexAttribPointer((GLuint)info.attributeIndex, (GLint)(info.dataEntrySize / info.dataEntrySubComponentSize), info.dataType, GL_FALSE, (GLsizei)(*pMesh)->dataSize, (const void *)info.offset);
     }
 
     mGL_DEBUG_ERROR_CHECK();
@@ -696,7 +700,7 @@ mFUNCTION(mMeshFactory_AppendData, mPtr<mMeshFactory<Args...>> &factory, Args&&.
 }
 
 template<typename ...Args>
-inline mFUNCTION(mMeshFactory_GrowBack, mPtr<mMeshFactory<Args...>>& factory, const size_t items)
+inline mFUNCTION(mMeshFactory_GrowBack, mPtr<mMeshFactory<Args...>> &factory, const size_t items)
 {
   mFUNCTION_SETUP();
 
@@ -706,7 +710,7 @@ inline mFUNCTION(mMeshFactory_GrowBack, mPtr<mMeshFactory<Args...>>& factory, co
 }
 
 template<typename ...Args>
-inline mFUNCTION(mMeshFactory_Clear, mPtr<mMeshFactory<Args...>>& factory)
+inline mFUNCTION(mMeshFactory_Clear, mPtr<mMeshFactory<Args...>> &factory)
 {
   mFUNCTION_SETUP();
 
@@ -740,7 +744,7 @@ inline mFUNCTION(mMeshAttributeContainer_Create, OUT mPtr<mMeshAttributeContaine
 }
 
 template<typename T>
-inline mFUNCTION(mMeshAttributeContainer_Create, OUT mPtr<mMeshAttributeContainer> *pMeshAttributeContainer, IN mAllocator *pAllocator, char attributeName[64], mPtr<mQueue<T>>& items)
+inline mFUNCTION(mMeshAttributeContainer_Create, OUT mPtr<mMeshAttributeContainer> *pMeshAttributeContainer, IN mAllocator *pAllocator, char attributeName[64], mPtr<mQueue<T>> &items)
 {
   mFUNCTION_SETUP();
 

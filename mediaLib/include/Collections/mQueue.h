@@ -4,11 +4,50 @@
 #include "mediaLib.h"
 
 template <typename T>
+struct mQueueIterator
+{
+  ptrdiff_t direction;
+  T *pCurrent;
+  T *pLineEnd;
+  T *pLineStart;
+  T *pLastPos;
+  size_t count;
+  size_t index;
+
+  mQueueIterator(const ptrdiff_t direction, T *pFirst, T *pLineEnd, T *pLineStart, const size_t count);
+  T& operator *();
+  const T& operator *() const;
+  bool operator != (const mQueueIterator<T> &iterator) const;
+  mQueueIterator<T> &operator++();
+};
+
+template <typename T>
 struct mQueue
 {
   mAllocator *pAllocator;
   T *pData;
   size_t startIndex, size, count;
+
+  mQueueIterator<T> begin() const 
+  { 
+    return mQueueIterator<T>(1, pData + startIndex, pData + size - 1, pData, count); 
+  }
+
+  mQueueIterator<T> end() const 
+  { 
+    if (size > 0) 
+      return mQueueIterator<T>(-1, pData + ((startIndex + count - 1) % size), pData + size - 1, pData, count);
+    else 
+      return begin();
+  };
+
+  struct mQueueReverseIterator
+  {
+    mQueue<T> *pQueue;
+
+    mQueueIterator<T> begin() const { return pQueue->end(); }
+    mQueueIterator<T> end() const { return pQueue->begin(); }
+  } IterateReverse() { return {this}; };
 };
 
 template <typename T>
@@ -104,7 +143,7 @@ inline mFUNCTION(mQueue_Destroy, IN_OUT mPtr<mQueue<T>> *pQueue)
 {
   mFUNCTION_SETUP();
 
-  mERROR_IF(pQueue == nullptr || *pQueue == nullptr, mR_ArgumentNull);
+  mERROR_IF(pQueue == nullptr, mR_ArgumentNull);
   
   mERROR_CHECK(mSharedPointer_Destroy(pQueue));
 
@@ -499,6 +538,58 @@ inline mFUNCTION(mQueue_PopAt_Internal, mPtr<mQueue<T>> &queue, const size_t ind
   *pItem = std::move(queue->pData[queueIndex]);
 
   mRETURN_SUCCESS();
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+template<typename T>
+inline mQueueIterator<T>::mQueueIterator(const ptrdiff_t direction, T *pFirst, T *pLineEnd, T *pLineStart, const size_t count) :
+  direction(direction),
+  pCurrent(pFirst),
+  pLineEnd(pLineEnd),
+  pLineStart(pLineStart),
+  pLastPos(pCurrent),
+  count(count),
+  index(0)
+{ }
+
+template<typename T>
+inline T & mQueueIterator<T>::operator* ()
+{
+  return *pCurrent;
+}
+
+template<typename T>
+inline const T & mQueueIterator<T>::operator*() const
+{
+  return *pCurrent;
+}
+
+template<typename T>
+inline bool mQueueIterator<T>::operator!=(const mQueueIterator<T> &) const
+{
+  return index != count;
+}
+
+template<typename T>
+inline mQueueIterator<T> & mQueueIterator<T>::operator++()
+{
+  pLastPos = pCurrent;
+  pCurrent += direction;
+  index++;
+
+  if (direction > 0)
+  {
+    if (pCurrent > pLineEnd)
+      pCurrent = pLineStart;
+  }
+  else
+  {
+    if (pCurrent < pLineStart)
+      pCurrent = pLineEnd;
+  }
+
+  return *this;
 }
 
 #endif // mQueue_h__

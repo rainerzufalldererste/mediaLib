@@ -248,40 +248,7 @@ mString mString::operator+=(const mString &s)
 
   mResult result = mR_Success;
 
-  if (bytes > 0 && s.bytes > 0)
-  {
-    if (capacity < bytes + s.bytes - 1)
-    {
-      if (capacity * 2 >= bytes + s.bytes - 1)
-      {
-        const size_t newCapacity = capacity *= 2;
-
-        mERROR_CHECK_GOTO(mAllocator_Reallocate(pAllocator, &text, newCapacity), result, epilogue);
-        capacity = newCapacity;
-      }
-      else
-      {
-        const size_t newCapacity = bytes + s.bytes - 1;
-
-        mERROR_CHECK_GOTO(mAllocator_Reallocate(pAllocator, &text, newCapacity), result, epilogue);
-        capacity = newCapacity;
-      }
-    }
-  }
-  else
-  {
-    if (s.bytes == 0)
-      return *this;
-    else
-      return *this = s;
-  }
-
-  mERROR_CHECK_GOTO(mAllocator_Copy(pAllocator, text + bytes - 1, s.text, s.bytes), result, epilogue);
-
-  count += s.count - 1;
-  bytes += s.bytes - 1;
-
-  mERROR_CHECK_GOTO(mAllocator_Copy(pAllocator, text + bytes, s.text, s.bytes), result, epilogue);
+  mERROR_CHECK_GOTO(mString_Append(*this, s), result, epilogue);
 
   return *this;
 
@@ -326,6 +293,16 @@ epilogue:
   return std::wstring();
 }
 
+mUtf8StringIterator mString::begin() const
+{
+  return mUtf8StringIterator(text, bytes);
+}
+
+mUtf8StringIterator mString::end() const
+{
+  return mUtf8StringIterator(nullptr, 0);
+}
+
 const char *mString::c_str() const
 {
   return text;
@@ -342,11 +319,14 @@ mFUNCTION(mString_Create, OUT mString *pString, const char *text, IN OPTIONAL mA
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mString_Create, OUT mString *pString, const char *text, const size_t size, IN OPTIONAL mAllocator *pAllocator)
+mFUNCTION(mString_Create, OUT mString *pString, const char *text, size_t size, IN OPTIONAL mAllocator *pAllocator)
 {
   mFUNCTION_SETUP();
 
   mERROR_IF(text == nullptr, mR_ArgumentNull);
+
+  mERROR_CHECK(mStringLength(text, size, &size));
+  size++;
 
   if (pString->pAllocator == pAllocator)
   {
@@ -460,6 +440,18 @@ mFUNCTION(mString_Create, OUT mString *pString, const mString &from, IN OPTIONAL
   mFUNCTION_SETUP();
 
   mERROR_IF(pString == nullptr, mR_ArgumentNull);
+
+  if (from.bytes <= 1)
+  {
+    if (pString->bytes > 1)
+    {
+      pString->bytes = 0;
+      pString->count = 0;
+      pString->text[0] = '\0';
+    }
+
+    mRETURN_SUCCESS();
+  }
 
   if (pString->pAllocator == pAllocator)
   {
@@ -1003,3 +995,57 @@ bool mInplaceString_StringsAreEqual_Internal(const char *textA, const char *text
 
   return true;
 }
+
+//////////////////////////////////////////////////////////////////////////
+
+mUtf8StringIterator::mUtf8StringIterator(char *string) :
+  mUtf8StringIterator(string, strlen(string) + 1)
+{ }
+
+mUtf8StringIterator::mUtf8StringIterator(char *string, size_t bytes) :
+  string(string),
+  bytes(bytes)
+{ }
+
+mUtf8StringIterator & mUtf8StringIterator::begin()
+{
+  return *this;
+}
+
+mUtf8StringIterator mUtf8StringIterator::end()
+{
+  return *this;
+}
+
+bool mUtf8StringIterator::operator!=(const mUtf8StringIterator &)
+{
+  if (position + 1 >= bytes)
+    return false;
+
+  characterSize = utf8proc_iterate((uint8_t *)string + position, bytes - position, &codePoint);
+  position += (size_t)characterSize;
+  charCount++;
+
+  if (characterSize == 0 || codePoint == 0)
+    return false;
+
+  return true;
+}
+
+mUtf8StringIterator & mUtf8StringIterator::operator++()
+{
+  return *this;
+}
+
+mIteratedString mUtf8StringIterator::operator*()
+{
+  return mIteratedString(string + position - characterSize, codePoint, characterSize, charCount - 1, position - characterSize);
+}
+
+mIteratedString::mIteratedString(char *character, const mchar_t codePoint, const size_t characterSize, const size_t index, const size_t offset) :
+  character(character),
+  codePoint(codePoint),
+  characterSize(characterSize),
+  index(index),
+  offset(offset)
+{ }
