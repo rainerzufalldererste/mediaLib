@@ -64,7 +64,7 @@ mFUNCTION(mHardwareWindow_GetSize, mPtr<mHardwareWindow> &window, OUT mVec2s *pS
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mHardwareWindow_Swap, mPtr<mHardwareWindow>& window)
+mFUNCTION(mHardwareWindow_Swap, mPtr<mHardwareWindow> &window)
 {
   mFUNCTION_SETUP();
 
@@ -150,7 +150,7 @@ mFUNCTION(mHardwareWindow_Swap, mPtr<mHardwareWindow>& window)
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mHardwareWindow_SetSize, mPtr<mHardwareWindow>& window, const mVec2s & size)
+mFUNCTION(mHardwareWindow_SetSize, mPtr<mHardwareWindow> &window, const mVec2s & size)
 {
   mFUNCTION_SETUP();
 
@@ -200,7 +200,18 @@ mFUNCTION(mHardwareWindow_GetRenderContextId, mPtr<mHardwareWindow> &window, OUT
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mHardwareWindow_AddOnResizeEvent, mPtr<mHardwareWindow>& window, const std::function<mResult(const mVec2s&)> &callback)
+mFUNCTION(mHardwareWindow_SetFullscreenMode, mPtr<mHardwareWindow> &window, const mHardwareWindow_DisplayMode displayMode)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(window == nullptr, mR_ArgumentNull);
+
+  mERROR_IF(0 != SDL_SetWindowFullscreen(window->pWindow, displayMode), mR_NotSupported);
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mHardwareWindow_AddOnResizeEvent, mPtr<mHardwareWindow> &window, const std::function<mResult(const mVec2s&)> &callback)
 {
   mFUNCTION_SETUP();
 
@@ -213,7 +224,7 @@ mFUNCTION(mHardwareWindow_AddOnResizeEvent, mPtr<mHardwareWindow>& window, const
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mHardwareWindow_AddOnCloseEvent, mPtr<mHardwareWindow>& window, const std::function<mResult(void)> &callback)
+mFUNCTION(mHardwareWindow_AddOnCloseEvent, mPtr<mHardwareWindow> &window, const std::function<mResult(void)> &callback)
 {
   mFUNCTION_SETUP();
 
@@ -226,7 +237,7 @@ mFUNCTION(mHardwareWindow_AddOnCloseEvent, mPtr<mHardwareWindow>& window, const 
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mHardwareWindow_AddOnAnyEvent, mPtr<mHardwareWindow>& window, const std::function<mResult(IN SDL_Event*)> &callback)
+mFUNCTION(mHardwareWindow_AddOnAnyEvent, mPtr<mHardwareWindow> &window, const std::function<mResult(IN SDL_Event*)> &callback)
 {
   mFUNCTION_SETUP();
 

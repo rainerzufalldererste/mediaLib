@@ -6,19 +6,19 @@
 
 enum mFile_Encoding
 {
-  mF_E_ASCII,
+  mF_E_UTF8,
 };
 
 mFUNCTION(mFile_Exists, const mString &filename, OUT bool *pExists);
 mFUNCTION(mFile_Exists, const std::wstring &filename, OUT bool *pExists);
 
 mFUNCTION(mFile_ReadAllBytes, const std::wstring &filename, IN OPTIONAL mAllocator *pAllocator, OUT mArray<uint8_t> *pBytes);
-mFUNCTION(mFile_ReadAllText, const std::wstring &filename, IN OPTIONAL mAllocator *pAllocator, OUT std::string *pText, const mFile_Encoding encoding = mF_E_ASCII);
-mFUNCTION(mFile_ReadAllText, const mString &filename, IN OPTIONAL mAllocator *pAllocator, OUT mString *pText, const mFile_Encoding encoding = mF_E_ASCII);
+mFUNCTION(mFile_ReadAllText, const std::wstring &filename, IN OPTIONAL mAllocator *pAllocator, OUT std::string *pText, const mFile_Encoding encoding = mF_E_UTF8);
+mFUNCTION(mFile_ReadAllText, const mString &filename, IN OPTIONAL mAllocator *pAllocator, OUT mString *pText, const mFile_Encoding encoding = mF_E_UTF8);
 
 mFUNCTION(mFile_WriteAllBytes, const std::wstring &filename, mArray<uint8_t> &bytes);
-mFUNCTION(mFile_WriteAllText, const std::wstring &filename, const std::string &text, const mFile_Encoding encoding = mF_E_ASCII);
-mFUNCTION(mFile_WriteAllText, const mString &filename, const mString &text, const mFile_Encoding encoding = mF_E_ASCII);
+mFUNCTION(mFile_WriteAllText, const std::wstring &filename, const std::string &text, const mFile_Encoding encoding = mF_E_UTF8);
+mFUNCTION(mFile_WriteAllText, const mString &filename, const mString &text, const mFile_Encoding encoding = mF_E_UTF8);
 
 template <typename T>
 mFUNCTION(mFile_ReadAllItems, const std::wstring &filename, IN OPTIONAL mAllocator *pAllocator, OUT mArray<T> *pData);

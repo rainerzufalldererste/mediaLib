@@ -47,8 +47,14 @@ project(ProjectName)
   debugdir "bin"
   
 filter {}
-configuration {}
 
+if _OPTIONS["buildtype"] == "GIT_BUILD" then
+  defines { "GIT_BUILD" }
+else
+  defines { "DEV_BUILD" }
+end
+
+configuration {}
 
 warnings "Extra"
 
