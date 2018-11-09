@@ -124,14 +124,14 @@ mFUNCTION(mShader_Create, OUT mShader *pShader, const mString &vertexShader, con
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mShader_CreateFromFile, OUT mShader *pShader, const mString & filename)
+mFUNCTION(mShader_CreateFromFile, OUT mShader *pShader, const mString &filename)
 {
   mFUNCTION_SETUP();
 
   mERROR_IF(pShader == nullptr, mR_ArgumentNull);
 
 #if defined(mRENDERER_OPENGL)
-  mERROR_CHECK(mShader_CreateFromFile(pShader, filename + L".vert", filename + L".frag", nullptr));
+  mERROR_CHECK(mShader_CreateFromFile(pShader, filename + ".vert", filename + ".frag", nullptr));
 #else
   mRETURN_RESULT(mR_NotImplemented);
 #endif
@@ -139,7 +139,7 @@ mFUNCTION(mShader_CreateFromFile, OUT mShader *pShader, const mString & filename
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mShader_CreateFromFile, OUT mShader *pShader, const mString & vertexShaderPath, const mString & fragmentShaderPath, IN OPTIONAL const char *fragDataLocation /* = nullptr */)
+mFUNCTION(mShader_CreateFromFile, OUT mShader *pShader, const mString &vertexShaderPath, const mString &fragmentShaderPath, IN OPTIONAL const char *fragDataLocation /* = nullptr */)
 {
   mFUNCTION_SETUP();
 

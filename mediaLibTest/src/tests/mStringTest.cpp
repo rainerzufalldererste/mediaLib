@@ -106,7 +106,7 @@ mTEST(mString, TestCreateFromWchar)
 
   size_t count;
   mTEST_ASSERT_SUCCESS(mString_GetCount(string, &count));
-  mTEST_ASSERT_EQUAL(count, 4 + 1 + 1);
+  mTEST_ASSERT_EQUAL(count, 4 + 2 + 1);
 
   mTEST_ALLOCATOR_ZERO_CHECK();
 }
@@ -710,6 +710,40 @@ mTEST(mString, TestCreateFromTooBigInvalidUTF8)
 
   mTEST_ASSERT_EQUAL(string.bytes, 6);
   mTEST_ASSERT_EQUAL(string.count, 3);
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}
+
+mTEST(mString, TestAppendWCharT)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  mString string;
+  mTEST_ASSERT_SUCCESS(mString_Create(&string, "testString, blah, blah", pAllocator));
+
+  string = string + L"horrible WCharT String";
+
+  const char compString[] = "testString, blah, blah" "horrible WCharT String";
+
+  mTEST_ASSERT_EQUAL(string, mString(compString));
+  mTEST_ASSERT_EQUAL(strlen(string.c_str()), strlen(compString));
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}
+
+mTEST(mString, TestSetToWCharT)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  mString string;
+  mTEST_ASSERT_SUCCESS(mString_Create(&string, "this is a very long testString to allocate a sufficient amount of memory for the wchar_t string", pAllocator));
+
+  mTEST_ASSERT_SUCCESS(mString_Create(&string, L"horrible WCharT String"));
+
+  const char compString[] = "horrible WCharT String";
+
+  mTEST_ASSERT_EQUAL(string, mString(compString));
+  mTEST_ASSERT_EQUAL(strlen(string.c_str()), strlen(compString));
 
   mTEST_ALLOCATOR_ZERO_CHECK();
 }

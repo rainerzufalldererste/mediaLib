@@ -68,7 +68,7 @@ epilogue:
 mString::mString(const char *text, IN OPTIONAL mAllocator *pAllocator) : mString(text, strlen(text) + 1, pAllocator)
 { }
 
-mString::mString(const wchar_t *text, const size_t size, IN OPTIONAL mAllocator *pAllocator /* = nullptr */)
+mString::mString(const wchar_t *text, const size_t size, IN OPTIONAL mAllocator *pAllocator /* = nullptr */) : mString()
 {
   if (mFAILED(mString_Create(this, text, size, pAllocator)))
   {
@@ -77,7 +77,7 @@ mString::mString(const wchar_t *text, const size_t size, IN OPTIONAL mAllocator 
   }
 }
 
-mString::mString(const wchar_t *text, IN OPTIONAL mAllocator *pAllocator /* = nullptr */) : mString(text, wcslen(text), pAllocator)
+mString::mString(const wchar_t *text, IN OPTIONAL mAllocator *pAllocator /* = nullptr */) : mString(text, wcslen(text) + 1, pAllocator)
 { }
 
 mString::~mString()
@@ -375,7 +375,7 @@ mFUNCTION(mString_Create, OUT mString *pString, const wchar_t *text, IN OPTIONAL
 {
   mFUNCTION_SETUP();
 
-  mERROR_CHECK(mString_Create(pString, text, wcslen(text), pAllocator));
+  mERROR_CHECK(mString_Create(pString, text, wcslen(text) + 1, pAllocator));
 
   mRETURN_SUCCESS();
 }
