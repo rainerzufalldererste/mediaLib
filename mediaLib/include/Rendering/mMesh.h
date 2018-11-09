@@ -661,7 +661,7 @@ inline mFUNCTION(mMeshFactory_Destroy_Internal, mMeshFactory<Args...> *pFactory)
 }
 
 template <typename ...Args, typename T>
-mFUNCTION(mMeshFactory_Append_Internal_Unpack, mPtr<mMeshFactory<Args...>> &factory, const size_t index, const size_t offset, T param)
+mFUNCTION(mMeshFactory_Append_Internal_Unpack, mPtr<mMeshFactory<Args...>> &factory, const size_t /*index*/, const size_t /*offset*/, T param)
 {
   mFUNCTION_SETUP();
 
@@ -670,8 +670,6 @@ mFUNCTION(mMeshFactory_Append_Internal_Unpack, mPtr<mMeshFactory<Args...>> &fact
   if (T::size == 0)
     mRETURN_SUCCESS();
 #pragma warning(pop)
-
-  mUnused(index, offset);
 
   mERROR_CHECK(mBinaryChunk_WriteData(factory->values, param));
 

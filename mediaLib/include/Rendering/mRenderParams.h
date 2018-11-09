@@ -107,16 +107,16 @@ enum mRenderParams_UploadState
 
 enum mRenderParams_VertexRenderMode
 {
-  mRP_VRM_Points,
-  mRP_VRM_LineList,
-  mRP_VRM_LineStrip,
-  mRP_VRM_LineLoop,
-  mRP_VRM_TriangleList,
-  mRP_VRM_TriangleStrip,
-  mRP_VRM_TriangleFan,
-  mRP_VRM_QuadList,
-  mRP_VRM_QuadStrip,
-  mRP_VRM_Polygon,
+  mRP_VRM_Points = GL_POINTS,
+  mRP_VRM_LineList = GL_LINES,
+  mRP_VRM_LineStrip = GL_LINE_STRIP,
+  mRP_VRM_LineLoop = GL_LINE_LOOP,
+  mRP_VRM_TriangleList = GL_TRIANGLES,
+  mRP_VRM_TriangleStrip = GL_TRIANGLE_STRIP,
+  mRP_VRM_TriangleFan = GL_TRIANGLE_FAN,
+  mRP_VRM_QuadList = GL_QUADS,
+  mRP_VRM_QuadStrip = GL_QUAD_STRIP,
+  mRP_VRM_Polygon = GL_POLYGON,
 };
 
 #endif // mRenderParams_h__
