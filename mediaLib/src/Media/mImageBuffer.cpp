@@ -22,27 +22,78 @@ mFUNCTION(mImageBuffer_Create, OUT mPtr<mImageBuffer> *pImageBuffer, IN OPTIONAL
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mImageBuffer_CreateFromFile, OUT mPtr<mImageBuffer> *pImageBuffer, IN OPTIONAL mAllocator *pAllocator, const mString &filename)
+mFUNCTION(mImageBuffer_CreateFromFile, OUT mPtr<mImageBuffer> *pImageBuffer, IN OPTIONAL mAllocator *pAllocator, const mString &filename, const mPixelFormat pixelFormat /* = mPF_R8G8B8A8 */)
 {
   mFUNCTION_SETUP();
 
   mERROR_IF(pImageBuffer == nullptr, mR_ArgumentNull);
   mERROR_CHECK(mImageBuffer_Create_Iternal(pImageBuffer, pAllocator));
 
+  int components = 4;
+  mPixelFormat readPixelFormat = mPF_R8G8B8A8;
+
+  switch (pixelFormat)
+  {
+  case mPF_B8G8R8:
+  case mPF_R8G8B8:
+    components = 3;
+    readPixelFormat = mPF_B8G8R8;
+    break;
+
+  case mPF_B8G8R8A8:
+  case mPF_R8G8B8A8:
+    components = 4;
+    readPixelFormat = mPF_R8G8B8A8;
+    break;
+
+  case mPF_YUV422:
+  case mPF_YUV420:
+    components = 3;
+    readPixelFormat = mPF_B8G8R8;
+    break;
+
+  case mPF_Monochrome8:
+  case mPF_Monochrome16:
+    components = 1;
+    readPixelFormat = mPF_Monochrome8;
+    break;
+
+  default:
+    mRETURN_RESULT(mR_OperationNotSupported);
+    break;
+  }
+
   int x, y, originalChannelCount;
-  stbi_uc *pResult = stbi_load(filename.c_str(), &x, &y, &originalChannelCount, 4);
+  stbi_uc *pResult = stbi_load(filename.c_str(), &x, &y, &originalChannelCount, components);
 
   if (pResult == nullptr)
     mRETURN_RESULT(mR_InternalError);
 
   mDEFER_CALL((void *)pResult, stbi_image_free);
 
-  mERROR_CHECK(mImageBuffer_AllocateBuffer(*pImageBuffer, mVec2s((size_t)x, (size_t)y), mPF_R8G8B8A8));
+  mERROR_CHECK(mImageBuffer_AllocateBuffer(*pImageBuffer, mVec2s((size_t)x, (size_t)y), pixelFormat));
 
   size_t imageBytes;
   mERROR_CHECK(mPixelFormat_GetSize((*pImageBuffer)->pixelFormat, (*pImageBuffer)->currentSize, &imageBytes));
 
-  mERROR_CHECK(mAllocator_Copy((*pImageBuffer)->pAllocator, (*pImageBuffer)->pPixels, (uint8_t *)pResult, imageBytes));
+  if (readPixelFormat != pixelFormat)
+  {
+    mPtr<mImageBuffer> tempImageBuffer;
+    mDEFER_CALL(&tempImageBuffer, mImageBuffer_Destroy);
+    mERROR_CHECK(mImageBuffer_Create(&tempImageBuffer, &mDefaultTempAllocator, mVec2s((size_t)x, (size_t)y), readPixelFormat));
+    
+    if (tempImageBuffer->pPixels != nullptr) // If someone would corrupt the implementation so that it would allocate an empty image on `mImageBuffer_Create`.
+      mERROR_CHECK(mAllocator_FreePtr(tempImageBuffer->pAllocator, &tempImageBuffer->pPixels));
+
+    tempImageBuffer->pAllocator = &mNullAllocator;
+    tempImageBuffer->pPixels = (uint8_t *)pResult;
+
+    mERROR_CHECK(mPixelFormat_TransformBuffer(tempImageBuffer, *pImageBuffer));
+  }
+  else
+  {
+    mERROR_CHECK(mAllocator_Copy((*pImageBuffer)->pAllocator, (*pImageBuffer)->pPixels, (uint8_t *)pResult, imageBytes));
+  }
 
   mRETURN_SUCCESS();
 }

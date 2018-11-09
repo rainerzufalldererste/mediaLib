@@ -66,6 +66,7 @@ mFUNCTION(mDefaultAllocator_Copy, IN_OUT uint8_t *pDestimation, IN const uint8_t
 
 extern mAllocator mDefaultAllocator;
 extern mAllocator mDefaultTempAllocator;
+extern mAllocator mNullAllocator; // This allocator will only free pointers it has allocated.
 
 struct mAllocator
 {

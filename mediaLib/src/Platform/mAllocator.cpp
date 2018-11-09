@@ -1,4 +1,5 @@
 #include "mAllocator.h"
+#include "mHashMap.h"
 
 #ifdef mDEBUG_MEMORY_ALLOCATIONS
 uint64_t mAllocatorDebugging_DebugMemoryAllocationCount = 0;
@@ -100,6 +101,76 @@ mFUNCTION(mDefaultAllocator_Copy, IN_OUT uint8_t *pDestimation, IN const uint8_t
   mRETURN_SUCCESS();
 }
 #endif
+
+//////////////////////////////////////////////////////////////////////////
+
+mPtr<mHashMap<size_t, nullptr_t>> nullAllocatorData = nullptr;
+
+mFUNCTION(mNullAllocator_Alloc, OUT uint8_t **ppData, const size_t size, const size_t count, IN void *)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_CHECK(mAlloc(ppData, size * count));
+
+  if (nullAllocatorData == nullptr)
+    mERROR_CHECK(mHashMap_Create(&nullAllocatorData, &mDefaultAllocator, 32));
+
+  nullptr_t null = nullptr;
+  mERROR_CHECK(mHashMap_Add(nullAllocatorData, (size_t)*ppData, &null));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mNullAllocator_Realloc, OUT uint8_t **ppData, const size_t size, const size_t count, IN void *)
+{
+  mFUNCTION_SETUP();
+
+  if (*ppData == nullptr || nullAllocatorData == nullptr)
+  {
+    allocate:
+    mERROR_CHECK(mNullAllocator_Alloc(ppData, size, count, nullptr));
+    mRETURN_SUCCESS();
+  }
+
+  nullptr_t unused;
+  const mResult result = mHashMap_Remove(nullAllocatorData, (size_t)*ppData, &unused);
+
+  if (mFAILED(result))
+  {
+    if (result == mR_ResourceNotFound)
+      goto allocate;
+    else
+      mERROR_IF(true, result);
+  }
+
+  mERROR_CHECK(mRealloc(ppData, size * count));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mNullAllocator_Free, uint8_t *pData, IN void *) 
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pData == nullptr || nullAllocatorData == nullptr, mR_Success);
+
+  nullptr_t unused;
+  const mResult result = mHashMap_Remove(nullAllocatorData, (size_t)pData, &unused);
+
+  if (mFAILED(result))
+  {
+    if (result == mR_ResourceNotFound)
+      mRETURN_SUCCESS();
+    else
+      mERROR_IF(true, result);
+  }
+
+  mERROR_CHECK(mFree(pData));
+
+  mRETURN_SUCCESS();
+}
+
+mAllocator mNullAllocator = mAllocator_StaticCreate(mNullAllocator_Alloc, mNullAllocator_Realloc, mNullAllocator_Free);
 
 //////////////////////////////////////////////////////////////////////////
 

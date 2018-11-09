@@ -101,6 +101,7 @@ struct mIndexedDataBuffer
 #endif
 
   mPtr<mShader> shader;
+  mRenderParams_VertexRenderMode vertexRenderMode;
 };
 
 template <typename... Args>
@@ -120,6 +121,9 @@ mFUNCTION(mIndexedDataBuffer_SetIndexBuffer, mIndexedDataBuffer<Args...> &buffer
 
 template <typename... Args>
 mFUNCTION(mIndexedDataBuffer_SetRenderCount, mIndexedDataBuffer<Args...> &buffer, const size_t count);
+
+template <typename... Args>
+mFUNCTION(mIndexedDataBuffer_SetVertexRenderMode, mIndexedDataBuffer<Args...> &buffer, const mRenderParams_VertexRenderMode renderMode);
 
 template <typename... Args>
 mFUNCTION(mIndexedDataBuffer_Draw, mIndexedDataBuffer<Args...> &buffer);
@@ -142,6 +146,8 @@ inline mFUNCTION(mIndexedDataBuffer_Create, IN mIndexedDataBuffer<Args...> *pBuf
   glGenBuffers(1, &pBuffer->ibo);
   glGenBuffers(1, &pBuffer->vbo);
 #endif
+
+  pBuffer->vertexRenderMode = mRP_VRM_TriangleList;
 
   mGL_ERROR_CHECK();
 
@@ -255,6 +261,20 @@ inline mFUNCTION(mIndexedDataBuffer_SetRenderCount, mIndexedDataBuffer<Args...> 
 }
 
 template<typename ...Args>
+inline mFUNCTION(mIndexedDataBuffer_SetVertexRenderMode, mIndexedDataBuffer<Args...> &buffer, const mRenderParams_VertexRenderMode renderMode)
+{
+  mFUNCTION_SETUP();
+
+#if defined(mRENDERER_OPENGL)
+  mERROR_IF(renderMode == mRP_VRM_Polygon || renderMode == mRP_VRM_QuadList || renderMode == mRP_VRM_QuadStrip, mR_NotSupported);
+#endif
+
+  buffer.vertexRenderMode = renderMode;
+
+  mRETURN_SUCCESS();
+}
+
+template<typename ...Args>
 inline mFUNCTION(mIndexedDataBuffer_Draw, mIndexedDataBuffer<Args...> &buffer)
 {
   mFUNCTION_SETUP();
@@ -270,7 +290,7 @@ inline mFUNCTION(mIndexedDataBuffer_Draw, mIndexedDataBuffer<Args...> &buffer)
   mERROR_CHECK((mIDBAttributeQuery_Internal_SetAttributes<Args...>(buffer.shader.GetPointer())));
 
 #if defined(mRENDERER_OPENGL)
-  glDrawElements(GL_TRIANGLES, (GLsizei)buffer.count, GL_UNSIGNED_INT, nullptr);
+  glDrawElements(buffer.vertexRenderMode, (GLsizei)buffer.count, GL_UNSIGNED_INT, nullptr);
 #endif
 
   mRETURN_SUCCESS();
