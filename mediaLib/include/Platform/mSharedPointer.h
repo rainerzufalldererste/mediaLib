@@ -47,9 +47,6 @@ public:
     mAllocator *pAllocator;
     std::function<void (T*)> cleanupFunction;
     void *pUserData;
-
-    PointerParams() = default;
-    ~PointerParams() = default;
   } *m_pParams;
 };
 
