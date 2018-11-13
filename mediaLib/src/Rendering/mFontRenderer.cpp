@@ -2,7 +2,7 @@
 
 #include "mQueue.h"
 #include "mShader.h"
-#include "mIndexedDataBuffer.h"
+#include "mIndexedRenderDataBuffer.h"
 #include "mBinaryChunk.h"
 
 #pragma warning(push, 0)
@@ -107,7 +107,7 @@ mFUNCTION(mFontRenderable_Destroy_Internal, IN mFontRenderable *pFontRenderable)
 struct mFontRenderable
 {
   mPtr<mFontTextureAtlas> textureAtlas;
-  mIndexedDataBuffer<mIDB_FloatAttribute<3, mFontRenderer_PositionAttribute>, mIDB_FloatAttribute<2, mFontRenderer_TextureCoordAttribute>, mIDB_FloatAttribute<4, mFontRenderer_ColourAttribute>> indexDataBuffer;
+  mIndexedRenderDataBuffer<mRDB_FloatAttribute<3, mFontRenderer_PositionAttribute>, mRDB_FloatAttribute<2, mFontRenderer_TextureCoordAttribute>, mRDB_FloatAttribute<4, mFontRenderer_ColourAttribute>> indexDataBuffer;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -116,7 +116,7 @@ struct mFontRenderer
 {
   mPtr<mFontTextureAtlas> textureAtlas;
   mPtr<mBinaryChunk> enqueuedText;
-  mIndexedDataBuffer<mIDB_FloatAttribute<3, mFontRenderer_PositionAttribute>, mIDB_FloatAttribute<2, mFontRenderer_TextureCoordAttribute>, mIDB_FloatAttribute<4, mFontRenderer_ColourAttribute>> indexDataBuffer;
+  mIndexedRenderDataBuffer<mRDB_FloatAttribute<3, mFontRenderer_PositionAttribute>, mRDB_FloatAttribute<2, mFontRenderer_TextureCoordAttribute>, mRDB_FloatAttribute<4, mFontRenderer_ColourAttribute>> indexDataBuffer;
   mPtr<mQueue<mPtr<mFontTextureAtlas>>> currentFrameTextureAtlasses;
   mPtr<mQueue<mPtr<mFontTextureAtlas>>> availableTextureAtlasses;
   mMatrix matrix;
@@ -147,7 +147,7 @@ mFUNCTION(mFontRenderer_Create, OUT mPtr<mFontRenderer> *pFontRenderer, IN mAllo
 
   mERROR_CHECK(mFontTextureAtlas_Create(&(*pFontRenderer)->textureAtlas, pAllocator, width, height));
 
-  mERROR_CHECK(mIndexedDataBuffer_Create(&(*pFontRenderer)->indexDataBuffer, pAllocator, mFontRenderer_VertexShader, mFontRenderer_FragmentShader, true, false));
+  mERROR_CHECK(mIndexedRenderDataBuffer_Create(&(*pFontRenderer)->indexDataBuffer, pAllocator, mFontRenderer_VertexShader, mFontRenderer_FragmentShader, true, false));
   mERROR_CHECK(mQueue_Create(&(*pFontRenderer)->currentFrameTextureAtlasses, pAllocator));
   mERROR_CHECK(mQueue_Create(&(*pFontRenderer)->availableTextureAtlasses, pAllocator));
 
@@ -295,7 +295,7 @@ mFUNCTION(mFontRenderer_EndRenderable, mPtr<mFontRenderer> &fontRenderer, OUT mP
 
   (*pRenderable)->textureAtlas = fontRenderer->textureAtlas;
 
-  mERROR_CHECK(mIndexedDataBuffer_Create(&(*pRenderable)->indexDataBuffer, fontRenderer->indexDataBuffer.shader));
+  mERROR_CHECK(mIndexedRenderDataBuffer_Create(&(*pRenderable)->indexDataBuffer, fontRenderer->indexDataBuffer.shader));
 
 #if defined(mRENDERER_OPENGL)
   size_t count = 0;
@@ -306,9 +306,14 @@ mFUNCTION(mFontRenderer_EndRenderable, mPtr<mFontRenderer> &fontRenderer, OUT mP
 
   uint8_t *pFirstIndex = fontRenderer->enqueuedText->pData;
 
-  mERROR_CHECK(mIndexedDataBuffer_SetVertexBuffer((*pRenderable)->indexDataBuffer, pFirstIndex, count));
+  mERROR_CHECK(mIndexedRenderDataBuffer_SetVertexBuffer((*pRenderable)->indexDataBuffer, pFirstIndex, count));
 
-  const size_t length = count / (sizeof(float_t) * 9 * 4) * 6;
+  // Get the number of indices required to render the vertices as rectangles.
+  // `count` is the size of the data of all vertices. 
+  // one vertex is: {mVec3f position, mVec2f textureCoordinate, mVec4f colour}.
+  // 4 vertices make a rectangle.
+  // 6 indices are required to draw a quad.
+  const size_t length = count / ((sizeof(mVec3f) + sizeof(mVec2f) + sizeof(mVec4f)) * 4) * 6;
 
   if (fontRenderer->indexBufferCapacity < length)
   {
@@ -329,13 +334,13 @@ mFUNCTION(mFontRenderer_EndRenderable, mPtr<mFontRenderer> &fontRenderer, OUT mP
       fontRenderer->pIndexBuffer[i6 + 5] = (uint32_t)i4 + 3;
     }
 
-    mERROR_CHECK(mIndexedDataBuffer_SetIndexBuffer(fontRenderer->indexDataBuffer, fontRenderer->pIndexBuffer, length)); // yes this is required. otherwise owned indexDataBuffer of the fontRenderer might get invalidated.
+    mERROR_CHECK(mIndexedRenderDataBuffer_SetIndexBuffer(fontRenderer->indexDataBuffer, fontRenderer->pIndexBuffer, length)); // yes this is required. otherwise owned indexDataBuffer of the fontRenderer might get invalidated.
   }
 
-  mERROR_CHECK(mIndexedDataBuffer_SetIndexBuffer((*pRenderable)->indexDataBuffer, fontRenderer->pIndexBuffer, length));
+  mERROR_CHECK(mIndexedRenderDataBuffer_SetIndexBuffer((*pRenderable)->indexDataBuffer, fontRenderer->pIndexBuffer, length));
 
   mERROR_CHECK(mFontRenderer_UpdateFontAtlas_Internal(fontRenderer));
-  mERROR_CHECK(mIndexedDataBuffer_SetRenderCount((*pRenderable)->indexDataBuffer, length));
+  mERROR_CHECK(mIndexedRenderDataBuffer_SetRenderCount((*pRenderable)->indexDataBuffer, length));
 #else
   mRETURN_RESULT(mR_NotImplemented);
 #endif
@@ -485,7 +490,7 @@ mFUNCTION(mFontRenderer_Destroy_Internal, mFontRenderer *pFontRenderer)
 
   mERROR_CHECK(mBinaryChunk_Destroy(&pFontRenderer->enqueuedText));
 
-  mERROR_CHECK(mIndexedDataBuffer_Destroy(&pFontRenderer->indexDataBuffer));
+  mERROR_CHECK(mIndexedRenderDataBuffer_Destroy(&pFontRenderer->indexDataBuffer));
   mERROR_CHECK(mAllocator_FreePtr(pFontRenderer->pAllocator, &pFontRenderer->pIndexBuffer));
   mERROR_CHECK(mQueue_Destroy(&pFontRenderer->currentFrameTextureAtlasses));
   mERROR_CHECK(mQueue_Destroy(&pFontRenderer->availableTextureAtlasses));
@@ -529,9 +534,14 @@ mFUNCTION(mFontRenderer_DrawEnqueuedText_Internal, mPtr<mFontRenderer> &fontRend
 
   uint8_t *pFirstIndex = fontRenderer->enqueuedText->pData;
 
-  mERROR_CHECK(mIndexedDataBuffer_SetVertexBuffer(fontRenderer->indexDataBuffer, pFirstIndex, count));
+  mERROR_CHECK(mIndexedRenderDataBuffer_SetVertexBuffer(fontRenderer->indexDataBuffer, pFirstIndex, count));
 
-  const size_t length = count / (sizeof(float_t) * 9 * 4) * 6;
+  // Get the number of indices required to render the vertices as rectangles.
+  // `count` is the size of the data of all vertices. 
+  // one vertex is: {mVec3f position, mVec2f textureCoordinate, mVec4f colour}.
+  // 4 vertices make a rectangle.
+  // 6 indices are required to draw a quad.
+  const size_t length = count / ((sizeof(mVec3f) + sizeof(mVec2f) + sizeof(mVec4f)) * 4) * 6;
 
   if (fontRenderer->indexBufferCapacity < length)
   {
@@ -552,7 +562,7 @@ mFUNCTION(mFontRenderer_DrawEnqueuedText_Internal, mPtr<mFontRenderer> &fontRend
       fontRenderer->pIndexBuffer[i6 + 5] = (uint32_t)i4 + 3;
     }
 
-    mERROR_CHECK(mIndexedDataBuffer_SetIndexBuffer(fontRenderer->indexDataBuffer, fontRenderer->pIndexBuffer, newLength));
+    mERROR_CHECK(mIndexedRenderDataBuffer_SetIndexBuffer(fontRenderer->indexDataBuffer, fontRenderer->pIndexBuffer, newLength));
   }
 
   mERROR_CHECK(mFontRenderer_UpdateFontAtlas_Internal(fontRenderer));
@@ -562,8 +572,8 @@ mFUNCTION(mFontRenderer_DrawEnqueuedText_Internal, mPtr<mFontRenderer> &fontRend
   mERROR_CHECK(mShader_Bind(*fontRenderer->indexDataBuffer.shader));
   mERROR_CHECK(mShader_SetUniform(fontRenderer->indexDataBuffer.shader, "matrix", fontRenderer->matrix));
   mERROR_CHECK(mShader_SetUniform(fontRenderer->indexDataBuffer.shader, "texture", fontRenderer->textureAtlas->texture));
-  mERROR_CHECK(mIndexedDataBuffer_SetRenderCount(fontRenderer->indexDataBuffer, length));
-  mERROR_CHECK(mIndexedDataBuffer_Draw(fontRenderer->indexDataBuffer));
+  mERROR_CHECK(mIndexedRenderDataBuffer_SetRenderCount(fontRenderer->indexDataBuffer, length));
+  mERROR_CHECK(mIndexedRenderDataBuffer_Draw(fontRenderer->indexDataBuffer));
 
   mERROR_CHECK(mBinaryChunk_ResetWrite(fontRenderer->enqueuedText));
 
@@ -839,7 +849,7 @@ mFUNCTION(mFontRenderable_Draw, mPtr<mFontRenderable> &fontRenderable, const mMa
   mERROR_CHECK(mShader_Bind(*fontRenderable->indexDataBuffer.shader));
   mERROR_CHECK(mShader_SetUniform(fontRenderable->indexDataBuffer.shader, "matrix", matrix));
   mERROR_CHECK(mShader_SetUniform(fontRenderable->indexDataBuffer.shader, "texture", fontRenderable->textureAtlas->texture));
-  mERROR_CHECK(mIndexedDataBuffer_Draw(fontRenderable->indexDataBuffer));
+  mERROR_CHECK(mIndexedRenderDataBuffer_Draw(fontRenderable->indexDataBuffer));
 #else
   mRETURN_RESULT(mR_NotImplemented);
 #endif
@@ -867,7 +877,7 @@ mFUNCTION(mFontRenderable_Destroy_Internal, IN mFontRenderable *pFontRenderable)
   mERROR_IF(pFontRenderable == nullptr, mR_ArgumentNull);
 
   mERROR_CHECK(mSharedPointer_Destroy(&pFontRenderable->textureAtlas));
-  mERROR_CHECK(mIndexedDataBuffer_Destroy(&pFontRenderable->indexDataBuffer));
+  mERROR_CHECK(mIndexedRenderDataBuffer_Destroy(&pFontRenderable->indexDataBuffer));
 
   mRETURN_SUCCESS();
 }
