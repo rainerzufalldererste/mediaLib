@@ -169,6 +169,8 @@ mFUNCTION(mTexture_Destroy, IN_OUT mTexture *pTexture)
   if (pTexture->imageBuffer != nullptr)
     mERROR_CHECK(mImageBuffer_Destroy(&pTexture->imageBuffer));
 
+  mGL_DEBUG_ERROR_CHECK();
+
   pTexture->uploadState = mRP_US_NotInitialized;
 
   mRETURN_SUCCESS();

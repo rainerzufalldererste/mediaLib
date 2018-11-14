@@ -469,9 +469,6 @@ inline mFUNCTION(mSpriteBatch_Create_Internal, IN_OUT mSpriteBatch<Args...>* pSp
   mERROR_CHECK(mSharedPointer_Allocate(&pSpriteBatch->shader, nullptr, (std::function<void(mShader *)>)[](mShader *pData) {mShader_Destroy(pData);}, 1));
   mERROR_CHECK(mShader_Create(pSpriteBatch->shader.GetPointer(), vertexShader, fragmentShader, "fragColour0"));
 
-  printf("VERTEX:\n%s\n\n", vertexShader);
-  printf("FRAGMENT:\n%s\n\n", fragmentShader);
-
   mRETURN_SUCCESS();
 }
 

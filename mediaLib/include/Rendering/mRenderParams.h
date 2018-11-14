@@ -91,6 +91,16 @@ mFUNCTION(mRenderParams_ClearTargetDepthAndColour, const mVector &colour = mVect
 
 mFUNCTION(mRenderParams_SetBlendingEnabled, const bool enabled = true);
 
+enum mRenderParam_BlendFunc
+{
+  mRP_BF_NoAlpha,
+  mRP_BF_Additive,
+  mRP_BF_AlphaBlend,
+  mRP_BF_Premultiplied
+};
+
+mFUNCTION(mRenderParams_SetAlphaBlendFunc, const mRenderParam_BlendFunc blendFunc);
+
 #if defined(mRENDERER_OPENGL) && defined(_WIN32)
 mFUNCTION(mRenderParams_GetCurrentGLContext_WGLRC, HGLRC *pGLContext);
 mFUNCTION(mRenderParams_GetCurrentGLContext_HDC, HDC *pGLDrawable);
