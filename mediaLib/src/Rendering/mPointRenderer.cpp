@@ -40,7 +40,7 @@ mFUNCTION(mPointRenderer_Create, OUT mPtr<mPointRenderer> *pPointRenderer, IN mA
     void main()
     {
       vec2 position = _position0 / _scale0;
-      position.x = 1 - position.x;
+      position.y = 1 - position.y;
 
       gl_Position = vec4(position * 2 - 1, 0, 1);
     }
