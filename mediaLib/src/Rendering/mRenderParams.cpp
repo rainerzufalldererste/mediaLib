@@ -325,6 +325,39 @@ mFUNCTION(mRenderParams_SetBlendingEnabled, const bool enabled /*= true*/)
   mRETURN_SUCCESS();
 }
 
+mFUNCTION(mRenderParams_SetAlphaBlendFunc, const mRenderParam_BlendFunc blendFunc)
+{
+  mFUNCTION_SETUP();
+
+  switch (blendFunc)
+  {
+  case mRP_BF_NoAlpha:
+    mERROR_CHECK(mRenderParams_SetBlendingEnabled(false));
+    break;
+
+  case mRP_BF_Additive:
+    mERROR_CHECK(mRenderParams_SetBlendingEnabled(true));
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+    break;
+
+  case mRP_BF_AlphaBlend:
+    mERROR_CHECK(mRenderParams_SetBlendingEnabled(true));
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    break;
+
+  case mRP_BF_Premultiplied:
+    mERROR_CHECK(mRenderParams_SetBlendingEnabled(true));
+    glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+    break;
+
+  default:
+    mRETURN_RESULT(mR_OperationNotSupported);
+    break;
+  }
+
+  mRETURN_SUCCESS();
+}
+
 mFUNCTION(mRenderParams_GetCurrentGLContext_WGLRC, HGLRC *pGLContext)
 {
   mFUNCTION_SETUP();

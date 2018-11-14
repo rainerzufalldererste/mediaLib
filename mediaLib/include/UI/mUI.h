@@ -6,13 +6,17 @@
 
 #include "../3rdParty/imgui/imgui.h"
 
-mFUNCTION(mUI_Initilialize, mPtr<mHardwareWindow> &hardwareWindow);
+mFUNCTION(mUI_Initilialize, mPtr<mHardwareWindow> &hardwareWindow, const bool addUpdateCallback = true);
 mFUNCTION(mUI_StartFrame, mPtr<mHardwareWindow> &hardwareWindow);
 mFUNCTION(mUI_Shutdown);
 mFUNCTION(mUI_Bake);
 mFUNCTION(mUI_Render);
 mFUNCTION(mUI_ProcessEvent, IN SDL_Event *pEvent);
 mFUNCTION(mUI_GetIO, OUT ImGuiIO **ppIO);
+
+// This should be called after `mUI_StartFrame`.
+mFUNCTION(mUI_SetCustomMousePosition, const mVec2f position);
+mFUNCTION(mUI_ManuallyUpdateMousePosition, const bool enable);
 
 mFUNCTION(mUI_PushMonospacedFont);
 mFUNCTION(mUI_PopMonospacedFont);

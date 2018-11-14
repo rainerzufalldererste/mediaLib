@@ -203,10 +203,16 @@ static void ImGui_ImplSDL2_UpdateMousePosAndButtons()
     ImGuiIO& io = ImGui::GetIO();
 
     // Set OS mouse position if requested (rarely used, only when ImGuiConfigFlags_NavEnableSetMousePos is enabled by user)
-    if (io.WantSetMousePos)
+
+    extern bool mUI_AutoUpdateMousePosition;
+
+    if (mUI_AutoUpdateMousePosition)
+    {
+      if (io.WantSetMousePos)
         SDL_WarpMouseInWindow(g_Window, (int)io.MousePos.x, (int)io.MousePos.y);
-    else
+      else
         io.MousePos = ImVec2(-FLT_MAX, -FLT_MAX);
+    }
 
     int mx, my;
     Uint32 mouse_buttons = SDL_GetMouseState(&mx, &my);
@@ -226,7 +232,9 @@ static void ImGui_ImplSDL2_UpdateMousePosAndButtons()
         SDL_GetGlobalMouseState(&mx, &my);
         mx -= wx;
         my -= wy;
-        io.MousePos = ImVec2((float)mx, (float)my);
+
+        if (mUI_AutoUpdateMousePosition)
+          io.MousePos = ImVec2((float)mx, (float)my);
     }
 
     // SDL_CaptureMouse() let the OS know e.g. that our imgui drag outside the SDL window boundaries shouldn't e.g. trigger the OS window resize cursor. 
@@ -234,7 +242,8 @@ static void ImGui_ImplSDL2_UpdateMousePosAndButtons()
     bool any_mouse_button_down = ImGui::IsAnyMouseDown();
     SDL_CaptureMouse(any_mouse_button_down ? SDL_TRUE : SDL_FALSE);
 #else
-    if (SDL_GetWindowFlags(g_Window) & SDL_WINDOW_INPUT_FOCUS)
+    if (mUI_AutoUpdateMousePosition)
+      if (SDL_GetWindowFlags(g_Window) & SDL_WINDOW_INPUT_FOCUS)
         io.MousePos = ImVec2((float)mx, (float)my);
 #endif
 }

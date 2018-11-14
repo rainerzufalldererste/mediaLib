@@ -20,9 +20,11 @@ ImFont *pHeadline = nullptr;
 ImFont *pSubHeadline = nullptr;
 ImFont *pMonospacedFont = nullptr;
 
+bool mUI_AutoUpdateMousePosition = true;
+
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mUI_Initilialize, mPtr<mHardwareWindow> &hardwareWindow)
+mFUNCTION(mUI_Initilialize, mPtr<mHardwareWindow> &hardwareWindow, const bool addUpdateCallback /* = true */)
 {
   mFUNCTION_SETUP();
 
@@ -52,7 +54,8 @@ mFUNCTION(mUI_Initilialize, mPtr<mHardwareWindow> &hardwareWindow)
 
   pSubHeadline = mUI_ImguiIO.Fonts->AddFontFromFileTTF("C:/Windows/Fonts/seguisb.ttf", 28.0f, nullptr, mUI_ImguiIO.Fonts->GetGlyphRangesDefault());
 
-  mERROR_CHECK(mHardwareWindow_AddOnAnyEvent(hardwareWindow, mUI_ProcessEvent));
+  if (addUpdateCallback)
+    mERROR_CHECK(mHardwareWindow_AddOnAnyEvent(hardwareWindow, mUI_ProcessEvent));
 
   ImVec4 *pColors = ImGui::GetStyle().Colors;
   pColors[ImGuiCol_Text] = ImVec4(0.12f, 0.12f, 0.12f, 1.00f);
@@ -163,7 +166,28 @@ mFUNCTION(mUI_GetIO, OUT ImGuiIO **ppIO)
 
   mERROR_IF(ppIO == nullptr, mR_ArgumentNull);
 
-  *ppIO = &mUI_ImguiIO;
+  *ppIO = &ImGui::GetIO();
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mUI_SetCustomMousePosition, const mVec2f position)
+{
+  mFUNCTION_SETUP();
+
+  ImGuiIO *pIO = nullptr;
+  mERROR_CHECK(mUI_GetIO(&pIO));
+
+  pIO->MousePos = cast(position);
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mUI_ManuallyUpdateMousePosition, const bool enable)
+{
+  mFUNCTION_SETUP();
+
+  mUI_AutoUpdateMousePosition = !enable;
 
   mRETURN_SUCCESS();
 }
