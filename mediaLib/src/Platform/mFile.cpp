@@ -1,6 +1,10 @@
 #include "mFile.h"
+
 #include <sys\stat.h>
+
 #include <shobjidl.h>
+#include <shlobj.h>
+#include <knownfolders.h>
 
 mFUNCTION(mFile_Exists, const mString &filename, OUT bool *pExists)
 {
@@ -277,4 +281,106 @@ mFUNCTION(mFile_Delete, const mString &fileName)
   default:
     mRETURN_RESULT(mR_Failure);
   }
+}
+
+mFUNCTION(mFile_GetTempDirectory, OUT mString *pString)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pString == nullptr, mR_ArgumentNull);
+  
+  wchar_t buffer[MAX_PATH + 1];
+  const DWORD length = GetTempPathW(mARRAYSIZE(buffer), buffer);
+
+  mERROR_IF(length == 0, mR_InternalError); // This would theoretically set GetLastError() to some error code, however msdn doesn't list any possible error codes.
+
+  mERROR_CHECK(mString_Create(pString, buffer, length, pString->pAllocator)); // According to msdn this is terminated by a backslash.
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mFile_GetKnownPath_Internal, OUT mString *pString, const GUID &guid)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pString == nullptr, mR_ArgumentNull);
+
+  wchar_t *pBuffer = nullptr;
+
+  mDEFER(
+    if (pBuffer != nullptr)
+      CoTaskMemFree(pBuffer)
+      );
+
+  HRESULT result = S_OK;
+  mERROR_IF(FAILED(result = SHGetKnownFolderPath(guid, 0, nullptr, &pBuffer)), mR_InternalError);
+
+  mString tempString;
+  mERROR_CHECK(mString_Create(&tempString, pBuffer, &mDefaultTempAllocator));
+  mERROR_CHECK(mString_ToDirectoryPath(pString, tempString));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mFile_GetAppDataDirectory, OUT mString *pString)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_CHECK(mFile_GetKnownPath_Internal(pString, FOLDERID_RoamingAppData));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mFile_GetDesktopDirectory, OUT mString *pString)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_CHECK(mFile_GetKnownPath_Internal(pString, FOLDERID_Desktop));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mFile_GetDocumentsDirectory, OUT mString *pString)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_CHECK(mFile_GetKnownPath_Internal(pString, FOLDERID_Documents));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mFile_GetFontsDirectory, OUT mString *pString)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_CHECK(mFile_GetKnownPath_Internal(pString, FOLDERID_Fonts));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mFile_GetCurrentUserDirectory, OUT mString *pString)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_CHECK(mFile_GetKnownPath_Internal(pString, FOLDERID_Profile));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mFile_GetProgramFilesDirectory, OUT mString *pString)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_CHECK(mFile_GetKnownPath_Internal(pString, FOLDERID_ProgramFiles));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mFile_GetStartupDirectory, OUT mString *pString)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_CHECK(mFile_GetKnownPath_Internal(pString, FOLDERID_Startup));
+
+  mRETURN_SUCCESS();
 }

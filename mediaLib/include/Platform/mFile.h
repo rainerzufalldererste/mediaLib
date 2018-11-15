@@ -35,6 +35,15 @@ mFUNCTION(mFile_Copy, const mString &destinationFileName, const mString &sourceF
 mFUNCTION(mFile_Move, const mString &destinationFileName, const mString &sourceFileName, const bool overrideFileIfExistent = false);
 mFUNCTION(mFile_Delete, const mString &fileName);
 
+mFUNCTION(mFile_GetTempDirectory, OUT mString *pString);
+mFUNCTION(mFile_GetAppDataDirectory, OUT mString *pString);
+mFUNCTION(mFile_GetDesktopDirectory, OUT mString *pString);
+mFUNCTION(mFile_GetDocumentsDirectory, OUT mString *pString);
+mFUNCTION(mFile_GetFontsDirectory, OUT mString *pString);
+mFUNCTION(mFile_GetCurrentUserDirectory, OUT mString *pString);
+mFUNCTION(mFile_GetProgramFilesDirectory, OUT mString *pString);
+mFUNCTION(mFile_GetStartupDirectory, OUT mString *pString);
+
 //////////////////////////////////////////////////////////////////////////
 
 template<typename T>
