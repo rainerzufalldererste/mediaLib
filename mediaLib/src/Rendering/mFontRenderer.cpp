@@ -781,6 +781,8 @@ mFUNCTION(mFontTextureAtlas_Destroy, IN mFontTextureAtlas *pAtlas)
 
   mERROR_IF(pAtlas == nullptr, mR_ArgumentNull);
 
+  mGL_DEBUG_ERROR_CHECK();
+
   if (pAtlas->fonts != nullptr)
   {
     size_t fontCount = 0;
@@ -811,6 +813,8 @@ mFUNCTION(mFontTextureAtlas_Destroy, IN mFontTextureAtlas *pAtlas)
   }
 
   mERROR_CHECK(mTexture_Destroy(&pAtlas->texture));
+  
+  mGL_DEBUG_ERROR_CHECK();
 
   mRETURN_SUCCESS();
 }
@@ -875,9 +879,13 @@ mFUNCTION(mFontRenderable_Destroy_Internal, IN mFontRenderable *pFontRenderable)
   mFUNCTION_SETUP();
 
   mERROR_IF(pFontRenderable == nullptr, mR_ArgumentNull);
+  
+  mGL_DEBUG_ERROR_CHECK();
 
   mERROR_CHECK(mSharedPointer_Destroy(&pFontRenderable->textureAtlas));
   mERROR_CHECK(mIndexedRenderDataBuffer_Destroy(&pFontRenderable->indexDataBuffer));
+
+  mGL_DEBUG_ERROR_CHECK();
 
   mRETURN_SUCCESS();
 }
