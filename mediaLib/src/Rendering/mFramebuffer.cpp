@@ -33,8 +33,12 @@ mFUNCTION(mFramebuffer_Destroy, IN_OUT mPtr<mFramebuffer> *pFramebuffer)
   mFUNCTION_SETUP();
 
   mERROR_IF(pFramebuffer == nullptr, mR_ArgumentNull);
+  
+  mGL_DEBUG_ERROR_CHECK();
 
   mERROR_CHECK(mSharedPointer_Destroy(pFramebuffer));
+
+  mGL_DEBUG_ERROR_CHECK();
 
   mRETURN_SUCCESS();
 }

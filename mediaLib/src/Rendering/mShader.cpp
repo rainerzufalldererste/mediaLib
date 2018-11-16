@@ -170,6 +170,8 @@ mFUNCTION(mShader_Destroy, IN_OUT mShader *pShader)
 
   mERROR_IF(pShader == nullptr, mR_ArgumentNull);
 
+  mGL_DEBUG_ERROR_CHECK();
+
 #if defined(mRENDERER_OPENGL)
 
   if (pShader->initialized)
@@ -183,6 +185,8 @@ mFUNCTION(mShader_Destroy, IN_OUT mShader *pShader)
   pShader->loadedFromFile = false;
   mERROR_CHECK(mDestruct(&pShader->vertexShader));
   mERROR_CHECK(mDestruct(&pShader->fragmentShader));
+
+  mGL_DEBUG_ERROR_CHECK();
 
   mRETURN_SUCCESS();
 }

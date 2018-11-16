@@ -7,11 +7,12 @@ mVec2f mRenderParams_CurrentRenderResolutionF;
 mRenderContextId mRenderParams_CurrentRenderContext;
 
 #if defined(mRENDERER_OPENGL)
-GLenum mRenderParams_GLError;
+GLenum mRenderParams_GLError = GL_NO_ERROR;
 #endif
 
-mRenderContext *mRenderParams_pRenderContexts;
-size_t mRenderParams_RenderContextCount;
+mRenderContext *mRenderParams_pRenderContexts = nullptr;
+size_t mRenderParams_RenderContextCount = 0;
+size_t mRenderParams_InitializedRenderContextCount = 0;
 
 mFUNCTION(mRenderParams_InitializeToDefault)
 {
@@ -59,6 +60,7 @@ mFUNCTION(mRenderParams_CreateRenderContext, OUT mRenderContextId *pRenderContex
   const mRenderContextId renderContextId = mRenderParams_RenderContextCount;
 
   ++mRenderParams_RenderContextCount;
+  ++mRenderParams_InitializedRenderContextCount;
   mERROR_CHECK(mAllocator_Reallocate(nullptr, &mRenderParams_pRenderContexts, mRenderParams_RenderContextCount));
   mERROR_CHECK(mAllocator_Move(nullptr, &mRenderParams_pRenderContexts[renderContextId], &currentRenderContext, 1));
 
@@ -102,6 +104,7 @@ mFUNCTION(mRenderParams_DestroyRenderContext, IN_OUT mRenderContextId *pRenderCo
 #if defined(mRENDERER_OPENGL)
     SDL_GL_DeleteContext(mRenderParams_pRenderContexts[*pRenderContextId].glContext);
     mRenderParams_pRenderContexts[*pRenderContextId].glContext = nullptr;
+    --mRenderParams_InitializedRenderContextCount;
 #else
     mRETURN_RESULT(mR_NotImplemented);
 #endif

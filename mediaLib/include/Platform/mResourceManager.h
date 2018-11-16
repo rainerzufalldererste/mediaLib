@@ -6,6 +6,8 @@
 #include "mPool.h"
 #include "mMutex.h"
 
+//#define mPRINT_RESOURCE_MANAGER_LOG
+
 template <typename TValue, typename TKey>
 mFUNCTION(mCreateResource, OUT TValue *pResource, TKey param);
 
@@ -137,14 +139,15 @@ inline mFUNCTION(mResourceManager_GetResource, OUT mPtr<TValue> *pValue, TKey ke
   mERROR_CHECK(mPool_Add(CurrentResourceManagerType::Instance()->data, std::forward<CurrentResourceManagerType::ResourceData>(resourceData), &resourceIndex));
   mERROR_CHECK(mHashMap_Add(CurrentResourceManagerType::Instance()->keys, key, &resourceIndex));
 
+#if defined(mPRINT_RESOURCE_MANAGER_LOG)
+  mPRINT("Creating Resource %" PRIu64 " of type %s at index %" PRIu64 ".\n", resourceIndex, typeid(TValue *).name(), resourceIndex);
+#endif
+
   CurrentResourceManagerType::ResourceData *pRetrievedResourceData = nullptr;
   mERROR_CHECK(mPool_PointerAt(CurrentResourceManagerType::Instance()->data, resourceIndex, &pRetrievedResourceData));
 
-  std::function<void(TValue *)> cleanupFunc = [=](TValue *pData)
+  std::function<void(TValue *)> cleanupFunc = [resourceIndex, key](TValue * /*pData*/)
   {
-    //mPRINT("Destroying Resource %" PRIu64 " of type %s.\n", resourceIndex, typeid(TValue *).name());
-    mDestroyResource(pData);
-
     size_t resourceIndex0 = 0;
     mResult result = mHashMap_Remove(CurrentResourceManagerType::Instance()->keys, key, &resourceIndex0);
 
@@ -159,7 +162,13 @@ inline mFUNCTION(mResourceManager_GetResource, OUT mPtr<TValue> *pValue, TKey ke
     if (mFAILED(result))
       return;
 
-    mDestroyResource(&resourceData0.resource);
+    resourceData0.sharedPointer.m_pData = nullptr;
+    resourceData0.sharedPointer.m_pParams = nullptr;
+
+#if defined(mPRINT_RESOURCE_MANAGER_LOG)
+    mPRINT("Destroying Resource %" PRIu64 " of type %s at index %" PRIu64 ".\n", resourceIndex, typeid(TValue *).name(), resourceIndex);
+#endif
+
     mDestruct(&resourceData0);
   };
 
@@ -191,16 +200,15 @@ inline mFUNCTION(mResourceManager_CreateResourceManager_Explicit, IN mAllocator 
   if (CurrentResourceManagerType::Instance() != nullptr)
     mRETURN_RESULT(mR_ResourceStateInvalid);
 
-  mERROR_CHECK(mSharedPointer_Allocate(
-    &CurrentResourceManagerType::Instance(), 
-    nullptr, 
-    (std::function<void(CurrentResourceManagerType *)>)[](CurrentResourceManagerType *pData) 
-      {
-        mPool_Destroy(&pData->data);
-        mHashMap_Destroy(&pData->keys);
-        mMutex_Destroy(&pData->pMutex); 
-      }, 
-    1));
+  std::function<void(CurrentResourceManagerType *)> destructionFunc = 
+    [](CurrentResourceManagerType *pData)
+  {
+    mPool_Destroy(&pData->data);
+    mHashMap_Destroy(&pData->keys);
+    mMutex_Destroy(&pData->pMutex);
+  };
+
+  mERROR_CHECK(mSharedPointer_Allocate(&CurrentResourceManagerType::Instance(), nullptr, destructionFunc, 1));
 
   mERROR_CHECK(mMutex_Create(&CurrentResourceManagerType::Instance()->pMutex, nullptr));
   mERROR_CHECK(mHashMap_Create(&CurrentResourceManagerType::Instance()->keys, pAllocator, 64));
@@ -226,7 +234,8 @@ mFUNCTION(mDestruct, struct mResourceManager<TValue, TKey>::ResourceData *pResou
 
   mSharedPointer_Destroy(&pResourceData->sharedPointer);
   pResourceData->pointerParams.cleanupFunction.~function();
-  mDestruct(&pResourceData->resource);
+  mDestroyResource(&pResourceData->resource);
+  mERROR_CHECK(mMemset(pResourceData, 1));
 
   mRETURN_SUCCESS();
 }

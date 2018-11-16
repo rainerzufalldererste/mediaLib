@@ -150,6 +150,8 @@ mFUNCTION(mTexture_Destroy, IN_OUT mTexture *pTexture)
 
   mERROR_IF(pTexture == nullptr, mR_ArgumentNull);
 
+  mGL_DEBUG_ERROR_CHECK();
+
   if (!pTexture->foreignTexture)
   {
 #if defined(mRENDERER_OPENGL)
