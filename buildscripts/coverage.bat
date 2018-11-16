@@ -18,7 +18,7 @@ git submodule update --init
 
 IF %ERRORLEVEL% GEQ 1 (exit 1)
 
-"buildscripts/opencppcoverage/OpenCppCoverage.exe" --quiet --sources "mediaLib" --sources "mediaLibTest\src" --sources "mediaLibTest\include" --modules "mediaLib\lib\mediaLibD.lib" --modules "mediaLibTest\bin\mediaLibTest.exe" --working_dir "mediaLibTest\bin" --export_type=html:coverage -- "mediaLibTest\bin\mediaLibTest.exe"
+"buildscripts/opencppcoverage/OpenCppCoverage.exe" --quiet --sources "mediaLib" --sources "mediaLibTest\src" --modules "mediaLib\lib\mediaLibD.lib" --modules "mediaLibTest\bin\mediaLibTest.exe" --working_dir "mediaLibTest\bin" --export_type=html:coverage -- "mediaLibTest\bin\mediaLibTest.exe"
 IF %ERRORLEVEL% GEQ 1 (exit 1)
 
 type "coverage\index.html"
