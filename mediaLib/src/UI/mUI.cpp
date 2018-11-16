@@ -14,7 +14,7 @@
 #include "imgui/imgui_internal.h"
 #endif
 
-ImGuiIO mUI_ImguiIO;
+ImGuiIO *mUI_pImguiIO;
 ImFont *pFont = nullptr;
 ImFont *pHeadline = nullptr;
 ImFont *pSubHeadline = nullptr;
@@ -32,7 +32,7 @@ mFUNCTION(mUI_Initilialize, mPtr<mHardwareWindow> &hardwareWindow, const bool ad
 
   const char glsl_version[] = "#version 150"; IMGUI_CHECKVERSION();
   ImGui::CreateContext();
-  mUI_ImguiIO = ImGui::GetIO();
+  mUI_pImguiIO = &ImGui::GetIO();
 
   SDL_Window *pWindow = nullptr;
   mERROR_CHECK(mHardwareWindow_GetSdlWindowPtr(hardwareWindow, &pWindow));
@@ -45,14 +45,14 @@ mFUNCTION(mUI_Initilialize, mPtr<mHardwareWindow> &hardwareWindow, const bool ad
 
   ImGui::StyleColorsLight();
 
-  pFont = mUI_ImguiIO.Fonts->AddFontFromFileTTF("C:/Windows/Fonts/segoeui.ttf", 17.0f, nullptr, mUI_ImguiIO.Fonts->GetGlyphRangesDefault());
+  pFont = mUI_pImguiIO->Fonts->AddFontFromFileTTF("C:/Windows/Fonts/segoeui.ttf", 17.0f, nullptr, mUI_pImguiIO->Fonts->GetGlyphRangesDefault());
   mERROR_IF(pFont == nullptr, mR_InternalError);
 
-  pMonospacedFont = mUI_ImguiIO.Fonts->AddFontFromFileTTF("C:/Windows/Fonts/consola.ttf", 13.0f, nullptr, mUI_ImguiIO.Fonts->GetGlyphRangesDefault());
+  pMonospacedFont = mUI_pImguiIO->Fonts->AddFontFromFileTTF("C:/Windows/Fonts/consola.ttf", 13.0f, nullptr, mUI_pImguiIO->Fonts->GetGlyphRangesDefault());
 
-  pHeadline = mUI_ImguiIO.Fonts->AddFontFromFileTTF("C:/Windows/Fonts/seguibl.ttf", 52.0f, nullptr, mUI_ImguiIO.Fonts->GetGlyphRangesDefault());
+  pHeadline = mUI_pImguiIO->Fonts->AddFontFromFileTTF("C:/Windows/Fonts/seguibl.ttf", 52.0f, nullptr, mUI_pImguiIO->Fonts->GetGlyphRangesDefault());
 
-  pSubHeadline = mUI_ImguiIO.Fonts->AddFontFromFileTTF("C:/Windows/Fonts/seguisb.ttf", 28.0f, nullptr, mUI_ImguiIO.Fonts->GetGlyphRangesDefault());
+  pSubHeadline = mUI_pImguiIO->Fonts->AddFontFromFileTTF("C:/Windows/Fonts/seguisb.ttf", 28.0f, nullptr, mUI_pImguiIO->Fonts->GetGlyphRangesDefault());
 
   if (addUpdateCallback)
     mERROR_CHECK(mHardwareWindow_AddOnAnyEvent(hardwareWindow, mUI_ProcessEvent));
