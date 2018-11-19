@@ -166,7 +166,7 @@ inline mDefer<T>::mDefer(OnExitFuncResultT *pOnExit, T data, const mResult *pRes
 template<typename T>
 inline mDefer<T>::mDefer(mDefer<T> &copy) :
   m_deferType(copy.m_deferType),
-  m_data(copy.m_data),
+  m_data(std::move(copy.m_data)),
   m_pResult(copy.m_pResult),
   m_onExitLP(std::move(copy.m_onExitLP)),
   m_onExitLV(std::move(copy.m_onExitLV)),
@@ -185,7 +185,7 @@ inline mDefer<T>::mDefer(mDefer<T> &copy) :
 template<typename T>
 inline mDefer<T>::mDefer(mDefer<T> &&move) :
   m_deferType(move.m_deferType),
-  m_data(move.m_data),
+  m_data(std::move(move.m_data)),
   m_pResult(move.m_pResult),
   m_onExitLP(std::move(move.m_onExitLP)),
   m_onExitLV(std::move(move.m_onExitLV)),
@@ -195,7 +195,7 @@ inline mDefer<T>::mDefer(mDefer<T> &&move) :
 {
   move.m_deferType = mDT_None;
   move.m_pResult = nullptr;
-  move.m_data = nullptr;
+  move.m_pData = nullptr;
   move.m_onExitLP = nullptr;
   move.m_onExitLV = nullptr;
   move.m_pOnExitFP = nullptr;
@@ -274,7 +274,7 @@ template<typename T>
 inline mDefer<T>& mDefer<T>::operator = (mDefer<T> &&move)
 {
   m_deferType = move.m_deferType;
-  m_data = move.m_data;
+  m_data = std::move(move.m_data);
   m_pResult = move.m_pResult;
 
   m_onExitLV = std::move(move.m_onExitLV);
@@ -285,7 +285,6 @@ inline mDefer<T>& mDefer<T>::operator = (mDefer<T> &&move)
 
   move.m_deferType = mDT_None;
   move.m_pResult = nullptr;
-  move.m_data = nullptr;
   move.m_onExitLP = nullptr;
   move.m_onExitLV = nullptr;
   move.m_pOnExitFP = nullptr;
