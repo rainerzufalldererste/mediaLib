@@ -33,6 +33,9 @@ public:
   operator bool() const;
   bool operator !() const;
 
+  template <typename T2>
+  operator T2() const;
+
   const T* GetPointer() const;
   T* GetPointer();
   size_t GetReferenceCount() const;
@@ -365,6 +368,15 @@ template<typename T>
 inline bool mSharedPointer<T>::operator!() const
 {
   return *this == nullptr;
+}
+
+template<typename T>
+template<typename T2>
+inline mSharedPointer<T>::operator T2() const
+{
+  mSTATIC_ASSERT((std::is_same<bool, T2>::value), "mSharedPointer cannot be cast to the given type.");
+
+  return (bool)*this;
 }
 
 template<typename T>
