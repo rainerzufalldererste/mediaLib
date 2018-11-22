@@ -175,8 +175,12 @@ inline mFUNCTION(mRefPool_ForEach, mPtr<mRefPool<T>> &refPool, const std::functi
   mERROR_IF(refPool == nullptr || function == nullptr, mR_ArgumentNull);
 
   const std::function<mResult (typename mRefPool<T>::refPoolPtr *, size_t)> fn = [function](typename mRefPool<T>::refPoolPtr *pData, size_t) 
-  { 
-    RETURN function(pData->ptr); 
+  {
+    mFUNCTION_SETUP();
+
+    mERROR_IF(pData->ptr == nullptr, mR_Success);
+
+    mRETURN_RESULT(function(pData->ptr)); 
   };
 
   mERROR_CHECK(mPool_ForEach(refPool->ptrs, fn));
