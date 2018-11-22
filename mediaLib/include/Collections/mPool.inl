@@ -256,7 +256,15 @@ inline mFUNCTION(mPool_ForEach, mPtr<mPool<T>> &pool, const std::function<mResul
       {
         T *pItem = nullptr;
         mERROR_CHECK(mChunkedArray_PointerAt(pool->data, index, &pItem));
-        mERROR_CHECK(function(pItem, index));
+        const mResult result = function(pItem, index);
+
+        if (mFAILED(result))
+        {
+          if (result == mR_Break)
+            break;
+          else
+            mRETURN_RESULT(result);
+        }
       }
 
       flag <<= 1;
