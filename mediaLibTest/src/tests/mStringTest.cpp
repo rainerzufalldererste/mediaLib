@@ -20,6 +20,186 @@ mTEST(mString, TestCreateEmpty)
   mTEST_ALLOCATOR_ZERO_CHECK();
 }
 
+mTEST(mString, TestCreateNullptr)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  mString string;
+  mDEFER_CALL(&string, mString_Destroy);
+  mTEST_ASSERT_SUCCESS(mString_Create(&string, (char *)nullptr, pAllocator));
+
+  mTEST_ASSERT_EQUAL(string.c_str(), nullptr);
+
+  size_t count;
+  mTEST_ASSERT_SUCCESS(mString_GetCount(string, &count));
+  mTEST_ASSERT_EQUAL(count, 0);
+
+  size_t size;
+  mTEST_ASSERT_SUCCESS(mString_GetByteSize(string, &size));
+  mTEST_ASSERT_EQUAL(size, 0);
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}
+
+mTEST(mString, TestSetToNullptr)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  mString string;
+  mDEFER_CALL(&string, mString_Destroy);
+  mTEST_ASSERT_SUCCESS(mString_Create(&string, "not nullptr", pAllocator));
+
+  mTEST_ASSERT_SUCCESS(mString_Create(&string, (char *)nullptr, pAllocator));
+
+  mTEST_ASSERT_EQUAL(string, "");
+
+  size_t count;
+  mTEST_ASSERT_SUCCESS(mString_GetCount(string, &count));
+  mTEST_ASSERT_EQUAL(count, 1);
+
+  size_t size;
+  mTEST_ASSERT_SUCCESS(mString_GetByteSize(string, &size));
+  mTEST_ASSERT_EQUAL(size, 1);
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}
+
+mTEST(mString, TestCreateNullptrLength)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  mString string;
+  mDEFER_CALL(&string, mString_Destroy);
+  mTEST_ASSERT_SUCCESS(mString_Create(&string, (char *)nullptr, 1337, pAllocator));
+
+  mTEST_ASSERT_EQUAL(string.c_str(), nullptr);
+
+  size_t count;
+  mTEST_ASSERT_SUCCESS(mString_GetCount(string, &count));
+  mTEST_ASSERT_EQUAL(count, 0);
+
+  size_t size;
+  mTEST_ASSERT_SUCCESS(mString_GetByteSize(string, &size));
+  mTEST_ASSERT_EQUAL(size, 0);
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}
+
+mTEST(mString, TestSetToNullptrLength)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  const char testText[] = "not nullptr";
+
+  mString string;
+  mDEFER_CALL(&string, mString_Destroy);
+  mTEST_ASSERT_SUCCESS(mString_Create(&string, testText, mARRAYSIZE(testText), pAllocator));
+
+  mTEST_ASSERT_SUCCESS(mString_Create(&string, (char *)nullptr, 1337, pAllocator));
+
+  mTEST_ASSERT_EQUAL(string, "");
+
+  size_t count;
+  mTEST_ASSERT_SUCCESS(mString_GetCount(string, &count));
+  mTEST_ASSERT_EQUAL(count, 1);
+
+  size_t size;
+  mTEST_ASSERT_SUCCESS(mString_GetByteSize(string, &size));
+  mTEST_ASSERT_EQUAL(size, 1);
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}
+
+mTEST(mString, TestCreateNullptrWcharT)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  mString string;
+  mDEFER_CALL(&string, mString_Destroy);
+  mTEST_ASSERT_SUCCESS(mString_Create(&string, (wchar_t *)nullptr, pAllocator));
+
+  mTEST_ASSERT_EQUAL(string.c_str(), nullptr);
+
+  size_t count;
+  mTEST_ASSERT_SUCCESS(mString_GetCount(string, &count));
+  mTEST_ASSERT_EQUAL(count, 0);
+
+  size_t size;
+  mTEST_ASSERT_SUCCESS(mString_GetByteSize(string, &size));
+  mTEST_ASSERT_EQUAL(size, 0);
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}
+
+mTEST(mString, TestSetToNullptrWcharT)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  mString string;
+  mDEFER_CALL(&string, mString_Destroy);
+  mTEST_ASSERT_SUCCESS(mString_Create(&string, "not nullptr", pAllocator));
+
+  mTEST_ASSERT_SUCCESS(mString_Create(&string, (wchar_t *)nullptr, pAllocator));
+
+  mTEST_ASSERT_EQUAL(string, "");
+
+  size_t count;
+  mTEST_ASSERT_SUCCESS(mString_GetCount(string, &count));
+  mTEST_ASSERT_EQUAL(count, 1);
+
+  size_t size;
+  mTEST_ASSERT_SUCCESS(mString_GetByteSize(string, &size));
+  mTEST_ASSERT_EQUAL(size, 1);
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}
+
+mTEST(mString, TestCreateNullptrLengthWcharT)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  mString string;
+  mDEFER_CALL(&string, mString_Destroy);
+  mTEST_ASSERT_SUCCESS(mString_Create(&string, (wchar_t *)nullptr, 1337, pAllocator));
+
+  mTEST_ASSERT_EQUAL(string.c_str(), nullptr);
+
+  size_t count;
+  mTEST_ASSERT_SUCCESS(mString_GetCount(string, &count));
+  mTEST_ASSERT_EQUAL(count, 0);
+
+  size_t size;
+  mTEST_ASSERT_SUCCESS(mString_GetByteSize(string, &size));
+  mTEST_ASSERT_EQUAL(size, 0);
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}
+
+mTEST(mString, TestSetToNullptrLengthWcharT)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  const char testText[] = "not nullptr";
+
+  mString string;
+  mDEFER_CALL(&string, mString_Destroy);
+  mTEST_ASSERT_SUCCESS(mString_Create(&string, testText, mARRAYSIZE(testText), pAllocator));
+
+  mTEST_ASSERT_SUCCESS(mString_Create(&string, (wchar_t *)nullptr, 1337, pAllocator));
+
+  mTEST_ASSERT_EQUAL(string, "");
+
+  size_t count;
+  mTEST_ASSERT_SUCCESS(mString_GetCount(string, &count));
+  mTEST_ASSERT_EQUAL(count, 1);
+
+  size_t size;
+  mTEST_ASSERT_SUCCESS(mString_GetByteSize(string, &size));
+  mTEST_ASSERT_EQUAL(size, 1);
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}
+
 mTEST(mString, TestCreateASCII)
 {
   mTEST_ALLOCATOR_SETUP();
@@ -689,6 +869,26 @@ mTEST(mString, TestCreateFromEmpty)
   mTEST_ALLOCATOR_ZERO_CHECK();
 }
 
+mTEST(mString, TestCreateFromNowEmpty)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  mString emptyString;
+  mDEFER_CALL(&emptyString, mString_Destroy);
+  mTEST_ASSERT_SUCCESS(mString_Create(&emptyString, "THIS IS NOT EMPTY", pAllocator));
+  mTEST_ASSERT_SUCCESS(mString_Create(&emptyString, (char *)nullptr, pAllocator));
+
+  mString string;
+  mDEFER_CALL(&string, mString_Destroy);
+  mTEST_ASSERT_SUCCESS(mString_Create(&string, emptyString, pAllocator));
+
+  mTEST_ASSERT_EQUAL(string.bytes, 0);
+  mTEST_ASSERT_EQUAL(string.count, 0);
+  mTEST_ASSERT_EQUAL(string.text, nullptr);
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}
+
 mTEST(mString, TestCreateFromTooBigInvalidUTF8)
 {
   mTEST_ALLOCATOR_SETUP();
@@ -744,6 +944,21 @@ mTEST(mString, TestSetToWCharT)
 
   mTEST_ASSERT_EQUAL(string, mString(compString));
   mTEST_ASSERT_EQUAL(strlen(string.c_str()), strlen(compString));
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}
+
+mTEST(mString, TestToStdString)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  mString string;
+  mDEFER_CALL(&string, mString_Destroy);
+  mTEST_ASSERT_SUCCESS(mString_Create(&string, "THIS IS NOT EMPTY", pAllocator));
+
+  std::string stdString = (std::string)string;
+
+  mTEST_ASSERT_EQUAL(string.bytes, stdString.size() + 1);
 
   mTEST_ALLOCATOR_ZERO_CHECK();
 }

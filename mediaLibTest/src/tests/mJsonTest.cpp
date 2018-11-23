@@ -449,3 +449,43 @@ mTEST(mJsonReader, TestWriteAndRead)
 
   mTEST_ALLOCATOR_ZERO_CHECK();
 }
+
+mTEST(mJsonReader, TestWriteNullptrString)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  mPtr<mJsonWriter> jsonWriter;
+  mDEFER_CALL(&jsonWriter, mJsonWriter_Destroy);
+  mTEST_ASSERT_SUCCESS(mJsonWriter_Create(&jsonWriter, pAllocator));
+
+  const char uninitializedStringName[] = "uninitializedString";
+  const char charNullPtrName[] = "charNullPtr";
+
+  // Write empty strings.
+  {
+    mString uninitializedString;
+    mTEST_ASSERT_SUCCESS(mJsonWriter_AddValue(jsonWriter, uninitializedStringName, uninitializedString));
+
+    const char *charNullPtr = nullptr;
+    mTEST_ASSERT_SUCCESS(mJsonWriter_AddValue(jsonWriter, charNullPtrName, charNullPtr));
+  }
+
+  mString jsonString;
+  mTEST_ASSERT_SUCCESS(mJsonWriter_ToString(jsonWriter, &jsonString));
+
+  mPtr<mJsonReader> jsonReader;
+  mTEST_ASSERT_SUCCESS(mJsonReader_CreateFromString(&jsonReader, pAllocator, jsonString));
+
+  // Read empty strings.
+  {
+    mString readString0;
+    mTEST_ASSERT_SUCCESS(mJsonReader_ReadNamedValue(jsonReader, uninitializedStringName, &readString0));
+    mTEST_ASSERT_EQUAL(readString0.bytes, 1);
+
+    mString readString1;
+    mTEST_ASSERT_SUCCESS(mJsonReader_ReadNamedValue(jsonReader, charNullPtrName, &readString1));
+    mTEST_ASSERT_EQUAL(readString1.bytes, 1);
+  }
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}
