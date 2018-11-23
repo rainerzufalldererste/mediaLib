@@ -30,33 +30,7 @@ mString::mString(const char *text, const size_t size, IN OPTIONAL mAllocator *pA
 {
   mResult result = mR_Success;
 
-  this->pAllocator = pAllocator;
-  this->bytes = size;
-
-  mERROR_CHECK_GOTO(mAllocator_AllocateZero(this->pAllocator, &this->text, this->bytes), result, epilogue);
-  this->capacity = bytes;
-  mERROR_CHECK_GOTO(mAllocator_Copy(this->pAllocator, this->text, text, this->bytes), result, epilogue);
-
-  size_t offset = 0;
-  this->count = 0;
-
-  while (offset + 1 < bytes)
-  {
-    utf8proc_int32_t codePoint;
-    ptrdiff_t characterSize;
-    mERROR_IF_GOTO((characterSize = utf8proc_iterate((uint8_t *)this->text + offset, this->bytes - offset, &codePoint)) < 0, mR_InternalError, result, epilogue);
-    mERROR_IF_GOTO(codePoint < 0, mR_InternalError, result, epilogue);
-    offset += (size_t)characterSize;
-    this->count++;
-
-    if (characterSize == 0 || codePoint == 0)
-    {
-      this->count--;
-      break;
-    }
-  }
-
-  this->count++;
+  mERROR_CHECK_GOTO(mString_Create(this, text, size, pAllocator), result, epilogue);
 
   return;
 
@@ -312,7 +286,31 @@ mFUNCTION(mString_Create, OUT mString *pString, const char *text, IN OPTIONAL mA
 {
   mFUNCTION_SETUP();
 
-  mERROR_IF(text == nullptr, mR_ArgumentNull);
+  mERROR_IF(pString == nullptr, mR_ArgumentNull);
+
+  if (text == nullptr)
+  {
+    pString->hasFailed = false;
+
+    if (pString->pAllocator != pAllocator)
+    {
+      mERROR_CHECK(mAllocator_FreePtr(pAllocator, &pString->text));
+      pString->capacity = 0;
+      pString->count = 0;
+      pString->bytes = 0;
+    }
+
+    pString->pAllocator = pAllocator;
+
+    if (pString->text != nullptr)
+    {
+      pString->text[0] = '\0';
+      pString->count = 1;
+      pString->bytes = 1;
+    }
+
+    mRETURN_SUCCESS();
+  }
 
   mERROR_CHECK(mString_Create(pString, text, strlen(text) + 1, pAllocator));
 
@@ -323,7 +321,31 @@ mFUNCTION(mString_Create, OUT mString *pString, const char *text, size_t size, I
 {
   mFUNCTION_SETUP();
 
-  mERROR_IF(text == nullptr, mR_ArgumentNull);
+  mERROR_IF(pString == nullptr, mR_ArgumentNull);
+
+  if (text == nullptr)
+  {
+    pString->hasFailed = false;
+
+    if (pString->pAllocator != pAllocator)
+    {
+      mERROR_CHECK(mAllocator_FreePtr(pAllocator, &pString->text));
+      pString->capacity = 0;
+      pString->count = 0;
+      pString->bytes = 0;
+    }
+
+    pString->pAllocator = pAllocator;
+
+    if (pString->text != nullptr)
+    {
+      pString->text[0] = '\0';
+      pString->count = 1;
+      pString->bytes = 1;
+    }
+
+    mRETURN_SUCCESS();
+  }
 
   mERROR_CHECK(mStringLength(text, size, &size));
   size++;
@@ -375,6 +397,32 @@ mFUNCTION(mString_Create, OUT mString *pString, const wchar_t *text, IN OPTIONAL
 {
   mFUNCTION_SETUP();
 
+  mERROR_IF(pString == nullptr, mR_ArgumentNull);
+
+  if (text == nullptr)
+  {
+    pString->hasFailed = false;
+
+    if (pString->pAllocator != pAllocator)
+    {
+      mERROR_CHECK(mAllocator_FreePtr(pAllocator, &pString->text));
+      pString->capacity = 0;
+      pString->count = 0;
+      pString->bytes = 0;
+    }
+
+    pString->pAllocator = pAllocator;
+
+    if (pString->text != nullptr)
+    {
+      pString->text[0] = '\0';
+      pString->count = 1;
+      pString->bytes = 1;
+    }
+
+    mRETURN_SUCCESS();
+  }
+
   mERROR_CHECK(mString_Create(pString, text, wcslen(text) + 1, pAllocator));
 
   mRETURN_SUCCESS();
@@ -385,6 +433,30 @@ mFUNCTION(mString_Create, OUT mString *pString, const wchar_t *text, const size_
   mFUNCTION_SETUP();
 
   mERROR_IF(pString == nullptr, mR_ArgumentNull);
+
+  if (text == nullptr)
+  {
+    pString->hasFailed = false;
+
+    if (pString->pAllocator != pAllocator)
+    {
+      mERROR_CHECK(mAllocator_FreePtr(pAllocator, &pString->text));
+      pString->capacity = 0;
+      pString->count = 0;
+      pString->bytes = 0;
+    }
+
+    pString->pAllocator = pAllocator;
+
+    if (pString->text != nullptr)
+    {
+      pString->text[0] = '\0';
+      pString->count = 1;
+      pString->bytes = 1;
+    }
+
+    mRETURN_SUCCESS();
+  }
 
   if (pString->pAllocator == pAllocator)
   {
@@ -445,8 +517,8 @@ mFUNCTION(mString_Create, OUT mString *pString, const mString &from, IN OPTIONAL
   {
     if (pString->bytes > 1)
     {
-      pString->bytes = 0;
-      pString->count = 0;
+      pString->bytes = 1;
+      pString->count = 1;
       pString->text[0] = '\0';
     }
 

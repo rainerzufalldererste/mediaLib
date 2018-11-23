@@ -47,11 +47,11 @@ static_assert(false, "mDEBUG_TESTS has to be turned off for Buildserver builds."
   { mResult __result = (functionCall); \
     \
     if (mFAILED(__result)) \
-    { mString resultString; \
-      if (mFAILED(mResult_ToString(__result, &resultString))) \
+    { mString __resultString; \
+      if (mFAILED(mResult_ToString(__result, &__resultString))) \
         printf("Test Failed on 'mFAILED(%s)' with invalid result [0x%" PRIx64 "] at " __FUNCTION__ " in File '"  __FILE__ "' Line %" PRIi32 ".\n", #functionCall, (uint64_t)__result, __LINE__); \
       else \
-        printf("Test Failed on 'mFAILED(%s)' with Result '%s' [0x%" PRIx64 "] at " __FUNCTION__ " in File '" __FILE__ "' Line %" PRIi32 ".\n", #functionCall, resultString.c_str(), (uint64_t)__result, __LINE__); \
+        printf("Test Failed on 'mFAILED(%s)' with Result '%s' [0x%" PRIx64 "] at " __FUNCTION__ " in File '" __FILE__ "' Line %" PRIi32 ".\n", #functionCall, __resultString.c_str(), (uint64_t)__result, __LINE__); \
       __debugbreak(); \
     } \
   } while(0)

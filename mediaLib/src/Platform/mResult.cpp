@@ -55,6 +55,10 @@ mFUNCTION(mResult_ToString, const mResult result, OUT mString *pString)
     *pString = "mR_Success";
     break;
 
+  case mR_Break:
+    *pString = "mR_Break";
+    break;
+
   case mR_InvalidParameter:
     *pString = "mR_InvalidParameter";
     break;
@@ -121,6 +125,10 @@ mFUNCTION(mResult_ToString, const mResult result, OUT mString *pString)
 
   case mR_Failure:
     *pString = "mR_Failure";
+    break;
+
+  case mR_NotSupported:
+    *pString = "mR_NotSupported";
     break;
 
   case mR_ResourceAlreadyExists:

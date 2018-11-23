@@ -285,7 +285,7 @@ mFUNCTION(mJsonWriter_AddValue, mPtr<mJsonWriter> &jsonWriter, const char *name,
   switch (lastType)
   {
   case Object:
-    mERROR_IF(nullptr == cJSON_AddStringToObject(pJson, name, value.c_str()), mR_InternalError);
+    mERROR_IF(nullptr == cJSON_AddStringToObject(pJson, name, value.c_str() == nullptr ? "" : value.c_str()), mR_InternalError);
     break;
 
   default:
@@ -298,7 +298,7 @@ mFUNCTION(mJsonWriter_AddValue, mPtr<mJsonWriter> &jsonWriter, const char *name,
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mJsonWriter_AddValue, mPtr<mJsonWriter>& jsonWriter, const char *name, const char *value)
+mFUNCTION(mJsonWriter_AddValue, mPtr<mJsonWriter> &jsonWriter, const char *name, const char *value)
 {
   mFUNCTION_SETUP();
 
