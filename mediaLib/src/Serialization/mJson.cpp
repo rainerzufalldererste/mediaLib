@@ -818,7 +818,7 @@ mFUNCTION(mJsonReader_ExitNamed, mPtr<mJsonReader> &jsonReader)
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mJsonReader_StepIntoArrayItem, mPtr<mJsonReader>& jsonReader, const size_t index)
+mFUNCTION(mJsonReader_StepIntoArrayItem, mPtr<mJsonReader> &jsonReader, const size_t index)
 {
   mFUNCTION_SETUP();
 
@@ -834,7 +834,7 @@ mFUNCTION(mJsonReader_StepIntoArrayItem, mPtr<mJsonReader>& jsonReader, const si
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mJsonReader_ExitArrayItem, mPtr<mJsonReader>& jsonReader)
+mFUNCTION(mJsonReader_ExitArrayItem, mPtr<mJsonReader> &jsonReader)
 {
   mFUNCTION_SETUP();
 
@@ -1158,7 +1158,7 @@ mFUNCTION(mJsonReader_ReadCurrentValue, mPtr<mJsonReader> &jsonReader, OUT mStri
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mJsonReader_ReadCurrentValue, mPtr<mJsonReader>& jsonReader, OUT double_t * pValue)
+mFUNCTION(mJsonReader_ReadCurrentValue, mPtr<mJsonReader> &jsonReader, OUT double_t *pValue)
 {
   mFUNCTION_SETUP();
 
@@ -1174,7 +1174,7 @@ mFUNCTION(mJsonReader_ReadCurrentValue, mPtr<mJsonReader>& jsonReader, OUT doubl
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mJsonReader_ReadCurrentValue, mPtr<mJsonReader>& jsonReader, OUT bool * pValue)
+mFUNCTION(mJsonReader_ReadCurrentValue, mPtr<mJsonReader> &jsonReader, OUT bool *pValue)
 {
   mFUNCTION_SETUP();
 

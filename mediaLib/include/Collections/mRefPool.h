@@ -60,7 +60,7 @@ template <typename T>
 mFUNCTION(mRefPool_RemoveOwnReference, mPtr<mRefPool<T>> &refPool);
 
 template <typename T>
-mFUNCTION(mRefPool_GetPointerIndex, mPtr<T> &ptr, size_t *pIndex);
+mFUNCTION(mRefPool_GetPointerIndex, const mPtr<T> &ptr, size_t *pIndex);
 
 // would be handled by cpp but still nicer if explicitly defined.
 template <typename T>

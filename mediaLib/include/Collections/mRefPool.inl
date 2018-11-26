@@ -294,7 +294,7 @@ inline mFUNCTION(mRefPool_RemoveOwnReference, mPtr<mRefPool<T>> &refPool)
 }
 
 template<typename T>
-inline mFUNCTION(mRefPool_GetPointerIndex, mPtr<T> &ptr, size_t *pIndex)
+inline mFUNCTION(mRefPool_GetPointerIndex, const mPtr<T> &ptr, size_t *pIndex)
 {
   mFUNCTION_SETUP();
 
