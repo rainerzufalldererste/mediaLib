@@ -33,7 +33,7 @@ public:
   operator bool() const;
   bool operator !() const;
 
-  template <typename T2>
+  template <typename T2, typename std::enable_if_t<std::is_convertible<T2, bool>::value, int>* = nullptr >
   operator T2() const;
 
   const T* GetPointer() const;
@@ -371,7 +371,7 @@ inline bool mSharedPointer<T>::operator!() const
 }
 
 template<typename T>
-template<typename T2>
+template<typename T2, typename std::enable_if_t<std::is_convertible<T2, bool>::value, int>* /* = nullptr */ >
 inline mSharedPointer<T>::operator T2() const
 {
   mSTATIC_ASSERT((std::is_same<bool, T2>::value), "mSharedPointer cannot be cast to the given type.");
