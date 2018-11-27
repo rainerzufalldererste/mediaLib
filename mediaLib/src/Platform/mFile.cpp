@@ -6,6 +6,12 @@
 #include <shlobj.h>
 #include <knownfolders.h>
 
+HRESULT mFile_CreateAndInitializeFileOperation_Internal(REFIID riid, void **ppFileOperation);
+mFUNCTION(mFile_GetKnownPath_Internal, OUT mString *pString, const GUID &guid);
+mFUNCTION(mFileInfo_FromFindDataWStruct_Internal, IN_OUT mFileInfo *pFileInfo, IN const WIN32_FIND_DATAW *pFileData, IN mAllocator *pAllocator);
+
+//////////////////////////////////////////////////////////////////////////
+
 mFUNCTION(mFile_Exists, const mString &filename, OUT bool *pExists)
 {
   mFUNCTION_SETUP();
@@ -69,7 +75,7 @@ mFUNCTION(mFile_ReadAllText, const std::wstring &filename, IN OPTIONAL mAllocato
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mFile_ReadAllText, const mString & filename, IN OPTIONAL mAllocator * pAllocator, OUT mString *pText, const mFile_Encoding /* encoding = mF_E_ASCII */)
+mFUNCTION(mFile_ReadAllText, const mString &filename, IN OPTIONAL mAllocator *pAllocator, OUT mString *pText, const mFile_Encoding /* encoding = mF_E_ASCII */)
 {
   mFUNCTION_SETUP();
 
@@ -83,6 +89,9 @@ mFUNCTION(mFile_ReadAllText, const mString & filename, IN OPTIONAL mAllocator * 
 
   mDEFER(mAllocator_FreePtr(nullptr, &text));
   mERROR_CHECK(mFile_ReadRaw(wstring, &text, pAllocator, &count));
+
+  mERROR_IF(count == 0, mR_ResourceNotFound);
+
   text[count] = '\0';
   *pText = mString(text);
   mERROR_CHECK(mAllocator_FreePtr(pAllocator, &text));
@@ -166,31 +175,6 @@ mFUNCTION(mFile_CreateDirectory, const mString &folderPath)
   mRETURN_SUCCESS();
 }
 
-HRESULT CreateAndInitializeFileOperation(REFIID riid, void **ppFileOperation)
-{
-  *ppFileOperation = nullptr;
-
-  // Create the IFileOperation object
-  IFileOperation *pfo;
-
-  HRESULT hr = CoCreateInstance(__uuidof(FileOperation), NULL, CLSCTX_ALL, IID_PPV_ARGS(&pfo));
-
-  if (SUCCEEDED(hr))
-  {
-    // Set the operation flags. Turn off all UI from being shown to the user during the operation. This includes error, confirmation and progress dialogs.
-    hr = pfo->SetOperationFlags(FOF_NO_UI);
-
-    if (SUCCEEDED(hr))
-    {
-      hr = pfo->QueryInterface(riid, ppFileOperation);
-    }
-
-    pfo->Release();
-  }
-
-  return hr;
-}
-
 mFUNCTION(mFile_DeleteFolder, const mString &folderPath)
 {
   mFUNCTION_SETUP();
@@ -209,7 +193,7 @@ mFUNCTION(mFile_DeleteFolder, const mString &folderPath)
   HRESULT hr = S_OK;
 
   wchar_t absolutePath[1024 * 4];
-  DWORD length = GetFullPathNameW(directoryName.c_str(), mARRAYSIZE(absolutePath), absolutePath, nullptr);
+  const DWORD length = GetFullPathNameW(directoryName.c_str(), mARRAYSIZE(absolutePath), absolutePath, nullptr);
   mUnused(length);
 
   IShellItem *pItem = nullptr;
@@ -217,7 +201,7 @@ mFUNCTION(mFile_DeleteFolder, const mString &folderPath)
   mDEFER(pItem->Release());
 
   IFileOperation *pFileOperation = nullptr;
-  mERROR_IF(FAILED(hr = CreateAndInitializeFileOperation(IID_PPV_ARGS(&pFileOperation))), mR_InternalError);
+  mERROR_IF(FAILED(hr = mFile_CreateAndInitializeFileOperation_Internal(IID_PPV_ARGS(&pFileOperation))), mR_InternalError);
   mDEFER(pFileOperation->Release());
 
   mERROR_IF(FAILED(hr = pFileOperation->DeleteItem(pItem, nullptr)), mR_InternalError);
@@ -317,29 +301,6 @@ mFUNCTION(mFile_GetTempDirectory, OUT mString *pString)
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mFile_GetKnownPath_Internal, OUT mString *pString, const GUID &guid)
-{
-  mFUNCTION_SETUP();
-
-  mERROR_IF(pString == nullptr, mR_ArgumentNull);
-
-  wchar_t *pBuffer = nullptr;
-
-  mDEFER(
-    if (pBuffer != nullptr)
-      CoTaskMemFree(pBuffer)
-      );
-
-  HRESULT result = S_OK;
-  mERROR_IF(FAILED(result = SHGetKnownFolderPath(guid, 0, nullptr, &pBuffer)), mR_InternalError);
-
-  mString tempString;
-  mERROR_CHECK(mString_Create(&tempString, pBuffer, &mDefaultTempAllocator));
-  mERROR_CHECK(mString_ToDirectoryPath(pString, tempString));
-
-  mRETURN_SUCCESS();
-}
-
 mFUNCTION(mFile_GetAppDataDirectory, OUT mString *pString)
 {
   mFUNCTION_SETUP();
@@ -399,6 +360,140 @@ mFUNCTION(mFile_GetStartupDirectory, OUT mString *pString)
   mFUNCTION_SETUP();
 
   mERROR_CHECK(mFile_GetKnownPath_Internal(pString, FOLDERID_Startup));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mFile_GetDirectoryContents, const mString &directoryPath, OUT mPtr<mQueue<mFileInfo>> *pFiles, IN mAllocator *pAllocator)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pFiles == nullptr, mR_ArgumentNull);
+  mERROR_IF(directoryPath.hasFailed, mR_InvalidParameter);
+
+  mString actualFolderPath;
+  mERROR_CHECK(mString_ToDirectoryPath(&actualFolderPath, directoryPath));
+
+  mERROR_CHECK(mString_Append(actualFolderPath, "*"));
+
+  std::wstring folderPath;
+  mERROR_CHECK(mString_ToWideString(actualFolderPath, &folderPath));
+
+  wchar_t absolutePath[1024 * 4];
+  const DWORD length = GetFullPathNameW(folderPath.c_str(), mARRAYSIZE(absolutePath), absolutePath, nullptr);
+  mERROR_IF(length == 0, mR_InternalError);
+
+  mERROR_CHECK(mQueue_Create(pFiles, pAllocator));
+
+  WIN32_FIND_DATAW fileData;
+  const HANDLE handle = FindFirstFileW(absolutePath, &fileData);
+
+  if (handle == INVALID_HANDLE_VALUE)
+  {
+    const DWORD error = GetLastError();
+
+    switch (error)
+    {
+    case ERROR_FILE_NOT_FOUND:
+      mRETURN_RESULT(mR_ResourceNotFound);
+
+    default:
+      mRETURN_RESULT(mR_InternalError);
+    }
+  }
+
+  mDEFER(FindClose(handle));
+
+  do
+  {
+    mFileInfo fileInfo;
+    mERROR_CHECK(mFileInfo_FromFindDataWStruct_Internal(&fileInfo, &fileData, pAllocator));
+    mERROR_CHECK(mQueue_PushBack(*pFiles, fileInfo));
+  } while (FindNextFileW(handle, &fileData));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mFile_GetAbsolutePath, OUT mString *pAbsolutePath, const mString &directoryPath)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pAbsolutePath == nullptr, mR_ArgumentNull);
+  mERROR_IF(directoryPath.hasFailed, mR_InvalidParameter);
+
+  mString actualFolderPath;
+  mERROR_CHECK(mString_ToDirectoryPath(&actualFolderPath, directoryPath));
+
+  std::wstring folderPath;
+  mERROR_CHECK(mString_ToWideString(actualFolderPath, &folderPath));
+
+  wchar_t absolutePath[1024 * 4];
+  const DWORD length = GetFullPathNameW(folderPath.c_str(), mARRAYSIZE(absolutePath), absolutePath, nullptr);
+  
+  mERROR_CHECK(mString_Create(pAbsolutePath, absolutePath, length + 1, directoryPath.pAllocator));
+
+  mRETURN_SUCCESS();
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+HRESULT mFile_CreateAndInitializeFileOperation_Internal(REFIID riid, void **ppFileOperation)
+{
+  *ppFileOperation = nullptr;
+
+  // Create the IFileOperation object.
+  IFileOperation *pfo;
+
+  HRESULT hr = CoCreateInstance(__uuidof(FileOperation), NULL, CLSCTX_ALL, IID_PPV_ARGS(&pfo));
+
+  if (SUCCEEDED(hr))
+  {
+    // Set the operation flags. Turn off all UI from being shown to the user during the operation. This includes error, confirmation and progress dialogs.
+    hr = pfo->SetOperationFlags(FOF_NO_UI);
+
+    if (SUCCEEDED(hr))
+    {
+      hr = pfo->QueryInterface(riid, ppFileOperation);
+    }
+
+    pfo->Release();
+  }
+
+  return hr;
+}
+
+mFUNCTION(mFile_GetKnownPath_Internal, OUT mString *pString, const GUID &guid)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pString == nullptr, mR_ArgumentNull);
+
+  wchar_t *pBuffer = nullptr;
+
+  mDEFER(
+    if (pBuffer != nullptr)
+      CoTaskMemFree(pBuffer)
+      );
+
+  HRESULT result = S_OK;
+  mERROR_IF(FAILED(result = SHGetKnownFolderPath(guid, 0, nullptr, &pBuffer)), mR_InternalError);
+
+  mString tempString;
+  mERROR_CHECK(mString_Create(&tempString, pBuffer, &mDefaultTempAllocator));
+  mERROR_CHECK(mString_ToDirectoryPath(pString, tempString));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mFileInfo_FromFindDataWStruct_Internal, IN_OUT mFileInfo *pFileInfo, IN const WIN32_FIND_DATAW *pFileData, IN mAllocator *pAllocator)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_CHECK(mString_Create(&pFileInfo->name, (wchar_t *)pFileData->cFileName, mARRAYSIZE(pFileData->cFileName), pAllocator));
+  pFileInfo->size = ((size_t)pFileData->nFileSizeHigh * (size_t)(MAXDWORD + 1ULL)) + (size_t)pFileData->nFileSizeLow;
+  pFileInfo->creationTimeStamp = ((size_t)pFileData->ftCreationTime.dwHighDateTime * (size_t)(MAXDWORD + 1ULL)) + (size_t)pFileData->ftCreationTime.dwLowDateTime;
+  pFileInfo->lastAccessTimeStamp = ((size_t)pFileData->ftLastAccessTime.dwHighDateTime * (size_t)(MAXDWORD + 1ULL)) + (size_t)pFileData->ftLastAccessTime.dwLowDateTime;
+  pFileInfo->lastWriteTimeStamp = ((size_t)pFileData->ftLastWriteTime.dwHighDateTime * (size_t)(MAXDWORD + 1ULL)) + (size_t)pFileData->ftLastWriteTime.dwLowDateTime;
 
   mRETURN_SUCCESS();
 }

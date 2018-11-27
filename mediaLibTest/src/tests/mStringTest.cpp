@@ -962,3 +962,15 @@ mTEST(mString, TestToStdString)
 
   mTEST_ALLOCATOR_ZERO_CHECK();
 }
+
+mTEST(mString, TestWstringLargerBufferSizeCreate)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  wchar_t testString[10] = { 'b', 'i', 'n', '\0', '\0', '\0', '\0', '\0', '\0', '\0' };
+  mString string;
+
+  mTEST_ASSERT_SUCCESS(mString_Create(&string, testString, mARRAYSIZE(testString), pAllocator));
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}
