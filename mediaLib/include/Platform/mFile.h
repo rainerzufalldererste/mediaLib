@@ -12,11 +12,13 @@ enum mFile_Encoding
 mFUNCTION(mFile_Exists, const mString &filename, OUT bool *pExists);
 mFUNCTION(mFile_Exists, const std::wstring &filename, OUT bool *pExists);
 
+mFUNCTION(mFile_ReadAllBytes, const mString &filename, IN OPTIONAL mAllocator *pAllocator, OUT mArray<uint8_t> *pBytes);
 mFUNCTION(mFile_ReadAllBytes, const std::wstring &filename, IN OPTIONAL mAllocator *pAllocator, OUT mArray<uint8_t> *pBytes);
 mFUNCTION(mFile_ReadAllText, const std::wstring &filename, IN OPTIONAL mAllocator *pAllocator, OUT std::string *pText, const mFile_Encoding encoding = mF_E_UTF8);
 mFUNCTION(mFile_ReadAllText, const mString &filename, IN OPTIONAL mAllocator *pAllocator, OUT mString *pText, const mFile_Encoding encoding = mF_E_UTF8);
 
 mFUNCTION(mFile_WriteAllBytes, const std::wstring &filename, mArray<uint8_t> &bytes);
+mFUNCTION(mFile_WriteAllBytes, const mString &filename, mArray<uint8_t> &bytes);
 mFUNCTION(mFile_WriteAllText, const std::wstring &filename, const std::string &text, const mFile_Encoding encoding = mF_E_UTF8);
 mFUNCTION(mFile_WriteAllText, const mString &filename, const mString &text, const mFile_Encoding encoding = mF_E_UTF8);
 
@@ -24,10 +26,19 @@ template <typename T>
 mFUNCTION(mFile_ReadAllItems, const std::wstring &filename, IN OPTIONAL mAllocator *pAllocator, OUT mArray<T> *pData);
 
 template <typename T>
+mFUNCTION(mFile_ReadAllItems, const mString &filename, IN OPTIONAL mAllocator *pAllocator, OUT mArray<T> *pData);
+
+template <typename T>
 mFUNCTION(mFile_ReadRaw, const std::wstring &filename, OUT T **ppData, IN mAllocator *pAllocator, OUT size_t *pCount);
 
 template <typename T>
+mFUNCTION(mFile_ReadRaw, const mString &filename, OUT T **ppData, IN mAllocator *pAllocator, OUT size_t *pCount);
+
+template <typename T>
 mFUNCTION(mFile_WriteRaw, const std::wstring &filename, IN T *pData, const size_t count);
+
+template <typename T>
+mFUNCTION(mFile_WriteRaw, const mString &filename, IN T *pData, const size_t count);
 
 mFUNCTION(mFile_CreateDirectory, const mString &folderPath);
 mFUNCTION(mFile_DeleteFolder, const mString &folderPath);
@@ -64,6 +75,19 @@ inline mFUNCTION(mFile_ReadAllItems, const std::wstring &filename, IN OPTIONAL m
 }
 
 template<typename T>
+inline mFUNCTION(mFile_ReadAllItems, const mString &filename, IN OPTIONAL mAllocator *pAllocator, OUT mArray<T> *pData)
+{
+  mFUNCTION_SETUP();
+
+  std::wstring wfilename;
+  mERROR_CHECK(mString_ToWideString(filename, &wfilename));
+
+  mERROR_CHECK(mFile_ReadAllItems(wfilename, pAllocator, pData));
+
+  mRETURN_SUCCESS();
+}
+
+template<typename T>
 inline mFUNCTION(mFile_ReadRaw, const std::wstring &filename, OUT T **ppData, IN mAllocator *pAllocator, OUT size_t *pCount)
 {
   mFUNCTION_SETUP();
@@ -90,6 +114,19 @@ inline mFUNCTION(mFile_ReadRaw, const std::wstring &filename, OUT T **ppData, IN
 }
 
 template<typename T>
+inline mFUNCTION(mFile_ReadRaw, const mString &filename, OUT T **ppData, IN mAllocator *pAllocator, OUT size_t *pCount)
+{
+  mFUNCTION_SETUP();
+
+  std::wstring wfilename;
+  mERROR_CHECK(mString_ToWideString(filename, &wfilename));
+
+  mERROR_CHECK(mFile_ReadRaw(wfilename, ppData, pAllocator, pCount));
+
+  mRETURN_SUCCESS();
+}
+
+template<typename T>
 inline mFUNCTION(mFile_WriteRaw, const std::wstring &filename, IN T *pData, const size_t count)
 {
   mFUNCTION_SETUP();
@@ -103,6 +140,19 @@ inline mFUNCTION(mFile_WriteRaw, const std::wstring &filename, IN T *pData, cons
   const size_t writeCount = fwrite(pData, sizeof(T), count, pFile);
 
   mERROR_IF(writeCount != count, mR_InternalError);
+
+  mRETURN_SUCCESS();
+}
+
+template<typename T>
+inline mFUNCTION(mFile_WriteRaw, const mString &filename, IN T *pData, const size_t count)
+{
+  mFUNCTION_SETUP();
+
+  std::wstring wfilename;
+  mERROR_CHECK(mString_ToWideString(filename, &wfilename));
+
+  mERROR_CHECK(mFile_WriteRaw(wfilename, pData, count));
 
   mRETURN_SUCCESS();
 }

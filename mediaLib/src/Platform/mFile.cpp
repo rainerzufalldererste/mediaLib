@@ -33,6 +33,15 @@ mFUNCTION(mFile_Exists, const std::wstring &filename, OUT bool *pExists)
   mRETURN_SUCCESS();
 }
 
+mFUNCTION(mFile_ReadAllBytes, const mString &filename, IN OPTIONAL mAllocator *pAllocator, OUT mArray<uint8_t> *pBytes)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_CHECK(mFile_ReadAllItems(filename, pAllocator, pBytes));
+
+  mRETURN_SUCCESS();
+}
+
 mFUNCTION(mFile_ReadAllBytes, const std::wstring &filename, IN OPTIONAL mAllocator *pAllocator, OUT mArray<uint8_t> *pBytes)
 {
   mFUNCTION_SETUP();
@@ -82,6 +91,15 @@ mFUNCTION(mFile_ReadAllText, const mString & filename, IN OPTIONAL mAllocator * 
 }
 
 mFUNCTION(mFile_WriteAllBytes, const std::wstring &filename, mArray<uint8_t> &bytes)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_CHECK(mFile_WriteRaw(filename, bytes.pData, bytes.count));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mFile_WriteAllBytes, const mString &filename, mArray<uint8_t> &bytes)
 {
   mFUNCTION_SETUP();
 
