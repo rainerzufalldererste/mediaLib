@@ -3,6 +3,7 @@
 
 #include "mediaLib.h"
 #include "mArray.h"
+#include "mQueue.h"
 
 enum mFile_Encoding
 {
@@ -54,6 +55,19 @@ mFUNCTION(mFile_GetFontsDirectory, OUT mString *pString);
 mFUNCTION(mFile_GetCurrentUserDirectory, OUT mString *pString);
 mFUNCTION(mFile_GetProgramFilesDirectory, OUT mString *pString);
 mFUNCTION(mFile_GetStartupDirectory, OUT mString *pString);
+
+struct mFileInfo
+{
+  mString name;
+  size_t size;
+  size_t creationTimeStamp;
+  size_t lastAccessTimeStamp;
+  size_t lastWriteTimeStamp;
+};
+
+mFUNCTION(mFile_GetDirectoryContents, const mString &directoryPath, OUT mPtr<mQueue<mFileInfo>> *pFiles, IN mAllocator *pAllocator);
+
+mFUNCTION(mFile_GetAbsolutePath, OUT mString *pAbsolutePath, const mString &directoryPath);
 
 //////////////////////////////////////////////////////////////////////////
 

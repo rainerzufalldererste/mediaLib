@@ -423,12 +423,58 @@ mFUNCTION(mString_Create, OUT mString *pString, const wchar_t *text, IN OPTIONAL
     mRETURN_SUCCESS();
   }
 
-  mERROR_CHECK(mString_Create(pString, text, wcslen(text) + 1, pAllocator));
+  const size_t size = wcslen(text) + 1;
+
+  if (pString->pAllocator == pAllocator)
+  {
+    *pString = mString();
+    pString->pAllocator = pAllocator;
+
+    if (pString->capacity < size * sizeof(wchar_t))
+    {
+      mERROR_CHECK(mAllocator_Reallocate(pString->pAllocator, &pString->text, size * sizeof(wchar_t)));
+      pString->capacity = size * sizeof(wchar_t);
+    }
+  }
+  else
+  {
+    pString->~mString();
+    *pString = mString();
+
+    pString->pAllocator = pAllocator;
+
+    mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &pString->text, size * sizeof(wchar_t)));
+    pString->capacity = size * sizeof(wchar_t);
+  }
+
+  if (0 == (pString->bytes = WideCharToMultiByte(CP_UTF8, 0, text, (int)size, pString->text, (int)pString->capacity, nullptr, false)))
+  {
+    DWORD error = GetLastError();
+    mUnused(error);
+
+    mERROR_IF(true, mR_InvalidParameter);
+  }
+
+  size_t offset = 0;
+  pString->count = 0;
+
+  while (offset < pString->bytes)
+  {
+    utf8proc_int32_t codePoint;
+    ptrdiff_t characterSize;
+    mERROR_IF((characterSize = utf8proc_iterate((uint8_t *)pString->text + offset, pString->bytes - offset, &codePoint)) < 0, mR_InternalError);
+    mERROR_IF(codePoint < 0, mR_InternalError);
+    offset += (size_t)characterSize;
+    pString->count++;
+
+    if (characterSize == 0)
+      break;
+  }
 
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mString_Create, OUT mString *pString, const wchar_t *text, const size_t size, IN OPTIONAL mAllocator *pAllocator /* = nullptr */)
+mFUNCTION(mString_Create, OUT mString *pString, const wchar_t *text, const size_t bufferSize, IN OPTIONAL mAllocator *pAllocator /* = nullptr */)
 {
   mFUNCTION_SETUP();
 
@@ -457,6 +503,8 @@ mFUNCTION(mString_Create, OUT mString *pString, const wchar_t *text, const size_
 
     mRETURN_SUCCESS();
   }
+
+  const size_t size = wcsnlen_s(text, bufferSize) + 1;
 
   if (pString->pAllocator == pAllocator)
   {
