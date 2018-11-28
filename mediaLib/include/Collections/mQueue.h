@@ -18,7 +18,7 @@ struct mQueueIterator
   T& operator *();
   const T& operator *() const;
   bool operator != (const mQueueIterator<T> &iterator) const;
-  mQueueIterator<T> &operator++();
+  mQueueIterator<T>& operator++();
 };
 
 template <typename T>

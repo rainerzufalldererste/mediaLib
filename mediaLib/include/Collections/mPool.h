@@ -5,6 +5,36 @@
 #include "mChunkedArray.h"
 
 template <typename T>
+struct mPool;
+
+template <typename T>
+struct mPoolIterator
+{
+  mPoolIterator(mPool<T> *pPool);
+
+  struct IteratorValue
+  {
+    IteratorValue(T *pData, const size_t index);
+
+    T& operator *();
+    const T& operator *() const;
+
+    T *pData;
+    size_t index;
+  };
+
+  typename mPoolIterator<T>::IteratorValue operator *();
+  const typename mPoolIterator<T>::IteratorValue operator *() const;
+  bool operator != (const typename mPoolIterator<T> &);
+  typename mPoolIterator<T>& operator++();
+
+private:
+  size_t index, blockIndex, flag, globalIndex;
+  T *pData;
+  mPool<T> *pPool;
+};
+
+template <typename T>
 struct mPool
 {
   size_t count;
@@ -13,6 +43,14 @@ struct mPool
   size_t *pIndexes;
   mPtr<mChunkedArray<T>> data;
   mAllocator *pAllocator;
+
+  struct
+  {
+    typename mPoolIterator<T> begin() { return mPoolIterator<T>(pPool); };
+    typename mPoolIterator<T> end() { return mPoolIterator<T>(pPool); };
+
+    mPool<T> *pPool;
+  } Iterate() { return {this}; };
 };
 
 template <typename T>

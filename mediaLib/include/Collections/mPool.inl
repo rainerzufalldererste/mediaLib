@@ -291,3 +291,86 @@ inline mFUNCTION(mPool_Destroy_Internal, IN mPool<T> *pPool)
 
   mRETURN_SUCCESS();
 }
+
+//////////////////////////////////////////////////////////////////////////
+
+template<typename T>
+inline mPoolIterator<T>::mPoolIterator(mPool<T> *pPool) :
+  index(0),
+  globalIndex(0),
+  blockIndex(0),
+  flag(1),
+  pData(nullptr),
+  pPool(pPool)
+{ }
+
+template<typename T>
+inline typename mPoolIterator<T>::IteratorValue mPoolIterator<T>::operator*()
+{
+  return mPoolIterator<T>::IteratorValue(pData, globalIndex - 1);
+}
+
+template<typename T>
+inline const typename mPoolIterator<T>::IteratorValue mPoolIterator<T>::operator*() const
+{
+  return mPoolIterator<T>::IteratorValue(pData, globalIndex - 1);
+}
+
+template<typename T>
+inline bool mPoolIterator<T>::operator != (const typename mPoolIterator<T> &)
+{
+  for (blockIndex; blockIndex < pPool->size; ++blockIndex)
+  {
+    for (; index < mBYTES_OF(pPool->pIndexes[0]); ++index)
+    {
+      if (pPool->pIndexes[blockIndex] & flag)
+      {
+        const mResult result = mChunkedArray_PointerAt(pPool->data, globalIndex, &pData);
+
+        if (mFAILED(result))
+        {
+          mFAIL_DEBUG("mChunkedArray_PointerAt failed in mPool<T>::Iterator::operator with errorcode %" PRIu64 ".", (uint64_t)result);
+          return false;
+        }
+
+        flag <<= 1;
+        ++globalIndex;
+        ++index;
+
+        return true;
+      }
+
+      flag <<= 1;
+      ++globalIndex;
+    }
+
+    index = 0;
+    flag = 1;
+  }
+
+  return false;
+}
+
+template<typename T>
+inline typename mPoolIterator<T>& mPoolIterator<T>::operator++()
+{
+  return *this;
+}
+
+template<typename T>
+inline mPoolIterator<T>::IteratorValue::IteratorValue(T *pData, const size_t index) :
+  pData(pData),
+  index(index)
+{ }
+
+template<typename T>
+inline T& mPoolIterator<T>::IteratorValue::operator*()
+{
+  return *pData;
+}
+
+template<typename T>
+inline const T& mPoolIterator<T>::IteratorValue::operator*() const
+{
+  return *pData;
+}
