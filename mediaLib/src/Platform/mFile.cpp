@@ -145,31 +145,38 @@ mFUNCTION(mFile_CreateDirectory, const mString &folderPath)
   mERROR_IF(folderPath.hasFailed, mR_InvalidParameter);
 
   mString path;
-  mERROR_CHECK(mString_ToDirectoryPath(&path, folderPath));
+  mERROR_CHECK(mFile_GetAbsolutePath(&path, folderPath));
 
   mString pathWithoutLastSlash;
   mERROR_CHECK(mString_Substring(path, &pathWithoutLastSlash, 0, path.Count() - 2));
 
   std::wstring directoryName;
-  mERROR_CHECK(mString_ToWideString(pathWithoutLastSlash, &directoryName));
+  mERROR_CHECK(mString_ToWideString(path, &directoryName));
 
-  if (0 == CreateDirectoryW(directoryName.c_str(), NULL))
+  const int errorCode = SHCreateDirectoryExW(NULL, directoryName.c_str(), NULL);
+
+  switch (errorCode)
   {
-    const DWORD error = GetLastError();
+  case ERROR_SUCCESS:
+    mRETURN_SUCCESS();
 
-    switch (error)
-    {
-    case ERROR_ALREADY_EXISTS:
-      break;
+  case ERROR_ALREADY_EXISTS:
+  case ERROR_FILE_EXISTS:
+    break;
 
-    case ERROR_PATH_NOT_FOUND:
-      mERROR_IF(true, mR_ResourceNotFound);
-      break;
+  case ERROR_PATH_NOT_FOUND:
+    mERROR_IF(true, mR_ResourceNotFound);
+    break;
 
-    default:
-      mERROR_IF(true, mR_InternalError);
-      break;
-    }
+  case ERROR_BAD_PATHNAME:
+  case ERROR_FILENAME_EXCED_RANGE:
+    mERROR_IF(true, mR_InvalidParameter);
+    break;
+
+  case ERROR_CANCELLED:
+  default:
+    mERROR_IF(true, mR_InternalError);
+    break;
   }
 
   mRETURN_SUCCESS();
