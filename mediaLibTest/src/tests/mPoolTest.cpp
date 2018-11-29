@@ -104,3 +104,86 @@ mTEST(mPool, TestAddRemove)
 
   mTEST_ALLOCATOR_ZERO_CHECK();
 }
+
+mTEST(mPool, TestIterate)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  mPtr<mPool<size_t>> pool;
+  mDEFER_CALL(&pool, mPool_Destroy);
+  mTEST_ASSERT_SUCCESS(mPool_Create(&pool, pAllocator));
+
+  const size_t testSize = 100;
+
+  for (size_t i = 0; i < testSize; i++)
+  {
+    size_t index = 0;
+    mTEST_ASSERT_SUCCESS(mPool_Add(pool, &i, &index));
+    mTEST_ASSERT_EQUAL(i, index);
+  }
+
+  for (size_t i = 0; i < testSize; i += 2)
+  {
+    size_t element;
+    mTEST_ASSERT_SUCCESS(mPool_RemoveAt(pool, i, &element));
+    mTEST_ASSERT_EQUAL(element, i);
+  }
+
+  size_t count = 0;
+
+  for (auto &&_index : pool->Iterate())
+  {
+    mTEST_ASSERT_EQUAL(_index.index, (count << 1) + 1);
+    mTEST_ASSERT_EQUAL(*_index.pData, (count << 1) + 1);
+    mTEST_ASSERT_EQUAL(*_index, (count << 1) + 1);
+    ++count;
+  }
+
+  mTEST_ASSERT_EQUAL(count, testSize / 2);
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}
+
+mTEST(mPool, TestForEach)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  mPtr<mPool<size_t>> pool;
+  mDEFER_CALL(&pool, mPool_Destroy);
+  mTEST_ASSERT_SUCCESS(mPool_Create(&pool, pAllocator));
+
+  const size_t testSize = 100;
+
+  for (size_t i = 0; i < testSize; i++)
+  {
+    size_t index = 0;
+    mTEST_ASSERT_SUCCESS(mPool_Add(pool, &i, &index));
+    mTEST_ASSERT_EQUAL(i, index);
+  }
+
+  for (size_t i = 0; i < testSize; i += 2)
+  {
+    size_t element;
+    mTEST_ASSERT_SUCCESS(mPool_RemoveAt(pool, i, &element));
+    mTEST_ASSERT_EQUAL(element, i);
+  }
+
+  size_t count = 0;
+
+  const std::function<mResult (size_t *, const size_t)> &iterate = [&](size_t *pData, const size_t index)
+  {
+    mFUNCTION_SETUP();
+
+    mERROR_IF(index != (count << 1) + 1, mR_Failure);
+    mERROR_IF(*pData != (count << 1) + 1, mR_Failure);
+    ++count;
+
+    mRETURN_SUCCESS();
+  };
+
+  mTEST_ASSERT_SUCCESS(mPool_ForEach(pool, iterate));
+
+  mTEST_ASSERT_EQUAL(count, testSize / 2);
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}
