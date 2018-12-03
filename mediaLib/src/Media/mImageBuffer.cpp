@@ -1,4 +1,5 @@
 #include "mImageBuffer.h"
+#include "mFile.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #pragma warning(push)
@@ -28,6 +29,10 @@ mFUNCTION(mImageBuffer_CreateFromFile, OUT mPtr<mImageBuffer> *pImageBuffer, IN 
 
   mERROR_IF(pImageBuffer == nullptr, mR_ArgumentNull);
   mERROR_CHECK(mImageBuffer_Create_Iternal(pImageBuffer, pAllocator));
+
+  bool fileExists = false;
+  mERROR_CHECK(mFile_Exists(filename, &fileExists));
+  mERROR_IF(!fileExists, mR_ResourceNotFound);
 
   int components = 4;
   mPixelFormat readPixelFormat = mPF_R8G8B8A8;
