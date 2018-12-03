@@ -89,6 +89,7 @@ extern size_t mTestDestructible_Count;
     mTEST_ASSERT_EQUAL(allocationCount, 0); \
   } while (0)
 
+void mTestLib_Initialize();
 mFUNCTION(mTestLib_RunAllTests, int *pArgc, char **pArgv);
 
 mFUNCTION(mTestAllocator_Create, mAllocator *pTestAllocator);

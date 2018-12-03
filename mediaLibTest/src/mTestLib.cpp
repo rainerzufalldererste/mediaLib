@@ -1,14 +1,26 @@
 #include "mTestLib.h"
 
+bool IsInitialized = false;
+
 void _CallCouninitialize()
 {
   CoUninitialize();
 }
 
-mFUNCTION(mTestLib_RunAllTests, int * pArgc, char ** pArgv)
+void mTestLib_Initialize()
 {
-  CoInitialize(nullptr);
-  atexit(_CallCouninitialize);
+  if (!IsInitialized)
+  {
+    CoInitialize(nullptr);
+    atexit(_CallCouninitialize);
+  }
+
+  IsInitialized = true;
+}
+
+mFUNCTION(mTestLib_RunAllTests, int *pArgc, char **pArgv)
+{
+  mTestLib_Initialize();
 
   ::testing::InitGoogleTest(pArgc, pArgv);
 
