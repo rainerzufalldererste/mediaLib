@@ -287,6 +287,50 @@ mTEST(mRefPool, TestRemoveOwnReference)
     mTEST_ASSERT_EQUAL(mR_ResourceStateInvalid, mRefPool_RemoveOwnReference(refPool));
   }
 
+  {
+    mPtr<mRefPool<mDummyDestructible>> refPool;
+    mDEFER_CALL(&refPool, mRefPool_Destroy);
+    mTEST_ASSERT_SUCCESS(mRefPool_Create(&refPool, pAllocator, true));
+
+    mPtr<mQueue<mPtr<mDummyDestructible>>> queue;
+    mDEFER_CALL(&queue, mQueue_Destroy);
+    mTEST_ASSERT_SUCCESS(mQueue_Create(&queue, pAllocator));
+
+    const size_t maxCount = 1024;
+
+    for (size_t i = 0; i < maxCount; i++)
+    {
+      mDummyDestructible dummy;
+      mTEST_ASSERT_SUCCESS(mDummyDestructible_Create(&dummy, pAllocator));
+
+      mPtr<mDummyDestructible> ptr;
+      mDEFER_CALL(&ptr, mSharedPointer_Destroy);
+      mTEST_ASSERT_SUCCESS(mRefPool_Add(refPool, &dummy, &ptr));
+
+      if ((i & 1) == 0)
+        mTEST_ASSERT_SUCCESS(mQueue_PushBack(queue, &ptr));
+    }
+
+    mTEST_ASSERT_SUCCESS(mRefPool_RemoveOwnReference(refPool));
+
+    size_t count = (size_t)-1;
+    mTEST_ASSERT_SUCCESS(mRefPool_GetCount(refPool, &count));
+    mTEST_ASSERT_EQUAL(count, maxCount / 2);
+
+    size_t forEachCount = 0;
+
+    mTEST_ASSERT_SUCCESS(mRefPool_ForEach(refPool, 
+      (std::function<mResult(mPtr<mDummyDestructible> &)>) [&forEachCount](mPtr<mDummyDestructible> &) 
+    { 
+      ++forEachCount; 
+      RETURN mR_Success; 
+    }));
+
+    mTEST_ASSERT_EQUAL(forEachCount, count);
+
+    mTEST_ASSERT_EQUAL(mR_ResourceStateInvalid, mRefPool_RemoveOwnReference(refPool));
+  }
+
   mTEST_ALLOCATOR_ZERO_CHECK();
 }
 
