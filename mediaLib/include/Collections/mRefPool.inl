@@ -189,7 +189,7 @@ inline mFUNCTION(mRefPool_ForEach, mPtr<mRefPool<T>> &refPool, const std::functi
 }
 
 template<typename T>
-inline mFUNCTION(mRefPool_KeepIfTrue, mPtr<mRefPool<T>>& refPool, const std::function<mResult(mPtr<T>&, OUT bool*)>& function)
+inline mFUNCTION(mRefPool_KeepIfTrue, mPtr<mRefPool<T>> &refPool, const std::function<mResult(mPtr<T>&, OUT bool*)> &function)
 {
   mFUNCTION_SETUP();
 
@@ -283,7 +283,10 @@ inline mFUNCTION(mRefPool_RemoveOwnReference, mPtr<mRefPool<T>> &refPool)
 
     mERROR_IF(pItem == nullptr || pItem->ptr == nullptr, mR_ArgumentNull);
 
-    mERROR_CHECK(mSharedPointer_Destroy(&pItem->ptr));
+    if (pItem->ptr.m_pParams->referenceCount > 1)
+      --pItem->ptr.m_pParams->referenceCount;
+    else
+      mERROR_CHECK(mSharedPointer_Destroy(&pItem->ptr));
 
     mRETURN_SUCCESS();
   };
