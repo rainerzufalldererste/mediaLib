@@ -72,8 +72,8 @@ mFUNCTION(mFramebuffer_Unbind)
 #if defined(mRENDERER_OPENGL)
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   mFrameBuffer_ActiveFrameBufferHandle = 0;
-
   mGL_DEBUG_ERROR_CHECK();
+
 #else
   mRETURN_RESULT(mR_NotImplemented);
 #endif

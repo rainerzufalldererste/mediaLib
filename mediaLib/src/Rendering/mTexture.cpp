@@ -125,7 +125,7 @@ mFUNCTION(mTexture_Allocate, OUT mTexture *pTexture, const mVec2s size, const mP
   else if (pixelFormat == mPF_R8G8B8)
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, (GLsizei)size.x, (GLsizei)size.y, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
   else if (pixelFormat == mPF_Monochrome8)
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, (GLsizei)size.x, (GLsizei)size.y, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, nullptr);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, (GLsizei)size.x, (GLsizei)size.y, 0, GL_RED, GL_UNSIGNED_BYTE, nullptr);
   else
     mRETURN_RESULT(mR_NotSupported);
 
@@ -200,17 +200,21 @@ mFUNCTION(mTexture_Upload, mTexture &texture)
 
   mERROR_IF(texture.imageBuffer == nullptr, mR_NotInitialized);
 
+  mGL_DEBUG_ERROR_CHECK();
+
   texture.uploadState = mRP_US_Uploading;
 
 #if defined (mRENDERER_OPENGL)
   glBindTexture(GL_TEXTURE_2D, texture.textureId);
+
+  mGL_DEBUG_ERROR_CHECK();
 
   if (texture.imageBuffer->pixelFormat == mPF_R8G8B8A8)
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)texture.imageBuffer->currentSize.x, (GLsizei)texture.imageBuffer->currentSize.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, texture.imageBuffer->pPixels);
   else if (texture.imageBuffer->pixelFormat == mPF_R8G8B8)
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, (GLsizei)texture.imageBuffer->currentSize.x, (GLsizei)texture.imageBuffer->currentSize.y, 0, GL_RGB, GL_UNSIGNED_BYTE, texture.imageBuffer->pPixels);
   else if (texture.imageBuffer->pixelFormat == mPF_Monochrome8)
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, (GLsizei)texture.imageBuffer->currentSize.x, (GLsizei)texture.imageBuffer->currentSize.y, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, texture.imageBuffer->pPixels);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, (GLsizei)texture.imageBuffer->currentSize.x, (GLsizei)texture.imageBuffer->currentSize.y, 0, GL_RED, GL_UNSIGNED_BYTE, texture.imageBuffer->pPixels);
   else
   {
     mPtr<mImageBuffer> imageBuffer;
@@ -230,6 +234,8 @@ mFUNCTION(mTexture_Upload, mTexture &texture)
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+  mGL_DEBUG_ERROR_CHECK();
 
 #else
   mRETURN_RESULT(mR_NotImplemented)
