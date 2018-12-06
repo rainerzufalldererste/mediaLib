@@ -360,7 +360,7 @@ mFUNCTION(mShader_SetToFile, mPtr<mShader> &shader, const mString &vertexShaderP
   shader->vertexShader = vertexShaderPath;
   shader->fragmentShader = fragmentShaderPath;
   shader->loadedFromFile = true;
-  
+
   mRETURN_SUCCESS();
 }
 
