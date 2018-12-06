@@ -206,6 +206,8 @@ inline mFUNCTION(mIndexedRenderDataBuffer_Draw, mIndexedRenderDataBuffer<Args...
   glDrawElements(buffer.vertexRenderMode, (GLsizei)buffer.count, GL_UNSIGNED_INT, nullptr);
 #endif
 
+  mGL_DEBUG_ERROR_CHECK();
+
   mRETURN_SUCCESS();
 }
 

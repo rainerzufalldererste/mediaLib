@@ -304,19 +304,71 @@ mFUNCTION(mTexture_SetTo, mTexture &texture, const uint8_t *pData, const mVec2s 
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mTexture_Download, mTexture &texture, OUT mPtr<mImageBuffer> *pImageBuffer, IN mAllocator *pAllocator)
+mFUNCTION(mTexture_Download, mTexture &texture, OUT mPtr<mImageBuffer> *pImageBuffer, IN mAllocator *pAllocator, const mPixelFormat pixelFormat /* = mPF_R8G8B8A8 */)
 {
   mFUNCTION_SETUP();
 
   mERROR_IF(pImageBuffer == nullptr, mR_ArgumentNull);
 
 #if defined(mRENDERER_OPENGL)
-  mERROR_CHECK(mImageBuffer_Create(pImageBuffer, pAllocator, texture.resolution, mPF_R8G8B8A8));
+  if (texture.foreignTexture)
+  {
+    mVec2t<GLint> resolution;
+
+    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &resolution.x);
+    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &resolution.y);
+
+    texture.resolution = (mVec2s)resolution;
+    texture.resolutionF = (mVec2f)resolution;
+  }
+
+  GLenum glPixelFormat = GL_RGBA;
+  mPixelFormat internalPixelFormat = mPF_B8G8R8A8;
+
+  switch (pixelFormat)
+  {
+  case mPF_B8G8R8:
+  case mPF_R8G8B8:
+    glPixelFormat = GL_RGB;
+    internalPixelFormat = mPF_R8G8B8;
+    break;
+
+  case mPF_B8G8R8A8:
+  case mPF_R8G8B8A8:
+    glPixelFormat = GL_RGBA;
+    internalPixelFormat = mPF_R8G8B8A8;
+    break;
+
+  case mPF_Monochrome8:
+  case mPF_Monochrome16:
+    glPixelFormat = GL_RED;
+    internalPixelFormat = mPF_Monochrome8;
+    break;
+
+  case mPF_YUV422:
+  case mPF_YUV420:
+  default:
+    mRETURN_RESULT(mR_InvalidParameter);
+    break;
+  }
+
+  mPtr<mImageBuffer> imageBuffer;
+  mERROR_CHECK(mImageBuffer_Create(&imageBuffer, internalPixelFormat == pixelFormat ? pAllocator : &mDefaultTempAllocator, texture.resolution, internalPixelFormat));
 
   glBindTexture(GL_TEXTURE_2D, texture.textureId);
-  glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, (*pImageBuffer)->pPixels);
+  glGetTexImage(GL_TEXTURE_2D, 0, glPixelFormat, GL_UNSIGNED_BYTE, imageBuffer->pPixels);
 
-  mERROR_CHECK(mImageBuffer_FlipY(*pImageBuffer));
+  mERROR_CHECK(mImageBuffer_FlipY(imageBuffer));
+
+  if (internalPixelFormat != pixelFormat)
+  {
+    mERROR_CHECK(mImageBuffer_Create(pImageBuffer, pAllocator, texture.resolution, pixelFormat));
+    mERROR_CHECK(mPixelFormat_TransformBuffer(imageBuffer, *pImageBuffer));
+  }
+  else
+  {
+    *pImageBuffer = imageBuffer;
+  }
 #else
   mRETURN_RESULT(mR_NotImplemented);
 #endif
