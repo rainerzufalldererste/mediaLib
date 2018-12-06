@@ -281,6 +281,9 @@ inline mFUNCTION(mSpriteBatch_End, mPtr<mSpriteBatch<Args...>> &spriteBatch)
     size_t count;
     mERROR_CHECK(mQueue_GetCount(spriteBatch->enqueuedRenderObjects, &count));
 
+    if (count == 0)
+      mRETURN_SUCCESS();
+
     mERROR_CHECK(mSpriteBatch_QuickSortRenderObjects(spriteBatch->enqueuedRenderObjects, 0, count - 1));
 
     if (spriteBatch->spriteSortMode == mSpriteBatch_SpriteSortMode::mSB_SSM_BackToFront)
