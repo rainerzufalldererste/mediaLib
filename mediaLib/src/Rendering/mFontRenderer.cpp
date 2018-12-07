@@ -569,6 +569,7 @@ mFUNCTION(mFontRenderer_DrawEnqueuedText_Internal, mPtr<mFontRenderer> &fontRend
 
   mERROR_CHECK(mRenderParams_SetBlendingEnabled(true));
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+  mERROR_CHECK(mTexture_Bind(fontRenderer->textureAtlas->texture));
   mERROR_CHECK(mShader_Bind(*fontRenderer->indexDataBuffer.shader));
   mERROR_CHECK(mShader_SetUniform(fontRenderer->indexDataBuffer.shader, "matrix", fontRenderer->matrix));
   mERROR_CHECK(mShader_SetUniform(fontRenderer->indexDataBuffer.shader, "texture", fontRenderer->textureAtlas->texture));
@@ -847,9 +848,9 @@ mFUNCTION(mFontRenderable_Draw, mPtr<mFontRenderable> &fontRenderable, const mMa
   mERROR_IF(fontRenderable == nullptr, mR_ArgumentNull);
 
 #if defined (mRENDERER_OPENGL)
-  mERROR_CHECK(mTexture_Bind(fontRenderable->textureAtlas->texture));
   mERROR_CHECK(mRenderParams_SetBlendingEnabled(true));
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+  mERROR_CHECK(mTexture_Bind(fontRenderable->textureAtlas->texture));
   mERROR_CHECK(mShader_Bind(*fontRenderable->indexDataBuffer.shader));
   mERROR_CHECK(mShader_SetUniform(fontRenderable->indexDataBuffer.shader, "matrix", matrix));
   mERROR_CHECK(mShader_SetUniform(fontRenderable->indexDataBuffer.shader, "texture", fontRenderable->textureAtlas->texture));
