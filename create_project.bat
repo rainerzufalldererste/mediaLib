@@ -1,5 +1,14 @@
 @ECHO OFF
 
+IF [%1]==[] GOTO MANUAL_CONFIG
+
+IF "%1"=="1" GOTO ONE;
+IF "%1"=="2" GOTO TWO;
+IF "%1"=="3" GOTO THREE;
+
+ECHO INVALID PARAMETER (%1)
+
+:MANUAL_CONFIG
 ECHO 1. Visual Studio 2017 Solution
 ECHO 2. Visual Studio 2015 Solution
 ECHO 3. Visual Studio 2013 Solution
