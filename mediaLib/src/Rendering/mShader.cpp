@@ -5,6 +5,17 @@
 GLuint mShader_CurrentlyBoundShader = (GLuint)-1;
 #endif
 
+mFUNCTION(mShader_Allocate, OUT mPtr<mShader> *pShader, mAllocator *pAllocator)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pShader == nullptr, mR_ArgumentNull);
+
+  mERROR_CHECK(mSharedPointer_Allocate(pShader, pAllocator, (std::function<void(mShader *)>)[](mShader *pData) {mShader_Destroy(pData);}, 1));
+
+  mRETURN_SUCCESS();
+}
+
 mFUNCTION(mShader_Create, OUT mShader *pShader, const mString &vertexShader, const mString &fragmentShader, IN OPTIONAL const char *fragDataLocation /* = nullptr */)
 {
   mFUNCTION_SETUP();

@@ -48,6 +48,15 @@ struct mQueue
     mQueueIterator<T> begin() const { return pQueue->end(); }
     mQueueIterator<T> end() const { return pQueue->begin(); }
   } IterateReverse() { return {this}; };
+
+  struct mQueueIteratorWrapper
+  {
+    mQueue<T> *pQueue;
+    
+    mQueueIterator<T> begin() const { return pQueue->begin(); }
+    mQueueIterator<T> end() const { return pQueue->end(); }
+
+  } Iterate() { return {this}; };
 };
 
 template <typename T>
