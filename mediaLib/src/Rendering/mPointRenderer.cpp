@@ -31,7 +31,7 @@ mFUNCTION(mPointRenderer_Create, OUT mPtr<mPointRenderer> *pPointRenderer, IN mA
   mERROR_CHECK(mSharedPointer_Allocate(pPointRenderer, pAllocator, (std::function<void (mPointRenderer *)>)[](mPointRenderer *pData) {mPointRenderer_Destroy_Internal(pData);}, 1));
 
 #if defined(mRENDERER_OPENGL)
-  const char *vertexShader = mGLSL(
+  const char vertexShader[] = mGLSL(
     in float data;
 
     uniform vec2 _position0;
@@ -46,7 +46,7 @@ mFUNCTION(mPointRenderer_Create, OUT mPtr<mPointRenderer> *pPointRenderer, IN mA
     }
   );
   
-  const char *fragmentShader = mGLSL(
+  const char fragmentShader[] = mGLSL(
     out vec4 colour;
     
     uniform vec4 _colour0;
@@ -98,18 +98,19 @@ mFUNCTION(mPointRenderer_Begin, mPtr<mPointRenderer> &pointRenderer, const mColo
   {
   case mCPM_Square:
     mERROR_CHECK(mRenderParams_SetBlendingEnabled(false));
+    glDisable(GL_POINT_SMOOTH);
     break;
 
   case mCPM_Circle:
     mERROR_CHECK(mRenderParams_SetBlendingEnabled(true));
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glEnable(GL_POINT_SMOOTH);
     break;
 
   default:
     mRETURN_RESULT(mR_InvalidParameter);
   }
 
-  glEnable(GL_POINT_SMOOTH);
   glBindBuffer(GL_ARRAY_BUFFER, pointRenderer->vbo);
 
   glEnableVertexAttribArray((GLuint)0);

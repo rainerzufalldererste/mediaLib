@@ -132,6 +132,7 @@ struct mVec2t
 
   __host__ __device__ inline double Length() const { return mSqrt(x * x + y * y); };
   __host__ __device__ inline T LengthSquared() const { return x * x + y * y; };
+  __host__ __device__ inline mVec2t<T> Normalize() { return *this / (T)Length(); };
 };
 
 template <typename T>
@@ -189,6 +190,7 @@ struct mVec3t
 
   __host__ __device__ inline double Length() const { return mSqrt(x * x + y * y + z * z); };
   __host__ __device__ inline T LengthSquared() const { return x * x + y * y + z * z; };
+  __host__ __device__ inline mVec3t<T> Normalize() { return *this / (T)Length(); };
 
   __host__ __device__ inline mVec2t<T> ToVector2() const { return mVec2t<T>(x, y); };
 };
@@ -248,6 +250,7 @@ struct mVec4t
 
   __host__ __device__ inline double Length() const { return mSqrt(x * x + y * y + z * z + w * w); };
   __host__ __device__ inline T LengthSquared() const { return x * x + y * y + z * z + w * w; };
+  __host__ __device__ inline mVec4t<T> Normalize() { return *this / (T)Length(); };
 
   __host__ __device__ inline mVec2t<T> ToVector2() const { return mVec2t<T>(x, y); };
   __host__ __device__ inline mVec3t<T> ToVector3() const { return mVec3t<T>(x, y, z); };

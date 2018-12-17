@@ -21,6 +21,7 @@ struct mShader
 #define mGLSL(src) "#version 150 core\n" #src
 #endif
 
+mFUNCTION(mShader_Allocate, OUT mPtr<mShader> *pShader, mAllocator *pAllocator);
 mFUNCTION(mShader_Create, OUT mShader *pShader, const mString &vertexShader, const mString &fragmentShader, IN OPTIONAL const char *fragDataLocation = nullptr);
 mFUNCTION(mShader_CreateFromFile, OUT mShader *pShader, const mString &filename);
 mFUNCTION(mShader_CreateFromFile, OUT mShader *pShader, const mString &vertexShaderPath, const mString &fragmentShaderPath, IN OPTIONAL const char *fragDataLocation = nullptr);
