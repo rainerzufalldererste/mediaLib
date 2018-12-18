@@ -17,9 +17,39 @@
 #include <inttypes.h>
 #include <float.h>
 
-#ifdef _MSC_VER
+#ifndef mPLATFORM_WINDOWS
+  #if defined(_WIN64) || defined(_WIN32)
+    #define mPLATFORM_WINDOWS 1
+  #endif
+#endif
+
+#ifndef mPLATFORM_UNIX
+  #if !defined(_WIN32) && (defined(__unix__) || defined(__unix) || (defined(__APPLE__) && defined(__MACH__)))
+    #define mPLATFORM_UNIX 1
+  #endif
+#endif
+
+#ifndef mPLATFORM_APPLE
+  #if defined(__APPLE__) && defined(__MACH__)
+    #define mPLATFORM_APPLE 1
+  #endif
+#endif
+
+#ifndef mPLATFORM_LINUX
+  #if defined(__linux__)
+    #define mPLATFORM_LINUX 1
+  #endif
+#endif
+
+#ifndef mPLATFORM_BSD
+  #if defined(BSD)
+    #define mPLATFORM_BSD 1
+  #endif
+#endif
+
+#ifdef mPLATFORM_WINDOWS
 #include <windows.h>
-#endif // !_MSC_VER
+#endif // !mPLATFORM_WINDOWS
 
 #ifndef _DEPENDENCIES_DEFINED
 #define _DEPENDENCIES_DEFINED
@@ -54,20 +84,20 @@
 #define mASSERT(expression, text, ...) \
   do \
   { if(!(expression)) \
-    { char buffer[1024 * 8]; \
-      sprintf_s(buffer, text, __VA_ARGS__); \
-      buffer[mARRAYSIZE(buffer) - 1] = '\0'; \
-      mPRINT_ERROR("Assertion Failed: %s\n'%s'\n\nIn File '%s' : Line '%" PRIi32 "' (Function '%s')\n", #expression, buffer, __FILE__, __LINE__, __FUNCTION__); \
-      mAssert_Internal(#expression, buffer, __FUNCTION__, __FILE__, __LINE__); \
+    { char ___buffer___[1024 * 8]; \
+      sprintf_s(___buffer___, text, __VA_ARGS__); \
+      ___buffer___[mARRAYSIZE(___buffer___) - 1] = '\0'; \
+      mPRINT_ERROR("Assertion Failed: %s\n'%s'\n\nIn File '%s' : Line '%" PRIi32 "' (Function '%s')\n", #expression, ___buffer___, __FILE__, __LINE__, __FUNCTION__); \
+      mAssert_Internal(#expression, ___buffer___, __FUNCTION__, __FILE__, __LINE__); \
     } \
   } while (0)
 
 #define mFAIL(text, ...) \
   do \
-  { char buffer[1024 * 8]; \
-    sprintf_s(buffer, text, __VA_ARGS__); \
-    buffer[mARRAYSIZE(buffer) - 1] = '\0'; \
-    mPRINT_ERROR("Assertion Failed: '%s'\n\nIn File '%s' : Line '%" PRIi32 "' (Function '%s')\n", buffer, __FILE__, __LINE__, __FUNCTION__); \
+  { char ___buffer___[1024 * 8]; \
+    sprintf_s(___buffer___, text, __VA_ARGS__); \
+    ___buffer___[mARRAYSIZE(___buffer___) - 1] = '\0'; \
+    mPRINT_ERROR("Assertion Failed: '%s'\n\nIn File '%s' : Line '%" PRIi32 "' (Function '%s')\n", ___buffer___, __FILE__, __LINE__, __FUNCTION__); \
     __debugbreak(); \
   } while (0)
 
@@ -129,7 +159,7 @@ void mPrintPrepare(mPrintCallbackFunc *pFunc, const char *format, ...);
 #define mCONCAT_LITERALS_INTERNAL(x, y) x ## y
 #define mCONCAT_LITERALS(x, y) mCONCAT_LITERALS_INTERNAL(x, y)
 
-#ifdef _MSC_VER
+#ifdef mPLATFORM_WINDOWS
 #define mDLL_FUNC_PREFIX __dll__
 #define mDLL_TYPEDEF_POSTFIX __dll__FUNC_TYPE__
 
@@ -137,7 +167,7 @@ void mPrintPrepare(mPrintCallbackFunc *pFunc, const char *format, ...);
 #define mLOAD_FROM_DLL(symbol, module) do { mCONCAT_LITERALS(mDLL_FUNC_PREFIX, symbol) = (mCONCAT_LITERALS(symbol, mDLL_TYPEDEF_POSTFIX) *)GetProcAddress(module, #symbol); if(mCONCAT_LITERALS(mDLL_FUNC_PREFIX, symbol) == nullptr) { DWORD errorCode = GetLastError(); mASSERT(mCONCAT_LITERALS(mDLL_FUNC_PREFIX, symbol) != nullptr, "Symbol '" #symbol "' could not be loaded from dynamic library. (errorcode: 0x%" PRIx64 ")", (uint64_t)errorCode); } } while (0)
 #define mDLL_DEFINE_SYMBOL(symbol) mCONCAT_LITERALS(symbol, mDLL_TYPEDEF_POSTFIX) *mCONCAT_LITERALS(mDLL_FUNC_PREFIX, symbol) = nullptr
 #define mDLL_CALL(symbol, ...) ((*mCONCAT_LITERALS(mDLL_FUNC_PREFIX, symbol))(__VA_ARGS__))
-#endif
+#endif // !mPLATFORM_WINDOWS
 
 #endif // !_DEPENDENCIES_DEFINED
 
@@ -158,5 +188,7 @@ void mPrintPrepare(mPrintCallbackFunc *pFunc, const char *format, ...);
 
 mFUNCTION(mSleep, const size_t milliseconds = 0);
 void mAssert_Internal(const char *expression, const char *text, const char *function, const char *file, const int32_t line);
+int64_t mGetCurrentTimeMs();
+int64_t mGetCurrentTimeNs();
 
 #endif // default_h__

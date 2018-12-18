@@ -195,6 +195,7 @@ struct mQuaternion
   };
 #pragma warning(pop)
 
+  mQuaternion();
   explicit mQuaternion(DirectX::XMVECTOR v);
 
   inline mQuaternion operator *(const mQuaternion &q1) const;

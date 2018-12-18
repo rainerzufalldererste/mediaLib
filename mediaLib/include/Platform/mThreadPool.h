@@ -36,7 +36,7 @@ mFUNCTION(mTask_Create, OUT mTask **ppTask, TFunction&& function, Args&&... args
   {
     mResult result = mR_Success;
 
-    mStaticIf<std::is_same<mResult, typename std::decay<function>::type>::value>
+    mStaticIf<std::is_same<mResult, typename std::decay<function>::type>::value> // TODO: This should use the same logic as mThread!
       ([&]() { result = function(std::forward<Args>(args)...); })
       .Else([]() { function(std::forward<Args>(args)...); });
 

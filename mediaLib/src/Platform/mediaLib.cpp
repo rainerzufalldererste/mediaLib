@@ -1,6 +1,8 @@
 #include <windows.h>
 #include <intsafe.h>
 #include <cstdio>
+#include <chrono>
+
 #include "mediaLib.h"
 
 void mDefaultPrint(const char *text)
@@ -51,4 +53,14 @@ void mAssert_Internal(const char *expression, const char *text, const char *func
 #endif
 
   __debugbreak();
+}
+
+int64_t mGetCurrentTimeMs()
+{
+  return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
+}
+
+int64_t mGetCurrentTimeNs()
+{
+  return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
 }

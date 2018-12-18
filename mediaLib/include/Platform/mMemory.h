@@ -269,6 +269,67 @@ inline mFUNCTION(mStringLength, const char *text, const size_t maxLength, OUT si
   mRETURN_SUCCESS();
 }
 
+inline mFUNCTION(mSprintf, OUT char *buffer, const size_t bufferLength, const char *formatString, ...)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(buffer == nullptr || formatString == nullptr, mR_ArgumentNull);
+
+  va_list args;
+  va_start(args, formatString);
+  int length = vsprintf_s(buffer, bufferLength, formatString, args);
+  va_end(args);
+
+  mERROR_IF(length < 0, mR_ArgumentOutOfBounds);
+
+  mRETURN_SUCCESS();
+}
+
+inline mFUNCTION(mSprintfWithLength, OUT char *buffer, const size_t bufferLength, const char *formatString, OUT size_t *pLength, ...)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(buffer == nullptr || formatString == nullptr || pLength == nullptr, mR_ArgumentNull);
+
+  *pLength = 0;
+
+  va_list args;
+  va_start(args, formatString);
+  int length = vsprintf_s(buffer, bufferLength, formatString, args);
+  va_end(args);
+
+  mERROR_IF(length < 0, mR_ArgumentOutOfBounds);
+
+  *pLength = length;
+
+  mRETURN_SUCCESS();
+}
+
+inline mFUNCTION(mStringCopy, OUT char *buffer, const size_t bufferLength, const char *source, const size_t sourceLength)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(buffer == nullptr || source == nullptr, mR_ArgumentNull);
+
+  const errno_t error = strncpy_s(buffer, bufferLength, source, sourceLength);
+
+  switch (error)
+  {
+  case 0:
+    mRETURN_SUCCESS();
+
+  case STRUNCATE:
+  case ERANGE:
+    mRETURN_RESULT(mR_ArgumentOutOfBounds);
+
+  case EINVAL:
+    mRETURN_RESULT(mR_InvalidParameter);
+
+  default:
+    mRETURN_RESULT(mR_InternalError);
+  }
+}
+
 template <size_t TCount>
 mFUNCTION(mStringChar, const char text[TCount], const char character, OUT size_t *pLength)
 {
