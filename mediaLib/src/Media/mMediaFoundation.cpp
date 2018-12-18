@@ -1,6 +1,14 @@
 #include "mMediaFoundation.h"
 #include <mfapi.h>
 
+#pragma comment(lib, "dxva2.lib")
+#pragma comment(lib, "evr.lib")
+#pragma comment(lib, "mf.lib")
+#pragma comment(lib, "mfplat.lib")
+#pragma comment(lib, "mfplay.lib")
+#pragma comment(lib, "mfreadwrite.lib")
+#pragma comment(lib, "mfuuid.lib")
+
 volatile size_t _mediaFoundationReferenceCount = 0;
 
 mFUNCTION(mMediaFoundation_AddReference)
