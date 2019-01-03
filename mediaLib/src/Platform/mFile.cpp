@@ -145,7 +145,7 @@ mFUNCTION(mFile_CreateDirectory, const mString &folderPath)
   mERROR_IF(folderPath.hasFailed, mR_InvalidParameter);
 
   mString path;
-  mERROR_CHECK(mFile_GetAbsolutePath(&path, folderPath));
+  mERROR_CHECK(mFile_GetAbsoluteDirectoryPath(&path, folderPath));
 
   mString pathWithoutLastSlash;
   mERROR_CHECK(mString_Substring(path, &pathWithoutLastSlash, 0, path.Count() - 2));
@@ -421,7 +421,7 @@ mFUNCTION(mFile_GetDirectoryContents, const mString &directoryPath, OUT mPtr<mQu
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mFile_GetAbsolutePath, OUT mString *pAbsolutePath, const mString &directoryPath)
+mFUNCTION(mFile_GetAbsoluteDirectoryPath, OUT mString *pAbsolutePath, const mString &directoryPath)
 {
   mFUNCTION_SETUP();
 
@@ -436,8 +436,26 @@ mFUNCTION(mFile_GetAbsolutePath, OUT mString *pAbsolutePath, const mString &dire
 
   wchar_t absolutePath[1024 * 4];
   const DWORD length = GetFullPathNameW(folderPath.c_str(), mARRAYSIZE(absolutePath), absolutePath, nullptr);
-  
+
   mERROR_CHECK(mString_Create(pAbsolutePath, absolutePath, length + 1, directoryPath.pAllocator));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mFile_GetAbsoluteFilePath, OUT mString *pAbsolutePath, const mString &filePath)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pAbsolutePath == nullptr, mR_ArgumentNull);
+  mERROR_IF(filePath.hasFailed, mR_InvalidParameter);
+
+  std::wstring folderPath;
+  mERROR_CHECK(mString_ToWideString(filePath, &folderPath));
+
+  wchar_t absolutePath[1024 * 4];
+  const DWORD length = GetFullPathNameW(folderPath.c_str(), mARRAYSIZE(absolutePath), absolutePath, nullptr);
+
+  mERROR_CHECK(mString_Create(pAbsolutePath, absolutePath, length + 1, filePath.pAllocator));
 
   mRETURN_SUCCESS();
 }
