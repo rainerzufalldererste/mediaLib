@@ -32,6 +32,7 @@ enum mResult
   mR_Failure,
   mR_NotSupported,
   mR_ResourceAlreadyExists,
+  mR_IOFailure,
 
   mResult_Count
 };

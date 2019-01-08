@@ -52,6 +52,7 @@ defines { "UTF8PROC_STATIC" }
 
 linkoptions { "3rdParty/freetype-gl/lib/freetype-gl.lib" }
 linkoptions { "3rdParty/freetype/lib/freetype.lib" }
+linkoptions { "Shlwapi.lib" }
 
 warnings "Extra"
 

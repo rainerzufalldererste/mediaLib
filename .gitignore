@@ -268,3 +268,4 @@ __pycache__/
 mediaLib/lib/*.lib
 enc_temp_folder/*
 *.lastcode*
+* Advisor Results */

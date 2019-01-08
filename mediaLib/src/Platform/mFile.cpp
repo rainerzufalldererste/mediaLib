@@ -5,6 +5,7 @@
 #include <shobjidl.h>
 #include <shlobj.h>
 #include <knownfolders.h>
+#include <Shlwapi.h>
 
 HRESULT mFile_CreateAndInitializeFileOperation_Internal(REFIID riid, void **ppFileOperation);
 mFUNCTION(mFile_GetKnownPath_Internal, OUT mString *pString, const GUID &guid);
@@ -32,9 +33,7 @@ mFUNCTION(mFile_Exists, const std::wstring &filename, OUT bool *pExists)
 
   mERROR_IF(pExists == nullptr, mR_ArgumentNull);
 
-  struct _stat buffer;
-
-  *pExists = (_wstat(filename.c_str(), &buffer) == 0);
+  *pExists = (PathFileExistsW(filename.c_str()) != FALSE);
 
   mRETURN_SUCCESS();
 }
