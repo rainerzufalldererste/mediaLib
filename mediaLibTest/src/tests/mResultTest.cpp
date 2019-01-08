@@ -27,20 +27,21 @@ mTEST(mResult, TestToString)
     "mR_Failure",
     "mR_NotSupported",
     "mR_ResourceAlreadyExists",
+    "mR_IOFailure",
   };
 
   const char invalidResult[] = "<Unknown mResult>";
 
   mString resultString;
   mTEST_ASSERT_SUCCESS(mString_Create(&resultString, (char *)nullptr, pAllocator));
-
+  
   for (size_t i = 0; i < mResult_Count; i++)
   {
     mTEST_ASSERT_SUCCESS(mResult_ToString((mResult)(i), &resultString));
     mTEST_ASSERT_EQUAL(resultString, resultNames[i]);
   }
 
-  mTEST_ASSERT_SUCCESS(mResult_ToString((mResult)(mR_ResourceAlreadyExists + 1), &resultString));
+  mTEST_ASSERT_SUCCESS(mResult_ToString((mResult)(mResult_Count), &resultString));
   mTEST_ASSERT_EQUAL(resultString, invalidResult);
 
   mTEST_ALLOCATOR_ZERO_CHECK();

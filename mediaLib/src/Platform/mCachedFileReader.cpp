@@ -18,20 +18,11 @@ mFUNCTION(mCachedFileReader_Create, OUT mPtr<mCachedFileReader> *pCachedFileRead
   std::wstring filenameW;
   mERROR_CHECK(mString_ToWideString(fileName, &filenameW));
 
-  struct _stat fileInfo;
-  errno_t result = _wstat(filenameW.c_str(), &fileInfo);
-
-  if (result != 0)
+  // Does the file exist?
   {
-    switch (result)
-    {
-    case ENOENT:
-      mRETURN_RESULT(mR_ResourceNotFound);
-
-    case EINVAL:
-    default:
-      mRETURN_RESULT(mR_InternalError);
-    }
+    bool fileExists = false;
+    mERROR_CHECK(mFile_Exists(filenameW, &fileExists));
+    mERROR_IF(!fileExists, mR_ResourceNotFound);
   }
 
   mERROR_CHECK(mSharedPointer_Allocate(pCachedFileReader, pAllocator, (std::function<void(mCachedFileReader *)>)[](mCachedFileReader *pData) {mCachedFileReader_Destroy_Internal(pData);}, 1));
@@ -40,11 +31,14 @@ mFUNCTION(mCachedFileReader_Create, OUT mPtr<mCachedFileReader> *pCachedFileRead
   (*pCachedFileReader)->pAllocator = pAllocator;
   (*pCachedFileReader)->maxCacheSize = maxCacheSize;
 
-  result = _wsopen_s(&(*pCachedFileReader)->fileHandle, filenameW.c_str(), _O_BINARY, _SH_DENYNO, _S_IREAD);
+  const errno_t result = _wsopen_s(&(*pCachedFileReader)->fileHandle, filenameW.c_str(), _O_BINARY, _SH_DENYNO, _S_IREAD);
   mERROR_IF(result != 0, mR_ResourceNotFound);
 
-  (*pCachedFileReader)->fileSize = (size_t)_lseeki64((*pCachedFileReader)->fileHandle, 0, SEEK_END);
-  _lseeki64((*pCachedFileReader)->fileHandle, 0, SEEK_SET); // Reset read position.
+  const int64_t fileSize = _lseeki64((*pCachedFileReader)->fileHandle, 0, SEEK_END);
+  mERROR_IF(fileSize < 0, mR_IOFailure);
+  (*pCachedFileReader)->fileSize = (size_t)fileSize;
+
+  mERROR_IF(0 != _lseeki64((*pCachedFileReader)->fileHandle, 0, SEEK_SET), mR_IOFailure); // Reset read position.
 
   (*pCachedFileReader)->cachePosition = (size_t)-1;
   (*pCachedFileReader)->cacheSize = (size_t)0;
