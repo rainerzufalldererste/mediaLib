@@ -56,6 +56,9 @@ mFUNCTION(mFile_GetCurrentUserDirectory, OUT mString *pString);
 mFUNCTION(mFile_GetProgramFilesDirectory, OUT mString *pString);
 mFUNCTION(mFile_GetStartupDirectory, OUT mString *pString);
 
+mFUNCTION(mFile_GetWorkingDirectory, OUT mString *pWorkingDirectory);
+mFUNCTION(mFile_SetWorkingDirectory, const mString &workingDirectory);
+
 struct mFileInfo
 {
   mString name;
@@ -113,12 +116,12 @@ inline mFUNCTION(mFile_ReadRaw, const std::wstring &filename, OUT T **ppData, IN
   mDEFER(if (pFile) { fclose(pFile); });
   mERROR_IF(pFile == nullptr, mR_ResourceNotFound);
 
-  mERROR_IF(0 != fseek(pFile, 0, SEEK_END), mR_InternalError);
+  mERROR_IF(0 != fseek(pFile, 0, SEEK_END), mR_IOFailure);
   
   const size_t length = ftell(pFile);
   const size_t count = length / sizeof(T);
 
-  mERROR_IF(0 != fseek(pFile, 0, SEEK_SET), mR_InternalError);
+  mERROR_IF(0 != fseek(pFile, 0, SEEK_SET), mR_IOFailure);
 
   mERROR_CHECK(mAllocator_Allocate(pAllocator, (uint8_t **)ppData, length + 1));
   const size_t readLength = fread(*ppData, 1, length, pFile);
@@ -154,7 +157,7 @@ inline mFUNCTION(mFile_WriteRaw, const std::wstring &filename, IN T *pData, cons
 
   const size_t writeCount = fwrite(pData, 1, sizeof(T) * count, pFile);
 
-  mERROR_IF(writeCount != count * sizeof(T), mR_InternalError);
+  mERROR_IF(writeCount != count * sizeof(T), mR_IOFailure);
 
   mRETURN_SUCCESS();
 }
