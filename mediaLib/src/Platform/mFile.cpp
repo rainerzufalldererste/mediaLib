@@ -370,6 +370,61 @@ mFUNCTION(mFile_GetStartupDirectory, OUT mString *pString)
   mRETURN_SUCCESS();
 }
 
+mFUNCTION(mFile_GetWorkingDirectory, OUT mString *pWorkingDirectory)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pWorkingDirectory == nullptr, mR_ArgumentNull);
+
+  wchar_t directory[MAX_PATH];
+
+  DWORD result = GetCurrentDirectoryW(mARRAYSIZE(directory), directory);
+
+  if (result == 0)
+  {
+    const DWORD error = GetLastError();
+    mUnused(error);
+
+    mRETURN_RESULT(mR_IOFailure);
+  }
+
+  wchar_t fullPathName[MAX_PATH];
+
+  result = GetFullPathNameW(directory, mARRAYSIZE(fullPathName), fullPathName, nullptr);
+
+  if (result == 0)
+  {
+    const DWORD error = GetLastError();
+    mUnused(error);
+
+    mRETURN_RESULT(mR_IOFailure);
+  }
+
+  mERROR_CHECK(mString_Create(pWorkingDirectory, fullPathName, result));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mFile_SetWorkingDirectory, const mString &workingDirectory)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(workingDirectory.hasFailed, mR_InvalidParameter);
+
+  std::wstring wPath;
+  mERROR_CHECK(mString_ToWideString(workingDirectory, &wPath));
+
+  if (!SetCurrentDirectoryW(wPath.c_str()))
+  {
+    const DWORD error = GetLastError();
+    mUnused(error);
+
+    mRETURN_RESULT(mR_IOFailure);
+  }
+
+  mRETURN_SUCCESS();
+}
+
 mFUNCTION(mFile_GetDirectoryContents, const mString &directoryPath, OUT mPtr<mQueue<mFileInfo>> *pFiles, IN mAllocator *pAllocator)
 {
   mFUNCTION_SETUP();
