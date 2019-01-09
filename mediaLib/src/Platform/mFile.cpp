@@ -56,7 +56,7 @@ mFUNCTION(mFile_ReadAllBytes, const std::wstring &filename, IN OPTIONAL mAllocat
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mFile_ReadAllText, const std::wstring &filename, IN OPTIONAL mAllocator *pAllocator, OUT std::string *pText, const mFile_Encoding /* encoding = mF_E_ASCII */)
+mFUNCTION(mFile_ReadAllText, const std::wstring &filename, IN OPTIONAL mAllocator *pAllocator, OUT std::string *pText, const mFile_Encoding /* encoding = mF_E_UTF8 */)
 {
   mFUNCTION_SETUP();
 
@@ -74,7 +74,7 @@ mFUNCTION(mFile_ReadAllText, const std::wstring &filename, IN OPTIONAL mAllocato
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mFile_ReadAllText, const mString &filename, IN OPTIONAL mAllocator *pAllocator, OUT mString *pText, const mFile_Encoding /* encoding = mF_E_ASCII */)
+mFUNCTION(mFile_ReadAllText, const mString &filename, IN OPTIONAL mAllocator *pAllocator, OUT mString *pText, const mFile_Encoding /* encoding = mF_E_UTF8 */)
 {
   mFUNCTION_SETUP();
 
@@ -116,7 +116,7 @@ mFUNCTION(mFile_WriteAllBytes, const mString &filename, mArray<uint8_t> &bytes)
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mFile_WriteAllText, const std::wstring &filename, const std::string &text, const mFile_Encoding /* encoding = mF_E_ASCII */)
+mFUNCTION(mFile_WriteAllText, const std::wstring &filename, const std::string &text, const mFile_Encoding /* encoding = mF_E_UTF8 */)
 {
   mFUNCTION_SETUP();
 
@@ -125,7 +125,7 @@ mFUNCTION(mFile_WriteAllText, const std::wstring &filename, const std::string &t
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mFile_WriteAllText, const mString &filename, const mString &text, const mFile_Encoding /* encoding = mF_E_ASCII */)
+mFUNCTION(mFile_WriteAllText, const mString &filename, const mString &text, const mFile_Encoding /* encoding = mF_E_UTF8 */)
 {
   mFUNCTION_SETUP();
 
@@ -421,6 +421,103 @@ mFUNCTION(mFile_SetWorkingDirectory, const mString &workingDirectory)
 
     mRETURN_RESULT(mR_IOFailure);
   }
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mFile_GetCurrentApplicationFilePath, OUT mString *pAppDirectory)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pAppDirectory == nullptr, mR_ArgumentNull);
+
+  wchar_t filePath[MAX_PATH];
+
+  const DWORD result = GetModuleFileNameW(nullptr, filePath, mARRAYSIZE(filePath));
+
+  if (result != 0)
+  {
+    const DWORD error = GetLastError();
+
+    switch (error)
+    {
+    case ERROR_SUCCESS:
+      mERROR_CHECK(mString_Create(pAppDirectory, filePath, pAppDirectory->pAllocator));
+      mRETURN_SUCCESS();
+      break;
+
+    case ERROR_INSUFFICIENT_BUFFER:
+    default:
+      mRETURN_RESULT(mR_InternalError);
+      break;
+    }
+  }
+
+  mRETURN_RESULT(mR_InternalError);
+}
+
+mFUNCTION(mFile_ExtractDirectoryFromPath, OUT mString *pDirectory, const mString &filePath)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pDirectory == nullptr, mR_ArgumentNull);
+
+  wchar_t wPath[MAX_PATH];
+  mERROR_CHECK(mString_ToWideString(filePath, wPath, mARRAYSIZE(wPath)));
+
+//#if (NTDDI_VERSION >= NTDDI_WIN8)
+//  HRESULT hr = S_OK;
+//
+//  // Requires `pathcch.h` && `Pathcch.lib`.
+//  mERROR_IF(FAILED(hr = PathCchRemoveFileSpec(wPath, mARRAYSIZE(wPath))), mR_InternalError); // S_OK, or S_FALSE if nothing was removed.
+//#else
+  const BOOL result = PathRemoveFileSpecW(wPath); // deprecated since windows 8.
+  mUnused(result); // result is true if something was removed, however we don't actually care.
+//#endif
+
+  mERROR_CHECK(mString_Create(pDirectory, wPath, mARRAYSIZE(wPath), pDirectory->pAllocator));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mFile_ExtractFileExtensionFromPath, OUT mString *pExtension, const mString &filePath)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pExtension == nullptr, mR_ArgumentNull);
+
+  wchar_t wPath[MAX_PATH];
+  mERROR_CHECK(mString_ToWideString(filePath, wPath, mARRAYSIZE(wPath)));
+
+  wchar_t *extension = PathFindExtensionW(wPath);
+  mERROR_IF(extension == nullptr || *extension == L'\0', mR_ResourceNotFound);
+
+  mERROR_CHECK(mString_Create(pExtension, extension, pExtension->pAllocator));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mFile_ExtractFileNameFromPath, OUT mString *pFileName, const mString &filePath, const bool withExtension)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pFileName == nullptr, mR_ArgumentNull);
+
+  wchar_t wPath[MAX_PATH];
+  mERROR_CHECK(mString_ToWideString(filePath, wPath, mARRAYSIZE(wPath)));
+
+  wchar_t *fileName = PathFindFileNameW(wPath);
+  mERROR_IF(fileName == nullptr || *fileName == L'\0', mR_ResourceNotFound);
+
+  if (!withExtension)
+  {
+    wchar_t *extension = PathFindExtensionW(wPath);
+
+    if (!(extension == nullptr || *extension == L'\0'))
+      *extension = '\0';
+  }
+
+  mERROR_CHECK(mString_Create(pFileName, fileName, pFileName->pAllocator));
 
   mRETURN_SUCCESS();
 }

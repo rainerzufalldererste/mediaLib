@@ -116,6 +116,7 @@ mFUNCTION(mString_GetByteSize, const mString &string, OUT size_t *pSize);
 mFUNCTION(mString_GetCount, const mString &string, OUT size_t *pLength);
 
 mFUNCTION(mString_ToWideString, const mString &string, std::wstring *pWideString);
+mFUNCTION(mString_ToWideString, const mString &string, wchar_t *pWideString, const size_t bufferSize);
 
 mFUNCTION(mString_Substring, const mString &text, OUT mString *pSubstring, const size_t startCharacter);
 mFUNCTION(mString_Substring, const mString &text, OUT mString *pSubstring, const size_t startCharacter, const size_t length);
@@ -241,7 +242,7 @@ template <size_t TCount>
 mFUNCTION(mInplaceString_Create, OUT mInplaceString<TCount> *pStackString, const mString &text);
 
 template <size_t TCount>
-mFUNCTION(mString_Create, OUT mString *pString, const mInplaceString<TCount> &stackString);
+mFUNCTION(mString_Create, OUT mString *pString, const mInplaceString<TCount> &stackString, IN OPTIONAL mAllocator *pAllocator = nullptr);
 
 template <size_t TCount>
 mFUNCTION(mInplaceString_GetByteSize, const mInplaceString<TCount> &string, OUT size_t *pSize);
@@ -418,11 +419,11 @@ inline mFUNCTION(mInplaceString_Create, OUT mInplaceString<TCount> *pStackString
 }
 
 template<size_t TCount>
-inline mFUNCTION(mString_Create, OUT mString * pString, const mInplaceString<TCount> &stackString)
+inline mFUNCTION(mString_Create, OUT mString *pString, const mInplaceString<TCount> &stackString, IN OPTIONAL mAllocator *pAllocator /* = nullptr */)
 {
   mFUNCTION_SETUP();
 
-  mERROR_CHECK(mString_Create(pString, stackString.text, stackString.bytes));
+  mERROR_CHECK(mString_Create(pString, stackString.text, stackString.bytes, pAllocator));
 
   mRETURN_SUCCESS();
 }
