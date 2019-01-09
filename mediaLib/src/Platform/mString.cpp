@@ -660,14 +660,24 @@ mFUNCTION(mString_ToWideString, const mString &string, std::wstring *pWideString
   mFUNCTION_SETUP();
 
   wchar_t *wtext = nullptr;
-  mDefer<wchar_t **> cleanup;
+  const size_t capacity = string.bytes * 2;
 
   mDEFER(mAllocator_FreePtr(&mDefaultTempAllocator, &wtext));
-  mERROR_CHECK(mAllocator_AllocateZero(&mDefaultTempAllocator, &wtext, string.bytes * 2));
+  mERROR_CHECK(mAllocator_AllocateZero(&mDefaultTempAllocator, &wtext, capacity));
 
-  mERROR_IF(0 == MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, string.text, (int)string.bytes, wtext, (int)string.bytes * 2), mR_InternalError);
+  mERROR_IF(0 == MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, string.text, (int)string.bytes, wtext, (int)capacity), mR_InternalError);
 
   *pWideString = std::wstring(wtext);
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mString_ToWideString, const mString &string, wchar_t *pWideString, const size_t bufferSize)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pWideString == nullptr, mR_ArgumentNull);
+  mERROR_IF(0 == MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, string.text, (int)string.bytes, pWideString, (int)bufferSize), mR_InternalError);
 
   mRETURN_SUCCESS();
 }
