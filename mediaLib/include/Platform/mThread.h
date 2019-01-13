@@ -66,6 +66,7 @@ struct _mThread_ThreadInternal_ReturnTypeOf<TReturnType(*)(Args...)>
 template<class TFunction, class Args, size_t ...TCountArgs>
 void _mThread_ThreadInternal_CallFunctionUnpack(mThread *pThread, TFunction function, Args params, _mThread_ThreadInternalSequence<TCountArgs...>)
 {
+  mUnused(params); // Ignore warnings in case the function does not take any arguments.
   pThread->result = _mThread_ThreadInternal_Decay<_mThread_ThreadInternal_ReturnTypeOf<TFunction>::type>::CallFunction(function, std::get<TCountArgs>(params) ...);
 }
 
