@@ -187,3 +187,61 @@ mTEST(mPool, TestForEach)
 
   mTEST_ALLOCATOR_ZERO_CHECK();
 }
+
+mTEST(mPool, TestContainsIndex)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  mPtr<mPool<size_t>> pool;
+  mDEFER_CALL(&pool, mPool_Destroy);
+  mTEST_ASSERT_SUCCESS(mPool_Create(&pool, pAllocator));
+  
+  const size_t testSize = 1 << 13; // because 2^13 - 1 is prime.
+
+  for (size_t i = 0; i < testSize; i++)
+  {
+    size_t index;
+    mTEST_ASSERT_SUCCESS(mPool_Add(pool, &i, &index));
+
+    mTEST_ASSERT_EQUAL(index, i);
+  }
+
+  const std::function<bool(size_t)> &isPrime = [](size_t n)
+  {
+    if (n <= 2)
+      return true;
+
+    for (size_t i = 2; i < n / (i - 1); i++)
+      if ((n % i) == 0)
+        return false;
+
+    return true;
+  };
+
+  for (size_t i = 0; i < testSize; i++)
+  {
+    bool contained;
+    mTEST_ASSERT_SUCCESS(mPool_ContainsIndex(pool, i, &contained));
+
+    mTEST_ASSERT_EQUAL(contained, isPrime(i));
+
+    if (contained && i >= 2)
+    {
+      for (size_t j = i; j < testSize; j += i)
+      {
+        bool jContained;
+        mTEST_ASSERT_SUCCESS(mPool_ContainsIndex(pool, j, &jContained));
+
+        if (jContained)
+        {
+          size_t num;
+          mTEST_ASSERT_SUCCESS(mPool_RemoveAt(pool, j, &num));
+
+          mTEST_ASSERT_EQUAL(num, j);
+        }
+      }
+    }
+  }
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}
