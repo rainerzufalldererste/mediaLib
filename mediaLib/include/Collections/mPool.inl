@@ -275,6 +275,33 @@ inline mFUNCTION(mPool_ForEach, mPtr<mPool<T>> &pool, const std::function<mResul
   mRETURN_SUCCESS();
 }
 
+template <typename T>
+mFUNCTION(mPool_ContainsIndex, mPtr<mPool<T>> &pool, const size_t index, OUT bool *pContained)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pool == nullptr || pContained == nullptr, mR_ArgumentNull);
+  
+  if (index >= pool->size * mBYTES_OF(pool->pIndexes[0]))
+  {
+    *pContained = false;
+    mRETURN_SUCCESS(); 
+  }
+
+  const size_t lutIndex = index / mBYTES_OF(pool->pIndexes[0]);
+  const size_t lutSubIndex = index - lutIndex * mBYTES_OF(pool->pIndexes[0]);
+
+  if ((pool->pIndexes[lutIndex] & ((size_t)1 << lutSubIndex)) == 0)
+  {
+    *pContained = false;
+    mRETURN_SUCCESS();
+  }
+
+  *pContained = true;
+
+  mRETURN_SUCCESS();
+}
+
 //////////////////////////////////////////////////////////////////////////
 
 template<typename T>
