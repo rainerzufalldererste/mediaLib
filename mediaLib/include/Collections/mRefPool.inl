@@ -332,20 +332,13 @@ inline mFUNCTION(mRefPool_Destroy_Internal, IN mRefPool<T> *pRefPool)
 
   if (pRefPool->keepForever)
   {
-    std::function<mResult(typename mRefPool<T>::refPoolPtr *, size_t)> removeOwnRef =
-      [](typename mRefPool<T>::refPoolPtr *pItem, size_t)
+    for (auto _item : pRefPool->ptrs->Iterate())
     {
-      mFUNCTION_SETUP();
+      mERROR_IF(_item.pData == nullptr || (*_item).ptr == nullptr, mR_ArgumentNull);
 
-      mERROR_IF(pItem == nullptr || pItem->ptr == nullptr, mR_ArgumentNull);
-      
-      mERROR_IF(pItem->ptr.m_pParams->referenceCount > 1, mR_ResourceStateInvalid); // this lambda also owns it.
-      mERROR_CHECK(mSharedPointer_Destroy(&pItem->ptr));
-
-      mRETURN_SUCCESS();
-    };
-
-    mERROR_CHECK(mPool_ForEach(pRefPool->ptrs, removeOwnRef));
+      mERROR_IF((*_item).ptr.m_pParams->referenceCount > 1, mR_ResourceStateInvalid); // this lambda also owns it.
+      mERROR_CHECK(mSharedPointer_Destroy(&(*_item).ptr));
+    }
   }
 
   mERROR_CHECK(mPool_Destroy(&pRefPool->ptrs));
