@@ -6,6 +6,11 @@
 struct mAllocator;
 
 #define mSHARED_POINTER_FOREIGN_RESOURCE ((mAllocator *)-1)
+//#define mSHARED_POINTER_DEBUG_OUTPUT 1
+
+#if defined(GIT_BUILD) && defined(mSHARED_POINTER_DEBUG_OUTPUT)
+#error mSHARED_POINTER_DEBUG_OUTPUT cannot be enabled for git builds.
+#endif
 
 template <typename T>
 class mSharedPointer
@@ -63,12 +68,14 @@ template <typename T>
 inline mFUNCTION(mSharedPointer_Create, OUT mSharedPointer<T> *pOutSharedPointer, IN T *pData, std::function<void(T *pData)> cleanupFunction, IN mAllocator *pAllocator)
 {
   mFUNCTION_SETUP();
+
   mERROR_IF(pOutSharedPointer == nullptr, mR_ArgumentNull);
 
   if (*pOutSharedPointer != nullptr)
     *pOutSharedPointer = nullptr;
 
   mERROR_CHECK(mAllocator_AllocateZero(pAllocator == mSHARED_POINTER_FOREIGN_RESOURCE ? nullptr : pAllocator, &pOutSharedPointer->m_pParams, 1));
+
   pOutSharedPointer->m_pParams = new (pOutSharedPointer->m_pParams) typename mSharedPointer<T>::PointerParams();
   pOutSharedPointer->m_pParams->referenceCount = 1;
   pOutSharedPointer->m_pParams->pAllocator = pAllocator == mSHARED_POINTER_FOREIGN_RESOURCE ? nullptr : pAllocator;
@@ -78,6 +85,10 @@ inline mFUNCTION(mSharedPointer_Create, OUT mSharedPointer<T> *pOutSharedPointer
   pOutSharedPointer->m_pData = pData;
   pOutSharedPointer->m_pParams->pUserData = nullptr;
 
+#ifdef mSHARED_POINTER_DEBUG_OUTPUT
+  mLOG("Created mSharedPointer<%s>. (0x%" PRIx64 ")\n", typeid(T).name(), (uint64_t)pData);
+#endif
+
   mRETURN_SUCCESS();
 }
 
@@ -85,7 +96,9 @@ template <typename T>
 inline mFUNCTION(mSharedPointer_Create, OUT mSharedPointer<T> *pOutSharedPointer, IN T *pData, IN mAllocator *pAllocator)
 {
   mFUNCTION_SETUP();
+
   mERROR_CHECK(mSharedPointer_Create(pOutSharedPointer, pData, std::function<void(T *pData)>(nullptr), pAllocator));
+
   mRETURN_SUCCESS();
 }
 
@@ -99,7 +112,9 @@ inline mFUNCTION(mSharedPointer_Allocate, OUT mSharedPointer<T> *pOutSharedPoint
   T *pData = nullptr;
   mDEFER(mAllocator_FreePtr(pAllocator, &pData));
   mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &pData, count));
+
   mERROR_CHECK(mSharedPointer_Create(pOutSharedPointer, pData, pAllocator));
+
   pData = nullptr; // to not get released on destruction.
 
   mRETURN_SUCCESS();
@@ -115,7 +130,9 @@ inline mFUNCTION(mSharedPointer_Allocate, OUT mSharedPointer<T> *pOutSharedPoint
   T *pData = nullptr;
   mDEFER(mAllocator_FreePtr(pAllocator, &pData));
   mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &pData, count));
+
   mERROR_CHECK(mSharedPointer_Create(pOutSharedPointer, pData, function, pAllocator));
+
   pData = nullptr; // to not get released on destruction.
 
   mRETURN_SUCCESS();
@@ -131,12 +148,17 @@ inline mFUNCTION(mSharedPointer_AllocateInherited, OUT mSharedPointer<T> *pOutSh
   TInherited *pData = nullptr;
   mDEFER(mAllocator_FreePtr(pAllocator, &pData));
   mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &pData, 1));
+
   mERROR_CHECK(mSharedPointer_Create(pOutSharedPointer, (T *)pData, (std::function<void(T *)>)[function](T *pDestructData) { function((TInherited *)pDestructData); }, pAllocator));
   
   if (ppInherited != nullptr)
     *ppInherited = pData;
 
   pData = nullptr; // to not get released on destruction.
+
+#ifdef mSHARED_POINTER_DEBUG_OUTPUT
+  mLOG(" [was inherited from %s]\n", typeid(TInherited).name());
+#endif
 
   mRETURN_SUCCESS();
 }
@@ -162,6 +184,10 @@ inline mFUNCTION(mSharedPointer_CreateInplace, IN_OUT mSharedPointer<T> *pOutSha
   pOutSharedPointer->m_pParams->pUserData = nullptr;
 
   pOutSharedPointer->m_pData = pData;
+
+#ifdef mSHARED_POINTER_DEBUG_OUTPUT
+  mLOG("Created mSharedPointer<%s> in place. (0x%" PRIx64 ")\n", typeid(T).name(), (uint64_t)pData);
+#endif
 
   mRETURN_SUCCESS();
 }
@@ -233,6 +259,10 @@ inline mSharedPointer<T>::~mSharedPointer()
 
   if (referenceCount == 0)
   {
+#ifdef mSHARED_POINTER_DEBUG_OUTPUT
+    mPRINT_DEBUG("Destroying mSharedPointer<%s>. (0x%" PRIx64 ")\n", typeid(T).name(), (uint64_t)m_pData);
+#endif
+
     if (m_pParams->cleanupFunction)
       m_pParams->cleanupFunction(m_pData);
 

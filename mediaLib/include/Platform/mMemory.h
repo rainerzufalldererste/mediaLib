@@ -19,9 +19,18 @@ template <typename T> mFUNCTION(mMemset, IN_OUT T *pData, size_t count, uint8_t 
 {
   mFUNCTION_SETUP();
   mERROR_IF(pData == nullptr, mR_ArgumentNull);
-  mERROR_IF(sizeof(T) * count > INT_MAX, mR_InvalidParameter);
 
-  memset(pData, (int)data, (int)(sizeof(T) * count));
+  memset(pData, (int)data, sizeof(T) * count);
+
+  mRETURN_SUCCESS();
+}
+
+template <typename T> mFUNCTION(mZeroMemory, IN_OUT T *pData, size_t count = 1)
+{
+  mFUNCTION_SETUP();
+  mERROR_IF(pData == nullptr, mR_ArgumentNull);
+
+  memset(pData, 0, sizeof(T) * count);
 
   mRETURN_SUCCESS();
 }
