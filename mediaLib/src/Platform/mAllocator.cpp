@@ -2,45 +2,139 @@
 #include "mHashMap.h"
 
 #ifdef mDEBUG_MEMORY_ALLOCATIONS
-uint64_t mAllocatorDebugging_DebugMemoryAllocationCount = 0;
-std::recursive_mutex mAllocatorDebugging_DebugMemoryAllocationMutex;
-std::map<mAllocator *, std::map<size_t, std::string>> mAllocatorDebugging_DebugMemoryAllocationMap;
-
-void mAllocatorDebugging_PrintRemainingMemoryAllocations(mAllocator *pAllocator)
+void mAllocatorDebugging_PrintOnExit()
 {
-  mAllocatorDebugging_DebugMemoryAllocationMutex.lock();
+  mPRINT("\nRemaining Memory Allocations:\n\n");
 
-  auto item = mAllocatorDebugging_DebugMemoryAllocationMap.find(pAllocator);
+  mAllocatorDebugging_PrintAllRemainingMemoryAllocations();
+
+  mPRINT("\nEnd of Remaining Memory Allocations.\n");
+
+#ifdef mDEBUG_MEMORY_ALLOCATIONS_PRINT_ALLOCATIONS_WAIT_ON_EXIT
+  getchar();
+#endif
+}
+
+std::atomic<uint64_t> &mAllocatorDebugging_GetDebugMemoryAllocationCount()
+{
+  static std::atomic<uint64_t> instance;
+  return instance;
+}
+
+std::recursive_mutex &mAllocatorDebugging_GetDebugMemoryAllocationMutex()
+{
+  static std::recursive_mutex instance;
+  return instance;
+};
+
+std::map<mAllocator *, std::map<size_t, std::string>> &mAllocatorDebugging_GetDebugMemoryAllocationMap()
+{
+  static std::map<mAllocator *, std::map<size_t, std::string>> instance;
   
-  if (item == mAllocatorDebugging_DebugMemoryAllocationMap.end())
+#ifdef mDEBUG_MEMORY_ALLOCATIONS_PRINT_ALLOCATIONS_ON_EXIT
+  static std::atomic<bool> enqueuedPrintOnExit = false;
+
+  if (!enqueuedPrintOnExit)
   {
-    mAllocatorDebugging_DebugMemoryAllocationMutex.unlock();
+    atexit(mAllocatorDebugging_PrintOnExit);
+    enqueuedPrintOnExit = true;
+  }
+#endif
+
+  return instance;
+};
+
+void mAllocatorDebugging_PrintRemainingMemoryAllocations(IN mAllocator *pAllocator)
+{
+  mAllocatorDebugging_GetDebugMemoryAllocationMutex().lock();
+
+  auto item = mAllocatorDebugging_GetDebugMemoryAllocationMap().find(pAllocator);
+  
+  if (item == mAllocatorDebugging_GetDebugMemoryAllocationMap().end())
+  {
+    mAllocatorDebugging_GetDebugMemoryAllocationMutex().unlock();
     return;
   }
 
   auto allocatedMemory = item->second;
 
   for (const auto &allocation : allocatedMemory)
-    mPRINT("0x%" PRIx64 ": %s\n\n", (uint64_t)allocation.first, allocation.second.c_str());
+    mLOG("[Memory Allocation at 0x%" PRIx64 "]: %s\n", (uint64_t)allocation.first, allocation.second.c_str());
 
-  mAllocatorDebugging_DebugMemoryAllocationMutex.unlock();
+  mAllocatorDebugging_GetDebugMemoryAllocationMutex().unlock();
 }
 
 void mAllocatorDebugging_PrintAllRemainingMemoryAllocations()
 {
-  mAllocatorDebugging_DebugMemoryAllocationMutex.lock();
+  mAllocatorDebugging_GetDebugMemoryAllocationMutex().lock();
 
-  for (const auto &allocator : mAllocatorDebugging_DebugMemoryAllocationMap)
+  for (const auto &allocator : mAllocatorDebugging_GetDebugMemoryAllocationMap())
   {
-    mPRINT("Allocator 0x%" PRIx64 ":\n");
+    if (allocator.second.size() > 0)
+    {
+      mPRINT("Allocator 0x%" PRIx64 ":\n");
 
-    mAllocatorDebugging_PrintRemainingMemoryAllocations(allocator.first);
+      mAllocatorDebugging_PrintRemainingMemoryAllocations(allocator.first);
 
-    mPRINT("\n\n\n");
+      mPRINT("\n\n\n");
+    }
   }
 
-  mAllocatorDebugging_DebugMemoryAllocationMutex.unlock();
+  mAllocatorDebugging_GetDebugMemoryAllocationMutex().unlock();
 }
+
+void mAllocatorDebugging_StoreAllocateCall(IN mAllocator *pAllocator, IN const void *pData, IN const char *information)
+{
+  mAllocatorDebugging_GetDebugMemoryAllocationMutex().lock();
+  mDEFER(mAllocatorDebugging_GetDebugMemoryAllocationMutex().unlock());
+
+  auto entry = mAllocatorDebugging_GetDebugMemoryAllocationMap().find(pAllocator);
+
+  if (entry == mAllocatorDebugging_GetDebugMemoryAllocationMap().end())
+  {
+    mAllocatorDebugging_GetDebugMemoryAllocationMap().insert(std::pair<mAllocator *, std::map<size_t, std::string>>(pAllocator, std::map<size_t, std::string>()));
+    entry = mAllocatorDebugging_GetDebugMemoryAllocationMap().find(pAllocator);
+  }
+
+  if (entry->second.find((size_t)pData) == entry->second.end())
+    entry->second.insert(std::pair<size_t, std::string>((size_t)pData, std::string(information)));
+}
+
+void mAllocatorDebugging_StoreReallocateCall(IN mAllocator *pAllocator, const size_t originalPointer, IN const void *pData, IN const char *information)
+{
+  mAllocatorDebugging_GetDebugMemoryAllocationMutex().lock();
+  mDEFER(mAllocatorDebugging_GetDebugMemoryAllocationMutex().unlock());
+
+  auto entry = mAllocatorDebugging_GetDebugMemoryAllocationMap().find(pAllocator);
+
+  if (entry == mAllocatorDebugging_GetDebugMemoryAllocationMap().end())
+  {
+    mAllocatorDebugging_GetDebugMemoryAllocationMap().insert(std::pair<mAllocator *, std::map<size_t, std::string>>(pAllocator, std::map<size_t, std::string>()));
+    entry = mAllocatorDebugging_GetDebugMemoryAllocationMap().find(pAllocator);
+  }
+
+  entry->second.erase(originalPointer);
+
+  if (entry->second.find((size_t)pData) == entry->second.end())
+    entry->second.insert(std::pair<size_t, std::string>((size_t)pData, std::string(information)));
+}
+
+void mAllocatorDebugging_StoreFreeCall(IN mAllocator *pAllocator, const size_t originalPointer)
+{
+  mAllocatorDebugging_GetDebugMemoryAllocationMutex().lock();
+  mDEFER(mAllocatorDebugging_GetDebugMemoryAllocationMutex().unlock());
+
+  auto entry = mAllocatorDebugging_GetDebugMemoryAllocationMap().find(pAllocator);
+
+  if (entry == mAllocatorDebugging_GetDebugMemoryAllocationMap().end())
+  {
+    mAllocatorDebugging_GetDebugMemoryAllocationMap().insert(std::pair<mAllocator *, std::map<size_t, std::string>>(pAllocator, std::map<size_t, std::string>()));
+    entry = mAllocatorDebugging_GetDebugMemoryAllocationMap().find(pAllocator);
+  }
+
+  entry->second.erase(originalPointer);
+}
+
 #endif
 
 #ifndef MEDIA_LIB_CUSTOM_DEFAULT_ALLOCATOR

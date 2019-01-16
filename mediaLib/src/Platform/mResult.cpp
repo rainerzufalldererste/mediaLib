@@ -21,7 +21,6 @@ void mDebugOut(const char *format, ...)
 
   buffer[mARRAYSIZE(buffer) - 1] = 0;
 
-  mTRACE(buffer);
   OutputDebugStringA(buffer);
 #else
   mUnused(format);
@@ -38,9 +37,9 @@ void mPrintError(char *function, char *file, const int32_t line, const mResult e
     expr = expression;
 
   if (mFAILED(mResult_ToString(error, &errorName)))
-    mDebugOut("Error in '%s' (File '%s'; Line % " PRIi32 ") [0x%" PRIx32 "].\nExpression: '%s'.\n\n", function, file, line, error, expr);
+    mPRINT_ERROR("Error in '%s' (File '%s'; Line % " PRIi32 ") [0x%" PRIx32 "].\nExpression: '%s'.\n\n", function, file, line, error, expr);
   else
-    mDebugOut("Error %s in '%s' (File '%s'; Line % " PRIi32 ") [0x%" PRIx32 "].\nExpression: '%s'.\n\n", errorName.c_str(), function, file, line, error, expr);
+    mPRINT_ERROR("Error %s in '%s' (File '%s'; Line % " PRIi32 ") [0x%" PRIx32 "].\nExpression: '%s'.\n\n", errorName.c_str(), function, file, line, error, expr);
 }
 
 mFUNCTION(mResult_ToString, const mResult result, OUT mString *pString)

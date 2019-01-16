@@ -191,4 +191,46 @@ void mAssert_Internal(const char *expression, const char *text, const char *func
 int64_t mGetCurrentTimeMs();
 int64_t mGetCurrentTimeNs();
 
+enum mConsoleColour
+{
+#ifdef mPLATFORM_WINDOWS
+  mCC_Black,
+  mCC_DarkBlue,
+  mCC_DarkGreen,
+  mCC_DarkCyan,
+  mCC_DarkRed,
+  mCC_DarkMagenta,
+  mCC_DarkYellow,
+  mCC_BrightGray,
+  mCC_DarkGray,
+  mCC_BrightBlue,
+  mCC_BrightGreen,
+  mCC_BrightCyan,
+  mCC_BrightRed,
+  mCC_BrightMagenta,
+  mCC_BrightYellow,
+  mCC_White,
+#else
+  mCC_Black,
+  mCC_DarkRed,
+  mCC_DarkGreen,
+  mCC_DarkYellow,
+  mCC_DarkBlue,
+  mCC_DarkMagenta,
+  mCC_DarkCyan,
+  mCC_BrightGray,
+  mCC_DarkGray,
+  mCC_BrightRed,
+  mCC_BrightGreen,
+  mCC_BrightYellow,
+  mCC_BrightBlue,
+  mCC_BrightMagenta,
+  mCC_BrightCyan,
+  mCC_White,
+#endif
+};
+
+void mResetConsoleColour();
+void mSetConsoleColour(const mConsoleColour foregroundColour, const mConsoleColour backgroundColour);
+
 #endif // default_h__

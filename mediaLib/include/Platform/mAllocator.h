@@ -8,18 +8,30 @@
 
 #ifdef mDEBUG_MEMORY_ALLOCATIONS
 //#define mDEBUG_MEMORY_ALLOCATIONS_PRINT_ALLOCATIONS
+#define mDEBUG_MEMORY_ALLOCATIONS_PRINT_ALLOCATIONS_ON_EXIT
+
+#ifdef mDEBUG_MEMORY_ALLOCATIONS_PRINT_ALLOCATIONS_ON_EXIT
+//#define mDEBUG_MEMORY_ALLOCATIONS_PRINT_ALLOCATIONS_WAIT_ON_EXIT
+#endif
+
+#if defined(GIT_BUILD)
+#error mDEBUG_MEMORY_ALLOCATIONS cannot be enabled in a GIT_BUILD.
+#endif
+
 #include <map>
 #include <mutex>
+#include <atomic>
 
 struct mAllocator;
 
-extern uint64_t mAllocatorDebugging_DebugMemoryAllocationCount;
+std::atomic<uint64_t> &mAllocatorDebugging_GetDebugMemoryAllocationCount();
 
-extern std::recursive_mutex mAllocatorDebugging_DebugMemoryAllocationMutex;
-extern std::map<mAllocator *, std::map<size_t, std::string>> mAllocatorDebugging_DebugMemoryAllocationMap;
-
-void mAllocatorDebugging_PrintRemainingMemoryAllocations(mAllocator *pAllocator);
+void mAllocatorDebugging_PrintRemainingMemoryAllocations(IN mAllocator *pAllocator);
 void mAllocatorDebugging_PrintAllRemainingMemoryAllocations();
+
+void mAllocatorDebugging_StoreAllocateCall(IN mAllocator *pAllocator, IN const void *pData, IN const char *information);
+void mAllocatorDebugging_StoreReallocateCall(IN mAllocator *pAllocator, const size_t originalPointer, IN const void *pData, IN const char *information);
+void mAllocatorDebugging_StoreFreeCall(IN mAllocator *pAllocator, const size_t originalPointer);
 #endif
 
 struct mAllocator;
@@ -131,18 +143,9 @@ mFUNCTION(mAllocator_Allocate, IN OPTIONAL mAllocator *pAllocator, OUT T **ppDat
 
 #ifdef mDEBUG_MEMORY_ALLOCATIONS
   char text[1024];
-  sprintf_s(text, "[%" PRIu64 "] Type: %s, Count: %" PRIu64 ", Size: %" PRIu64 ".", mAllocatorDebugging_DebugMemoryAllocationCount++, typeid(T).name(), count, count * sizeof(T));
+  sprintf_s(text, "[#%" PRIu64 "] Type: %s, Count: %" PRIu64 ", Size: %" PRIu64 ".", mAllocatorDebugging_GetDebugMemoryAllocationCount()++, typeid(T).name(), count, count * sizeof(T));
 
-  auto entry = mAllocatorDebugging_DebugMemoryAllocationMap.find(pAllocator);
-
-  if (entry == mAllocatorDebugging_DebugMemoryAllocationMap.end())
-  {
-    mAllocatorDebugging_DebugMemoryAllocationMap.insert(std::pair<mAllocator *, std::map<size_t, std::string>>(pAllocator, std::map<size_t, std::string>()));
-    entry = mAllocatorDebugging_DebugMemoryAllocationMap.find(pAllocator);
-  }
-
-  if (entry->second.find((size_t)*ppData) == entry->second.end())
-    entry->second.insert(std::pair<size_t, std::string>((size_t)*ppData, std::string(text)));
+  mAllocatorDebugging_StoreAllocateCall(pAllocator, *ppData, text);
 #endif
 
   mRETURN_SUCCESS();
@@ -176,18 +179,9 @@ mFUNCTION(mAllocator_AllocateZero, IN OPTIONAL mAllocator *pAllocator, OUT T **p
 
 #ifdef mDEBUG_MEMORY_ALLOCATIONS
   char text[1024];
-  sprintf_s(text, "[%" PRIu64 "] Type: %s, Count: %" PRIu64 ", Size: %" PRIu64 ".", mAllocatorDebugging_DebugMemoryAllocationCount++, typeid(T).name(), count, count * sizeof(T));
+  sprintf_s(text, "[#%" PRIu64 "] Type: %s, Count: %" PRIu64 ", Size: %" PRIu64 ".", mAllocatorDebugging_GetDebugMemoryAllocationCount()++, typeid(T).name(), count, count * sizeof(T));
 
-  auto entry = mAllocatorDebugging_DebugMemoryAllocationMap.find(pAllocator);
-
-  if (entry == mAllocatorDebugging_DebugMemoryAllocationMap.end())
-  {
-    mAllocatorDebugging_DebugMemoryAllocationMap.insert(std::pair<mAllocator *, std::map<size_t, std::string>>(pAllocator, std::map<size_t, std::string>()));
-    entry = mAllocatorDebugging_DebugMemoryAllocationMap.find(pAllocator);
-  }
-
-  if (entry->second.find((size_t)*ppData) == entry->second.end())
-    entry->second.insert(std::pair<size_t, std::string>((size_t)*ppData, std::string(text)));
+  mAllocatorDebugging_StoreAllocateCall(pAllocator, *ppData, text);
 #endif
 
   mRETURN_SUCCESS();
@@ -215,20 +209,9 @@ inline mFUNCTION(mAllocator_Reallocate, IN OPTIONAL mAllocator *pAllocator, OUT 
 
 #ifdef mDEBUG_MEMORY_ALLOCATIONS
   char text[1024];
-  sprintf_s(text, "[%" PRIu64 "] Type: %s, Count: %" PRIu64 ", Size: %" PRIu64 ".", mAllocatorDebugging_DebugMemoryAllocationCount++, typeid(T).name(), count, count * sizeof(T));
+  sprintf_s(text, "[#%" PRIu64 "] Type: %s, Count: %" PRIu64 ", Size: %" PRIu64 ".", mAllocatorDebugging_GetDebugMemoryAllocationCount()++, typeid(T).name(), count, count * sizeof(T));
 
-  auto entry = mAllocatorDebugging_DebugMemoryAllocationMap.find(pAllocator);
-
-  if (entry == mAllocatorDebugging_DebugMemoryAllocationMap.end())
-  {
-    mAllocatorDebugging_DebugMemoryAllocationMap.insert(std::pair<mAllocator *, std::map<size_t, std::string>>(pAllocator, std::map<size_t, std::string>()));
-    entry = mAllocatorDebugging_DebugMemoryAllocationMap.find(pAllocator);
-  }
-
-  entry->second.erase(originalPointer);
-
-  if (entry->second.find((size_t)*ppData) == entry->second.end())
-    entry->second.insert(std::pair<size_t, std::string>((size_t)*ppData, std::string(text)));
+  mAllocatorDebugging_StoreReallocateCall(pAllocator, originalPointer, *ppData, text);
 #endif
 
   mRETURN_SUCCESS();
@@ -260,15 +243,7 @@ inline mFUNCTION(mAllocator_FreePtr, IN OPTIONAL mAllocator *pAllocator, IN_OUT 
     mERROR_CHECK(pAllocator->pFree((uint8_t *)*ppData, pAllocator->pUserData));
 
 #ifdef mDEBUG_MEMORY_ALLOCATIONS
-  auto entry = mAllocatorDebugging_DebugMemoryAllocationMap.find(pAllocator);
-
-  if (entry == mAllocatorDebugging_DebugMemoryAllocationMap.end())
-  {
-    mAllocatorDebugging_DebugMemoryAllocationMap.insert(std::pair<mAllocator *, std::map<size_t, std::string>>(pAllocator, std::map<size_t, std::string>()));
-    entry = mAllocatorDebugging_DebugMemoryAllocationMap.find(pAllocator);
-  }
-
-  entry->second.erase(originalPointer);
+  mAllocatorDebugging_StoreFreeCall(pAllocator, originalPointer);
 #endif
 
   mRETURN_SUCCESS();
@@ -296,15 +271,7 @@ inline mFUNCTION(mAllocator_Free, IN OPTIONAL mAllocator *pAllocator, IN T *pDat
     mERROR_CHECK(pAllocator->pFree((uint8_t *)pData, pAllocator->pUserData));
 
 #ifdef mDEBUG_MEMORY_ALLOCATIONS
-  auto entry = mAllocatorDebugging_DebugMemoryAllocationMap.find(pAllocator);
-
-  if (entry == mAllocatorDebugging_DebugMemoryAllocationMap.end())
-  {
-    mAllocatorDebugging_DebugMemoryAllocationMap.insert(std::pair<mAllocator *, std::map<size_t, std::string>>(pAllocator, std::map<size_t, std::string>()));
-    entry = mAllocatorDebugging_DebugMemoryAllocationMap.find(pAllocator);
-  }
-
-  entry->second.erase(originalPointer);
+  mAllocatorDebugging_StoreFreeCall(pAllocator, originalPointer);
 #endif
 
   mRETURN_SUCCESS();
