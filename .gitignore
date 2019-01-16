@@ -264,6 +264,10 @@ __pycache__/
 *.sln
 *.vcxpro*
 
+# Makefile
+Makefile
+*.make
+
 # Additional Files
 mediaLib/lib/*.lib
 enc_temp_folder/*
