@@ -6,10 +6,10 @@ struct mSoftwareWindow
   mPtr<mImageBuffer> buffer;
 };
 
-mFUNCTION(mSoftwareWindow_Create_Internal, IN mSoftwareWindow *pWindow, const std::string & title, const mVec2s & size, const mSoftwareWindow_DisplayMode displaymode);
+mFUNCTION(mSoftwareWindow_Create_Internal, IN mSoftwareWindow *pWindow, const std::string &title, const mVec2s &size, const mSoftwareWindow_DisplayMode displaymode);
 mFUNCTION(mSoftwareWindow_Destroy_Internal, IN mSoftwareWindow *pWindow);
 
-mFUNCTION(mSoftwareWindow_Create, OUT mPtr<mSoftwareWindow>* pWindow, IN mAllocator *pAllocator, const std::string & title, const mVec2s & size, const mSoftwareWindow_DisplayMode displaymode /* = mSW_DM_Windowed */)
+mFUNCTION(mSoftwareWindow_Create, OUT mPtr<mSoftwareWindow> *pWindow, IN mAllocator *pAllocator, const std::string &title, const mVec2s &size, const mSoftwareWindow_DisplayMode displaymode /* = mSW_DM_Windowed */)
 {
   mFUNCTION_SETUP();
 
@@ -22,7 +22,7 @@ mFUNCTION(mSoftwareWindow_Create, OUT mPtr<mSoftwareWindow>* pWindow, IN mAlloca
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mSoftwareWindow_Destroy, IN_OUT mPtr<mSoftwareWindow>* pWindow)
+mFUNCTION(mSoftwareWindow_Destroy, IN_OUT mPtr<mSoftwareWindow> *pWindow)
 {
   mFUNCTION_SETUP();
 
@@ -31,7 +31,7 @@ mFUNCTION(mSoftwareWindow_Destroy, IN_OUT mPtr<mSoftwareWindow>* pWindow)
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mSoftwareWindow_GetSize, mPtr<mSoftwareWindow>& window, OUT mVec2s * pSize)
+mFUNCTION(mSoftwareWindow_GetSize, mPtr<mSoftwareWindow> &window, OUT mVec2s *pSize)
 {
   mFUNCTION_SETUP();
 
@@ -45,7 +45,7 @@ mFUNCTION(mSoftwareWindow_GetSize, mPtr<mSoftwareWindow>& window, OUT mVec2s * p
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mSoftwareWindow_GetBuffer, mPtr<mSoftwareWindow>& window, OUT mPtr<mImageBuffer>* pBuffer)
+mFUNCTION(mSoftwareWindow_GetBuffer, mPtr<mSoftwareWindow> &window, OUT mPtr<mImageBuffer> *pBuffer)
 {
   mFUNCTION_SETUP();
 
@@ -64,7 +64,7 @@ mFUNCTION(mSoftwareWindow_GetBuffer, mPtr<mSoftwareWindow>& window, OUT mPtr<mIm
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mSoftwareWindow_Swap, mPtr<mSoftwareWindow>& window)
+mFUNCTION(mSoftwareWindow_Swap, mPtr<mSoftwareWindow> &window)
 {
   mFUNCTION_SETUP();
 
@@ -75,7 +75,7 @@ mFUNCTION(mSoftwareWindow_Swap, mPtr<mSoftwareWindow>& window)
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mSoftwareWindow_SetSize, mPtr<mSoftwareWindow>& window, const mVec2s & size)
+mFUNCTION(mSoftwareWindow_SetSize, mPtr<mSoftwareWindow> &window, const mVec2s &size)
 {
   mFUNCTION_SETUP();
 
@@ -98,7 +98,7 @@ mFUNCTION(mSoftwareWindow_SetSize, mPtr<mSoftwareWindow>& window, const mVec2s &
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mSoftwareWindow_GetSdlWindowPtr, mPtr<mSoftwareWindow>& window, OUT SDL_Window ** ppSdlWindow)
+mFUNCTION(mSoftwareWindow_GetSdlWindowPtr, mPtr<mSoftwareWindow> &window, OUT SDL_Window **ppSdlWindow)
 {
   mFUNCTION_SETUP();
 
@@ -111,7 +111,7 @@ mFUNCTION(mSoftwareWindow_GetSdlWindowPtr, mPtr<mSoftwareWindow>& window, OUT SD
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mSoftwareWindow_Create_Internal, IN mSoftwareWindow * pWindow, const std::string & title, const mVec2s & size, const mSoftwareWindow_DisplayMode displaymode)
+mFUNCTION(mSoftwareWindow_Create_Internal, IN mSoftwareWindow *pWindow, const std::string &title, const mVec2s &size, const mSoftwareWindow_DisplayMode displaymode)
 {
   mFUNCTION_SETUP();
 
@@ -124,7 +124,7 @@ mFUNCTION(mSoftwareWindow_Create_Internal, IN mSoftwareWindow * pWindow, const s
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mSoftwareWindow_Destroy_Internal, IN mSoftwareWindow * pWindow)
+mFUNCTION(mSoftwareWindow_Destroy_Internal, IN mSoftwareWindow *pWindow)
 {
   mFUNCTION_SETUP();
 

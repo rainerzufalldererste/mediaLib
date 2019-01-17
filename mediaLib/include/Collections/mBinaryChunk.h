@@ -71,7 +71,7 @@ inline mFUNCTION(mBinaryChunk_WriteData, mPtr<mBinaryChunk> &binaryChunk, T item
 }
 
 template<typename T>
-inline mFUNCTION(mBinaryChunk_Read, mPtr<mBinaryChunk>& binaryChunk, T *pItem)
+inline mFUNCTION(mBinaryChunk_Read, mPtr<mBinaryChunk> &binaryChunk, T *pItem)
 {
   mFUNCTION_SETUP();
 

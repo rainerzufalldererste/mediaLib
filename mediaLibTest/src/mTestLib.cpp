@@ -153,7 +153,7 @@ mFUNCTION(mTestAllocator_Create, mAllocator *pTestAllocator)
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mTestAllocator_GetCount, mAllocator * pAllocator, size_t *pCount)
+mFUNCTION(mTestAllocator_GetCount, mAllocator *pAllocator, size_t *pCount)
 {
   mFUNCTION_SETUP();
 

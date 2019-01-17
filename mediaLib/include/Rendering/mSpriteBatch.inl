@@ -56,7 +56,7 @@ inline mFUNCTION(mSpriteBatch_Destroy, IN_OUT mPtr<mSpriteBatch<Args...>> *pSpri
 }
 
 template<typename ...Args>
-inline mFUNCTION(mSpriteBatch_Begin, mPtr<mSpriteBatch<Args...>>& spriteBatch)
+inline mFUNCTION(mSpriteBatch_Begin, mPtr<mSpriteBatch<Args...>> &spriteBatch)
 {
   mFUNCTION_SETUP();
 
@@ -78,7 +78,7 @@ inline mFUNCTION(mSpriteBatch_Begin, mPtr<mSpriteBatch<Args...>>& spriteBatch)
 }
 
 template<typename ...Args>
-inline mFUNCTION(mSpriteBatch_Begin, mPtr<mSpriteBatch<Args...>>& spriteBatch, const mSpriteBatch_SpriteSortMode spriteSortMode, const mSpriteBatch_AlphaMode alphaMode, const mSpriteBatch_TextureSampleMode sampleMode /* = mSB_TSM_LinearFiltering */)
+inline mFUNCTION(mSpriteBatch_Begin, mPtr<mSpriteBatch<Args...>> &spriteBatch, const mSpriteBatch_SpriteSortMode spriteSortMode, const mSpriteBatch_AlphaMode alphaMode, const mSpriteBatch_TextureSampleMode sampleMode /* = mSB_TSM_LinearFiltering */)
 {
   mFUNCTION_SETUP();
 
@@ -95,7 +95,7 @@ inline mFUNCTION(mSpriteBatch_Begin, mPtr<mSpriteBatch<Args...>>& spriteBatch, c
 }
 
 template<typename ...Args>
-inline mFUNCTION(mSpriteBatch_DrawWithDepth, mPtr<mSpriteBatch<Args...>>& spriteBatch, mPtr<mTexture>& texture, const mVec2f & position, const float_t depth, Args && ...args)
+inline mFUNCTION(mSpriteBatch_DrawWithDepth, mPtr<mSpriteBatch<Args...>> &spriteBatch, mPtr<mTexture> &texture, const mVec2f &position, const float_t depth, Args &&...args)
 {
   mFUNCTION_SETUP();
 
@@ -111,7 +111,7 @@ inline mFUNCTION(mSpriteBatch_DrawWithDepth, mPtr<mSpriteBatch<Args...>>& sprite
 }
 
 template<typename ...Args>
-inline mFUNCTION(mSpriteBatch_DrawWithDepth, mPtr<mSpriteBatch<Args...>>& spriteBatch, mPtr<mTexture>& texture, const mRectangle2D<float_t>& rect, const float_t depth, Args && ...args)
+inline mFUNCTION(mSpriteBatch_DrawWithDepth, mPtr<mSpriteBatch<Args...>> &spriteBatch, mPtr<mTexture> &texture, const mRectangle2D<float_t> &rect, const float_t depth, Args &&...args)
 {
   mFUNCTION_SETUP();
 
@@ -127,7 +127,7 @@ inline mFUNCTION(mSpriteBatch_DrawWithDepth, mPtr<mSpriteBatch<Args...>>& sprite
 }
 
 template<typename ...Args>
-inline mFUNCTION(mSpriteBatch_DrawWithDepth, mPtr<mSpriteBatch<Args...>> &spriteBatch, mTexture *pTexture, const mVec2f &position, const float_t depth, Args && ...args)
+inline mFUNCTION(mSpriteBatch_DrawWithDepth, mPtr<mSpriteBatch<Args...>> &spriteBatch, mTexture *pTexture, const mVec2f &position, const float_t depth, Args &&...args)
 {
   mFUNCTION_SETUP();
 
@@ -141,7 +141,7 @@ inline mFUNCTION(mSpriteBatch_DrawWithDepth, mPtr<mSpriteBatch<Args...>> &sprite
 }
 
 template<typename ...Args>
-inline mFUNCTION(mSpriteBatch_DrawWithDepth, mPtr<mSpriteBatch<Args...>> &spriteBatch, mTexture *pTexture, const mRectangle2D<float_t> &rect, const float_t depth, Args && ...args)
+inline mFUNCTION(mSpriteBatch_DrawWithDepth, mPtr<mSpriteBatch<Args...>> &spriteBatch, mTexture *pTexture, const mRectangle2D<float_t> &rect, const float_t depth, Args &&...args)
 {
   mFUNCTION_SETUP();
 
@@ -155,7 +155,7 @@ inline mFUNCTION(mSpriteBatch_DrawWithDepth, mPtr<mSpriteBatch<Args...>> &sprite
 }
 
 template<typename ...Args>
-inline mFUNCTION(mSpriteBatch_Draw, mPtr<mSpriteBatch<Args...>>& spriteBatch, mPtr<mTexture> &texture, const mVec2f & position, Args && ...args)
+inline mFUNCTION(mSpriteBatch_Draw, mPtr<mSpriteBatch<Args...>> &spriteBatch, mPtr<mTexture> &texture, const mVec2f &position, Args &&...args)
 {
   mFUNCTION_SETUP();
 
@@ -165,7 +165,7 @@ inline mFUNCTION(mSpriteBatch_Draw, mPtr<mSpriteBatch<Args...>>& spriteBatch, mP
 }
 
 template<typename ...Args>
-inline mFUNCTION(mSpriteBatch_Draw, mPtr<mSpriteBatch<Args...>>& spriteBatch, mPtr<mTexture>& texture, const mRectangle2D<float_t>& rect, Args && ...args)
+inline mFUNCTION(mSpriteBatch_Draw, mPtr<mSpriteBatch<Args...>> &spriteBatch, mPtr<mTexture> &texture, const mRectangle2D<float_t> &rect, Args &&...args)
 {
   mFUNCTION_SETUP();
 
@@ -175,7 +175,7 @@ inline mFUNCTION(mSpriteBatch_Draw, mPtr<mSpriteBatch<Args...>>& spriteBatch, mP
 }
 
 template<typename ...Args>
-inline mFUNCTION(mSpriteBatch_Draw, mPtr<mSpriteBatch<Args...>> &spriteBatch, mTexture *pTexture, const mVec2f &position, Args && ...args)
+inline mFUNCTION(mSpriteBatch_Draw, mPtr<mSpriteBatch<Args...>> &spriteBatch, mTexture *pTexture, const mVec2f &position, Args &&...args)
 {
   mFUNCTION_SETUP();
 
@@ -249,7 +249,7 @@ mFUNCTION(mSpriteBatch_QuickSortRenderObjects, mPtr<mQueue<mSpriteBatch_Internal
 }
 
 template<typename ...Args>
-inline mFUNCTION(mSpriteBatch_Draw, mPtr<mSpriteBatch<Args...>> &spriteBatch, mTexture *pTexture, const mRectangle2D<float_t> &rect, Args && ...args)
+inline mFUNCTION(mSpriteBatch_Draw, mPtr<mSpriteBatch<Args...>> &spriteBatch, mTexture *pTexture, const mRectangle2D<float_t> &rect, Args &&...args)
 {
   mFUNCTION_SETUP();
 
@@ -399,7 +399,7 @@ struct mSpriteBatch_GenerateShader <T, Args...>
 };
 
 template<typename ...Args>
-inline mFUNCTION(mSpriteBatch_Create_Internal, IN_OUT mSpriteBatch<Args...>* pSpriteBatch)
+inline mFUNCTION(mSpriteBatch_Create_Internal, IN_OUT mSpriteBatch<Args...> *pSpriteBatch)
 {
   mFUNCTION_SETUP();
 
@@ -628,7 +628,7 @@ inline mFUNCTION(mSpriteBatch_Internal_BindMesh, mPtr<mSpriteBatch<Args...>> &sp
 //////////////////////////////////////////////////////////////////////////
 
 template<typename ...Args>
-inline mFUNCTION(mSpriteBatch_Internal_RenderObject_Create, OUT mSpriteBatch_Internal_RenderObject<Args...>* pRenderObject, const mPtr<mTexture>& texture, const mVec2f position, const mVec2f size, const float_t depth, Args && ...args)
+inline mFUNCTION(mSpriteBatch_Internal_RenderObject_Create, OUT mSpriteBatch_Internal_RenderObject<Args...> *pRenderObject, const mPtr<mTexture> &texture, const mVec2f position, const mVec2f size, const float_t depth, Args &&...args)
 {
   mFUNCTION_SETUP();
 

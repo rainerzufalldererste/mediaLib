@@ -247,19 +247,19 @@ template <> mINLINE void mSimd_StoreHalf<1>(float_t *pData, __m128 value)
   _mm_storeh_pi((__m64*)pData, value);
 }
 
-template <bool align> mINLINE __m128 mSimd_Load(const float * p);
+template <bool align> mINLINE __m128 mSimd_Load(const float *p);
 
-template <> mINLINE __m128 mSimd_Load<false>(const float * p)
+template <> mINLINE __m128 mSimd_Load<false>(const float *p)
 {
   return _mm_loadu_ps(p);
 }
 
-template <> mINLINE __m128 mSimd_Load<true>(const float * p)
+template <> mINLINE __m128 mSimd_Load<true>(const float *p)
 {
   return _mm_load_ps(p);
 }
 
-mINLINE __m128 mSimd_Load(const float * p0, const float * p1)
+mINLINE __m128 mSimd_Load(const float *p0, const float *p1)
 {
   return _mm_loadh_pi(_mm_loadl_pi(_mm_setzero_ps(), (__m64*)p0), (__m64*)p1);
 }
@@ -287,19 +287,19 @@ template <bool align> mINLINE void mSimd_StoreMasked(__m128i *pData, __m128i val
   Store<align>(pData, mSimd_Combine(mask, value, old));
 }
 
-template <bool align> mINLINE __m128i mSimd_Load(const __m128i * p);
+template <bool align> mINLINE __m128i mSimd_Load(const __m128i *p);
 
-template <> mINLINE __m128i mSimd_Load<false>(const __m128i * p)
+template <> mINLINE __m128i mSimd_Load<false>(const __m128i *p)
 {
   return _mm_loadu_si128(p);
 }
 
-template <> mINLINE __m128i mSimd_Load<true>(const __m128i * p)
+template <> mINLINE __m128i mSimd_Load<true>(const __m128i *p)
 {
   return _mm_load_si128(p);
 }
 
-template <bool align> mINLINE __m128i mSimd_LoadMaskI8(const __m128i * p, __m128i index)
+template <bool align> mINLINE __m128i mSimd_LoadMaskI8(const __m128i *p, __m128i index)
 {
   return _mm_cmpeq_epi8(mSimd_Load<align>(p), index);
 }
@@ -314,28 +314,28 @@ template <size_t count> mINLINE __m128i mSimd_LoadAfterLast(__m128i last)
   return _mm_or_si128(_mm_srli_si128(last, count), _mm_and_si128(last, _mm_slli_si128(mSimdInvZero, mSimd128bit - count)));
 }
 
-template <bool align, size_t step> mINLINE void mSimd_LoadNose3(const uint8_t * p, __m128i a[3])
+template <bool align, size_t step> mINLINE void mSimd_LoadNose3(const uint8_t *p, __m128i a[3])
 {
   a[1] = mSimd_Load<align>((__m128i*)p);
   a[0] = mSimd_LoadBeforeFirst<step>(a[1]);
   a[2] = _mm_loadu_si128((__m128i*)(p + step));
 }
 
-template <bool align, size_t step> mINLINE void mSimd_LoadBody3(const uint8_t * p, __m128i a[3])
+template <bool align, size_t step> mINLINE void mSimd_LoadBody3(const uint8_t *p, __m128i a[3])
 {
   a[0] = _mm_loadu_si128((__m128i*)(p - step));
   a[1] = mSimd_Load<align>((__m128i*)p);
   a[2] = _mm_loadu_si128((__m128i*)(p + step));
 }
 
-template <bool align, size_t step> mINLINE void mSimd_LoadTail3(const uint8_t * p, __m128i a[3])
+template <bool align, size_t step> mINLINE void mSimd_LoadTail3(const uint8_t *p, __m128i a[3])
 {
   a[0] = _mm_loadu_si128((__m128i*)(p - step));
   a[1] = mSimd_Load<align>((__m128i*)p);
   a[2] = mSimd_LoadAfterLast<step>(a[1]);
 }
 
-template <bool align, size_t step> mINLINE void mSimd_LoadNose5(const uint8_t * p, __m128i a[5])
+template <bool align, size_t step> mINLINE void mSimd_LoadNose5(const uint8_t *p, __m128i a[5])
 {
   a[2] = mSimd_Load<align>((__m128i*)p);
   a[1] = mSimd_LoadBeforeFirst<step>(a[2]);
@@ -344,7 +344,7 @@ template <bool align, size_t step> mINLINE void mSimd_LoadNose5(const uint8_t * 
   a[4] = _mm_loadu_si128((__m128i*)(p + 2 * step));
 }
 
-template <bool align, size_t step> mINLINE void mSimd_LoadBody5(const uint8_t * p, __m128i a[5])
+template <bool align, size_t step> mINLINE void mSimd_LoadBody5(const uint8_t *p, __m128i a[5])
 {
   a[0] = _mm_loadu_si128((__m128i*)(p - 2 * step));
   a[1] = _mm_loadu_si128((__m128i*)(p - step));
@@ -353,7 +353,7 @@ template <bool align, size_t step> mINLINE void mSimd_LoadBody5(const uint8_t * 
   a[4] = _mm_loadu_si128((__m128i*)(p + 2 * step));
 }
 
-template <bool align, size_t step> mINLINE void mSimd_LoadTail5(const uint8_t * p, __m128i a[5])
+template <bool align, size_t step> mINLINE void mSimd_LoadTail5(const uint8_t *p, __m128i a[5])
 {
   a[0] = _mm_loadu_si128((__m128i*)(p - 2 * step));
   a[1] = _mm_loadu_si128((__m128i*)(p - step));
@@ -362,19 +362,19 @@ template <bool align, size_t step> mINLINE void mSimd_LoadTail5(const uint8_t * 
   a[4] = mSimd_LoadAfterLast<step>(a[3]);
 }
 
-mINLINE void mSimd_LoadNoseDx(const uint8_t * p, __m128i a[3])
+mINLINE void mSimd_LoadNoseDx(const uint8_t *p, __m128i a[3])
 {
   a[0] = mSimd_LoadBeforeFirst<1>(_mm_loadu_si128((__m128i*)p));
   a[2] = _mm_loadu_si128((__m128i*)(p + 1));
 }
 
-mINLINE void mSimd_LoadBodyDx(const uint8_t * p, __m128i a[3])
+mINLINE void mSimd_LoadBodyDx(const uint8_t *p, __m128i a[3])
 {
   a[0] = _mm_loadu_si128((__m128i*)(p - 1));
   a[2] = _mm_loadu_si128((__m128i*)(p + 1));
 }
 
-mINLINE void mSimd_LoadTailDx(const uint8_t * p, __m128i a[3])
+mINLINE void mSimd_LoadTailDx(const uint8_t *p, __m128i a[3])
 {
   a[0] = _mm_loadu_si128((__m128i*)(p - 1));
   a[2] = mSimd_LoadAfterLast<1>(_mm_loadu_si128((__m128i*)p));
@@ -457,12 +457,12 @@ mINLINE __m128i mSimd_DivideI16By255(__m128i value)
   return _mm_srli_epi16(_mm_add_epi16(_mm_add_epi16(value, mSimd_K16_0001), _mm_srli_epi16(value, 8)), 8);
 }
 
-mINLINE __m128i mSimd_BinomialSum16(const __m128i & a, const __m128i & b, const __m128i & c)
+mINLINE __m128i mSimd_BinomialSum16(const __m128i &a, const __m128i &b, const __m128i &c)
 {
   return _mm_add_epi16(_mm_add_epi16(a, c), _mm_add_epi16(b, b));
 }
 
-mINLINE __m128i mSimd_BinomialSum16(const __m128i & a, const __m128i & b, const __m128i & c, const __m128i & d)
+mINLINE __m128i mSimd_BinomialSum16(const __m128i &a, const __m128i &b, const __m128i &c, const __m128i &d)
 {
   return _mm_add_epi16(_mm_add_epi16(a, d), _mm_mullo_epi16(_mm_add_epi16(b, c), mSimd_K16_0003));
 }
@@ -545,12 +545,12 @@ template<int imm> mINLINE __m128 mSimd_Shuffle32f(__m128 a)
   return _mm_castsi128_ps(_mm_shuffle_epi32(_mm_castps_si128(a), imm));
 }
 
-mINLINE __m128i mSimd_Average16(const __m128i & a, const __m128i & b, const __m128i & c, const __m128i & d)
+mINLINE __m128i mSimd_Average16(const __m128i &a, const __m128i &b, const __m128i &c, const __m128i &d)
 {
   return _mm_srli_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(a, b), _mm_add_epi16(c, d)), mSimd_K16_0002), 2);
 }
 
-mINLINE __m128i mSimd_Merge16(const __m128i & even, __m128i odd)
+mINLINE __m128i mSimd_Merge16(const __m128i &even, __m128i odd)
 {
   return _mm_or_si128(_mm_slli_si128(odd, 1), even);
 }

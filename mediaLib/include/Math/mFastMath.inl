@@ -112,7 +112,7 @@ inline mVector mVector::Transform2(const mMatrix &matrix) const { return mVector
 inline mVector mVector::TransformCoord2(const mMatrix &matrix) const { return mVector(DirectX::XMVector2TransformCoord(v, matrix.m)); }
 inline mVector mVector::TransformNormal2(const mMatrix &matrix) const { return mVector(DirectX::XMVector2TransformNormal(v, matrix.m)); }
 
-inline mResult mVECTORCALL mVector::TransformCoordStream2(OUT DirectX::XMFLOAT2 * pOutputData, const size_t outputStride, IN DirectX::XMFLOAT2 * pInputData, const size_t inputStride, const size_t inputLength, const mMatrix &matrix)
+inline mResult mVECTORCALL mVector::TransformCoordStream2(OUT DirectX::XMFLOAT2 *pOutputData, const size_t outputStride, IN DirectX::XMFLOAT2 *pInputData, const size_t inputStride, const size_t inputLength, const mMatrix &matrix)
 {
   mFUNCTION_SETUP();
 
@@ -122,7 +122,7 @@ inline mResult mVECTORCALL mVector::TransformCoordStream2(OUT DirectX::XMFLOAT2 
   mRETURN_SUCCESS();
 }
 
-inline mResult mVECTORCALL mVector::TransformNormalStream2(OUT DirectX::XMFLOAT2 * pOutputData, const size_t outputStride, IN DirectX::XMFLOAT2 * pInputData, const size_t inputStride, const size_t inputLength, const mMatrix &matrix)
+inline mResult mVECTORCALL mVector::TransformNormalStream2(OUT DirectX::XMFLOAT2 *pOutputData, const size_t outputStride, IN DirectX::XMFLOAT2 *pInputData, const size_t inputStride, const size_t inputLength, const mMatrix &matrix)
 {
   mFUNCTION_SETUP();
 
@@ -165,7 +165,7 @@ inline mVector mVector::TransformNormal3(const mMatrix &matrix) const { return m
 inline mVector mVector::Rotate3(const mQuaternion &quaternion) const { return mVector(DirectX::XMVector3Rotate(v, quaternion.q)); }
 inline mVector mVector::RotateInverse3(const mQuaternion &quaternion) const { return mVector(DirectX::XMVector3InverseRotate(v, quaternion.q)); }
 
-inline mResult mVECTORCALL mVector::TransformCoordStream3(OUT DirectX::XMFLOAT3 * pOutputData, const size_t outputStride, IN DirectX::XMFLOAT3 * pInputData, const size_t inputStride, const size_t inputLength, const mMatrix &matrix)
+inline mResult mVECTORCALL mVector::TransformCoordStream3(OUT DirectX::XMFLOAT3 *pOutputData, const size_t outputStride, IN DirectX::XMFLOAT3 *pInputData, const size_t inputStride, const size_t inputLength, const mMatrix &matrix)
 {
   mFUNCTION_SETUP();
 
@@ -175,7 +175,7 @@ inline mResult mVECTORCALL mVector::TransformCoordStream3(OUT DirectX::XMFLOAT3 
   mRETURN_SUCCESS();
 }
 
-inline mResult mVECTORCALL mVector::TransformNormalStream3(OUT DirectX::XMFLOAT3 * pOutputData, const size_t outputStride, IN DirectX::XMFLOAT3 * pInputData, const size_t inputStride, const size_t inputLength, const mMatrix &matrix)
+inline mResult mVECTORCALL mVector::TransformNormalStream3(OUT DirectX::XMFLOAT3 *pOutputData, const size_t outputStride, IN DirectX::XMFLOAT3 *pInputData, const size_t inputStride, const size_t inputLength, const mMatrix &matrix)
 {
   mFUNCTION_SETUP();
 
@@ -223,7 +223,7 @@ inline mVector mVECTORCALL mVector::Refract4(const mVector &incident, const mVec
 inline mVector mVECTORCALL mVector::RefractVector4(const mVector &incident, const mVector &normal, const mVector &refractionIndex) { return mVector(DirectX::XMVector4RefractV(incident.v, normal.v, refractionIndex.v)); }
 inline mVector mVector::Transform4(const mMatrix &matrix) const { return mVector(DirectX::XMVector4Transform(v, (DirectX::FXMMATRIX)matrix.m)); }
 
-inline mResult mVECTORCALL mVector::TransformStream4(OUT DirectX::XMFLOAT4 * pOutputData, const size_t outputStride, IN DirectX::XMFLOAT4 * pInputData, const size_t inputStride, const size_t inputLength, const mMatrix &matrix)
+inline mResult mVECTORCALL mVector::TransformStream4(OUT DirectX::XMFLOAT4 *pOutputData, const size_t outputStride, IN DirectX::XMFLOAT4 *pInputData, const size_t inputStride, const size_t inputLength, const mMatrix &matrix)
 {
   mFUNCTION_SETUP();
 
@@ -263,7 +263,7 @@ inline mQuaternion mVECTORCALL mQuaternion::SlerpV(const mQuaternion &q0, const 
 inline mQuaternion mVECTORCALL mQuaternion::Squad(const mQuaternion &q0, const mQuaternion &q1, const mQuaternion &q2, const mQuaternion &q3, const float_t t) { return mQuaternion(DirectX::XMQuaternionSquad(q0.q, q1.q, q2.q, q3.q, t)); }
 inline mQuaternion mVECTORCALL mQuaternion::SquadV(const mQuaternion &q0, const mQuaternion &q1, const mQuaternion &q2, const mQuaternion &q3, const mVector &t) { mQuaternion(DirectX::XMQuaternionSquadV(q0.q, q1.q, q2.q, q3.q, t.v)); }
 
-inline mResult mQuaternion::SquadSetup(OUT mVector * pA, OUT mVector * pB, OUT mVector * pC, const mQuaternion &q0, const mQuaternion &q1, const mQuaternion &q2, const mQuaternion &q3) 
+inline mResult mQuaternion::SquadSetup(OUT mVector *pA, OUT mVector *pB, OUT mVector *pC, const mQuaternion &q0, const mQuaternion &q1, const mQuaternion &q2, const mQuaternion &q3) 
 {
   mFUNCTION_SETUP();
 
@@ -287,7 +287,7 @@ inline mMatrix mMatrix::operator*(const mMatrix &q1) const { return Multiply(q1)
 inline mMatrix & mMatrix::operator*=(const mMatrix &q1) { return *this = Multiply(q1); }
 inline mMatrix & mMatrix::operator=(const mMatrix &copy) { m = copy.m; return *this; }
 
-inline mResult mMatrix::Decompose(OUT mVector * pOutScale, OUT mQuaternion * pOutRotQuat, OUT mVector * pOutTrans) const
+inline mResult mMatrix::Decompose(OUT mVector *pOutScale, OUT mQuaternion *pOutRotQuat, OUT mVector *pOutTrans) const
 {
   mFUNCTION_SETUP();
 
@@ -301,7 +301,7 @@ inline mMatrix mVECTORCALL mMatrix::AffineTransformation(const mVector &scaling,
 inline mMatrix mVECTORCALL mMatrix::AffineTransformation2D(const mVector &scaling, const mVector &rotationOrigin, const float_t rotation, const mVector &translation) { return mMatrix(DirectX::XMMatrixAffineTransformation2D(scaling.v, rotationOrigin.v, rotation, translation.v)); }
 inline mVector mMatrix::Determinant() const { return mVector(DirectX::XMMatrixDeterminant(m)); }
 inline mMatrix mVECTORCALL mMatrix::Identity() { return mMatrix(DirectX::XMMatrixIdentity()); }
-inline mMatrix mMatrix::Inverse(OUT OPTIONAL mVector * pDeterminant /* = nullptr */) const { return mMatrix(DirectX::XMMatrixInverse(&pDeterminant->v, m)); }
+inline mMatrix mMatrix::Inverse(OUT OPTIONAL mVector *pDeterminant /* = nullptr */) const { return mMatrix(DirectX::XMMatrixInverse(&pDeterminant->v, m)); }
 inline mMatrix mVECTORCALL mMatrix::LookAtLH(const mVector &eyePosition, const mVector &focusPosition, const mVector &upDirection) { return mMatrix(DirectX::XMMatrixLookAtLH(eyePosition.v, focusPosition.v, upDirection.v)); }
 inline mMatrix mVECTORCALL mMatrix::LookAtRH(const mVector &eyePosition, const mVector &focusPosition, const mVector &upDirection) { return mMatrix(DirectX::XMMatrixLookAtRH(eyePosition.v, focusPosition.v, upDirection.v)); }
 inline mMatrix mVECTORCALL mMatrix::LookToLH(const mVector &eyePosition, const mVector &eyeDirection, const mVector &upDirection) { return mMatrix(DirectX::XMMatrixLookToLH(eyePosition.v, eyeDirection.v, upDirection.v)); }

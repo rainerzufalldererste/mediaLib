@@ -3,12 +3,12 @@
 #include "mHardwareWindow.h"
 #include "SDL_syswm.h"
 
-mFUNCTION(mSystemDialogue_OpenFile_Internal, HWND window, const mString &headlineString, mPtr<mQueue<mKeyValuePair<mString, mString>>> &fileTypeExtentionPairs, bool *pCanceled, mString *pFileName);
-mFUNCTION(mSystemDialogue_OpenFile_SdlWindowInternal, SDL_Window *pWindow, const mString &headlineString, mPtr<mQueue<mKeyValuePair<mString, mString>>> &fileTypeExtentionPairs, bool *pCanceled, mString *pFileName);
+mFUNCTION(mSystemDialogue_OpenFile_Internal, HWND window, const mString &headlineString, mPtr<mQueue<mKeyValuePair<mString, mString>>> &fileTypeExtentionPairs, OUT bool *pCanceled, OUT mString *pFileName);
+mFUNCTION(mSystemDialogue_OpenFile_SdlWindowInternal, SDL_Window *pWindow, const mString &headlineString, mPtr<mQueue<mKeyValuePair<mString, mString>>> &fileTypeExtentionPairs, OUT bool *pCanceled, OUT mString *pFileName);
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mSystemDialogue_OpenFile, const mString &headlineString, mPtr<mQueue<mKeyValuePair<mString, mString>>> &fileTypeNameExtentionPairs, bool * pCanceled, mString * pOpenedFile)
+mFUNCTION(mSystemDialogue_OpenFile, const mString &headlineString, mPtr<mQueue<mKeyValuePair<mString, mString>>> &fileTypeNameExtentionPairs, OUT bool *pCanceled, OUT mString *pOpenedFile)
 {
   mFUNCTION_SETUP();
 
@@ -17,7 +17,7 @@ mFUNCTION(mSystemDialogue_OpenFile, const mString &headlineString, mPtr<mQueue<m
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mSystemDialogue_OpenFile, mPtr<mSoftwareWindow> &window, const mString &headlineString, mPtr<mQueue<mKeyValuePair<mString, mString>>> &fileTypeNameExtentionPairs, bool *pCanceled, mString *pOpenedFile)
+mFUNCTION(mSystemDialogue_OpenFile, mPtr<mSoftwareWindow> &window, const mString &headlineString, mPtr<mQueue<mKeyValuePair<mString, mString>>> &fileTypeNameExtentionPairs, OUT bool *pCanceled, OUT mString *pOpenedFile)
 {
   mFUNCTION_SETUP();
 
@@ -31,7 +31,7 @@ mFUNCTION(mSystemDialogue_OpenFile, mPtr<mSoftwareWindow> &window, const mString
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mSystemDialogue_OpenFile, mPtr<mHardwareWindow> &window, const mString &headlineString, mPtr<mQueue<mKeyValuePair<mString, mString>>> &fileTypeNameExtentionPairs, bool *pCanceled, mString *pOpenedFile)
+mFUNCTION(mSystemDialogue_OpenFile, mPtr<mHardwareWindow> &window, const mString &headlineString, mPtr<mQueue<mKeyValuePair<mString, mString>>> &fileTypeNameExtentionPairs, OUT bool *pCanceled, OUT mString *pOpenedFile)
 {
   mFUNCTION_SETUP();
 
@@ -47,7 +47,7 @@ mFUNCTION(mSystemDialogue_OpenFile, mPtr<mHardwareWindow> &window, const mString
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mSystemDialogue_OpenFile_SdlWindowInternal, SDL_Window *pWindow, const mString &headlineString, mPtr<mQueue<mKeyValuePair<mString, mString>>> &fileTypeNameExtentionPairs, bool *pCanceled, mString *pOpenedFile)
+mFUNCTION(mSystemDialogue_OpenFile_SdlWindowInternal, SDL_Window *pWindow, const mString &headlineString, mPtr<mQueue<mKeyValuePair<mString, mString>>> &fileTypeNameExtentionPairs, OUT bool *pCanceled, OUT mString *pOpenedFile)
 {
   mFUNCTION_SETUP();
 
@@ -63,7 +63,7 @@ mFUNCTION(mSystemDialogue_OpenFile_SdlWindowInternal, SDL_Window *pWindow, const
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mSystemDialogue_OpenFile_Internal, HWND window, const mString &headlineString, mPtr<mQueue<mKeyValuePair<mString, mString>>> &fileTypeExtentionPairs, bool *pCanceled, mString *pFileName)
+mFUNCTION(mSystemDialogue_OpenFile_Internal, HWND window, const mString &headlineString, mPtr<mQueue<mKeyValuePair<mString, mString>>> &fileTypeExtentionPairs, OUT bool *pCanceled, OUT mString *pFileName)
 {
   mFUNCTION_SETUP();
 

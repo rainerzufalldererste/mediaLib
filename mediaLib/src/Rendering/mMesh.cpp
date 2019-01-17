@@ -22,7 +22,7 @@ mFUNCTION(mMeshAttributeContainer_Destroy_Internal, IN mMeshAttributeContainer *
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mMesh_Create, OUT mPtr<mMesh>* pMesh, IN mAllocator * pAllocator, const std::initializer_list<mPtr<mMeshAttributeContainer>>& attributeInformation, mPtr<mShader>& shader, mPtr<mQueue<mKeyValuePair<mString, mPtr<mTexture>>>>& textures, const mRenderParams_VertexRenderMode triangleRenderMode /* = mRP_VRM_TriangleList */)
+mFUNCTION(mMesh_Create, OUT mPtr<mMesh> *pMesh, IN mAllocator *pAllocator, const std::initializer_list<mPtr<mMeshAttributeContainer>> &attributeInformation, mPtr<mShader> &shader, mPtr<mQueue<mKeyValuePair<mString, mPtr<mTexture>>>> &textures, const mRenderParams_VertexRenderMode triangleRenderMode /* = mRP_VRM_TriangleList */)
 {
   mFUNCTION_SETUP();
 
@@ -139,7 +139,7 @@ mFUNCTION(mMesh_Create, OUT mPtr<mMesh> *pMesh, IN mAllocator *pAllocator, mPtr<
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mMesh_Create, OUT mPtr<mMesh> *pMesh, IN mAllocator *pAllocator, mPtr<mQueue<mMeshAttribute>> &attributeInformation, mPtr<mShader> &shader, mPtr<mBinaryChunk>& data, mPtr<mQueue<mKeyValuePair<mString, mPtr<mTexture>>>> &textures, const mRenderParams_VertexRenderMode triangleRenderMode /* = mRP_VRM_TriangleList */)
+mFUNCTION(mMesh_Create, OUT mPtr<mMesh> *pMesh, IN mAllocator *pAllocator, mPtr<mQueue<mMeshAttribute>> &attributeInformation, mPtr<mShader> &shader, mPtr<mBinaryChunk> &data, mPtr<mQueue<mKeyValuePair<mString, mPtr<mTexture>>>> &textures, const mRenderParams_VertexRenderMode triangleRenderMode /* = mRP_VRM_TriangleList */)
 {
   mFUNCTION_SETUP();
 
@@ -219,7 +219,7 @@ mFUNCTION(mMesh_Destroy, IN_OUT mPtr<mMesh> *pMesh)
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mMesh_Destroy_Internal, mMesh * pMesh)
+mFUNCTION(mMesh_Destroy_Internal, mMesh *pMesh)
 {
   mFUNCTION_SETUP();
 

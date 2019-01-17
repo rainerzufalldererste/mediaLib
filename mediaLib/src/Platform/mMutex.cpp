@@ -138,7 +138,7 @@ mFUNCTION(mRecursiveMutex_Unlock, IN mRecursiveMutex *pMutex)
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mRecursiveMutex_Destroy_Internal, IN mRecursiveMutex * pMutex)
+mFUNCTION(mRecursiveMutex_Destroy_Internal, IN mRecursiveMutex *pMutex)
 {
   mFUNCTION_SETUP();
 

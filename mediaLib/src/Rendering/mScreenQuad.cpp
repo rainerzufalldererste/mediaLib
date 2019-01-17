@@ -87,7 +87,7 @@ mFUNCTION(mScreenQuad_Destroy, IN_OUT mPtr<mScreenQuad> *pScreenQuad)
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mScreenQuad_Render, mPtr<mScreenQuad>& screenQuad)
+mFUNCTION(mScreenQuad_Render, mPtr<mScreenQuad> &screenQuad)
 {
   mFUNCTION_SETUP();
 

@@ -36,7 +36,7 @@ mFUNCTION(mJsonWriter_PushQueue_Internal, mPtr<mJsonWriter> &jsonWriter, IN cJSO
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mJsonWriter_Create, OUT mPtr<mJsonWriter> *pJsonWriter, IN mAllocator * pAllocator)
+mFUNCTION(mJsonWriter_Create, OUT mPtr<mJsonWriter> *pJsonWriter, IN mAllocator *pAllocator)
 {
   mFUNCTION_SETUP();
 
@@ -1266,7 +1266,7 @@ mFUNCTION(mJsonReader_PeekLast_Internal, mPtr<mJsonReader> &jsonReader, OUT cJSO
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mJsonReader_PopLast_Internal, mPtr<mJsonReader>& jsonReader)
+mFUNCTION(mJsonReader_PopLast_Internal, mPtr<mJsonReader> &jsonReader)
 {
   mFUNCTION_SETUP();
 
