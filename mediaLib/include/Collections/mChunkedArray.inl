@@ -260,7 +260,7 @@ inline mFUNCTION(mChunkedArray_SetDestructionFunction, mPtr<mChunkedArray<T>> &c
 //////////////////////////////////////////////////////////////////////////
 
 template<typename T>
-inline mFUNCTION(mChunkedArray_Destroy_Internal, IN mChunkedArray<T>* pChunkedArray)
+inline mFUNCTION(mChunkedArray_Destroy_Internal, IN mChunkedArray<T> *pChunkedArray)
 {
   mFUNCTION_SETUP();
 

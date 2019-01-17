@@ -61,7 +61,7 @@ struct mSpriteBatch
 };
 
 template <typename ...Args>
-mFUNCTION(mSpriteBatch_Internal_RenderObject_Create, OUT mSpriteBatch_Internal_RenderObject<Args...> *pRenderObject, const mPtr<mTexture> &texture, const mVec2f position, const mVec2f size, const float_t depth, Args&& ...args);
+mFUNCTION(mSpriteBatch_Internal_RenderObject_Create, OUT mSpriteBatch_Internal_RenderObject<Args...> *pRenderObject, const mPtr<mTexture> &texture, const mVec2f position, const mVec2f size, const float_t depth, Args &&...args);
 
 template <typename ...Args>
 mFUNCTION(mSpriteBatch_Internal_RenderObject_Destroy, IN_OUT mSpriteBatch_Internal_RenderObject<Args...> *pRenderObject);

@@ -42,7 +42,7 @@ mFUNCTION(mArray_GetPointer, mArray<T> &arrayRef, OUT T **ppData);
 //////////////////////////////////////////////////////////////////////////
 
 template<typename T>
-inline mFUNCTION(mArray_Create, OUT mArray<T>* pArray, mAllocator * pAllocator, const size_t count)
+inline mFUNCTION(mArray_Create, OUT mArray<T> *pArray, mAllocator *pAllocator, const size_t count)
 {
   mFUNCTION_SETUP();
 
@@ -57,7 +57,7 @@ inline mFUNCTION(mArray_Create, OUT mArray<T>* pArray, mAllocator * pAllocator, 
 }
 
 template<typename T>
-inline mFUNCTION(mArray_Destroy, IN_OUT mArray<T>* pArray)
+inline mFUNCTION(mArray_Destroy, IN_OUT mArray<T> *pArray)
 {
   mFUNCTION_SETUP();
 
@@ -72,7 +72,7 @@ inline mFUNCTION(mArray_Destroy, IN_OUT mArray<T>* pArray)
 }
 
 template<typename T>
-inline mFUNCTION(mArray_Resize, mArray<T>& arrayRef, const size_t newCount)
+inline mFUNCTION(mArray_Resize, mArray<T> &arrayRef, const size_t newCount)
 {
   mFUNCTION_SETUP();
 
@@ -100,7 +100,7 @@ inline mFUNCTION(mArray_PopAt, mArray<T> &arrayRef, const size_t index, OUT T *p
 }
 
 template<typename T>
-inline mFUNCTION(mArray_PeekAt, mArray<T>& arrayRef, const size_t index, OUT T * pData)
+inline mFUNCTION(mArray_PeekAt, mArray<T> &arrayRef, const size_t index, OUT T *pData)
 {
   mFUNCTION_SETUP();
 
@@ -113,7 +113,7 @@ inline mFUNCTION(mArray_PeekAt, mArray<T>& arrayRef, const size_t index, OUT T *
 }
 
 template<typename T>
-inline mFUNCTION(mArray_PutAt, mArray<T>& arrayRef, const size_t index, IN T *pData)
+inline mFUNCTION(mArray_PutAt, mArray<T> &arrayRef, const size_t index, IN T *pData)
 {
   mFUNCTION_SETUP();
 
@@ -126,7 +126,7 @@ inline mFUNCTION(mArray_PutAt, mArray<T>& arrayRef, const size_t index, IN T *pD
 }
 
 template<typename T>
-inline mFUNCTION(mArray_PutDataAt, mArray<T>& arrayRef, const size_t index, T pData)
+inline mFUNCTION(mArray_PutDataAt, mArray<T> &arrayRef, const size_t index, T pData)
 {
   mFUNCTION_SETUP();
 
@@ -136,7 +136,7 @@ inline mFUNCTION(mArray_PutDataAt, mArray<T>& arrayRef, const size_t index, T pD
 }
 
 template<typename T>
-inline mFUNCTION(mArray_GetPointer, mArray<T>& arrayRef, OUT T **ppData)
+inline mFUNCTION(mArray_GetPointer, mArray<T> &arrayRef, OUT T **ppData)
 {
   mFUNCTION_SETUP();
 

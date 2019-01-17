@@ -265,7 +265,7 @@ mFUNCTION(mRenderParams_SetStereo3dBuffer, const mRenderParams_StereoRenderBuffe
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mRenderParams_ClearTargetColour, const mVector & colour)
+mFUNCTION(mRenderParams_ClearTargetColour, const mVector &colour)
 {
   mFUNCTION_SETUP();
 #if defined(mRENDERER_OPENGL)
@@ -289,7 +289,7 @@ mFUNCTION(mRenderParams_ClearDepth)
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mRenderParams_ClearTargetDepthAndColour, const mVector & colour)
+mFUNCTION(mRenderParams_ClearTargetDepthAndColour, const mVector &colour)
 {
   mFUNCTION_SETUP();
 #if defined(mRENDERER_OPENGL)

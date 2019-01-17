@@ -41,13 +41,13 @@ inline mStaticArray<T, TCount>::mStaticArray(mStaticArray<T, TCount>&& move)
 }
 
 template<typename T, size_t TCount>
-inline mStaticArray<T, TCount>& mStaticArray<T, TCount>::operator=(const mStaticArray<T, TCount>& copy)
+inline mStaticArray<T, TCount>& mStaticArray<T, TCount>::operator=(const mStaticArray<T, TCount> &copy)
 {
   mMemcpy((T *)pData, (T *)copy.pData, Count());
 }
 
 template<typename T, size_t TCount>
-inline mStaticArray<T, TCount>& mStaticArray<T, TCount>::operator=(mStaticArray<T, TCount>&& move)
+inline mStaticArray<T, TCount>& mStaticArray<T, TCount>::operator=(mStaticArray<T, TCount> &&move)
 {
   mMemcpy((T *)pData, (T *)copy.pData, Count());
 }

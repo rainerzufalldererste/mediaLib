@@ -161,7 +161,7 @@ mFUNCTION(mMediaFileInputHandler_GetVideoStreamCount, mPtr<mMediaFileInputHandle
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mMediaFileInputHandler_GetAudioStreamCount, mPtr<mMediaFileInputHandler>& ptr, OUT size_t * pCount)
+mFUNCTION(mMediaFileInputHandler_GetAudioStreamCount, mPtr<mMediaFileInputHandler> &ptr, OUT size_t *pCount)
 {
   mFUNCTION_SETUP();
 
@@ -172,7 +172,7 @@ mFUNCTION(mMediaFileInputHandler_GetAudioStreamCount, mPtr<mMediaFileInputHandle
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mMediaFileInputHandler_GetVideoStreamType, mPtr<mMediaFileInputHandler>& ptr, const size_t index, OUT mVideoStreamType * pStreamType)
+mFUNCTION(mMediaFileInputHandler_GetVideoStreamType, mPtr<mMediaFileInputHandler> &ptr, const size_t index, OUT mVideoStreamType *pStreamType)
 {
   mFUNCTION_SETUP();
 
@@ -184,7 +184,7 @@ mFUNCTION(mMediaFileInputHandler_GetVideoStreamType, mPtr<mMediaFileInputHandler
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mMediaFileInputHandler_GetAudioStreamType, mPtr<mMediaFileInputHandler>& ptr, const size_t index, OUT mAudioStreamType * pStreamType)
+mFUNCTION(mMediaFileInputHandler_GetAudioStreamType, mPtr<mMediaFileInputHandler> &ptr, const size_t index, OUT mAudioStreamType *pStreamType)
 {
   mFUNCTION_SETUP();
 

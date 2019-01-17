@@ -67,7 +67,7 @@ struct mResourceManager
 //////////////////////////////////////////////////////////////////////////
 
 // To be available for the resource manager, expose two functions: 
-//  'mResult mCreateResource(OUT TValue* pResource, TKey param);'
+//  'mResult mCreateResource(OUT TValue *pResource, TKey param);'
 //  and
 //  'mResult mDestroyResource(IN_OUT TValue *pResource);'
 
@@ -78,7 +78,7 @@ mFUNCTION(mCreateResource, OUT TValue *pResource, TKey param)
 }
 
 // To be available for the resource manager, expose two functions: 
-//  'mResult mCreateResource(OUT TValue* pResource, TKey param);'
+//  'mResult mCreateResource(OUT TValue *pResource, TKey param);'
 //  and
 //  'mResult mDestroyResource(IN_OUT TValue *pResource);'
 

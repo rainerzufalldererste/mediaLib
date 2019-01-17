@@ -440,7 +440,7 @@ namespace mPixelFormat_Transform
     return _mm_packus_epi16(lo, hi);
   }
 
-  template <bool align> mINLINE void AdjustedYuv16ToBgra(__m128i y16, __m128i u16, __m128i v16, const __m128i & a_0, __m128i *pBgra)
+  template <bool align> mINLINE void AdjustedYuv16ToBgra(__m128i y16, __m128i u16, __m128i v16, const __m128i &a_0, __m128i *pBgra)
   {
     const __m128i b16 = AdjustedYuvToBlue16(y16, u16);
     const __m128i g16 = AdjustedYuvToGreen16(y16, u16, v16);
@@ -452,23 +452,23 @@ namespace mPixelFormat_Transform
     mSimd_Store<align>(pBgra + 1, _mm_unpackhi_epi16(bg8, ra8));
   }
 
-  template <bool align> mINLINE void Yuv16ToBgra(__m128i y16, __m128i u16, __m128i v16, const __m128i & a_0, __m128i *pBgra)
+  template <bool align> mINLINE void Yuv16ToBgra(__m128i y16, __m128i u16, __m128i v16, const __m128i &a_0, __m128i *pBgra)
   {
     AdjustedYuv16ToBgra<align>(AdjustY16(y16), AdjustUV16(u16), AdjustUV16(v16), a_0, pBgra);
   }
 
-  template <bool align> mINLINE void Yuv8ToBgra(__m128i y8, __m128i u8, __m128i v8, const __m128i & a_0, __m128i * pBgra)
+  template <bool align> mINLINE void Yuv8ToBgra(__m128i y8, __m128i u8, __m128i v8, const __m128i &a_0, __m128i *pBgra)
   {
     Yuv16ToBgra<align>(_mm_unpacklo_epi8(y8, mSimdZero), _mm_unpacklo_epi8(u8, mSimdZero), _mm_unpacklo_epi8(v8, mSimdZero), a_0, pBgra + 0);
     Yuv16ToBgra<align>(_mm_unpackhi_epi8(y8, mSimdZero), _mm_unpackhi_epi8(u8, mSimdZero), _mm_unpackhi_epi8(v8, mSimdZero), a_0, pBgra + 2);
   }
 
-  template <bool align> mINLINE void Yuv444pToBgra(const uint8_t * pY, const uint8_t * pU, const uint8_t * pV, const __m128i & a_0, uint8_t * pBgra)
+  template <bool align> mINLINE void Yuv444pToBgra(const uint8_t *pY, const uint8_t *pU, const uint8_t *pV, const __m128i &a_0, uint8_t *pBgra)
   {
     Yuv8ToBgra<align>(mSimd_Load<align>((__m128i*)pY), mSimd_Load<align>((__m128i*)pU), mSimd_Load<align>((__m128i*)pV), a_0, (__m128i*)pBgra);
   }
 
-  template <bool align> mFUNCTION(Yuv444pToBgra, const uint8_t * pY, size_t yStride, const uint8_t * pU, size_t uStride, const uint8_t * pV, size_t vStride,
+  template <bool align> mFUNCTION(Yuv444pToBgra, const uint8_t *pY, size_t yStride, const uint8_t *pU, size_t uStride, const uint8_t *pV, size_t vStride,
     size_t width, size_t height, uint8_t * bgra, size_t bgraStride, uint8_t alpha)
   {
     mFUNCTION_SETUP();
@@ -520,7 +520,7 @@ namespace mPixelFormat_Transform
     mRETURN_SUCCESS();
   }
 
-  mFUNCTION(Yuv444pToBgra, const uint8_t * pY, size_t yStride, const uint8_t * pU, size_t uStride, const uint8_t * pV, size_t vStride, size_t width, size_t height, uint8_t * pBgra, size_t bgraStride, uint8_t alpha)
+  mFUNCTION(Yuv444pToBgra, const uint8_t *pY, size_t yStride, const uint8_t *pU, size_t uStride, const uint8_t *pV, size_t vStride, size_t width, size_t height, uint8_t *pBgra, size_t bgraStride, uint8_t alpha)
   {
     mFUNCTION_SETUP();
 
@@ -543,13 +543,13 @@ namespace mPixelFormat_Transform
     mRETURN_SUCCESS();
   }
 
-  template <bool align> mINLINE void Yuv422pToBgra(const uint8_t * pY, const __m128i & u, const __m128i & v, const __m128i & a_0, uint8_t * pBgra)
+  template <bool align> mINLINE void Yuv422pToBgra(const uint8_t *pY, const __m128i &u, const __m128i &v, const __m128i &a_0, uint8_t *pBgra)
   {
     Yuv8ToBgra<align>(mSimd_Load<align>((__m128i*)pY + 0), _mm_unpacklo_epi8(u, u), _mm_unpacklo_epi8(v, v), a_0, (__m128i*)pBgra + 0);
     Yuv8ToBgra<align>(mSimd_Load<align>((__m128i*)pY + 1), _mm_unpackhi_epi8(u, u), _mm_unpackhi_epi8(v, v), a_0, (__m128i*)pBgra + 4);
   }
 
-  template <bool align> mFUNCTION(mPixelFormat_Transform_Yuv420pToBgra_SSE2, const uint8_t * pY, size_t yStride, const uint8_t * pU, size_t uStride, const uint8_t * pV, size_t vStride, size_t width, size_t height, uint8_t * bgra, size_t bgraStride, uint8_t alpha)
+  template <bool align> mFUNCTION(mPixelFormat_Transform_Yuv420pToBgra_SSE2, const uint8_t *pY, size_t yStride, const uint8_t *pU, size_t uStride, const uint8_t *pV, size_t vStride, size_t width, size_t height, uint8_t *pBgra, size_t bgraStride, uint8_t alpha)
   {
     mFUNCTION_SETUP();
 
@@ -566,7 +566,7 @@ namespace mPixelFormat_Transform
       mERROR_CHECK(mMemoryIsAligned(uStride, sizeof(__m128), &uStrideIsAligned));
       mERROR_CHECK(mMemoryIsAligned(pV, sizeof(__m128), &vIsAligned));
       mERROR_CHECK(mMemoryIsAligned(vStride, sizeof(__m128), &vStrideIsAligned));
-      mERROR_CHECK(mMemoryIsAligned(bgra, sizeof(__m128), &bgraIsAligned));
+      mERROR_CHECK(mMemoryIsAligned(pBgra, sizeof(__m128), &bgraIsAligned));
       mERROR_CHECK(mMemoryIsAligned(bgraStride, sizeof(__m128), &bgraStrideIsAligned));
 
       mASSERT(yIsAligned && yStrideIsAligned && uIsAligned && uStrideIsAligned && vIsAligned && vStrideIsAligned && bgraIsAligned && bgraStrideIsAligned, "Unaligned memory passed to aligned function.");
@@ -584,8 +584,8 @@ namespace mPixelFormat_Transform
       {
         __m128i u_ = mSimd_Load<align>((__m128i*)(pU + colUV));
         __m128i v_ = mSimd_Load<align>((__m128i*)(pV + colUV));
-        Yuv422pToBgra<align>(pY + colY, u_, v_, a_0, bgra + colBgra);
-        Yuv422pToBgra<align>(pY + colY + yStride, u_, v_, a_0, bgra + colBgra + bgraStride);
+        Yuv422pToBgra<align>(pY + colY, u_, v_, a_0, pBgra + colBgra);
+        Yuv422pToBgra<align>(pY + colY + yStride, u_, v_, a_0, pBgra + colBgra + bgraStride);
       }
 
       if (tail)
@@ -593,14 +593,14 @@ namespace mPixelFormat_Transform
         size_t offset = width - mSimd256bit;
         __m128i u_ = mSimd_Load<false>((__m128i*)(pU + offset / 2));
         __m128i v_ = mSimd_Load<false>((__m128i*)(pV + offset / 2));
-        Yuv422pToBgra<false>(pY + offset, u_, v_, a_0, bgra + 4 * offset);
-        Yuv422pToBgra<false>(pY + offset + yStride, u_, v_, a_0, bgra + 4 * offset + bgraStride);
+        Yuv422pToBgra<false>(pY + offset, u_, v_, a_0, pBgra + 4 * offset);
+        Yuv422pToBgra<false>(pY + offset + yStride, u_, v_, a_0, pBgra + 4 * offset + bgraStride);
       }
 
       pY += 2 * yStride;
       pU += uStride;
       pV += vStride;
-      bgra += 2 * bgraStride;
+      pBgra += 2 * bgraStride;
     }
     mRETURN_SUCCESS();
   }
@@ -1156,7 +1156,7 @@ mFUNCTION(mPixelFormat_TransformBuffer, mPtr<mImageBuffer> &source, mPtr<mImageB
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mPixelFormat_TransformBuffer, mPtr<mImageBuffer>& source, mPtr<mImageBuffer>& target)
+mFUNCTION(mPixelFormat_TransformBuffer, mPtr<mImageBuffer> &source, mPtr<mImageBuffer> &target)
 {
   mFUNCTION_SETUP();
 

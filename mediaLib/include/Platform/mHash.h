@@ -48,7 +48,7 @@ inline mFUNCTION(mHash, mPtr<T> data, OUT uint64_t *pHash)
 }
 
 template<typename T>
-inline mFUNCTION(mHash, std::basic_string<T>* pString, OUT uint64_t * pHash)
+inline mFUNCTION(mHash, std::basic_string<T> *pString, OUT uint64_t *pHash)
 {
   mFUNCTION_SETUP();
 

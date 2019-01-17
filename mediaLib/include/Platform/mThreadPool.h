@@ -29,7 +29,7 @@ mFUNCTION(mTask_GetResult, IN mTask *pTask, OUT mResult *pResult);
 mFUNCTION(mTask_GetState, IN mTask *pTask, OUT mTask_State *pTaskState);
 
 template <class TFunction, class ...Args, class = typename enable_if<!is_same<typename decay<TFunction>::type, thread>::value>::type>
-mFUNCTION(mTask_Create, OUT mTask **ppTask, TFunction&& function, Args&&... args)
+mFUNCTION(mTask_Create, OUT mTask **ppTask, TFunction &&function, Args &&...args)
 {
   mTask_Create(ppTask, (std::function<mResult(void)>)
     [=]()

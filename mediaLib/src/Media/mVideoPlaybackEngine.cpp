@@ -129,7 +129,7 @@ mFUNCTION(mVideoPlaybackEngine_PlaybackThread, mVideoPlaybackEngine *pPlaybackEn
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mVideoPlaybackEngine_Create, OUT mPtr<mVideoPlaybackEngine> *pPlaybackEngine, IN mAllocator *pAllocator, const std::wstring & fileName, mPtr<mThreadPool> &threadPool, const size_t videoStreamIndex /* = 0 */, const mPixelFormat outputPixelFormat /* = mPF_B8G8R8A8 */, const size_t playbackFlags /* = mVideoPlaybackEngine_PlaybackFlags::mVPE_PF_None */)
+mFUNCTION(mVideoPlaybackEngine_Create, OUT mPtr<mVideoPlaybackEngine> *pPlaybackEngine, IN mAllocator *pAllocator, const std::wstring &fileName, mPtr<mThreadPool> &threadPool, const size_t videoStreamIndex /* = 0 */, const mPixelFormat outputPixelFormat /* = mPF_B8G8R8A8 */, const size_t playbackFlags /* = mVideoPlaybackEngine_PlaybackFlags::mVPE_PF_None */)
 {
   mFUNCTION_SETUP();
 
@@ -274,7 +274,7 @@ mFUNCTION(mVideoPlaybackEngine_Create_Internal, IN mVideoPlaybackEngine *pPlayba
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mVideoPlaybackEngine_Destroy_Internal, IN_OUT mVideoPlaybackEngine * pPlaybackEngine)
+mFUNCTION(mVideoPlaybackEngine_Destroy_Internal, IN_OUT mVideoPlaybackEngine *pPlaybackEngine)
 {
   mFUNCTION_SETUP();
 

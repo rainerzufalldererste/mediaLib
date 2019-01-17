@@ -248,7 +248,7 @@ inline mDefer<T>::~mDefer()
 
 // Attention: Because of the specific use-case of this class, the copy constructor & copy assignment operator *move* instead of copying.
 template<typename T>
-inline mDefer<T>& mDefer<T>::operator=(mDefer<T> &copy)
+inline mDefer<T>& mDefer<T>::operator = (mDefer<T> &copy)
 {
   m_deferType = move.m_deferType;
   m_data = move.m_pData;
