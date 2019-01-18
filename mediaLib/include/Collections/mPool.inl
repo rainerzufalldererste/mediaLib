@@ -356,7 +356,7 @@ inline bool mPoolIterator<T>::operator != (const typename mPoolIterator<T> &)
 
         if (mFAILED(result))
         {
-          mFAIL_DEBUG("mChunkedArray_PointerAt failed in mPool<T>::Iterator::operator with errorcode %" PRIu64 ".", (uint64_t)result);
+          mFAIL_DEBUG("mChunkedArray_PointerAt failed in mPoolIterator::operator != with errorcode %" PRIu64 ".", (uint64_t)result);
           return false;
         }
 

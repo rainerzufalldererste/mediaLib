@@ -71,12 +71,12 @@ inline mFUNCTION(mRefPool_AddEmpty, mPtr<mRefPool<T>> &refPool, OUT mPtr<T> *pIn
   mERROR_CHECK(mPool_PointerAt(refPool->data, index, &pPtrData));
 
   size_t ptrIndex;
-  typename mRefPool<T>::refPoolPtr ptr;
+  mRefPool_SharedPointerContainer_Internal<T> ptr;
   mERROR_CHECK(mPool_Add(refPool->ptrs, &ptr, &ptrIndex));
 
   pPtrData->index = ptrIndex;
 
-  typename mRefPool<T>::refPoolPtr *pPtr = nullptr;
+  mRefPool_SharedPointerContainer_Internal<T> *pPtr = nullptr;
   mERROR_CHECK(mPool_PointerAt(refPool->ptrs, ptrIndex, &pPtr));
 
   pPtr->dataIndex = index;
@@ -108,12 +108,12 @@ inline mFUNCTION(mRefPool_AddEmpty, mPtr<mRefPool<T>> &refPool, OUT mPtr<T> *pIn
     typename mRefPool<T>::refPoolPtrData data;
     mRefPool_Internal_ERROR_CHECK(mPool_RemoveAt(_refPool->data, index, &data));
 
-    typename mRefPool<T>::refPoolPtr *_pPtr;
+    mRefPool_SharedPointerContainer_Internal<T> *_pPtr;
     mRefPool_Internal_ERROR_CHECK(mPool_PointerAt(_refPool->ptrs, data.index, &_pPtr));
 
     _pPtr->ptr.m_pData = nullptr;
 
-    typename mRefPool<T>::refPoolPtr _ptr;
+    mRefPool_SharedPointerContainer_Internal<T> _ptr;
     mRefPool_Internal_ERROR_CHECK(mPool_RemoveAt(_refPool->ptrs, data.index, &_ptr));
   };
 
@@ -141,26 +141,19 @@ inline mFUNCTION(mRefPool_Crush, mPtr<mRefPool<T>> &refPool)
   mERROR_CHECK(mRecursiveMutex_Lock(refPool->pMutex));
   mDEFER_CALL(refPool->pMutex, mRecursiveMutex_Unlock);
 
-  mPtr<mPool<typename mRefPool<T>::refPoolPtr>> crushedPtrs;
+  mPtr<mPool<mRefPool_SharedPointerContainer_Internal<T>>> crushedPtrs;
   mDEFER_CALL(&crushedPtrs, mPool_Destroy);
   mERROR_CHECK(mPool_Create(&crushedPtrs, refPool->pAllocator));
 
-  std::function<mResult(typename mRefPool<T>::refPoolPtr *, size_t)> addAllItems = 
-    [&](typename mRefPool<T>::refPoolPtr *pItem, size_t)
+  for (auto _item : refPool->ptrs->Iterate())
   {
-    mFUNCTION_SETUP();
-
-    mERROR_IF(pItem->ptr.m_pParams->pUserData == nullptr, mR_InternalError);
+    mERROR_IF(_item.pData->ptr.m_pParams->pUserData == nullptr, mR_InternalError);
 
     size_t newIndex;
-    mERROR_CHECK(mPool_Add(crushedPtrs, pItem, &newIndex));
-    *(size_t *)pItem->ptr.m_pParams->pUserData = newIndex;
-
-    mRETURN_SUCCESS();
+    mERROR_CHECK(mPool_Add(crushedPtrs, _item.pData, &newIndex));
+    *(size_t *)_item.pData->ptr.m_pParams->pUserData = newIndex;
   };
   
-  mERROR_CHECK(mPool_ForEach(refPool->ptrs, addAllItems));
-
   mERROR_CHECK(mPool_Destroy(&refPool->ptrs));
   refPool->ptrs = crushedPtrs;
 
@@ -174,16 +167,12 @@ inline mFUNCTION(mRefPool_ForEach, mPtr<mRefPool<T>> &refPool, const std::functi
 
   mERROR_IF(refPool == nullptr || function == nullptr, mR_ArgumentNull);
 
-  const std::function<mResult (typename mRefPool<T>::refPoolPtr *, size_t)> fn = [function](typename mRefPool<T>::refPoolPtr *pData, size_t) 
+  for (auto _item : refPool->ptrs->Iterate())
   {
-    mFUNCTION_SETUP();
+    mERROR_IF(_item.pData->ptr == nullptr, mR_Success);
 
-    mERROR_IF(pData->ptr == nullptr, mR_Success);
-
-    mRETURN_RESULT(function(pData->ptr)); 
-  };
-
-  mERROR_CHECK(mPool_ForEach(refPool->ptrs, fn));
+    mERROR_CHECK(function(_item.pData->ptr)); 
+  }
 
   mRETURN_SUCCESS();
 }
@@ -200,21 +189,15 @@ inline mFUNCTION(mRefPool_KeepIfTrue, mPtr<mRefPool<T>> &refPool, const std::fun
   mDEFER_CALL(&removeIndexes, mQueue_Destroy);
   mERROR_CHECK(mQueue_Create(&removeIndexes, &mDefaultTempAllocator));
 
-  const std::function<mResult(typename mRefPool<T>::refPoolPtr *, size_t)> fn = [&, function](typename mRefPool<T>::refPoolPtr *pData, size_t index)
+  for (auto _item : refPool->ptrs->Iterate())
   {
-    mFUNCTION_SETUP();
-
     bool keep = true;
 
-    mERROR_CHECK(function(pData->ptr, &keep));
+    mERROR_CHECK(function(_item.pData->ptr, &keep));
 
     if (!keep)
-      mERROR_CHECK(mQueue_PushBack(removeIndexes, index));
-
-    mRETURN_SUCCESS();
+      mERROR_CHECK(mQueue_PushBack(removeIndexes, _item.index));
   };
-
-  mERROR_CHECK(mPool_ForEach(refPool->ptrs, fn));
 
   size_t removeCount = 0;
   mERROR_CHECK(mQueue_GetCount(removeIndexes, &removeCount));
@@ -224,7 +207,7 @@ inline mFUNCTION(mRefPool_KeepIfTrue, mPtr<mRefPool<T>> &refPool, const std::fun
     size_t index;
     mERROR_CHECK(mQueue_PopFront(removeIndexes, &index));
 
-    typename mRefPool<T>::refPoolPtr *pData;
+    mRefPool_SharedPointerContainer_Internal<T> *pData;
     mERROR_CHECK(mPool_PointerAt(refPool->ptrs, index, &pData));
 
     if (pData->ptr.m_pParams->referenceCount == 1)
@@ -244,7 +227,7 @@ inline mFUNCTION(mRefPool_PeekAt, mPtr<mRefPool<T>> &refPool, const size_t index
   mERROR_CHECK(mRecursiveMutex_Lock(refPool->pMutex));
   mDEFER_CALL(refPool->pMutex, mRecursiveMutex_Unlock);
 
-  typename mRefPool<T>::refPoolPtr refPoolPointer;
+  mRefPool_SharedPointerContainer_Internal<T> refPoolPointer;
   mERROR_CHECK(mPool_PeekAt(refPool->ptrs, index, &refPoolPointer));
 
   *pIndex = refPoolPointer.ptr;
@@ -276,22 +259,15 @@ inline mFUNCTION(mRefPool_RemoveOwnReference, mPtr<mRefPool<T>> &refPool)
   mERROR_CHECK(mRecursiveMutex_Lock(refPool->pMutex));
   mDEFER_CALL(refPool->pMutex, mRecursiveMutex_Unlock);
 
-  std::function<mResult(typename mRefPool<T>::refPoolPtr *, size_t)> removeOwnRef =
-    [](typename mRefPool<T>::refPoolPtr *pItem, size_t)
+  for (auto _item : refPool->ptrs->Iterate())
   {
-    mFUNCTION_SETUP();
+    mERROR_IF(_item.pData == nullptr || _item.pData->ptr == nullptr, mR_ArgumentNull);
 
-    mERROR_IF(pItem == nullptr || pItem->ptr == nullptr, mR_ArgumentNull);
-
-    if (pItem->ptr.m_pParams->referenceCount > 1)
-      --pItem->ptr.m_pParams->referenceCount;
+    if (_item.pData->ptr.m_pParams->referenceCount > 1)
+      --_item.pData->ptr.m_pParams->referenceCount;
     else
-      mERROR_CHECK(mSharedPointer_Destroy(&pItem->ptr));
-
-    mRETURN_SUCCESS();
+      mERROR_CHECK(mSharedPointer_Destroy(&_item.pData->ptr));
   };
-
-  mERROR_CHECK(mPool_ForEach(refPool->ptrs, removeOwnRef));
 
   mRETURN_SUCCESS();
 }
@@ -310,7 +286,7 @@ inline mFUNCTION(mRefPool_GetPointerIndex, const mPtr<T> &ptr, size_t *pIndex)
 }
 
 template<typename T>
-inline mFUNCTION(mDestruct, IN struct mRefPool<T>::refPoolPtr *pData)
+inline mFUNCTION(mDestruct, IN struct mRefPool_SharedPointerContainer_Internal<T> *pData)
 {
   mFUNCTION_SETUP();
 
@@ -346,4 +322,87 @@ inline mFUNCTION(mRefPool_Destroy_Internal, IN mRefPool<T> *pRefPool)
   mERROR_CHECK(mRecursiveMutex_Destroy(&pRefPool->pMutex));
 
   mRETURN_SUCCESS();
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+template<typename T>
+inline mRefPoolIterator<T>::mRefPoolIterator(typename mPool<mRefPool_SharedPointerContainer_Internal<T>> *pPool) :
+  index(0),
+  globalIndex(0),
+  blockIndex(0),
+  flag(1),
+  pData(nullptr),
+  pPool(pPool)
+{ }
+
+template<typename T>
+inline typename mRefPoolIterator<T>::IteratorValue mRefPoolIterator<T>::operator*()
+{
+  return mRefPoolIterator<T>::IteratorValue(pData->ptr, globalIndex - 1);
+}
+
+template<typename T>
+inline const typename mRefPoolIterator<T>::IteratorValue mRefPoolIterator<T>::operator*() const
+{
+  return mRefPoolIterator<T>::IteratorValue(pData->ptr, globalIndex - 1);
+}
+
+template<typename T>
+inline bool mRefPoolIterator<T>::operator != (const typename mRefPoolIterator<T> &)
+{
+  for (blockIndex; blockIndex < pPool->size; ++blockIndex)
+  {
+    for (; index < mBYTES_OF(pPool->pIndexes[0]); ++index)
+    {
+      if (pPool->pIndexes[blockIndex] & flag)
+      {
+        const mResult result = mChunkedArray_PointerAt(pPool->data, globalIndex, &pData);
+
+        if (mFAILED(result))
+        {
+          mFAIL_DEBUG("mChunkedArray_PointerAt failed in mRefPoolIterator::operator != with errorcode %" PRIu64 ".", (uint64_t)result);
+          return false;
+        }
+
+        flag <<= 1;
+        ++globalIndex;
+        ++index;
+
+        return true;
+      }
+
+      flag <<= 1;
+      ++globalIndex;
+    }
+
+    index = 0;
+    flag = 1;
+  }
+
+  return false;
+}
+
+template<typename T>
+inline typename mRefPoolIterator<T>& mRefPoolIterator<T>::operator++()
+{
+  return *this;
+}
+
+template<typename T>
+inline mRefPoolIterator<T>::IteratorValue::IteratorValue(mPtr<T> &data, const size_t index) :
+  data(data),
+  index(index)
+{ }
+
+template<typename T>
+inline T& mRefPoolIterator<T>::IteratorValue::operator*()
+{
+  return *data;
+}
+
+template<typename T>
+inline const T& mRefPoolIterator<T>::IteratorValue::operator*() const
+{
+  return *data;
 }
