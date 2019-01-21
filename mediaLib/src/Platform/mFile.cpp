@@ -236,6 +236,9 @@ mFUNCTION(mFile_Copy, const mString &destinationFileName, const mString &sourceF
   case ERROR_ACCESS_DENIED:
     mRETURN_RESULT(mR_ResourceAlreadyExists);
 
+  case ERROR_FILE_NOT_FOUND:
+    mRETURN_RESULT(mR_ResourceNotFound);
+
   default:
     mRETURN_RESULT(mR_Failure);
   }
