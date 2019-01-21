@@ -22,6 +22,8 @@ mTEST(mHash, Test_mString)
   mString testString1_ = "testString1";
   mTEST_ASSERT_SUCCESS(mHash(testString1_, &hash3));
   mTEST_ASSERT_EQUAL(hash2, hash3);
+
+  mTEST_RETURN_SUCCESS();
 }
 
 mTEST(mHash, Test_mInplaceString)
@@ -46,6 +48,8 @@ mTEST(mHash, Test_mInplaceString)
   uint64_t hash3;
   mTEST_ASSERT_SUCCESS(mHash(testString1, &hash3));
   mTEST_ASSERT_EQUAL(hash2, hash3);
+
+  mTEST_RETURN_SUCCESS();
 }
 
 mTEST(mHash, TestVeryShort)
@@ -67,4 +71,6 @@ mTEST(mHash, TestVeryShort)
   uint64_t hash3;
   mTEST_ASSERT_SUCCESS(mHash(&v1, &hash3));
   mTEST_ASSERT_EQUAL(hash2, hash3);
+
+  mTEST_RETURN_SUCCESS();
 }

@@ -2,9 +2,13 @@
 
 int main(int argc, char **pArgv)
 {
+  mPrintErrorCallback = nullptr;
+
+  mTestLib_Initialize();
+
   const mResult result = mTestLib_RunAllTests(&argc, pArgv);
 
-#ifdef mDEBUG_TESTS
+#if defined(mDEBUG_TESTS)
   if (mFAILED(result))
   {
     puts("\nSome tests failed.\nPress any key to quit.");
@@ -12,5 +16,5 @@ int main(int argc, char **pArgv)
   }
 #endif
 
-  return result;
+  return mSUCCEEDED(result) ? 0 : 1;
 }

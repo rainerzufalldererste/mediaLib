@@ -469,34 +469,37 @@ mTEST(mQueue, TestContainCppClass)
   mTEST_ASSERT_EQUAL(0, mTestCppClass::GlobalCount());
   mTEST_ALLOCATOR_SETUP();
 
-  mPtr<mQueue<mTestCppClass>> queue = nullptr;
-  mDEFER_CALL(&queue, mQueue_Destroy);
-
   {
-    mTEST_ASSERT_SUCCESS(mQueue_Create(&queue, pAllocator));
 
-    mTEST_ASSERT_SUCCESS(mQueue_PushFront(queue, mTestCppClass(1)));
-    mTEST_ASSERT_SUCCESS(mQueue_PushFront(queue, mTestCppClass(2)));
-    mTEST_ASSERT_SUCCESS(mQueue_PushFront(queue, mTestCppClass(3)));
+    mPtr<mQueue<mTestCppClass>> queue = nullptr;
+    mDEFER_CALL(&queue, mQueue_Destroy);
 
-    mTestCppClass t0;
-    mTestCppClass t1;
-    mTestCppClass t2;
+    {
+      mTEST_ASSERT_SUCCESS(mQueue_Create(&queue, pAllocator));
 
-    mTEST_ASSERT_SUCCESS(mQueue_PopFront(queue, &t0));
-    mTEST_ASSERT_SUCCESS(mQueue_PopFront(queue, &t1));
-    mTEST_ASSERT_SUCCESS(mQueue_PopFront(queue, &t2));
+      mTEST_ASSERT_SUCCESS(mQueue_PushFront(queue, mTestCppClass(1)));
+      mTEST_ASSERT_SUCCESS(mQueue_PushFront(queue, mTestCppClass(2)));
+      mTEST_ASSERT_SUCCESS(mQueue_PushFront(queue, mTestCppClass(3)));
+
+      mTestCppClass t0;
+      mTestCppClass t1;
+      mTestCppClass t2;
+
+      mTEST_ASSERT_SUCCESS(mQueue_PopFront(queue, &t0));
+      mTEST_ASSERT_SUCCESS(mQueue_PopFront(queue, &t1));
+      mTEST_ASSERT_SUCCESS(mQueue_PopFront(queue, &t2));
+    }
+
+    {
+      mTEST_ASSERT_SUCCESS(mQueue_Create(&queue, pAllocator));
+
+      for (size_t i = 0; i < 100; i++)
+        mTEST_ASSERT_SUCCESS(mQueue_PushFront(queue, mTestCppClass(i)));
+    }
   }
 
-  {
-    mTEST_ASSERT_SUCCESS(mQueue_Create(&queue, pAllocator));
-
-    for (size_t i = 0; i < 100; i++)
-      mTEST_ASSERT_SUCCESS(mQueue_PushFront(queue, mTestCppClass(i)));
-  }
-
-  mTEST_ALLOCATOR_ZERO_CHECK();
   mTEST_ASSERT_EQUAL(0, mTestCppClass::GlobalCount());
+  mTEST_ALLOCATOR_ZERO_CHECK();
 }
 
 mTEST(mQueue, TestContainLambda)

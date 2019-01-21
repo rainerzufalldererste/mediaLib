@@ -1,6 +1,33 @@
 #include "mTestLib.h"
 
+#include <chrono>
+
 bool IsInitialized = false;
+
+#ifdef mDEBUG_TESTS
+std::vector<std::tuple<std::string, std::string, TestFunc *>> & mTest_TestContainer()
+{
+  static std::vector<std::tuple<std::string, std::string, TestFunc *>> instance;
+  return instance;
+}
+
+mTest_TestInit mTest_CreateTestInit(const char *component, const char *testCase, TestFunc *pTestFunc)
+{
+  mTest_TestContainer().push_back(std::make_tuple(std::string(component), std::string(testCase), pTestFunc));
+
+  return mTest_TestInit();
+}
+
+void mTest_PrintTestFailure(const char *text)
+{
+  mSetConsoleColour(mCC_BrightYellow, mCC_DarkRed);
+  fputs("\n[ERROR]", stdout);
+  mSetConsoleColour(mCC_BrightRed, mCC_Black);
+  fputs(" ", stdout);
+  fputs(text, stdout);
+  mResetConsoleColour();
+}
+#endif
 
 void _CallCouninitialize()
 {
@@ -22,9 +49,92 @@ mFUNCTION(mTestLib_RunAllTests, int *pArgc, char **pArgv)
 {
   mTestLib_Initialize();
 
+#ifdef mDEBUG_TESTS
+  mUnused(pArgc, pArgv);
+
+  std::vector<std::tuple<std::string, std::string, mResult>> failedTests;
+
+  mSetConsoleColour(mCC_BrightBlue, mCC_Black);
+  fputs("[START OF TESTS]\n\n", stdout);
+  mResetConsoleColour();
+
+  const auto &beforeTests = std::chrono::high_resolution_clock::now();
+  size_t testCount = 0;
+
+  for (const auto &test : mTest_TestContainer())
+  {
+    ++testCount;
+
+    mSetConsoleColour(mCC_BrightGreen, mCC_Black);
+    fputs("[RUNNING TEST]", stdout);
+    mResetConsoleColour();
+    printf("  %s : %s\n", std::get<0>(test).c_str(), std::get<1>(test).c_str());
+    printf("\r(Test %" PRIu64 " / %" PRIu64 ")", testCount, mTest_TestContainer().size());
+
+    const auto &start = std::chrono::high_resolution_clock::now();
+
+    const mResult result = std::get<2>(test)();
+
+    const size_t milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start).count();
+
+    if (mSUCCEEDED(result))
+    {
+      mSetConsoleColour(mCC_BrightGreen, mCC_Black);
+      fputs("\r[TEST PASSED ]", stdout);
+    }
+    else
+    {
+      mSetConsoleColour(mCC_BrightYellow, mCC_DarkRed);
+      fputs("\r[TEST FAILED ]", stdout);
+      failedTests.push_back(make_tuple(std::get<0>(test), std::get<1>(test), result));
+    }
+
+    mResetConsoleColour();
+    printf("  %s : %s (in %" PRIu64 " ms)\n\n", std::get<0>(test).c_str(), std::get<1>(test).c_str(), milliseconds);
+  }
+
+  const size_t afterTestsMilliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - beforeTests).count();
+
+  mSetConsoleColour(mCC_BrightBlue, mCC_Black);
+  fputs("[END OF TESTS]\n", stdout);
+  mResetConsoleColour();
+
+  if (failedTests.size() == 0)
+  {
+    mSetConsoleColour(mCC_BrightGreen, mCC_Black);
+    printf("\nALL %" PRIu64 " TESTS SUCCEEDED. (in %" PRIu64 " ms)\n", mTest_TestContainer().size(), afterTestsMilliseconds);
+    mResetConsoleColour();
+
+    return mR_Success;
+  }
+  else
+  {
+    mSetConsoleColour(mCC_BrightRed, mCC_Black);
+    printf("\n%" PRIu64 " / %" PRIu64 " TESTS FAILED: (in %" PRIu64 " ms)\n\n", failedTests.size(), mTest_TestContainer().size(), afterTestsMilliseconds);
+    mResetConsoleColour();
+
+    for (const auto &failedTest : failedTests)
+    {
+      mString resultAsString = "<invalid>";
+      const mResult result = mResult_ToString(std::get<2>(failedTest), &resultAsString);
+
+      mSetConsoleColour(mCC_DarkGray, mCC_Black);
+      fputs(" ## ", stdout);
+      mResetConsoleColour();
+
+      if (mSUCCEEDED(result))
+        printf("%s : %s with %s (0x%" PRIx64 ")\n", std::get<0>(failedTest).c_str(), std::get<1>(failedTest).c_str(), resultAsString.c_str(), (uint64_t)std::get<2>(failedTest));
+      else
+        printf("%s : %s with error code 0x%" PRIx64 "\n", std::get<0>(failedTest).c_str(), std::get<1>(failedTest).c_str(), (uint64_t)std::get<2>(failedTest));
+    }
+
+    return mR_Failure;
+  }
+#else
   ::testing::InitGoogleTest(pArgc, pArgv);
 
   return RUN_ALL_TESTS() == 0 ? mR_Success : mR_Failure;
+#endif
 }
 
 //////////////////////////////////////////////////////////////////////////
