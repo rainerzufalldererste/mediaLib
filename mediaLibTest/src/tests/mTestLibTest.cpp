@@ -100,4 +100,6 @@ mTEST(TestCppClass, TestMoveCopyDestruct)
   }
 
   mTEST_ASSERT_EQUAL(mTestCppClass::GlobalCount(), 0);
+
+  mTEST_RETURN_SUCCESS();
 }

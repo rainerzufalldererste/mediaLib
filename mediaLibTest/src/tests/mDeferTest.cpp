@@ -17,6 +17,8 @@ mTEST(mDefer, TestExecuteLambda)
   }
 
   mTEST_ASSERT_EQUAL(1, i);
+
+  mTEST_RETURN_SUCCESS();
 }
 
 mTEST(mDefer, TestExecuteAssigned)
@@ -35,6 +37,8 @@ mTEST(mDefer, TestExecuteAssigned)
   }
 
   mTEST_ASSERT_EQUAL(1, i);
+
+  mTEST_RETURN_SUCCESS();
 }
 
 mTEST(mDefer, TestExecuteIncrementPtrValue)
@@ -48,6 +52,8 @@ mTEST(mDefer, TestExecuteIncrementPtrValue)
   }
 
   mTEST_ASSERT_EQUAL(1, value);
+
+  mTEST_RETURN_SUCCESS();
 }
 
 mTEST(mDefer, TestExecuteAssignedIncrementPtrValue)
@@ -67,6 +73,8 @@ mTEST(mDefer, TestExecuteAssignedIncrementPtrValue)
   }
 
   mTEST_ASSERT_EQUAL(1, value);
+
+  mTEST_RETURN_SUCCESS();
 }
 
 mTEST(mDefer, TestExecuteLambdaOnNoError)
@@ -80,6 +88,8 @@ mTEST(mDefer, TestExecuteLambdaOnNoError)
   }
 
   mTEST_ASSERT_EQUAL(0, i);
+
+  mTEST_RETURN_SUCCESS();
 }
 
 mTEST(mDefer, TestExecuteLambdaOnError)
@@ -93,6 +103,8 @@ mTEST(mDefer, TestExecuteLambdaOnError)
   }
 
   mTEST_ASSERT_EQUAL(1, i);
+
+  mTEST_RETURN_SUCCESS();
 }
 
 mTEST(mDefer, TestExecuteAssignedOnNoError)
@@ -112,6 +124,8 @@ mTEST(mDefer, TestExecuteAssignedOnNoError)
   }
 
   mTEST_ASSERT_EQUAL(0, i);
+
+  mTEST_RETURN_SUCCESS();
 }
 
 mTEST(mDefer, TestExecuteAssignedOnError)
@@ -131,6 +145,8 @@ mTEST(mDefer, TestExecuteAssignedOnError)
   }
 
   mTEST_ASSERT_EQUAL(1, i);
+
+  mTEST_RETURN_SUCCESS();
 }
 
 mTEST(mDefer, TestExecuteIncrementPtrValueOnNoError)
@@ -145,6 +161,8 @@ mTEST(mDefer, TestExecuteIncrementPtrValueOnNoError)
   }
 
   mTEST_ASSERT_EQUAL(0, value);
+
+  mTEST_RETURN_SUCCESS();
 }
 
 mTEST(mDefer, TestExecuteIncrementPtrValueOnError)
@@ -159,6 +177,8 @@ mTEST(mDefer, TestExecuteIncrementPtrValueOnError)
   }
 
   mTEST_ASSERT_EQUAL(1, value);
+
+  mTEST_RETURN_SUCCESS();
 }
 
 mTEST(mDefer, TestExecuteAssignedIncrementPtrValueOnNoError)
@@ -179,6 +199,8 @@ mTEST(mDefer, TestExecuteAssignedIncrementPtrValueOnNoError)
   }
 
   mTEST_ASSERT_EQUAL(0, value);
+
+  mTEST_RETURN_SUCCESS();
 }
 
 mTEST(mDefer, TestExecuteAssignedIncrementPtrValueOnError)
@@ -199,4 +221,6 @@ mTEST(mDefer, TestExecuteAssignedIncrementPtrValueOnError)
   }
 
   mTEST_ASSERT_EQUAL(1, value);
+
+  mTEST_RETURN_SUCCESS();
 }

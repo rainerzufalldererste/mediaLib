@@ -13,6 +13,8 @@ mTEST(mInplaceString, TestCreateNone)
   size_t size;
   mTEST_ASSERT_SUCCESS(mInplaceString_GetByteSize(string, &size));
   mTEST_ASSERT_EQUAL(size, 1);
+
+  mTEST_RETURN_SUCCESS();
 }
 
 mTEST(mInplaceString, TestCreateEmpty)
@@ -27,6 +29,8 @@ mTEST(mInplaceString, TestCreateEmpty)
   size_t size;
   mTEST_ASSERT_SUCCESS(mInplaceString_GetByteSize(string, &size));
   mTEST_ASSERT_EQUAL(size, 1);
+
+  mTEST_RETURN_SUCCESS();
 }
 
 mTEST(mInplaceString, TestCreateUTF8)
@@ -41,6 +45,8 @@ mTEST(mInplaceString, TestCreateUTF8)
   size_t size;
   mTEST_ASSERT_SUCCESS(mInplaceString_GetByteSize(string, &size));
   mTEST_ASSERT_EQUAL(size, 12 + 4 + 1);
+
+  mTEST_RETURN_SUCCESS();
 }
 
 mTEST(mInplaceString, TestCreateFromArray)
@@ -56,6 +62,8 @@ mTEST(mInplaceString, TestCreateFromArray)
   size_t size;
   mTEST_ASSERT_SUCCESS(mInplaceString_GetByteSize(string, &size));
   mTEST_ASSERT_EQUAL(size, 12 + 4 + 1);
+
+  mTEST_RETURN_SUCCESS();
 }
 
 mTEST(mInplaceString, TestCreateFromCharPtr)
@@ -71,6 +79,8 @@ mTEST(mInplaceString, TestCreateFromCharPtr)
   size_t size;
   mTEST_ASSERT_SUCCESS(mInplaceString_GetByteSize(string, &size));
   mTEST_ASSERT_EQUAL(size, 12 + 4 + 2 + 3 + 1);
+
+  mTEST_RETURN_SUCCESS();
 }
 
 mTEST(mInplaceString, TestCreateFromCharPtrSize)
@@ -86,6 +96,8 @@ mTEST(mInplaceString, TestCreateFromCharPtrSize)
   size_t size;
   mTEST_ASSERT_SUCCESS(mInplaceString_GetByteSize(string, &size));
   mTEST_ASSERT_EQUAL(size, 12 + 4 + 1);
+
+  mTEST_RETURN_SUCCESS();
 }
 
 mTEST(mInplaceString, TestCastTo_mString)
@@ -123,6 +135,8 @@ mTEST(mInplaceString, TestCreateTooLong)
   mTEST_ASSERT_EQUAL(mR_ArgumentOutOfBounds, mInplaceString_Create(&string, text));
   mTEST_ASSERT_EQUAL(mR_ArgumentOutOfBounds, mInplaceString_Create(&string, (mString)text));
   mTEST_ASSERT_EQUAL(mR_ArgumentOutOfBounds, mInplaceString_Create(&string, text, mARRAYSIZE(text)));
+
+  mTEST_RETURN_SUCCESS();
 }
 
 mTEST(mInplaceString, TestSet)
@@ -147,6 +161,8 @@ mTEST(mInplaceString, TestSet)
 
   new (&stringB) mInplaceString<128>(std::move(stringA));
   mTEST_ASSERT_EQUAL(stringC, stringB);
+
+  mTEST_RETURN_SUCCESS();
 }
 
 mTEST(mInplaceString, TestEqual)
@@ -157,6 +173,8 @@ mTEST(mInplaceString, TestEqual)
   mTEST_ASSERT_SUCCESS(mInplaceString_Create(&stringA, "C:/Windows/Fonts/seguiemj.ttf"));
   mTEST_ASSERT_SUCCESS(mInplaceString_Create(&stringB, stringA));
   mTEST_ASSERT_EQUAL(stringA, stringB);
+
+  mTEST_RETURN_SUCCESS();
 }
 
 mTEST(mInplaceString, TestIterate)

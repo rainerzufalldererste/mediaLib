@@ -11,10 +11,34 @@ static_assert(false, "mDEBUG_TESTS has to be turned off for Buildserver builds."
 #endif
 
 #ifdef mDEBUG_TESTS
+
+#include <vector>
+#include <tuple>
+#include <string>
+
+typedef mResult TestFunc(void);
+std::vector<std::tuple<std::string, std::string, TestFunc *>> & mTest_TestContainer();
+
+struct mTest_TestInit {};
+mTest_TestInit mTest_CreateTestInit(const char *component, const char *testCase, TestFunc *pTestFunc);
+
+#define mTEST_TESTCASENAME(Component, TestCase) __mTest_TestCase_COMPONENT__##Component##_TEST_CASE__##TestCase##_Func
+#define mTEST(Component, TestCase) \
+  mResult mTEST_TESTCASENAME(Component, TestCase)(); \
+  const mTest_TestInit &mTestTestInit_COMPONENT__##Component##_TEST_CASE__##TestCase##_INIT__ = mTest_CreateTestInit(#Component, #TestCase, &mTEST_TESTCASENAME(Component, TestCase)); \
+  mResult mTEST_TESTCASENAME(Component, TestCase)()
+
+#define mTEST_RETURN_SUCCESS() return mR_Success;
+#define mTEST_RETURN_FAILURE() return mR_Failure;
+
+void mTest_PrintTestFailure(const char *text);
+#define mTEST_PRINT_FAILURE(...) mPrintPrepare(&mTest_PrintTestFailure, __VA_ARGS__)
+
 #define mTEST_FAIL() \
   do \
-  { printf("Test Failed at " __FUNCTION__ " in File '" __FILE__ "' Line %" PRIi32 ".\n", __LINE__); \
+  { mTEST_PRINT_FAILURE("Test Failed\n at " __FUNCTION__ "\n in File '" __FILE__ "' Line %" PRIi32 ".\n", __LINE__); \
     __debugbreak(); \
+      mTEST_RETURN_FAILURE(); \
   } while(0)
 
 #define mTEST_ASSERT_EQUAL(a, b) \
@@ -23,8 +47,9 @@ static_assert(false, "mDEBUG_TESTS has to be turned off for Buildserver builds."
     auto b_ = (b); \
     \
     if (!(a_ == b_)) \
-    { printf("Test Failed on '" #a " == " #b "' at " __FUNCTION__ " in File '" __FILE__ "' Line %" PRIi32 ".\n", __LINE__); \
+    { mTEST_PRINT_FAILURE("Test Failed\n on '" #a " == " #b "'\n at " __FUNCTION__ "\n in File '" __FILE__ "' Line %" PRIi32 ".\n", __LINE__); \
       __debugbreak(); \
+      mTEST_RETURN_FAILURE(); \
     } \
   } while(0)
 
@@ -37,8 +62,9 @@ static_assert(false, "mDEBUG_TESTS has to be turned off for Buildserver builds."
     auto b_ = (b); \
     \
     if (!(a_ != b_)) \
-    { printf("Test Failed on '" #a " != " #b "' at " __FUNCTION__ " in File '" __FILE__ "' Line %" PRIi32 ".\n", __LINE__); \
+    { mTEST_PRINT_FAILURE("Test Failed\n on '" #a " != " #b "'\n at " __FUNCTION__ "\n in File '" __FILE__ "' Line %" PRIi32 ".\n", __LINE__); \
       __debugbreak(); \
+      mTEST_RETURN_FAILURE(); \
     } \
   } while(0)
 
@@ -49,10 +75,11 @@ static_assert(false, "mDEBUG_TESTS has to be turned off for Buildserver builds."
     if (mFAILED(__result)) \
     { mString __resultString; \
       if (mFAILED(mResult_ToString(__result, &__resultString))) \
-        printf("Test Failed on 'mFAILED(%s)' with invalid result [0x%" PRIx64 "] at " __FUNCTION__ " in File '"  __FILE__ "' Line %" PRIi32 ".\n", #functionCall, (uint64_t)__result, __LINE__); \
+        mTEST_PRINT_FAILURE("Test Failed on 'mFAILED(%s)'\n with invalid result [0x%" PRIx64 "]\n at " __FUNCTION__ "\n in File '"  __FILE__ "' Line %" PRIi32 ".\n", #functionCall, (uint64_t)__result, __LINE__); \
       else \
-        printf("Test Failed on 'mFAILED(%s)' with Result '%s' [0x%" PRIx64 "] at " __FUNCTION__ " in File '" __FILE__ "' Line %" PRIi32 ".\n", #functionCall, __resultString.c_str(), (uint64_t)__result, __LINE__); \
+        mTEST_PRINT_FAILURE("Test Failed on 'mFAILED(%s)'\n with Result '%s' [0x%" PRIx64 "]\n at " __FUNCTION__ "\n in File '" __FILE__ "' Line %" PRIi32 ".\n", #functionCall, __resultString.c_str(), (uint64_t)__result, __LINE__); \
       __debugbreak(); \
+      mTEST_RETURN_FAILURE(); \
     } \
   } while(0)
   
@@ -64,11 +91,14 @@ static_assert(false, "mDEBUG_TESTS has to be turned off for Buildserver builds."
 #define mTEST_ASSERT_FALSE(a) ASSERT_FALSE(a)
 #define mTEST_ASSERT_NOT_EQUAL(a, b) ASSERT_TRUE((a) != (b))
 #define mTEST_ASSERT_SUCCESS(functionCall) mTEST_ASSERT_EQUAL(mR_Success, functionCall)
+
+#define mTEST(Component, TestCase) TEST(Component, TestCase) 
+
+#define mTEST_RETURN_SUCCESS() return
+#define mTEST_RETURN_FAILURE() mTEST_FAIL()
 #endif
 
 #define mTEST_STATIC_ASSERT(x) static_assert(x, "ASSERTION FAILED: " #x)
-
-#define mTEST(Component, TestCase) TEST(Component, TestCase) 
 
 extern size_t mTestDestructible_Count;
 
@@ -87,6 +117,7 @@ extern size_t mTestDestructible_Count;
   { size_t allocationCount = (size_t)-1; \
     mTEST_ASSERT_SUCCESS(mTestAllocator_GetCount(&__testAllocator, &allocationCount)); \
     mTEST_ASSERT_EQUAL(allocationCount, 0); \
+    mTEST_RETURN_SUCCESS(); \
   } while (0)
 
 void mTestLib_Initialize();

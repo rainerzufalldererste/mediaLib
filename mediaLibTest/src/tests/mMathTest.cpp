@@ -15,6 +15,8 @@ mTEST(mMath, TestVec2Constuct)
   mTEST_ASSERT_EQUAL(v2.y, -20);
   mTEST_ASSERT_EQUAL(v2.asArray[0], 20);
   mTEST_ASSERT_EQUAL(v2.asArray[1], -20);
+
+  mTEST_RETURN_SUCCESS();
 }
 
 mTEST(mMath, TestVec3Constuct)
@@ -36,6 +38,8 @@ mTEST(mMath, TestVec3Constuct)
   mTEST_ASSERT_EQUAL(v2.asArray[0], -10);
   mTEST_ASSERT_EQUAL(v2.asArray[1], 10);
   mTEST_ASSERT_EQUAL(v2.asArray[2], 200);
+
+  mTEST_RETURN_SUCCESS();
 }
 
 mTEST(mMath, TestVec4Constuct)
@@ -61,6 +65,8 @@ mTEST(mMath, TestVec4Constuct)
   mTEST_ASSERT_EQUAL(v2.asArray[1], -10);
   mTEST_ASSERT_EQUAL(v2.asArray[2], 10);
   mTEST_ASSERT_EQUAL(v2.asArray[3], 200);
+
+  mTEST_RETURN_SUCCESS();
 }
 
 mTEST(mMath, TestVec2ConstuctSingle)
@@ -78,6 +84,8 @@ mTEST(mMath, TestVec2ConstuctSingle)
   mTEST_ASSERT_EQUAL(v2.y, 20);
   mTEST_ASSERT_EQUAL(v2.asArray[0], 20);
   mTEST_ASSERT_EQUAL(v2.asArray[1], 20);
+
+  mTEST_RETURN_SUCCESS();
 }
 
 mTEST(mMath, TestVec3ConstuctSingle)
@@ -99,6 +107,8 @@ mTEST(mMath, TestVec3ConstuctSingle)
   mTEST_ASSERT_EQUAL(v2.asArray[0], -10);
   mTEST_ASSERT_EQUAL(v2.asArray[1], -10);
   mTEST_ASSERT_EQUAL(v2.asArray[2], -10);
+
+  mTEST_RETURN_SUCCESS();
 }
 
 mTEST(mMath, TestVec3ConstuctVec2)
@@ -120,6 +130,8 @@ mTEST(mMath, TestVec3ConstuctVec2)
   mTEST_ASSERT_EQUAL(v2.asArray[0], 0);
   mTEST_ASSERT_EQUAL(v2.asArray[1], -10);
   mTEST_ASSERT_EQUAL(v2.asArray[2], -100);
+
+  mTEST_RETURN_SUCCESS();
 }
 
 mTEST(mMath, TestVec4ConstuctSingle)
@@ -145,6 +157,8 @@ mTEST(mMath, TestVec4ConstuctSingle)
   mTEST_ASSERT_EQUAL(v2.asArray[1], 1);
   mTEST_ASSERT_EQUAL(v2.asArray[2], 1);
   mTEST_ASSERT_EQUAL(v2.asArray[3], 1);
+
+  mTEST_RETURN_SUCCESS();
 }
 
 mTEST(mMath, TestVec4ConstuctVec3)
@@ -170,6 +184,8 @@ mTEST(mMath, TestVec4ConstuctVec3)
   mTEST_ASSERT_EQUAL(v2.asArray[1], 1);
   mTEST_ASSERT_EQUAL(v2.asArray[2], 2);
   mTEST_ASSERT_EQUAL(v2.asArray[3], 3);
+
+  mTEST_RETURN_SUCCESS();
 }
 
 mTEST(mMath, TestVec3ToVec2)
@@ -187,6 +203,8 @@ mTEST(mMath, TestVec3ToVec2)
   mTEST_ASSERT_EQUAL(v2.y, 10);
   mTEST_ASSERT_EQUAL(v2.asArray[0], -10);
   mTEST_ASSERT_EQUAL(v2.asArray[1], 10);
+
+  mTEST_RETURN_SUCCESS();
 }
 
 mTEST(mMath, TestVec4ToVec2)
@@ -204,6 +222,8 @@ mTEST(mMath, TestVec4ToVec2)
   mTEST_ASSERT_EQUAL(v2.y, 10);
   mTEST_ASSERT_EQUAL(v2.asArray[0], -10);
   mTEST_ASSERT_EQUAL(v2.asArray[1], 10);
+
+  mTEST_RETURN_SUCCESS();
 }
 
 mTEST(mMath, TestVec4ToVec3)
@@ -225,6 +245,8 @@ mTEST(mMath, TestVec4ToVec3)
   mTEST_ASSERT_EQUAL(v2.asArray[0], -10);
   mTEST_ASSERT_EQUAL(v2.asArray[1], 10);
   mTEST_ASSERT_EQUAL(v2.asArray[2], 200);
+
+  mTEST_RETURN_SUCCESS();
 }
 
 mTEST(mMath, TestMin)
@@ -238,6 +260,8 @@ mTEST(mMath, TestMin)
   mTEST_ASSERT_EQUAL(-100, mMin(-100, -1));
   mTEST_ASSERT_EQUAL(-100, mMin(-1, -100));
   mTEST_ASSERT_EQUAL(0, mMin(0, 0));
+
+  mTEST_RETURN_SUCCESS();
 }
 
 mTEST(mMath, TestMax)
@@ -251,6 +275,8 @@ mTEST(mMath, TestMax)
   mTEST_ASSERT_EQUAL(-1, mMax(-100, -1));
   mTEST_ASSERT_EQUAL(-1, mMax(-1, -100));
   mTEST_ASSERT_EQUAL(0, mMin(0, 0));
+
+  mTEST_RETURN_SUCCESS();
 }
 
 mTEST(mMath, TestClamp)
@@ -267,4 +293,6 @@ mTEST(mMath, TestClamp)
   RUNTIME_AND_STATIC_ASSERT_EQUAL(0.5, mClamp(0.5, 0.0, 1.0));
   RUNTIME_AND_STATIC_ASSERT_EQUAL(0.0, mClamp(-0.5, 0.0, 1.0));
   RUNTIME_AND_STATIC_ASSERT_EQUAL(1.0, mClamp(1.5, 0.0, 1.0));
+
+  mTEST_RETURN_SUCCESS();
 }
