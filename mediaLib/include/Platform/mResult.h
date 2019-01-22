@@ -43,8 +43,8 @@ enum mResult
 
 #define mFUNCTION(FunctionName, ...) mResult FunctionName(__VA_ARGS__)
 #define mFUNCTION_SETUP() mResult mSTDRESULT = mR_Success; mUnused(mSTDRESULT)
-#define mRETURN_RESULT(result) do { mSTDRESULT = result; return mSTDRESULT; } while (0)
-#define mRETURN_SUCCESS() mRETURN_RESULT(mR_Success)
+#define mRESULT_RETURN_RESULT_RAW(result) do { mSTDRESULT = result; return mSTDRESULT; } while (0)
+#define mRETURN_SUCCESS() mRESULT_RETURN_RESULT_RAW(mR_Success)
 
 extern const char *g_mResult_lastErrorFile;
 extern size_t g_mResult_lastErrorLine;
@@ -67,19 +67,35 @@ void mDeinit();
 void mDeinit(const std::function<void(void)> &param);
 template <typename ...Args> void mDeinit(const std::function<void(void)> &param, Args && ...args) { if (param) { param(); } mDeinit(std::forward<Args>(args)); };
 
+#define mSET_ERROR_RAW(resultCode) \
+  do \
+  { g_mResult_lastErrorResult = resultCode; \
+    g_mResult_lastErrorFile = __FILE__; \
+    g_mResult_lastErrorLine = __LINE__; \
+  } while (0)
+
+#define mRETURN_RESULT(result) \
+  do \
+  { if (mFAILED(result)) \
+    { mSET_ERROR_RAW(result); \
+      if (g_mResult_breakOnError && mBREAK_ON_FAILURE) \
+      { __debugbreak(); \
+      } \
+    } \
+    mRESULT_RETURN_RESULT_RAW(result); \
+  } while (0)
+
 #define mERROR_CHECK(functionCall, ...) \
   do \
   { mSTDRESULT = (functionCall); \
     if (mFAILED(mSTDRESULT)) \
-    { g_mResult_lastErrorResult = mSTDRESULT; \
-      g_mResult_lastErrorFile = __FILE__; \
-      g_mResult_lastErrorLine = __LINE__; \
+    { mSET_ERROR_RAW(mSTDRESULT); \
       mPrintError(__FUNCTION__, __FILE__, __LINE__, mSTDRESULT, #functionCall); \
       mDeinit(__VA_ARGS__); \
       if (g_mResult_breakOnError && mBREAK_ON_FAILURE) \
       { __debugbreak(); \
       } \
-      mRETURN_RESULT(mSTDRESULT); \
+      mRESULT_RETURN_RESULT_RAW(mSTDRESULT); \
     } \
   } while (0)
 
@@ -87,17 +103,15 @@ template <typename ...Args> void mDeinit(const std::function<void(void)> &param,
   do \
   { if (conditional) \
     { mSTDRESULT = (resultOnError); \
-      if (mFAILED(mSTDRESULT)) \
-      { g_mResult_lastErrorResult = mSTDRESULT; \
-        g_mResult_lastErrorFile = __FILE__; \
-        g_mResult_lastErrorLine = __LINE__; \
+      if (mFAILED(resultOnError)) \
+      { mSET_ERROR_RAW(mSTDRESULT); \
         mPrintError(__FUNCTION__, __FILE__, __LINE__, mSTDRESULT, #conditional); \
         mDeinit(__VA_ARGS__); \
         if (g_mResult_breakOnError && mBREAK_ON_FAILURE) \
         { __debugbreak(); \
         } \
       } \
-      mRETURN_RESULT(mSTDRESULT); \
+      mRESULT_RETURN_RESULT_RAW(mSTDRESULT); \
     } \
   } while (0)
 
@@ -105,9 +119,8 @@ template <typename ...Args> void mDeinit(const std::function<void(void)> &param,
   do \
   { result = (functionCall); \
     if (mFAILED(result)) \
-    { g_mResult_lastErrorResult = result; \
-      g_mResult_lastErrorFile = __FILE__; \
-      g_mResult_lastErrorLine = __LINE__; \
+    { mSET_ERROR_RAW(result); \
+      mPrintError(__FUNCTION__, __FILE__, __LINE__, result, #functionCall); \
       mDeinit(__VA_ARGS__); \
       if (g_mResult_breakOnError && mBREAK_ON_FAILURE) \
       { __debugbreak(); \
@@ -120,10 +133,9 @@ template <typename ...Args> void mDeinit(const std::function<void(void)> &param,
   do \
   { if (conditional) \
     { result = (resultOnError); \
-      if (mFAILED(result)) \
-      { g_mResult_lastErrorResult = result; \
-        g_mResult_lastErrorFile = __FILE__; \
-        g_mResult_lastErrorLine = __LINE__; \
+      if (mFAILED(resultOnError)) \
+      { mSET_ERROR_RAW(result); \
+        mPrintError(__FUNCTION__, __FILE__, __LINE__, result, #conditional); \
         mDeinit(__VA_ARGS__); \
         if (g_mResult_breakOnError && mBREAK_ON_FAILURE) \
         { __debugbreak(); \

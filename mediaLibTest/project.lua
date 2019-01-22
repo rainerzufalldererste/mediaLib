@@ -10,6 +10,7 @@ project(ProjectName)
   buildoptions { '/Gm-' }
   buildoptions { '/MP' }
   ignoredefaultlibraries { "msvcrt" }
+  disablewarnings  { '4127' } -- ignore conditional expression is constant
 
   filter { "configurations:Release" }
     flags { "LinkTimeOptimization" }

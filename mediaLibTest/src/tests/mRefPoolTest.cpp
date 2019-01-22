@@ -162,9 +162,7 @@ mTEST(mRefPool, TestForeach)
 
   mTEST_ASSERT_EQUAL(3, count);
 
-  count = 0;
-  mTEST_ASSERT_EQUAL(mR_InternalError, mRefPool_ForEach(refPool,
-    (std::function<mResult(mPtr<mDummyDestructible> &)>)[&](mPtr<mDummyDestructible> &d)
+  const std::function<mResult(mPtr<mDummyDestructible> &)> &func = [&](mPtr<mDummyDestructible> &d)
   {
     mFUNCTION_SETUP();
 
@@ -175,7 +173,10 @@ mTEST(mRefPool, TestForeach)
       mRETURN_RESULT(mR_InternalError);
 
     mRETURN_SUCCESS();
-  }));
+  };
+
+  count = 0;
+  mTEST_ASSERT_EQUAL(mR_InternalError, mRefPool_ForEach(refPool, func));
 
   mTEST_ASSERT_EQUAL(2, count);
 
