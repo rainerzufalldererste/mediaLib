@@ -271,8 +271,33 @@ typedef mVec4t<double_t> mVec4d;
 template <typename T>
 struct mRectangle2D
 {
-  T x, y, w, h;
+#pragma warning(push)
+#pragma warning(disable: 4201)
+  union
+  {
+    T asArray[4];
 
+    struct
+    {
+      T x, y;
+      
+      union
+      {
+        struct
+        {
+          T width, height;
+        };
+
+        struct
+        {
+          T w, h;
+        };
+      };
+    };
+  };
+#pragma warning(pop)
+
+  __host__ __device__ inline mRectangle2D() : x(0), y(0), w(0), h(0) { }
   __host__ __device__ inline mRectangle2D(const T x, const T y, const T w, const T h) : x(x), y(y), w(w), h(h) { }
   __host__ __device__ inline mRectangle2D(const mVec2t<T> &position, const mVec2t<T> size) : x(position.x), y(position.y), w(size.x), h(size.y) { }
 
