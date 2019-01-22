@@ -6,18 +6,19 @@ project(ProjectName)
   language "C++"
   flags { "StaticRuntime", "FatalWarnings" }
 
-  buildoptions { '/Gm-' }
-  buildoptions { '/MP' }
-  linkoptions { '/ignore:4006' } -- ignore multiple libraries defining the same symbol
+  filter { "system:windows" }
+    buildoptions { '/Gm-' }
+    buildoptions { '/MP' }
+    disablewarnings  { '4127' } -- ignore conditional expression is constant
 
-  ignoredefaultlibraries { "msvcrt" }
+    ignoredefaultlibraries { "msvcrt" }
   
-  filter { "configurations:Release" }
+    defines { "_CRT_SECURE_NO_WARNINGS", "SSE2", "GLEW_STATIC" }
+  
+  filter { "system:windows", "configurations:Release" }
     flags { "LinkTimeOptimization" }
   
   filter { }
-  
-  defines { "_CRT_SECURE_NO_WARNINGS", "SSE2", "GLEW_STATIC" }
   
   objdir "intermediate/obj"
 
