@@ -234,7 +234,7 @@ mFUNCTION(mNullAllocator_Realloc, OUT uint8_t **ppData, const size_t size, const
     if (result == mR_ResourceNotFound)
       goto allocate;
     else
-      mERROR_IF(true, result);
+      mRETURN_RESULT(result);
   }
 
   mERROR_CHECK(mRealloc(ppData, size * count));
@@ -256,7 +256,7 @@ mFUNCTION(mNullAllocator_Free, uint8_t *pData, IN void *)
     if (result == mR_ResourceNotFound)
       mRETURN_SUCCESS();
     else
-      mERROR_IF(true, result);
+      mRETURN_RESULT(result);
   }
 
   mERROR_CHECK(mFree(pData));

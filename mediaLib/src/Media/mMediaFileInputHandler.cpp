@@ -304,7 +304,7 @@ mFUNCTION(mMediaFileInputIterator_GetNextVideoFrame, mPtr<mMediaFileInputIterato
     }
 
     default:
-      mERROR_IF(true, mR_InternalError);
+      mRETURN_RESULT(mR_InternalError);
       break;
     }}
 
@@ -370,7 +370,7 @@ mFUNCTION(mMediaFileInputIterator_GetNextAudioFrame, mPtr<mMediaFileInputIterato
     }
 
     default:
-      mERROR_IF(true, mR_InternalError);
+      mRETURN_RESULT(mR_InternalError);
       break;
     }}
 
@@ -566,7 +566,7 @@ mFUNCTION(mMediaFileInputHandler_Create_Internal, IN mMediaFileInputHandler *pIn
             else if (SUCCEEDED(hr = pInputHandler->pSourceReader->SetCurrentMediaType(streamIndex, nullptr, pVideoMediaTypeRGB)))
               isYUV = false;
             else
-              mERROR_IF(true, mR_InternalError);
+              mRETURN_RESULT(mR_InternalError);
 
             isValid = true;
 
