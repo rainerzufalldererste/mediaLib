@@ -164,17 +164,17 @@ mFUNCTION(mFile_CreateDirectory, const mString &folderPath)
     break;
 
   case ERROR_PATH_NOT_FOUND:
-    mERROR_IF(true, mR_ResourceNotFound);
+    mRETURN_RESULT(mR_ResourceNotFound);
     break;
 
   case ERROR_BAD_PATHNAME:
   case ERROR_FILENAME_EXCED_RANGE:
-    mERROR_IF(true, mR_InvalidParameter);
+    mRETURN_RESULT(mR_InvalidParameter);
     break;
 
   case ERROR_CANCELLED:
   default:
-    mERROR_IF(true, mR_InternalError);
+    mRETURN_RESULT(mR_InternalError);
     break;
   }
 

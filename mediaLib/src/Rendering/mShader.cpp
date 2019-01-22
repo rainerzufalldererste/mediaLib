@@ -68,7 +68,7 @@ mFUNCTION(mShader_Create, OUT mShader *pShader, const mString &vertexShader, con
     char buffer[1024];
     glGetShaderInfoLog(vertexShaderHandle, sizeof(buffer), nullptr, buffer);
     mPRINT_ERROR(buffer);
-    mERROR_IF(true, mR_ResourceInvalid);
+    mRETURN_RESULT(mR_ResourceInvalid);
   }
 
   char *fragmentSource = nullptr;
@@ -110,7 +110,7 @@ mFUNCTION(mShader_Create, OUT mShader *pShader, const mString &vertexShader, con
     char buffer[1024];
     glGetShaderInfoLog(fragmentShaderHandle, sizeof(buffer), nullptr, buffer);
     mPRINT_ERROR(buffer);
-    mERROR_IF(true, mR_ResourceInvalid);
+    mRETURN_RESULT(mR_ResourceInvalid);
   }
 
   pShader->shaderProgram = glCreateProgram();
@@ -262,7 +262,7 @@ mFUNCTION(mShader_SetTo, mPtr<mShader> &shader, const mString &vertexShader, con
     char buffer[1024];
     glGetShaderInfoLog(vertexShaderHandle, sizeof(buffer), nullptr, buffer);
     mPRINT(buffer);
-    mERROR_IF(true, mR_ResourceInvalid);
+    mRETURN_RESULT(mR_ResourceInvalid);
   }
 
   char *fragmentSource = nullptr;
@@ -304,7 +304,7 @@ mFUNCTION(mShader_SetTo, mPtr<mShader> &shader, const mString &vertexShader, con
     char buffer[1024];
     glGetShaderInfoLog(fragmentShaderHandle, sizeof(buffer), nullptr, buffer);
     mPRINT(buffer);
-    mERROR_IF(true, mR_ResourceInvalid);
+    mRETURN_RESULT(mR_ResourceInvalid);
   }
 
   glUseProgram(shader->shaderProgram);

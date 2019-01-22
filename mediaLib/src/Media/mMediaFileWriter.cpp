@@ -135,7 +135,7 @@ mFUNCTION(mMediaFileWriter_Finalize, mPtr<mMediaFileWriter> &mediaFileWriter)
   }
   else
   {
-    mERROR_IF(true, mR_ResourceStateInvalid);
+    mRETURN_RESULT(mR_ResourceStateInvalid);
   }
 
   mRETURN_SUCCESS();

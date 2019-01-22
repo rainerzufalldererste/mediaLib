@@ -452,7 +452,7 @@ mFUNCTION(mString_Create, OUT mString *pString, const wchar_t *text, IN OPTIONAL
     DWORD error = GetLastError();
     mUnused(error);
 
-    mERROR_IF(true, mR_InvalidParameter);
+    mRETURN_RESULT(mR_InvalidParameter);
   }
 
   size_t offset = 0;
@@ -533,7 +533,7 @@ mFUNCTION(mString_Create, OUT mString *pString, const wchar_t *text, const size_
     DWORD error = GetLastError();
     mUnused(error);
 
-    mERROR_IF(true, mR_InvalidParameter);
+    mRETURN_RESULT(mR_InvalidParameter);
   }
 
   size_t offset = 0;
@@ -1061,7 +1061,7 @@ mFUNCTION(mString_ForEachChar, const mString &string, const std::function<mResul
       if (result == mR_Break)
         break;
       else
-        mERROR_IF(true, result);
+        mRETURN_RESULT(result);
     }
 
     offset += (size_t)characterSize;

@@ -10,7 +10,7 @@ bool g_mResult_breakOnError = false;
 void mDebugOut(const char *format, ...)
 {
 #if !defined(FINAL)
-  char buffer[1024 * 2];
+  char buffer[1024 * 8];
 
   mMemset(buffer, mARRAYSIZE(buffer), 0);
 

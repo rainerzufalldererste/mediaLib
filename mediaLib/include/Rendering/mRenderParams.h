@@ -39,7 +39,7 @@ extern GLenum mRenderParams_GLError;
     if (mRenderParams_InitializedRenderContextCount > 0) { \
       mRenderParams_GLError = glGetError(); \
       if (mRenderParams_GLError != GL_NO_ERROR) { \
-        mDebugOut("Rendering Error in '" __FUNCTION__ "': GLError Code %" PRIi32 " (%s) (File '" __FILE__ "'; Line %" PRIi32 ")\n", mRenderParams_GLError, gluErrorString(mRenderParams_GLError), __LINE__); \
+        mPRINT_ERROR("Rendering Error in '" __FUNCTION__ "': GLError Code %" PRIi32 " (%s) (File '" __FILE__ "'; Line %" PRIi32 ")\n", mRenderParams_GLError, gluErrorString(mRenderParams_GLError), __LINE__); \
         mERROR_IF(mRenderParams_GLError != GL_NO_ERROR, mR_RenderingError); \
       } \
     } \
