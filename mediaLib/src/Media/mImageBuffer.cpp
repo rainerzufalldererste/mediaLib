@@ -359,6 +359,10 @@ mFUNCTION(mImageBuffer_SaveAsPng, mPtr<mImageBuffer> &imageBuffer, const mString
     components = 3;
     break;
 
+  case mPF_Monochrome8:
+    components = 1;
+    break;
+
   default:
     mRETURN_RESULT(mR_OperationNotSupported);
   }
@@ -387,6 +391,10 @@ mFUNCTION(mImageBuffer_SaveAsJpeg, mPtr<mImageBuffer> &imageBuffer, const mStrin
 
   case mPF_R8G8B8:
     components = 3;
+    break;
+
+  case mPF_Monochrome8:
+    components = 1;
     break;
 
   default:
@@ -419,6 +427,10 @@ mFUNCTION(mImageBuffer_SaveAsBmp, mPtr<mImageBuffer> &imageBuffer, const mString
     components = 3;
     break;
 
+  case mPF_Monochrome8:
+    components = 1;
+    break;
+
   default:
     mRETURN_RESULT(mR_OperationNotSupported);
   }
@@ -447,6 +459,10 @@ mFUNCTION(mImageBuffer_SaveAsTga, mPtr<mImageBuffer> &imageBuffer, const mString
 
   case mPF_R8G8B8:
     components = 3;
+    break;
+
+  case mPF_Monochrome8:
+    components = 1;
     break;
 
   default:

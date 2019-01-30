@@ -321,6 +321,7 @@ mFUNCTION(mTexture_Download, mTexture &texture, OUT mPtr<mImageBuffer> *pImageBu
   {
     mVec2t<GLint> resolution;
 
+    glBindTexture(GL_TEXTURE_2D, texture.textureId);
     glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &resolution.x);
     glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &resolution.y);
 
