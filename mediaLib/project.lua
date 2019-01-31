@@ -15,9 +15,6 @@ project(ProjectName)
   
     defines { "_CRT_SECURE_NO_WARNINGS", "SSE2", "GLEW_STATIC" }
   
-  filter { "system:windows", "configurations:Release" }
-    flags { "LinkTimeOptimization" }
-  
   filter { }
   
   objdir "intermediate/obj"
@@ -77,6 +74,7 @@ filter { "configurations:Release" }
 	optimize "Speed"
 	flags { "NoFramePointer", "NoBufferSecurityCheck" }
 	symbols "On"
+  editandcontinue "Off"
 
 filter { "system:windows", "configurations:Release", "action:vs2012" }
 	buildoptions { "/d2Zi+" }
@@ -86,8 +84,3 @@ filter { "system:windows", "configurations:Release", "action:vs2013" }
 
 filter { "system:windows", "configurations:Release" }
 	flags { "NoIncrementalLink" }
-
-filter {}
-  flags { "NoFramePointer", "NoBufferSecurityCheck", "NoIncrementalLink" }
-
-editandcontinue "Off"

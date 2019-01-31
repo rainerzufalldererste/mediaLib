@@ -12,9 +12,6 @@ project(ProjectName)
   ignoredefaultlibraries { "msvcrt" }
   disablewarnings  { '4127' } -- ignore conditional expression is constant
 
-  filter { "configurations:Release" }
-    flags { "LinkTimeOptimization" }
-
   filter {}
   defines { "_CRT_SECURE_NO_WARNINGS", "SSE2" }
 
@@ -76,6 +73,7 @@ filter { "configurations:Release" }
   optimize "Full"
   flags { "NoFramePointer", "NoBufferSecurityCheck" }
   symbols "On"
+  editandcontinue "Off"
 
 filter { "system:windows" }
 	defines { "WIN32", "_WINDOWS" }
@@ -89,6 +87,3 @@ filter { "system:windows", "configurations:Release", "action:vs2013" }
 
 filter { "system:windows", "configurations:Release" }
 	flags { "NoIncrementalLink" }
-
-filter {}
-  flags { "NoFramePointer", "NoBufferSecurityCheck" }
