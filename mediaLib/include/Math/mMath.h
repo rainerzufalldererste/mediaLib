@@ -69,9 +69,21 @@ T mTriLerp(const T a, const T b, const T c, const T d, const T e, const T f, con
 
 //////////////////////////////////////////////////////////////////////////
 
-template <typename T> mINLINE T constexpr mClamp(const T value, const T min, const T max)
+template <typename T>
+inline T constexpr mClamp(const T value, const T min, const T max)
 {
   return value <= max ? (value >= min ? value : min) : max;
+};
+
+template <typename T>
+T mMod(T value, T modulus);
+
+// Euclidean modulo. (For positive modulus).
+template <typename T>
+inline T mEMod(const T value, const T modulus)
+{
+  const T v = mMod(value, modulus);
+  return v < (T)0 ? (v + modulus) : v;
 };
 
 template <typename T>
@@ -85,6 +97,8 @@ T mSmallest();
 
 template <typename T>
 T mSmallest(const T scale);
+
+//////////////////////////////////////////////////////////////////////////
 
 template <typename T>
 struct mVec2t
@@ -367,206 +381,5 @@ inline mVec4t<U> mBarycentricInterpolationFactors(const mVec3t<T> &p, const mVec
 
   return mVec4t<U>(wp, wq, wr, 1 - wp - wq - wr)
 }
-
-//////////////////////////////////////////////////////////////////////////
-
-template<>
-inline int8_t mMinValue<int8_t>()
-{
-  return INT8_MIN;
-}
-
-template<>
-inline int16_t mMinValue<int16_t>()
-{
-  return INT16_MIN;
-}
-
-template<>
-inline int32_t mMinValue<int32_t>()
-{
-  return INT32_MIN;
-}
-
-template<>
-inline int64_t mMinValue<int64_t>()
-{
-  return INT64_MIN;
-}
-
-template<>
-inline uint8_t mMinValue<uint8_t>()
-{
-  return 0;
-}
-
-template<>
-inline uint16_t mMinValue<uint16_t>()
-{
-  return 0;
-}
-
-template<>
-inline uint32_t mMinValue<uint32_t>()
-{
-  return 0;
-}
-
-template<>
-inline uint64_t mMinValue<uint64_t>()
-{
-  return 0;
-}
-
-template<>
-inline float_t mMinValue<float_t>()
-{
-  return -FLT_MAX;
-}
-
-template<>
-inline double_t mMinValue<double_t>()
-{
-  return -DBL_MAX;
-}
-
-template<>
-inline int8_t mMaxValue<int8_t>()
-{
-  return INT8_MAX;
-}
-
-template<>
-inline int16_t mMaxValue<int16_t>()
-{
-  return INT16_MAX;
-}
-
-template<>
-inline int32_t mMaxValue<int32_t>()
-{
-  return INT32_MAX;
-}
-
-template<>
-inline int64_t mMaxValue<int64_t>()
-{
-  return INT64_MAX;
-}
-
-template<>
-inline uint8_t mMaxValue<uint8_t>()
-{
-  return UINT8_MAX;
-}
-
-template<>
-inline uint16_t mMaxValue<uint16_t>()
-{
-  return UINT16_MAX;
-}
-
-template<>
-inline uint32_t mMaxValue<uint32_t>()
-{
-  return UINT32_MAX;
-}
-
-template<>
-inline uint64_t mMaxValue<uint64_t>()
-{
-  return UINT64_MAX;
-}
-
-template<>
-inline float_t mMaxValue<float_t>()
-{
-  return FLT_MAX;
-}
-
-template<>
-inline double_t mMaxValue<double_t>()
-{
-  return DBL_MAX;
-}
-
-template<>
-inline int8_t mSmallest<int8_t>()
-{
-  return 1;
-}
-
-template<>
-inline uint8_t mSmallest<uint8_t>()
-{
-  return 1;
-};
-
-template<>
-inline int16_t mSmallest<int16_t>()
-{
-  return 1;
-};
-
-template<>
-inline uint16_t mSmallest<uint16_t>()
-{
-  return 1;
-};
-
-template<>
-inline int32_t mSmallest<int32_t>()
-{
-  return 1;
-};
-
-template<>
-inline uint32_t mSmallest<uint32_t>()
-{
-  return 1;
-};
-
-template<>
-inline int64_t mSmallest<int64_t>()
-{
-  return 1;
-};
-
-template<>
-inline uint64_t mSmallest<uint64_t>()
-{
-  return 1;
-};
-
-template<>
-inline float_t mSmallest<float_t>()
-{
-  return FLT_EPSILON;
-};
-
-template<>
-inline double_t mSmallest<double_t>()
-{
-  return DBL_EPSILON;
-};
-
-template<>
-inline float_t mSmallest<float>(const float_t scale)
-{
-  return mSmallest<float>() * scale;
-};
-
-template<>
-inline double_t mSmallest<double>(const double_t scale)
-{
-  return mSmallest<double>() * scale;
-};
-
-template<typename T>
-inline T mSmallest(const T scale)
-{
-  udUnused(scale);
-  return mSmallest<T>();
-};
 
 #endif // mMath_h__
