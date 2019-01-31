@@ -76,7 +76,7 @@ template <typename ...Args> void mDeinit(const std::function<void(void)> &param,
 
 #define mRETURN_RESULT(result) \
   do \
-  { if (mFAILED(result)) \
+  { if (mFAILED(result) && result != mR_Break) \
     { mSET_ERROR_RAW(result); \
       mPrintError(__FUNCTION__, __FILE__, __LINE__, result, "mRETURN_RESULT(" #result ")"); \
       if (g_mResult_breakOnError && mBREAK_ON_FAILURE) \
