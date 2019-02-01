@@ -575,6 +575,81 @@ mFUNCTION(mFile_GetDirectoryContents, const mString &directoryPath, OUT mPtr<mQu
   mRETURN_SUCCESS();
 }
 
+mFUNCTION(mFile_GetDrives, OUT mPtr<mQueue<mDriveInfo>> *pDrives, IN mAllocator *pAllocator)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pDrives == nullptr, mR_ArgumentNull);
+
+  mERROR_CHECK(mQueue_Create(pDrives, pAllocator));
+
+  wchar_t driveLabels[1024];
+  const size_t length = GetLogicalDriveStringsW(mARRAYSIZE(driveLabels), driveLabels);
+  
+  if (length == 0 || length >= mARRAYSIZE(driveLabels))
+  {
+    const DWORD error = GetLastError();
+    mUnused(error);
+
+    mRETURN_RESULT(mR_InternalError);
+  }
+
+  wchar_t *nextDriveLabel = driveLabels;
+
+  while (*nextDriveLabel != L'\0')
+  {
+    mDriveInfo driveInfo;
+    mERROR_CHECK(mZeroMemory(&driveInfo));
+
+    mDEFER_CALL(&driveInfo.drivePath, mString_Destroy);
+    mERROR_CHECK(mString_Create(&driveInfo.drivePath, nextDriveLabel, pAllocator));
+
+    wchar_t driveName[MAX_PATH + 1];
+    wchar_t volumeTypeName[MAX_PATH + 1]; // FAT, NTFS, ...
+    const BOOL result = GetVolumeInformationW(nextDriveLabel, driveName, mARRAYSIZE(driveName), nullptr, nullptr, nullptr, volumeTypeName, mARRAYSIZE(volumeTypeName));
+
+    if (result)
+      mERROR_CHECK(mString_Create(&driveInfo.driveName, driveName, pAllocator));
+
+    const UINT driveType = GetDriveTypeW(nextDriveLabel);
+
+    switch (driveType)
+    {
+    case DRIVE_UNKNOWN:
+    case DRIVE_NO_ROOT_DIR:
+    default:
+      driveInfo.driveType = mDT_Unknown;
+      break;
+
+    case DRIVE_REMOVABLE:
+      driveInfo.driveType = mDT_Removable;
+      break;
+
+    case DRIVE_FIXED:
+      driveInfo.driveType = mDT_NonRemovable;
+      break;
+
+    case DRIVE_REMOTE:
+      driveInfo.driveType = mDT_Remote;
+      break;
+
+    case DRIVE_CDROM:
+      driveInfo.driveType = mDT_CDRom;
+      break;
+
+    case DRIVE_RAMDISK:
+      driveInfo.driveType = mDT_RamDisk;
+      break;
+    }
+
+    mERROR_CHECK(mQueue_PushBack(*pDrives, std::move(driveInfo)));
+
+    nextDriveLabel = &nextDriveLabel[lstrlenW(nextDriveLabel) + 1];
+  }
+
+  mRETURN_SUCCESS();
+}
+
 mFUNCTION(mFile_GetAbsoluteDirectoryPath, OUT mString *pAbsolutePath, const mString &directoryPath)
 {
   mFUNCTION_SETUP();

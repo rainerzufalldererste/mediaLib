@@ -75,6 +75,24 @@ struct mFileInfo
 
 mFUNCTION(mFile_GetDirectoryContents, const mString &directoryPath, OUT mPtr<mQueue<mFileInfo>> *pFiles, IN mAllocator *pAllocator);
 
+enum mDriveType
+{
+  mDT_Unknown,
+  mDT_Removable,
+  mDT_NonRemovable,
+  mDT_Remote,
+  mDT_CDRom,
+  mDT_RamDisk,
+};
+
+struct mDriveInfo
+{
+  mString drivePath, driveName;
+  mDriveType driveType;
+};
+
+mFUNCTION(mFile_GetDrives, OUT mPtr<mQueue<mDriveInfo>> *pDrives, IN mAllocator *pAllocator);
+
 mFUNCTION(mFile_GetAbsoluteDirectoryPath, OUT mString *pAbsolutePath, const mString &directoryPath);
 mFUNCTION(mFile_GetAbsoluteFilePath, OUT mString *pAbsolutePath, const mString &filePath);
 
