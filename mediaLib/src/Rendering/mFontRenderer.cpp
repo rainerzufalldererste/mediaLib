@@ -607,7 +607,7 @@ mFUNCTION(mFontRenderer_AddFont_Internal, mPtr<mFontRenderer> &fontRenderer, con
   }
 
   mFontDescription_Internal fontDesc;
-  mMemset(&fontDesc, 1);
+  mZeroMemory(&fontDesc, 1);
 
   mERROR_CHECK(mInplaceString_Create(&fontDesc.fontFileName, fontDescription.fontFileName));
   fontDesc.fontSize = (uint64_t)roundf(fontDescription.fontSize * mFontDescription_Internal::FontSizeFactor);
