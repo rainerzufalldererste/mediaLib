@@ -1,3 +1,4 @@
+#include "mFastMath.h"
 inline mVector mVector::operator+(const mVector &a) const { return mVector(DirectX::XMVectorAdd(v, a.v)); }
 inline mVector mVector::operator-(const mVector &a) const { return mVector(DirectX::XMVectorSubtract(v, a.v)); }
 inline mVector mVector::operator*(const mVector &a) const { return mVector(DirectX::XMVectorMultiply(v, a.v)); }
@@ -281,6 +282,30 @@ inline mResult mQuaternion::ToAxisAngle(OUT mVector *pAxis, OUT float_t *pAngle)
   DirectX::XMQuaternionToAxisAngle(&pAxis->v, pAngle, q);
 
   mRETURN_SUCCESS();
+}
+
+inline mVec3f mQuaternion::ToEulerAngles()
+{
+  // x-axis rotation
+  const float_t sinr_cosp = 2.0f * (w * x + y * z);
+  const float_t cosr_cosp = 1.0f - 2.0f * (x * x + y * y);
+  const float_t roll = atan2(sinr_cosp, cosr_cosp);
+
+  // y-axis rotation
+  const float_t sinp = 2.0f * (w * y - z * x);
+  float_t pitch;
+
+  if (fabsf(sinp) >= 1)
+    pitch = copysign(mHALFPIf, sinp);
+  else
+    pitch = asin(sinp);
+
+  // z-axis rotation
+  const float_t siny_cosp = 2.0f * (w * z + x * y);
+  const float_t cosy_cosp = 1.0f - 2.0f * (y * y + z * z);
+  const float_t yaw = atan2(siny_cosp, cosy_cosp);
+
+  return mVec3f(yaw, pitch, roll);
 }
 
 inline mMatrix mMatrix::operator*(const mMatrix &q1) const { return Multiply(q1); }
