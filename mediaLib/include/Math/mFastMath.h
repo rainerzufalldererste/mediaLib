@@ -229,6 +229,7 @@ struct mQuaternion
   inline static mQuaternion mVECTORCALL SquadV(const mQuaternion &q0, const mQuaternion &q1, const mQuaternion &q2, const mQuaternion &q3, const mVector &t);
   inline mResult SquadSetup(OUT mVector *pA, OUT mVector *pB, OUT mVector *pC, const mQuaternion &q0, const mQuaternion &q1, const mQuaternion &q2, const mQuaternion &q3);
   inline mResult ToAxisAngle(OUT mVector *pAxis, OUT float_t *pAngle);
+  inline mVec3f ToEulerAngles();
 };
 
 struct mMatrix

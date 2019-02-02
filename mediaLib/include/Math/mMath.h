@@ -315,7 +315,7 @@ struct mRectangle2D
   __host__ __device__ inline mRectangle2D(const T x, const T y, const T w, const T h) : x(x), y(y), w(w), h(h) { }
   __host__ __device__ inline mRectangle2D(const mVec2t<T> &position, const mVec2t<T> size) : x(position.x), y(position.y), w(size.x), h(size.y) { }
 
-  __host__ __device__ inline bool Contains(const mVec2t<T> &position)
+  __host__ __device__ inline bool Contains(const mVec2t<T> &position) const
   {
     return position.x >= x && position.y >= y && position.x - x < w && position.y - y < h;
   }
