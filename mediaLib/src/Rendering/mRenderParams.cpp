@@ -353,6 +353,11 @@ mFUNCTION(mRenderParams_SetAlphaBlendFunc, const mRenderParam_BlendFunc blendFun
     glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
     break;
 
+  case mRP_BF_Override:
+    mERROR_CHECK(mRenderParams_SetBlendingEnabled(true));
+    glBlendFunc(GL_ONE, GL_ZERO);
+    break;
+
   default:
     mRETURN_RESULT(mR_OperationNotSupported);
     break;

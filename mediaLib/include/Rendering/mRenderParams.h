@@ -99,7 +99,8 @@ enum mRenderParam_BlendFunc
   mRP_BF_NoAlpha,
   mRP_BF_Additive,
   mRP_BF_AlphaBlend,
-  mRP_BF_Premultiplied
+  mRP_BF_Premultiplied,
+  mRP_BF_Override,
 };
 
 mFUNCTION(mRenderParams_SetAlphaBlendFunc, const mRenderParam_BlendFunc blendFunc);
