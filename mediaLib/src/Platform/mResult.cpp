@@ -1,5 +1,4 @@
-#include "mResult.h"
-#include "mString.h"
+#include "mediaLib.h"
 
 const char *g_mResult_lastErrorFile = nullptr;
 size_t g_mResult_lastErrorLine = 0;

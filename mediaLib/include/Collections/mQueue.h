@@ -2,6 +2,7 @@
 #define mQueue_h__
 
 #include "mediaLib.h"
+#include "mStaticIf.h"
 
 template <typename T>
 struct mQueueIterator
