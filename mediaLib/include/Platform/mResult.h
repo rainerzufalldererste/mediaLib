@@ -58,6 +58,23 @@ extern bool g_mResult_breakOnError;
 #define mBREAK_ON_FAILURE false
 #endif // _DEBUG
 
+#ifdef mBREAK_ON_FAILURE
+#ifdef mPLATFORM_WINDOWS
+#define mDEBUG_BREAK() \
+      do \
+      { BOOL __isRemoteDebuggerPresent__ = false; \
+        if (!CheckRemoteDebuggerPresent(GetCurrentProcess(), &__isRemoteDebuggerPresent__)) \
+          __isRemoteDebuggerPresent__ = false; \
+        if (IsDebuggerPresent() || __isRemoteDebuggerPresent__) \
+          __debugbreak(); \
+      } while (0)
+#else
+#define mDEBUG_BREAK() __builtin_trap()
+#endif
+#else
+#define mDEBUG_BREAK()
+#endif
+
 void mDebugOut(const char *format, ...);
 void mPrintError(char *function, char *file, const int32_t line, const mResult error, const char *expression);
 
@@ -79,8 +96,8 @@ template <typename ...Args> void mDeinit(const std::function<void(void)> &param,
   { if (mFAILED(result) && result != mR_Break) \
     { mSET_ERROR_RAW(result); \
       mPrintError(__FUNCTION__, __FILE__, __LINE__, result, "mRETURN_RESULT(" #result ")"); \
-      if (g_mResult_breakOnError && mBREAK_ON_FAILURE) \
-      { __debugbreak(); \
+      if (g_mResult_breakOnError) \
+      { mDEBUG_BREAK(); \
       } \
     } \
     mRESULT_RETURN_RESULT_RAW(result); \
@@ -93,8 +110,8 @@ template <typename ...Args> void mDeinit(const std::function<void(void)> &param,
     { mSET_ERROR_RAW(mSTDRESULT); \
       mPrintError(__FUNCTION__, __FILE__, __LINE__, mSTDRESULT, #functionCall); \
       mDeinit(__VA_ARGS__); \
-      if (g_mResult_breakOnError && mBREAK_ON_FAILURE) \
-      { __debugbreak(); \
+      if (g_mResult_breakOnError) \
+      { mDEBUG_BREAK(); \
       } \
       mRESULT_RETURN_RESULT_RAW(mSTDRESULT); \
     } \
@@ -108,8 +125,8 @@ template <typename ...Args> void mDeinit(const std::function<void(void)> &param,
       { mSET_ERROR_RAW(mSTDRESULT); \
         mPrintError(__FUNCTION__, __FILE__, __LINE__, mSTDRESULT, #conditional); \
         mDeinit(__VA_ARGS__); \
-        if (g_mResult_breakOnError && mBREAK_ON_FAILURE) \
-        { __debugbreak(); \
+        if (g_mResult_breakOnError) \
+        { mDEBUG_BREAK(); \
         } \
       } \
       mRESULT_RETURN_RESULT_RAW(mSTDRESULT); \
@@ -123,8 +140,8 @@ template <typename ...Args> void mDeinit(const std::function<void(void)> &param,
     { mSET_ERROR_RAW(result); \
       mPrintError(__FUNCTION__, __FILE__, __LINE__, result, #functionCall); \
       mDeinit(__VA_ARGS__); \
-      if (g_mResult_breakOnError && mBREAK_ON_FAILURE) \
-      { __debugbreak(); \
+      if (g_mResult_breakOnError) \
+      { mDEBUG_BREAK(); \
       } \
       goto label; \
     } \
@@ -138,8 +155,8 @@ template <typename ...Args> void mDeinit(const std::function<void(void)> &param,
       { mSET_ERROR_RAW(result); \
         mPrintError(__FUNCTION__, __FILE__, __LINE__, result, #conditional); \
         mDeinit(__VA_ARGS__); \
-        if (g_mResult_breakOnError && mBREAK_ON_FAILURE) \
-        { __debugbreak(); \
+        if (g_mResult_breakOnError) \
+        { mDEBUG_BREAK(); \
         } \
       } \
       goto label; \

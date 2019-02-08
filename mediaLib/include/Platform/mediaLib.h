@@ -8,6 +8,9 @@
 #define _USE_MATH_DEFINES 1
 #endif // !_USE_MATH_DEFINES
 
+#ifndef _DEPENDENCIES_DEFINED
+#define _DEPENDENCIES_DEFINED
+
 #include <assert.h>
 #include <stdint.h>
 #include <climits>
@@ -18,41 +21,38 @@
 #include <float.h>
 
 #ifndef mPLATFORM_WINDOWS
-  #if defined(_WIN64) || defined(_WIN32)
-    #define mPLATFORM_WINDOWS 1
-  #endif
+#if defined(_WIN64) || defined(_WIN32)
+#define mPLATFORM_WINDOWS 1
+#endif
 #endif
 
 #ifndef mPLATFORM_UNIX
-  #if !defined(_WIN32) && (defined(__unix__) || defined(__unix) || (defined(__APPLE__) && defined(__MACH__)))
-    #define mPLATFORM_UNIX 1
-  #endif
+#if !defined(_WIN32) && (defined(__unix__) || defined(__unix) || (defined(__APPLE__) && defined(__MACH__)))
+#define mPLATFORM_UNIX 1
+#endif
 #endif
 
 #ifndef mPLATFORM_APPLE
-  #if defined(__APPLE__) && defined(__MACH__)
-    #define mPLATFORM_APPLE 1
-  #endif
+#if defined(__APPLE__) && defined(__MACH__)
+#define mPLATFORM_APPLE 1
+#endif
 #endif
 
 #ifndef mPLATFORM_LINUX
-  #if defined(__linux__)
-    #define mPLATFORM_LINUX 1
-  #endif
+#if defined(__linux__)
+#define mPLATFORM_LINUX 1
+#endif
 #endif
 
 #ifndef mPLATFORM_BSD
-  #if defined(BSD)
-    #define mPLATFORM_BSD 1
-  #endif
+#if defined(BSD)
+#define mPLATFORM_BSD 1
+#endif
 #endif
 
 #ifdef mPLATFORM_WINDOWS
 #include <windows.h>
 #endif // !mPLATFORM_WINDOWS
-
-#ifndef _DEPENDENCIES_DEFINED
-#define _DEPENDENCIES_DEFINED
 
 #ifndef RETURN
 #define RETURN return
@@ -171,8 +171,8 @@ void mPrintPrepare(mPrintCallbackFunc *pFunc, const char *format, ...);
 
 #endif // !_DEPENDENCIES_DEFINED
 
-#ifndef default_h__
-#define default_h__
+#ifndef mediaLib_h__
+#define mediaLib_h__
 
 #include "mTypeTraits.h"
 #include "mResult.h"
@@ -183,7 +183,6 @@ void mPrintPrepare(mPrintCallbackFunc *pFunc, const char *format, ...);
 #include "mSharedPointer.h"
 #include "mMath.h"
 #include "mFastMath.h"
-#include "mStaticIf.h"
 #include "mString.h"
 
 mFUNCTION(mSleep, const size_t milliseconds = 0);
@@ -233,4 +232,4 @@ enum mConsoleColour
 void mResetConsoleColour();
 void mSetConsoleColour(const mConsoleColour foregroundColour, const mConsoleColour backgroundColour);
 
-#endif // default_h__
+#endif // mediaLib_h__

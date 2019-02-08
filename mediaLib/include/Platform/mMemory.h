@@ -1,10 +1,10 @@
 #ifndef mMemory_h__
 #define mMemory_h__
 
+#include "mediaLib.h"
+
 #include <memory.h>
 #include <stdint.h>
-#include "mResult.h"
-#include "mDefer.h"
 #include <climits>
 #include <malloc.h>
 
