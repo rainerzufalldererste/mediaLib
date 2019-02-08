@@ -1,7 +1,7 @@
 #include "mRenderParams.h"
 #include "mTexture.h"
 
-mFUNCTION(mTexture_Create, OUT mTexture *pTexture, mPtr<mImageBuffer> &imageBuffer, const bool upload /* = true */, const size_t textureUnit /* = 0 */)
+mFUNCTION(mTexture_Create, OUT mTexture *pTexture, mPtr<mImageBuffer> &imageBuffer, const bool upload /* = true */, const size_t textureUnit /* = 0 */, const mTexture2DParams &textureParams /* = mTexture2DParams() */)
 {
   mFUNCTION_SETUP();
 
@@ -19,6 +19,9 @@ mFUNCTION(mTexture_Create, OUT mTexture *pTexture, mPtr<mImageBuffer> &imageBuff
   glActiveTexture(GL_TEXTURE0 + (GLuint)pTexture->textureUnit);
   glGenTextures(1, &pTexture->textureId);
 
+  glBindTexture(GL_TEXTURE_2D, pTexture->textureId);
+  mERROR_CHECK(mTexture2DParams_ApplyToBoundTexture(textureParams));
+
   pTexture->imageBuffer = imageBuffer;
 #else
   mRETURN_RESULT(mR_NotInitialized);
@@ -34,7 +37,7 @@ mFUNCTION(mTexture_Create, OUT mTexture *pTexture, mPtr<mImageBuffer> &imageBuff
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mTexture_Create, OUT mTexture *pTexture, const mString &filename, const bool upload /* = true */, const size_t textureUnit /* = 0 */)
+mFUNCTION(mTexture_Create, OUT mTexture *pTexture, const mString &filename, const bool upload /* = true */, const size_t textureUnit /* = 0 */, const mTexture2DParams &textureParams /* = mTexture2DParams() */)
 {
   mFUNCTION_SETUP();
 
@@ -42,12 +45,12 @@ mFUNCTION(mTexture_Create, OUT mTexture *pTexture, const mString &filename, cons
   mDEFER_CALL(&imageBuffer, mImageBuffer_Destroy);
   mERROR_CHECK(mImageBuffer_CreateFromFile(&imageBuffer, nullptr, filename));
 
-  mERROR_CHECK(mTexture_Create(pTexture, imageBuffer, upload, textureUnit));
+  mERROR_CHECK(mTexture_Create(pTexture, imageBuffer, upload, textureUnit, textureParams));
 
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mTexture_Create, OUT mTexture *pTexture, const uint8_t *pData, const mVec2s &size, const mPixelFormat pixelFormat /* = mPF_B8G8R8A8 */, const bool upload /* = true */, const size_t textureUnit /* = 0 */)
+mFUNCTION(mTexture_Create, OUT mTexture *pTexture, const uint8_t *pData, const mVec2s &size, const mPixelFormat pixelFormat /* = mPF_B8G8R8A8 */, const bool upload /* = true */, const size_t textureUnit /* = 0 */, const mTexture2DParams &textureParams /* = mTexture2DParams() */)
 {
   mFUNCTION_SETUP();
 
@@ -70,7 +73,7 @@ mFUNCTION(mTexture_Create, OUT mTexture *pTexture, const uint8_t *pData, const m
     mERROR_CHECK(mAllocator_Copy(nullptr, imageBuffer->pPixels, pData, bufferSize));
   }
 
-  mERROR_CHECK(mTexture_Create(pTexture, imageBuffer, upload, textureUnit));
+  mERROR_CHECK(mTexture_Create(pTexture, imageBuffer, upload, textureUnit, textureParams));
 
   mRETURN_SUCCESS();
 }
@@ -101,7 +104,7 @@ mFUNCTION(mTexture_CreateFromUnownedIndex, OUT mTexture *pTexture, int textureIn
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mTexture_Allocate, OUT mTexture *pTexture, const mVec2s size, const mPixelFormat pixelFormat /* = mPF_R8G8B8A8 */, const size_t textureUnit /* = 0 */)
+mFUNCTION(mTexture_Allocate, OUT mTexture *pTexture, const mVec2s size, const mPixelFormat pixelFormat /* = mPF_R8G8B8A8 */, const size_t textureUnit /* = 0 */, const mTexture2DParams &textureParams /* = mTexture2DParams() */)
 {
   mFUNCTION_SETUP();
 
@@ -131,10 +134,7 @@ mFUNCTION(mTexture_Allocate, OUT mTexture *pTexture, const mVec2s size, const mP
 
   mGL_DEBUG_ERROR_CHECK();
 
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  mERROR_CHECK(mTexture2DParams_ApplyToBoundTexture(textureParams));
 #else
   mRETURN_RESULT(mR_NotImplemented);
 #endif
@@ -227,13 +227,6 @@ mFUNCTION(mTexture_Upload, mTexture &texture)
 
   texture.resolution = texture.imageBuffer->currentSize;
   texture.resolutionF = (mVec2f)texture.resolution;
-
-  mGL_DEBUG_ERROR_CHECK();
-
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
   mGL_DEBUG_ERROR_CHECK();
 

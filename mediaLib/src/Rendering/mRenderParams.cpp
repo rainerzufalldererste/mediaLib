@@ -398,3 +398,21 @@ mFUNCTION(mRenderParams_GetCurrentGLContext_HWND, HWND *pGLWindow)
 
   mRETURN_SUCCESS();
 }
+
+mFUNCTION(mTexture2DParams_ApplyToBoundTexture, const mTexture2DParams &params)
+{
+  mFUNCTION_SETUP();
+
+#ifdef mRENDERER_OPENGL
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, params.minFilter);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, params.magFilter);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, params.wrapModeX);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, params.wrapModeY);
+
+  mGL_DEBUG_ERROR_CHECK();
+#else
+  mRETURN_RESULT(mR_NotImplemented);
+#endif
+
+  mRETURN_SUCCESS();
+}
