@@ -7,12 +7,12 @@ GLuint mFrameBuffer_ActiveFrameBufferHandle = 0;
 
 mPtr<mQueue<mPtr<mFramebuffer>>> mFramebuffer_Queue = nullptr;
 
-mFUNCTION(mFramebuffer_Create_Internal, OUT mFramebuffer *pFramebuffer, const mVec2s &size);
+mFUNCTION(mFramebuffer_Create_Internal, OUT mFramebuffer *pFramebuffer, const mVec2s &size, const mTexture2DParams &params);
 mFUNCTION(mFramebuffer_Destroy_Internal, IN mFramebuffer *pFramebuffer);
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mFramebuffer_Create, OUT mPtr<mFramebuffer> *pFramebuffer, IN mAllocator *pAllocator, const mVec2s &size)
+mFUNCTION(mFramebuffer_Create, OUT mPtr<mFramebuffer> *pFramebuffer, IN mAllocator *pAllocator, const mVec2s &size, const mTexture2DParams &textureParams /* = mTexture2DParams() */)
 {
   mFUNCTION_SETUP();
 
@@ -23,7 +23,7 @@ mFUNCTION(mFramebuffer_Create, OUT mPtr<mFramebuffer> *pFramebuffer, IN mAllocat
 
   mERROR_CHECK(mSharedPointer_Allocate(pFramebuffer, pAllocator, (std::function<void (mFramebuffer *)>)[](mFramebuffer *pData) { mFramebuffer_Destroy_Internal(pData); }, 1));
 
-  mERROR_CHECK(mFramebuffer_Create_Internal(pFramebuffer->GetPointer(), size));
+  mERROR_CHECK(mFramebuffer_Create_Internal(pFramebuffer->GetPointer(), size, textureParams));
 
   mRETURN_SUCCESS();
 }
@@ -245,7 +245,7 @@ mFUNCTION(mTexture_Copy, mTexture &destination, mPtr<mFramebuffer> &source)
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mFramebuffer_Create_Internal, mFramebuffer *pFramebuffer, const mVec2s &size)
+mFUNCTION(mFramebuffer_Create_Internal, mFramebuffer *pFramebuffer, const mVec2s &size, const mTexture2DParams &params)
 {
   mFUNCTION_SETUP();
 
@@ -262,8 +262,7 @@ mFUNCTION(mFramebuffer_Create_Internal, mFramebuffer *pFramebuffer, const mVec2s
 
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)size.x, (GLsizei)size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  mERROR_CHECK(mTexture2DParams_ApplyToBoundTexture(params));
   
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, pFramebuffer->texColourBuffer, 0);
 

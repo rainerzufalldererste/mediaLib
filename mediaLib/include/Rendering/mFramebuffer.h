@@ -20,7 +20,7 @@ struct mFramebuffer
 #endif
 };
 
-mFUNCTION(mFramebuffer_Create, OUT mPtr<mFramebuffer> *pFramebuffer, IN mAllocator *pAllocator, const mVec2s &size);
+mFUNCTION(mFramebuffer_Create, OUT mPtr<mFramebuffer> *pFramebuffer, IN mAllocator *pAllocator, const mVec2s &size, const mTexture2DParams &textureParams = mTexture2DParams());
 mFUNCTION(mFramebuffer_Destroy, IN_OUT mPtr<mFramebuffer> *pFramebuffer);
 mFUNCTION(mFramebuffer_Bind, mPtr<mFramebuffer> &framebuffer);
 mFUNCTION(mFramebuffer_Unbind);

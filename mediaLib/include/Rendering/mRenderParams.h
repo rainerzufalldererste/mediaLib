@@ -133,4 +133,34 @@ enum mRenderParams_VertexRenderMode
   mRP_VRM_Polygon = GL_POLYGON,
 };
 
+enum mRenderParams_TextureWrapMode
+{
+  mRP_TWM_ClampToEdge = GL_CLAMP_TO_EDGE,
+  mRP_TWM_ClampToBorder = GL_CLAMP_TO_BORDER,
+  mRP_TWM_MirroredRepeat = GL_MIRRORED_REPEAT,
+  mRP_TWM_Repeat = GL_REPEAT,
+  mRP_TWM_MirroredClampToEdge = GL_MIRROR_CLAMP_TO_EDGE,
+};
+
+enum mRenderParams_TextureMagnificationFilteringMode
+{
+  mRP_TMagFM_NearestNeighbor = GL_NEAREST,
+  mRP_TMagFM_BilinearInterpolation = GL_LINEAR,
+};
+
+enum mRenderParams_TextureMinificationFilteringMode
+{
+  mRP_TMinFM_NearestNeighbor = GL_NEAREST,
+  mRP_TMinFM_BilinearInterpolation = GL_LINEAR,
+};
+
+struct mTexture2DParams
+{
+  mRenderParams_TextureWrapMode wrapModeX = mRP_TWM_ClampToEdge, wrapModeY = mRP_TWM_ClampToEdge;
+  mRenderParams_TextureMagnificationFilteringMode magFilter = mRP_TMagFM_BilinearInterpolation;
+  mRenderParams_TextureMinificationFilteringMode minFilter = mRP_TMinFM_BilinearInterpolation;
+};
+
+mFUNCTION(mTexture2DParams_ApplyToBoundTexture, const mTexture2DParams &params);
+
 #endif // mRenderParams_h__
