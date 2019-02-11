@@ -79,15 +79,31 @@ void mDebugOut(const char *format, ...);
 
 #ifdef GIT_BUILD
 void mPrintError(char *function, char *file, const int32_t line, const mResult error, const char *expression, const char *commitSHA = GIT_REF);
+
+#define mRESULT_PRINT_FUNCTION_TITLE nullptr
+#define mRESULT_PRINT_DEBUG_STRINGIFY(x) nullptr
+#define mRESULT_PRINT_DEBUG_STRINGIFY_RETURN_RESULT(result) nullptr
 #else
 void mPrintError(char *function, char *file, const int32_t line, const mResult error, const char *expression, const char *commitSHA = nullptr);
+
+#define mRESULT_PRINT_FUNCTION_TITLE __FUNCTION__
+#define mRESULT_PRINT_DEBUG_STRINGIFY(x) #x
+#define mRESULT_PRINT_DEBUG_STRINGIFY_RETURN_RESULT(result) "mRETURN_RESULT(" #result ")"
 #endif
 
 mFUNCTION(mResult_ToString, const mResult result, OUT struct mString *pString);
 
 void mDeinit();
 void mDeinit(const std::function<void(void)> &param);
-template <typename ...Args> void mDeinit(const std::function<void(void)> &param, Args && ...args) { if (param) { param(); } mDeinit(std::forward<Args>(args)); };
+
+template <typename ...Args>
+inline void mDeinit(const std::function<void(void)> &param, Args && ...args)
+{ 
+  if (param) 
+    param();
+
+  mDeinit(std::forward<Args>(args)); 
+};
 
 #define mSET_ERROR_RAW(resultCode) \
   do \
@@ -100,7 +116,7 @@ template <typename ...Args> void mDeinit(const std::function<void(void)> &param,
   do \
   { if (mFAILED(result) && result != mR_Break) \
     { mSET_ERROR_RAW(result); \
-      mPrintError(__FUNCTION__, __FILE__, __LINE__, result, "mRETURN_RESULT(" #result ")"); \
+      mPrintError(mRESULT_PRINT_FUNCTION_TITLE, __FILE__, __LINE__, result, mRESULT_PRINT_DEBUG_STRINGIFY_RETURN_RESULT(result)); \
       if (g_mResult_breakOnError) \
       { mDEBUG_BREAK(); \
       } \
@@ -113,7 +129,7 @@ template <typename ...Args> void mDeinit(const std::function<void(void)> &param,
   { mSTDRESULT = (functionCall); \
     if (mFAILED(mSTDRESULT)) \
     { mSET_ERROR_RAW(mSTDRESULT); \
-      mPrintError(__FUNCTION__, __FILE__, __LINE__, mSTDRESULT, #functionCall); \
+      mPrintError(mRESULT_PRINT_FUNCTION_TITLE, __FILE__, __LINE__, mSTDRESULT, mRESULT_PRINT_DEBUG_STRINGIFY(functionCall)); \
       mDeinit(__VA_ARGS__); \
       if (g_mResult_breakOnError) \
       { mDEBUG_BREAK(); \
@@ -128,7 +144,7 @@ template <typename ...Args> void mDeinit(const std::function<void(void)> &param,
     { mSTDRESULT = (resultOnError); \
       if (mFAILED(resultOnError)) \
       { mSET_ERROR_RAW(mSTDRESULT); \
-        mPrintError(__FUNCTION__, __FILE__, __LINE__, mSTDRESULT, #conditional); \
+        mPrintError(mRESULT_PRINT_FUNCTION_TITLE, __FILE__, __LINE__, mSTDRESULT, mRESULT_PRINT_DEBUG_STRINGIFY(conditional)); \
         mDeinit(__VA_ARGS__); \
         if (g_mResult_breakOnError) \
         { mDEBUG_BREAK(); \
@@ -143,7 +159,7 @@ template <typename ...Args> void mDeinit(const std::function<void(void)> &param,
   { result = (functionCall); \
     if (mFAILED(result)) \
     { mSET_ERROR_RAW(result); \
-      mPrintError(__FUNCTION__, __FILE__, __LINE__, result, #functionCall); \
+      mPrintError(mRESULT_PRINT_FUNCTION_TITLE, __FILE__, __LINE__, result, mRESULT_PRINT_DEBUG_STRINGIFY(functionCall)); \
       mDeinit(__VA_ARGS__); \
       if (g_mResult_breakOnError) \
       { mDEBUG_BREAK(); \
@@ -158,7 +174,7 @@ template <typename ...Args> void mDeinit(const std::function<void(void)> &param,
     { result = (resultOnError); \
       if (mFAILED(resultOnError)) \
       { mSET_ERROR_RAW(result); \
-        mPrintError(__FUNCTION__, __FILE__, __LINE__, result, #conditional); \
+        mPrintError(mRESULT_PRINT_FUNCTION_TITLE, __FILE__, __LINE__, result, mRESULT_PRINT_DEBUG_STRINGIFY(conditional)); \
         mDeinit(__VA_ARGS__); \
         if (g_mResult_breakOnError) \
         { mDEBUG_BREAK(); \
