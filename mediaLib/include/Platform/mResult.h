@@ -76,7 +76,12 @@ extern bool g_mResult_breakOnError;
 #endif
 
 void mDebugOut(const char *format, ...);
-void mPrintError(char *function, char *file, const int32_t line, const mResult error, const char *expression);
+
+#ifdef GIT_BUILD
+void mPrintError(char *function, char *file, const int32_t line, const mResult error, const char *expression, const char *commitSHA = GIT_REF);
+#else
+void mPrintError(char *function, char *file, const int32_t line, const mResult error, const char *expression, const char *commitSHA = nullptr);
+#endif
 
 mFUNCTION(mResult_ToString, const mResult result, OUT struct mString *pString);
 

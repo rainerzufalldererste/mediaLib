@@ -158,6 +158,7 @@ void mPrintPrepare(mPrintCallbackFunc *pFunc, const char *format, ...);
 
 #define mCONCAT_LITERALS_INTERNAL(x, y) x ## y
 #define mCONCAT_LITERALS(x, y) mCONCAT_LITERALS_INTERNAL(x, y)
+#define mSTRINGIFY(x) #x
 
 #ifdef mPLATFORM_WINDOWS
 #define mDLL_FUNC_PREFIX __dll__
