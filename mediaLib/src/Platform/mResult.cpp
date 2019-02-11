@@ -26,19 +26,33 @@ void mDebugOut(const char *format, ...)
 #endif
 }
 
-void mPrintError(char *function, char *file, const int32_t line, const mResult error, const char *expression)
+void mPrintError(char *function, char *file, const int32_t line, const mResult error, const char *expression, const char *commitSHA /* = nullptr */)
 {
+#ifndef GIT_BUILD
   mString errorName;
+#endif
 
   const char *expr = "";
+  const char *buildID = "";
 
   if (expression)
     expr = expression;
+
+  if (commitSHA)
+    buildID = commitSHA;
+
+#ifdef GIT_BUILD
+  mUnused(function);
+
+  mPRINT_ERROR("Error 0x%" PRIx32 " in File '%s' Line % " PRIi32 ". ('%s')\n", error, file, line, buildID);
+#else
+  mUnused(buildID);
 
   if (mFAILED(mResult_ToString(error, &errorName)))
     mPRINT_ERROR("Error in '%s' (File '%s'; Line % " PRIi32 ") [0x%" PRIx32 "].\nExpression: '%s'.\n\n", function, file, line, error, expr);
   else
     mPRINT_ERROR("Error %s in '%s' (File '%s'; Line % " PRIi32 ") [0x%" PRIx32 "].\nExpression: '%s'.\n\n", errorName.c_str(), function, file, line, error, expr);
+#endif
 }
 
 mFUNCTION(mResult_ToString, const mResult result, OUT mString *pString)

@@ -16,6 +16,24 @@ project(ProjectName)
     defines { "_CRT_SECURE_NO_WARNINGS", "SSE2", "GLEW_STATIC" }
   
   filter { }
+
+  -- Strings
+  if os.getenv("CI_BUILD_REF_NAME") then
+    defines { "GIT_BRANCH=\"" .. os.getenv("CI_BUILD_REF_NAME") .. "\"" }
+  end
+  if os.getenv("CI_COMMIT_SHA") then
+    defines { "GIT_REF=\"" .. os.getenv("CI_COMMIT_SHA") .. "\"" }
+  end
+  
+  -- Numbers
+  if os.getenv("CI_PIPELINE_ID") then
+    defines { "GIT_BUILD=" .. os.getenv("CI_PIPELINE_ID") }
+  else
+    defines { "DEV_BUILD" }
+  end
+  if os.getenv("UNIXTIME") then
+    defines { "BUILD_TIME=" .. os.getenv("UNIXTIME") }
+  end
   
   objdir "intermediate/obj"
 
