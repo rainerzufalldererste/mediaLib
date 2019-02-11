@@ -290,13 +290,24 @@ struct mRectangle2D
   union
   {
     T asArray[4];
+    mVec4t<T> asVector4;
 
     struct
     {
-      T x, y;
+      union
+      {
+        struct
+        {
+          T x, y;
+        };
+
+        mVec2t<T> position;
+      };
       
       union
       {
+        mVec2t<T> size;
+
         struct
         {
           T width, height;
@@ -313,11 +324,45 @@ struct mRectangle2D
 
   __host__ __device__ inline mRectangle2D() : x(0), y(0), w(0), h(0) { }
   __host__ __device__ inline mRectangle2D(const T x, const T y, const T w, const T h) : x(x), y(y), w(w), h(h) { }
-  __host__ __device__ inline mRectangle2D(const mVec2t<T> &position, const mVec2t<T> size) : x(position.x), y(position.y), w(size.x), h(size.y) { }
+  __host__ __device__ inline mRectangle2D(const mVec2t<T> &position, const mVec2t<T> size) : position(position), size(size) { }
 
-  __host__ __device__ inline bool Contains(const mVec2t<T> &position) const
+  __host__ __device__ inline bool Contains(const mVec2t<T> &_position) const
   {
-    return position.x >= x && position.y >= y && position.x - x < w && position.y - y < h;
+    return _position.x >= x && _position.y >= y && _position.x - x < w && _position.y - y < h;
+  }
+
+  __host__ __device__ inline mRectangle2D<float_t> OffsetCopy(mVec2t<T> offset) const
+  {
+    return mRectangle2D<float_t>(position + offset, size);
+  }
+
+  __host__ __device__ inline mRectangle2D<float_t> & OffsetSelf(mVec2t<T> offset)
+  {
+    position += offset;
+    return *this;
+  }
+
+  __host__ __device__ inline mRectangle2D<float_t> ScaleCopy(const T scale) const
+  {
+    return mRectangle2D<float_t>(position * scale, size * scale);
+  }
+
+  __host__ __device__ inline mRectangle2D<float_t> ScaleSelf(const T scale)
+  {
+    asVector4 *= scale;
+    return *this;
+  }
+
+  __host__ __device__ inline mRectangle2D<float_t> ScaleCopy(const mVec2t<T> scale) const
+  {
+    return mRectangle2D<float_t>(position * scale, size * scale);
+  }
+
+  __host__ __device__ inline mRectangle2D<float_t> ScaleSelf(const mVec2t<T> scale)
+  {
+    position *= scale;
+    size *= scale;
+    return *this;
   }
 };
 
