@@ -99,6 +99,9 @@ inline mFUNCTION(mSpriteBatch_DrawWithDepth, mPtr<mSpriteBatch<Args...>> &sprite
 {
   mFUNCTION_SETUP();
 
+  mERROR_IF(spriteBatch == nullptr || texture == nullptr, mR_ArgumentNull);
+  mERROR_IF(!spriteBatch->isStarted, mR_ResourceStateInvalid);
+
   mSpriteBatch_Internal_RenderObject<Args...> renderObject;
   mERROR_CHECK(mSpriteBatch_Internal_RenderObject_Create(&renderObject, texture, position, texture->resolutionF, depth, std::forward<Args>(args)...));
 
@@ -114,6 +117,9 @@ template<typename ...Args>
 inline mFUNCTION(mSpriteBatch_DrawWithDepth, mPtr<mSpriteBatch<Args...>> &spriteBatch, mPtr<mTexture> &texture, const mRectangle2D<float_t> &rect, const float_t depth, Args &&...args)
 {
   mFUNCTION_SETUP();
+
+  mERROR_IF(spriteBatch == nullptr || texture == nullptr, mR_ArgumentNull);
+  mERROR_IF(!spriteBatch->isStarted, mR_ResourceStateInvalid);
 
   mSpriteBatch_Internal_RenderObject<Args...> renderObject;
   mERROR_CHECK(mSpriteBatch_Internal_RenderObject_Create(&renderObject, texture, mVec2f(rect.x, rect.y), mVec2f(rect.w, rect.h), depth, std::forward<Args>(args)...));
@@ -131,6 +137,9 @@ inline mFUNCTION(mSpriteBatch_DrawWithDepth, mPtr<mSpriteBatch<Args...>> &sprite
 {
   mFUNCTION_SETUP();
 
+  mERROR_IF(spriteBatch == nullptr || pTexture == nullptr, mR_ArgumentNull);
+  mERROR_IF(!spriteBatch->isStarted, mR_ResourceStateInvalid);
+
   mPtr<mTexture> texture;
   mDEFER_CALL(&texture, mSharedPointer_Destroy);
   mERROR_CHECK(mSharedPointer_Create(&texture, pTexture, mSHARED_POINTER_FOREIGN_RESOURCE));
@@ -144,6 +153,9 @@ template<typename ...Args>
 inline mFUNCTION(mSpriteBatch_DrawWithDepth, mPtr<mSpriteBatch<Args...>> &spriteBatch, mTexture *pTexture, const mRectangle2D<float_t> &rect, const float_t depth, Args &&...args)
 {
   mFUNCTION_SETUP();
+
+  mERROR_IF(spriteBatch == nullptr || pTexture == nullptr, mR_ArgumentNull);
+  mERROR_IF(!spriteBatch->isStarted, mR_ResourceStateInvalid);
 
   mPtr<mTexture> texture;
   mDEFER_CALL(&texture, mSharedPointer_Destroy);
@@ -178,6 +190,9 @@ template<typename ...Args>
 inline mFUNCTION(mSpriteBatch_Draw, mPtr<mSpriteBatch<Args...>> &spriteBatch, mTexture *pTexture, const mVec2f &position, Args &&...args)
 {
   mFUNCTION_SETUP();
+
+  mERROR_IF(spriteBatch == nullptr || pTexture == nullptr, mR_ArgumentNull);
+  mERROR_IF(!spriteBatch->isStarted, mR_ResourceStateInvalid);
 
   mPtr<mTexture> texture;
   mDEFER_CALL(&texture, mSharedPointer_Destroy);
