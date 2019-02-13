@@ -3,11 +3,6 @@
 
 #include "mediaLib.h"
 
-#include <memory.h>
-#include <stdint.h>
-#include <climits>
-#include <malloc.h>
-
 template <typename T>
 void mSetToNullptr(T **ppData)
 {
@@ -15,7 +10,8 @@ void mSetToNullptr(T **ppData)
     *ppData = nullptr;
 }
 
-template <typename T> mFUNCTION(mMemset, IN_OUT T *pData, size_t count, uint8_t data = 0)
+template <typename T>
+mFUNCTION(mMemset, IN_OUT T *pData, size_t count, uint8_t data = 0)
 {
   mFUNCTION_SETUP();
   mERROR_IF(pData == nullptr, mR_ArgumentNull);
@@ -25,7 +21,8 @@ template <typename T> mFUNCTION(mMemset, IN_OUT T *pData, size_t count, uint8_t 
   mRETURN_SUCCESS();
 }
 
-template <typename T> mFUNCTION(mZeroMemory, IN_OUT T *pData, size_t count = 1)
+template <typename T>
+mFUNCTION(mZeroMemory, IN_OUT T *pData, size_t count = 1)
 {
   mFUNCTION_SETUP();
   mERROR_IF(pData == nullptr, mR_ArgumentNull);
@@ -35,7 +32,8 @@ template <typename T> mFUNCTION(mZeroMemory, IN_OUT T *pData, size_t count = 1)
   mRETURN_SUCCESS();
 }
 
-template <typename T> mFUNCTION(mAlloc, OUT T **ppData, const size_t count)
+template <typename T>
+mFUNCTION(mAlloc, OUT T **ppData, const size_t count)
 {
   mFUNCTION_SETUP();
 
@@ -49,7 +47,8 @@ template <typename T> mFUNCTION(mAlloc, OUT T **ppData, const size_t count)
   mRETURN_SUCCESS();
 }
 
-template <typename T> mFUNCTION(mRealloc, OUT T **ppData, const size_t count)
+template <typename T>
+mFUNCTION(mRealloc, OUT T **ppData, const size_t count)
 {
   mFUNCTION_SETUP();
 
@@ -71,7 +70,8 @@ template <typename T> mFUNCTION(mRealloc, OUT T **ppData, const size_t count)
   mRETURN_SUCCESS();
 }
 
-template <typename T> mFUNCTION(mAllocZero, OUT T **ppData, const size_t count)
+template <typename T>
+mFUNCTION(mAllocZero, OUT T **ppData, const size_t count)
 {
   mFUNCTION_SETUP();
 
@@ -82,7 +82,8 @@ template <typename T> mFUNCTION(mAllocZero, OUT T **ppData, const size_t count)
   mRETURN_SUCCESS();
 }
 
-template <typename T> mFUNCTION(mAllocStack, OUT T **ppData, const size_t count)
+template <typename T>
+mFUNCTION(mAllocStack, OUT T **ppData, const size_t count)
 {
   mFUNCTION_SETUP();
 
@@ -96,7 +97,8 @@ template <typename T> mFUNCTION(mAllocStack, OUT T **ppData, const size_t count)
   mRETURN_SUCCESS();
 }
 
-template <typename T> mFUNCTION(mAllocStackZero, OUT T **ppData, const size_t count)
+template <typename T>
+mFUNCTION(mAllocStackZero, OUT T **ppData, const size_t count)
 {
   mFUNCTION_SETUP();
 
@@ -107,7 +109,8 @@ template <typename T> mFUNCTION(mAllocStackZero, OUT T **ppData, const size_t co
   mRETURN_SUCCESS();
 }
 
-template <typename T> mFUNCTION(mFreePtr, IN_OUT T **ppData)
+template <typename T>
+mFUNCTION(mFreePtr, IN_OUT T **ppData)
 {
   mFUNCTION_SETUP();
 
@@ -122,7 +125,8 @@ template <typename T> mFUNCTION(mFreePtr, IN_OUT T **ppData)
   mRETURN_SUCCESS();
 }
 
-template <typename T> mFUNCTION(mFree, IN_OUT T *pData)
+template <typename T>
+mFUNCTION(mFree, IN_OUT T *pData)
 {
   mFUNCTION_SETUP();
 
@@ -132,7 +136,8 @@ template <typename T> mFUNCTION(mFree, IN_OUT T *pData)
   mRETURN_SUCCESS();
 }
 
-template <typename T> mFUNCTION(mFreePtrStack, IN_OUT T **ppData)
+template <typename T>
+mFUNCTION(mFreePtrStack, IN_OUT T **ppData)
 {
   mFUNCTION_SETUP();
 
@@ -147,7 +152,8 @@ template <typename T> mFUNCTION(mFreePtrStack, IN_OUT T **ppData)
   mRETURN_SUCCESS();
 }
 
-template <typename T> mFUNCTION(mFreeStack, IN_OUT T *pData)
+template <typename T>
+mFUNCTION(mFreeStack, IN_OUT T *pData)
 {
   mFUNCTION_SETUP();
 
@@ -157,7 +163,8 @@ template <typename T> mFUNCTION(mFreeStack, IN_OUT T *pData)
   mRETURN_SUCCESS();
 }
 
-template <typename T> mFUNCTION(mAllocAlligned, OUT T **ppData, const size_t count, const size_t alignment)
+template <typename T>
+mFUNCTION(mAllocAlligned, OUT T **ppData, const size_t count, const size_t alignment)
 {
   mFUNCTION_SETUP();
 
@@ -171,7 +178,8 @@ template <typename T> mFUNCTION(mAllocAlligned, OUT T **ppData, const size_t cou
   mRETURN_SUCCESS();
 }
 
-template <typename T> mFUNCTION(mReallocAlligned, OUT T **ppData, const size_t count, const size_t alignment)
+template <typename T>
+mFUNCTION(mReallocAlligned, OUT T **ppData, const size_t count, const size_t alignment)
 {
   mFUNCTION_SETUP();
 
@@ -193,7 +201,8 @@ template <typename T> mFUNCTION(mReallocAlligned, OUT T **ppData, const size_t c
   mRETURN_SUCCESS();
 }
 
-template <typename T> mFUNCTION(mAllocAllignedZero, OUT T **ppData, const size_t count, const size_t alignment)
+template <typename T>
+mFUNCTION(mAllocAllignedZero, OUT T **ppData, const size_t count, const size_t alignment)
 {
   mFUNCTION_SETUP();
 
@@ -204,7 +213,8 @@ template <typename T> mFUNCTION(mAllocAllignedZero, OUT T **ppData, const size_t
   mRETURN_SUCCESS();
 }
 
-template <typename T> mFUNCTION(mFreeAllignedPtr, IN_OUT T **ppData)
+template <typename T>
+mFUNCTION(mFreeAllignedPtr, IN_OUT T **ppData)
 {
   mFUNCTION_SETUP();
 
@@ -219,7 +229,8 @@ template <typename T> mFUNCTION(mFreeAllignedPtr, IN_OUT T **ppData)
   mRETURN_SUCCESS();
 }
 
-template <typename T> mFUNCTION(mAllignedFree, IN_OUT T *pData)
+template <typename T>
+mFUNCTION(mAllignedFree, IN_OUT T *pData)
 {
   mFUNCTION_SETUP();
 
@@ -229,7 +240,8 @@ template <typename T> mFUNCTION(mAllignedFree, IN_OUT T *pData)
   mRETURN_SUCCESS();
 }
 
-template <typename T> mFUNCTION(mMemmove, T *pDst, T *pSrc, const size_t count)
+template <typename T>
+mFUNCTION(mMemmove, T *pDst, T *pSrc, const size_t count)
 {
   mFUNCTION_SETUP();
   mERROR_IF(pDst == nullptr || pSrc == nullptr, mR_ArgumentNull);
@@ -242,7 +254,8 @@ template <typename T> mFUNCTION(mMemmove, T *pDst, T *pSrc, const size_t count)
   mRETURN_SUCCESS();
 }
 
-template <typename T> mFUNCTION(mMemcpy, T *pDst, const T *pSrc, const size_t count)
+template <typename T>
+mFUNCTION(mMemcpy, T *pDst, const T *pSrc, const size_t count)
 {
   mFUNCTION_SETUP();
   mERROR_IF(pDst == nullptr || pSrc == nullptr, mR_ArgumentNull);
@@ -267,77 +280,10 @@ mFUNCTION(mStringLength, const char text[TCount], OUT size_t *pLength)
   mRETURN_SUCCESS();
 }
 
-inline mFUNCTION(mStringLength, const char *text, const size_t maxLength, OUT size_t *pLength)
-{
-  mFUNCTION_SETUP();
-
-  mERROR_IF(text == nullptr || pLength == nullptr, mR_ArgumentNull);
-
-  *pLength = strnlen_s(text, maxLength);
-
-  mRETURN_SUCCESS();
-}
-
-inline mFUNCTION(mSprintf, OUT char *buffer, const size_t bufferLength, const char *formatString, ...)
-{
-  mFUNCTION_SETUP();
-
-  mERROR_IF(buffer == nullptr || formatString == nullptr, mR_ArgumentNull);
-
-  va_list args;
-  va_start(args, formatString);
-  int length = vsprintf_s(buffer, bufferLength, formatString, args);
-  va_end(args);
-
-  mERROR_IF(length < 0, mR_ArgumentOutOfBounds);
-
-  mRETURN_SUCCESS();
-}
-
-inline mFUNCTION(mSprintfWithLength, OUT char *buffer, const size_t bufferLength, const char *formatString, OUT size_t *pLength, ...)
-{
-  mFUNCTION_SETUP();
-
-  mERROR_IF(buffer == nullptr || formatString == nullptr || pLength == nullptr, mR_ArgumentNull);
-
-  *pLength = 0;
-
-  va_list args;
-  va_start(args, formatString);
-  int length = vsprintf_s(buffer, bufferLength, formatString, args);
-  va_end(args);
-
-  mERROR_IF(length < 0, mR_ArgumentOutOfBounds);
-
-  *pLength = length;
-
-  mRETURN_SUCCESS();
-}
-
-inline mFUNCTION(mStringCopy, OUT char *buffer, const size_t bufferLength, const char *source, const size_t sourceLength)
-{
-  mFUNCTION_SETUP();
-
-  mERROR_IF(buffer == nullptr || source == nullptr, mR_ArgumentNull);
-
-  const errno_t error = strncpy_s(buffer, bufferLength, source, sourceLength);
-
-  switch (error)
-  {
-  case 0:
-    mRETURN_SUCCESS();
-
-  case STRUNCATE:
-  case ERANGE:
-    mRETURN_RESULT(mR_ArgumentOutOfBounds);
-
-  case EINVAL:
-    mRETURN_RESULT(mR_InvalidParameter);
-
-  default:
-    mRETURN_RESULT(mR_InternalError);
-  }
-}
+mFUNCTION(mStringLength, const char *text, const size_t maxLength, OUT size_t *pLength);
+mFUNCTION(mSprintf, OUT char *buffer, const size_t bufferLength, const char *formatString, ...);
+mFUNCTION(mSprintfWithLength, OUT char *buffer, const size_t bufferLength, const char *formatString, OUT size_t *pLength, ...);
+mFUNCTION(mStringCopy, OUT char *buffer, const size_t bufferLength, const char *source, const size_t sourceLength);
 
 template <size_t TCount>
 mFUNCTION(mStringChar, const char text[TCount], const char character, OUT size_t *pLength)
@@ -351,134 +297,32 @@ mFUNCTION(mStringChar, const char text[TCount], const char character, OUT size_t
   mRETURN_SUCCESS();
 }
 
-inline mFUNCTION(mStringChar, const char *text, const size_t maxLength, const char character, OUT size_t *pLength)
+mFUNCTION(mStringChar, const char *text, const size_t maxLength, const char character, OUT size_t *pLength);
+
+template <typename ...Args>
+inline mFUNCTION(mSScanf, const char *text, const char *format, Args ...args)
 {
   mFUNCTION_SETUP();
 
-  mERROR_IF(text == nullptr || pLength == nullptr, mR_ArgumentNull);
+  const int length = sscanf(text, format, args...);
 
-  *pLength = (size_t)((char *)memchr((void *)text, (int)character, strnlen_s(text, maxLength)) - (char *)text);
+  if (length < 0)
+    mRETURN_RESULT(mR_Failure);
+  else if (sizeof...(args) != length)
+    mRETURN_RESULT(mR_InvalidParameter);
 
   mRETURN_SUCCESS();
 }
 
-/*
-* Simd Library (http://ermig1979.github.io/Simd).
-*
-* Copyright (c) 2011-2018 Yermalayeu Ihar.
-*               2016-2016 Sintegrial Technologies.
-*
-* Permission is hereby granted, free of charge, to any person obtaining a copy
-* of this software and associated documentation files (the "Software"), to deal
-* in the Software without restriction, including without limitation the rights
-* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the Software is
-* furnished to do so, subject to the following conditions:
-*
-* The above copyright notice and this permission notice shall be included in
-* all copies or substantial portions of the Software.
-*
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-* SOFTWARE.
-*/
+//////////////////////////////////////////////////////////////////////////
 
-mINLINE mFUNCTION(mMemoryAlignHiAny, const size_t size, const size_t align, OUT size_t *pResult)
-{
-  mFUNCTION_SETUP();
-
-  mERROR_IF(pResult == nullptr, mR_ArgumentNull);
-
-  *pResult = (size + align - 1) / align * align;
-
-  mRETURN_SUCCESS();
-}
-
-mINLINE mFUNCTION(mMemoryAlignLoAny, const size_t size, const size_t align, OUT size_t *pResult)
-{
-  mFUNCTION_SETUP();
-
-  mERROR_IF(pResult == nullptr, mR_ArgumentNull);
-
-  *pResult = size / align * align;
-
-  mRETURN_SUCCESS();
-}
-
-mINLINE mFUNCTION(mMemoryAlignHi, const size_t size, const size_t align, OUT size_t *pResult)
-{
-  mFUNCTION_SETUP();
-
-  mERROR_IF(pResult == nullptr, mR_ArgumentNull);
-
-  *pResult = (size + align - 1) & ~(align - 1);
-
-  mRETURN_SUCCESS();
-}
-
-mINLINE mFUNCTION(mMemoryAlignHi, const void *pData, const size_t align, OUT void **ppResult)
-{
-  mFUNCTION_SETUP();
-
-  mERROR_IF(ppResult == nullptr, mR_ArgumentNull);
-
-  *ppResult = (void *)((((size_t)pData) + align - 1) & ~(align - 1));
-
-  mRETURN_SUCCESS();
-}
-
-mINLINE mFUNCTION(mMemoryAlignLo, const size_t size, const size_t align, OUT size_t *pResult)
-{
-  mFUNCTION_SETUP();
-
-  mERROR_IF(pResult == nullptr, mR_ArgumentNull);
-
-  *pResult = size & ~(align - 1);
-
-  mRETURN_SUCCESS();
-}
-
-mINLINE mFUNCTION(mMemoryAlignLo, const void *pData, const size_t align, OUT void **ppResult)
-{
-  mFUNCTION_SETUP();
-
-  mERROR_IF(ppResult == nullptr, mR_ArgumentNull);
-
-  *ppResult = (void *)(((size_t)pData) & ~(align - 1));
-
-  mRETURN_SUCCESS();
-}
-
-mINLINE mFUNCTION(mMemoryIsAligned, const size_t size, const size_t align, OUT bool *pResult)
-{
-  mFUNCTION_SETUP();
-
-  mERROR_IF(pResult == nullptr, mR_ArgumentNull);
-
-  size_t allignedSize;
-  mERROR_CHECK(mMemoryAlignLo(size, align, &allignedSize));
-
-  *pResult = (size == allignedSize);
-
-  mRETURN_SUCCESS();
-}
-
-mINLINE mFUNCTION(mMemoryIsAligned, const void *pData, const size_t align, OUT bool *pResult)
-{
-  mFUNCTION_SETUP();
-
-  mERROR_IF(pResult == nullptr, mR_ArgumentNull);
-
-  void *pAligned;
-  mERROR_CHECK(mMemoryAlignLo(pData, align, &pAligned));
-
-  *pResult = (pData == pAligned);
-
-  mRETURN_SUCCESS();
-}
+mFUNCTION(mMemoryAlignHiAny, const size_t size, const size_t align, OUT size_t *pResult);
+mFUNCTION(mMemoryAlignLoAny, const size_t size, const size_t align, OUT size_t *pResult);
+mFUNCTION(mMemoryAlignHi, const size_t size, const size_t align, OUT size_t *pResult);
+mFUNCTION(mMemoryAlignHi, IN const void *pData, const size_t align, OUT void **ppResult);
+mFUNCTION(mMemoryAlignLo, const size_t size, const size_t align, OUT size_t *pResult);
+mFUNCTION(mMemoryAlignLo, IN const void *pData, const size_t align, OUT void **ppResult);
+mFUNCTION(mMemoryIsAligned, const size_t size, const size_t align, OUT bool *pResult);
+mFUNCTION(mMemoryIsAligned, IN const void *pData, const size_t align, OUT bool *pResult);
 
 #endif // mMemory_h__

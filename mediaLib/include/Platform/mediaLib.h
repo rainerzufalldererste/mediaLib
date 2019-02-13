@@ -19,6 +19,8 @@
 #include <type_traits>
 #include <inttypes.h>
 #include <float.h>
+#include <memory.h>
+#include <malloc.h>
 
 #ifndef mPLATFORM_WINDOWS
 #if defined(_WIN64) || defined(_WIN32)

@@ -544,7 +544,10 @@ mFUNCTION(mFile_GetDirectoryContents, const mString &directoryPath, OUT mPtr<mQu
   const DWORD length = GetFullPathNameW(folderPath.c_str(), mARRAYSIZE(absolutePath), absolutePath, nullptr);
   mERROR_IF(length == 0, mR_InternalError);
 
-  mERROR_CHECK(mQueue_Create(pFiles, pAllocator));
+  if (*pFiles == nullptr)
+    mERROR_CHECK(mQueue_Create(pFiles, pAllocator));
+  else
+    mERROR_CHECK(mQueue_Clear(*pFiles));
 
   WIN32_FIND_DATAW fileData;
   const HANDLE handle = FindFirstFileW(absolutePath, &fileData);
@@ -571,6 +574,73 @@ mFUNCTION(mFile_GetDirectoryContents, const mString &directoryPath, OUT mPtr<mQu
     mERROR_CHECK(mFileInfo_FromFindDataWStruct_Internal(&fileInfo, &fileData, pAllocator));
     mERROR_CHECK(mQueue_PushBack(*pFiles, fileInfo));
   } while (FindNextFileW(handle, &fileData));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mFile_GetDirectoryContents, const mString &directoryPath, const bool recursive, OUT mPtr<mQueue<mFileInfo>> *pFiles, IN mAllocator *pAllocator)
+{
+  mFUNCTION_SETUP();
+
+  if (!recursive)
+    mRETURN_RESULT(mFile_GetDirectoryContents(directoryPath, pFiles, pAllocator));
+
+  if (*pFiles == nullptr)
+    mERROR_CHECK(mQueue_Create(pFiles, pAllocator));
+  else
+    mERROR_CHECK(mQueue_Clear(*pFiles));
+
+  mString currentFolder, currentFile;
+  mERROR_CHECK(mString_Create(&currentFolder, directoryPath));
+
+  mPtr<mQueue<mString>> enqueuedDirectories;
+  mDEFER_CALL(&enqueuedDirectories, mQueue_Destroy);
+  mERROR_CHECK(mQueue_Create(&enqueuedDirectories, pAllocator));
+
+  mERROR_CHECK(mQueue_PushBack(enqueuedDirectories, currentFolder));
+
+  mPtr<mQueue<mFileInfo>> directoryContents;
+  mDEFER_CALL(&directoryContents, mQueue_Destroy);
+
+  while (true)
+  {
+    size_t count;
+    mERROR_CHECK(mQueue_GetCount(enqueuedDirectories, &count));
+
+    if (count == 0)
+      break;
+
+    mERROR_CHECK(mQueue_PopFront(enqueuedDirectories, &currentFolder));
+
+    if (mFAILED(mFile_GetDirectoryContents(currentFolder, &directoryContents, pAllocator)))
+      continue;
+
+    for (auto &_file : directoryContents->Iterate())
+    {
+      // Skip '.' and '..'.
+      if (_file.name.Count() >= 2 && _file.name[0] == mToChar<2>("."))
+      {
+        if (_file.name.Count() == 2)
+          continue;
+        else if (_file.name[1] == mToChar<2>("."))
+          continue;
+      }
+
+      mERROR_CHECK(mString_Create(&currentFile, currentFolder));
+      mERROR_CHECK(mString_Append(currentFile, "\\"));
+      mERROR_CHECK(mString_Append(currentFile, _file.name));
+
+      if (_file.size == 0)
+      {
+        mERROR_CHECK(mQueue_PushBack(enqueuedDirectories, currentFile));
+      }
+      else
+      {
+        mERROR_CHECK(mString_Create(&_file.name, currentFile));
+        mERROR_CHECK(mQueue_PushBack(*pFiles, _file));
+      }
+    }
+  }
 
   mRETURN_SUCCESS();
 }
