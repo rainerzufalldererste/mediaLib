@@ -55,6 +55,11 @@ project(ProjectName)
   filter { "configurations:Debug", "system:Windows" }
     ignoredefaultlibraries { "libcmt" }
   filter { }
+
+  configuration "avx2"
+    vectorextensions "AVX2"
+    defines { "AVX2", "AVX", "SSE42", "SSE41", "SSSE3", "SSE3" }
+  configuration {}
   
   targetname(ProjectName)
   targetdir "lib"
