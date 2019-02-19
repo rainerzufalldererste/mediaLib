@@ -80,7 +80,7 @@ T mMod(T value, T modulus);
 
 // Euclidean modulo. (For positive modulus).
 template <typename T>
-inline T mEMod(const T value, const T modulus)
+inline T mEuclideanMod(const T value, const T modulus)
 {
   const T v = mMod(value, modulus);
   return v < (T)0 ? (v + modulus) : v;

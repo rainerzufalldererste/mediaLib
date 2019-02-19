@@ -178,7 +178,7 @@ mFUNCTION(mUI_SetCustomMousePosition, const mVec2f position)
   ImGuiIO *pIO = nullptr;
   mERROR_CHECK(mUI_GetIO(&pIO));
 
-  pIO->MousePos = cast(position);
+  pIO->MousePos = ToImVec(position);
 
   mRETURN_SUCCESS();
 }

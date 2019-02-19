@@ -28,7 +28,7 @@ mFUNCTION(mUI_PushSubHeadlineFont);
 mFUNCTION(mUI_PopSubHeadlineFont);
 
 template <typename T>
-inline ImVec2 cast(const mVec2t<T> &vec2t)
+inline ImVec2 ToImVec(const mVec2t<T> &vec2t)
 {
   ImVec2 v;
 
@@ -39,7 +39,7 @@ inline ImVec2 cast(const mVec2t<T> &vec2t)
 }
 
 template <typename T>
-inline ImVec4 cast(const mVec4t<T> &vec4t)
+inline ImVec4 ToImVec(const mVec4t<T> &vec4t)
 {
   ImVec4 v;
 
@@ -51,7 +51,7 @@ inline ImVec4 cast(const mVec4t<T> &vec4t)
   return v;
 }
 
-inline ImVec4 cast(const mVector &vec)
+inline ImVec4 ToImVec(const mVector &vec)
 {
   ImVec4 v;
 
