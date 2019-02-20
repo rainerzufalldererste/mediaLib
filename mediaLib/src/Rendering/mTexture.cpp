@@ -21,12 +21,11 @@ mFUNCTION(mTexture_Create, OUT mTexture *pTexture, mPtr<mImageBuffer> &imageBuff
 
   glBindTexture(GL_TEXTURE_2D, pTexture->textureId);
   mERROR_CHECK(mTexture2DParams_ApplyToBoundTexture(textureParams));
-
-  pTexture->imageBuffer = imageBuffer;
 #else
   mRETURN_RESULT(mR_NotInitialized);
 #endif
 
+  pTexture->imageBuffer = imageBuffer;
   pTexture->uploadState = mRP_US_NotUploaded;
 
   if (upload)
@@ -56,24 +55,36 @@ mFUNCTION(mTexture_Create, OUT mTexture *pTexture, const uint8_t *pData, const m
 
   mERROR_IF(pTexture == nullptr || pData == nullptr, mR_ArgumentNull);
 
-  mPtr<mImageBuffer> imageBuffer;
-  mDEFER_CALL(&imageBuffer, mImageBuffer_Destroy);
-
   if (upload)
   {
-    mERROR_CHECK(mImageBuffer_Create(&imageBuffer, nullptr, (void *)pData, size, pixelFormat));
+    pTexture->uploadState = mRP_US_NotInitialized;
+    pTexture->resolution = size;
+    pTexture->resolutionF = (mVec2f)pTexture->resolution;
+    pTexture->foreignTexture = false;
+
+#if defined(mRENDERER_OPENGL)
+    mERROR_IF(textureUnit >= 32, mR_IndexOutOfBounds);
+    pTexture->textureUnit = (GLuint)textureUnit;
+
+    glActiveTexture(GL_TEXTURE0 + (GLuint)pTexture->textureUnit);
+    glGenTextures(1, &pTexture->textureId);
+
+    glBindTexture(GL_TEXTURE_2D, pTexture->textureId);
+    mERROR_CHECK(mTexture2DParams_ApplyToBoundTexture(textureParams));
+#else
+    mRETURN_RESULT(mR_NotInitialized);
+#endif
+
+    mERROR_CHECK(mTexture_SetTo(*pTexture, pData, size, pixelFormat, true));
   }
   else
   {
-    mERROR_CHECK(mImageBuffer_Create(&imageBuffer, nullptr, size, pixelFormat));
+    mPtr<mImageBuffer> imageBuffer;
+    mDEFER_CALL(&imageBuffer, mImageBuffer_Destroy);
+    mERROR_CHECK(mImageBuffer_Create(&imageBuffer, nullptr, (void *)pData, size, pixelFormat));
 
-    size_t bufferSize;
-    mERROR_CHECK(mPixelFormat_GetSize(pixelFormat, size, &bufferSize));
-
-    mERROR_CHECK(mAllocator_Copy(nullptr, imageBuffer->pPixels, pData, bufferSize));
+    mERROR_CHECK(mTexture_Create(pTexture, imageBuffer, upload, textureUnit, textureParams));
   }
-
-  mERROR_CHECK(mTexture_Create(pTexture, imageBuffer, upload, textureUnit, textureParams));
 
   mRETURN_SUCCESS();
 }
@@ -294,11 +305,66 @@ mFUNCTION(mTexture_SetTo, mTexture &texture, const uint8_t *pData, const mVec2s 
 
   mERROR_IF(pData == nullptr, mR_ArgumentNull);
 
-  mPtr<mImageBuffer> imageBuffer;
-  mDEFER_CALL(&imageBuffer, mImageBuffer_Destroy);
-  mERROR_CHECK(mImageBuffer_Create(&imageBuffer, nullptr, (void *)pData, size, pixelFormat));
+  if (texture.textureId == 0)
+  {
+    mERROR_CHECK(mTexture_Create(&texture, pData, size, pixelFormat, upload));
+    mRETURN_SUCCESS();
+  }
 
-  mERROR_CHECK(mTexture_SetTo(texture, imageBuffer, upload));
+  if (!upload)
+  {
+    mPtr<mImageBuffer> imageBuffer;
+    mDEFER_CALL(&imageBuffer, mImageBuffer_Destroy);
+    mERROR_CHECK(mImageBuffer_Create(&imageBuffer, nullptr, (void *)pData, size, pixelFormat));
+
+    mERROR_CHECK(mTexture_SetTo(texture, imageBuffer, upload));
+  }
+  else
+  {
+    texture.uploadState = mRP_US_NotUploaded;
+
+    mGL_DEBUG_ERROR_CHECK();
+
+    texture.uploadState = mRP_US_Uploading;
+    mDEFER_ON_ERROR(texture.uploadState = mRP_US_NotInitialized);
+
+#if defined (mRENDERER_OPENGL)
+    glBindTexture(GL_TEXTURE_2D, texture.textureId);
+
+    mGL_DEBUG_ERROR_CHECK();
+
+    if (pixelFormat == mPF_R8G8B8A8)
+    {
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)size.x, (GLsizei)size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, pData);
+    }
+    else if (pixelFormat == mPF_R8G8B8)
+    {
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, (GLsizei)size.x, (GLsizei)size.y, 0, GL_RGB, GL_UNSIGNED_BYTE, pData);
+    }
+    else if (pixelFormat == mPF_Monochrome8)
+    {
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, (GLsizei)size.x, (GLsizei)size.y, 0, GL_RED, GL_UNSIGNED_BYTE, pData);
+    }
+    else
+    {
+      mPtr<mImageBuffer> imageBuffer;
+      mDEFER_CALL(&imageBuffer, mImageBuffer_Destroy);
+      mERROR_CHECK(mImageBuffer_Create(&imageBuffer, nullptr, size, mPF_R8G8B8A8));
+      mERROR_CHECK(mPixelFormat_TransformBuffer(texture.imageBuffer, imageBuffer));
+
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)imageBuffer->currentSize.x, (GLsizei)imageBuffer->currentSize.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, imageBuffer->pPixels);
+    }
+
+    texture.resolution = size;
+    texture.resolutionF = (mVec2f)texture.resolution;
+    texture.uploadState = mRP_US_Ready;
+
+    mGL_DEBUG_ERROR_CHECK();
+
+#else
+    mRETURN_RESULT(mR_NotImplemented)
+#endif
+  }
 
   mRETURN_SUCCESS();
 }
