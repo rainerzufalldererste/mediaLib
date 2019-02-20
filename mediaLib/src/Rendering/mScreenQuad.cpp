@@ -116,6 +116,8 @@ mFUNCTION(mScreenQuad_Destroy_Internal, IN mScreenQuad *pScreenQuad)
 
   mERROR_IF(pScreenQuad == nullptr, mR_ArgumentNull);
 
+  mERROR_CHECK(mSharedPointer_Destroy(&pScreenQuad->shader));
+
 #if defined(mRENDERER_OPENGL)
   if (pScreenQuad->vbo)
     glDeleteBuffers(1, &pScreenQuad->vbo);
