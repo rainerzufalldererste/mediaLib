@@ -507,6 +507,7 @@ inline mFUNCTION(mSpriteBatch_Destroy_Internal, IN_OUT mSpriteBatch<Args...> *pS
     mERROR_CHECK(mSpriteBatch_Internal_RenderObject_Destroy(&renderObject));
   }
 
+  mERROR_CHECK(mQueue_Destroy(&pSpriteBatch->enqueuedRenderObjects));
   mERROR_CHECK(mSharedPointer_Destroy(&pSpriteBatch->shader));
 
   mRETURN_SUCCESS();
