@@ -31,6 +31,7 @@ mFUNCTION(mMutex_Destroy, IN_OUT mMutex **ppMutex)
   mFUNCTION_SETUP();
 
   mERROR_IF(ppMutex == nullptr, mR_ArgumentNull);
+  mERROR_IF(*ppMutex == nullptr, mR_Success);
 
   mDEFER_CALL(ppMutex, mSetToNullptr);
   mERROR_CHECK(mMutex_Destroy_Internal(*ppMutex));
@@ -106,6 +107,7 @@ mFUNCTION(mRecursiveMutex_Destroy, IN_OUT mRecursiveMutex **ppMutex)
   mFUNCTION_SETUP();
 
   mERROR_IF(ppMutex == nullptr, mR_ArgumentNull);
+  mERROR_IF(*ppMutex == nullptr, mR_Success);
 
   mDEFER_CALL(ppMutex, mSetToNullptr);
   mERROR_CHECK(mRecursiveMutex_Destroy_Internal(*ppMutex));
