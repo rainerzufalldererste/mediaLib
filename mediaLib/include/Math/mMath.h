@@ -31,6 +31,8 @@
 #define mRAD2DEGf (180.0f / mPIf)
 
 template <typename T> constexpr T mAbs(const T value) { return value >= 0 ? value : -value; }
+template <typename T, typename std::enable_if_t<!std::is_unsigned<T>::value, int>* = nullptr> constexpr T mSign(const T value) { return value > 0 ? (T)1 : (value < 0 ? (T)-1 : (T)0); }
+template <typename T, typename std::enable_if_t<std::is_unsigned<T>::value, int>* = nullptr> constexpr T mSign(const T value) { return value > 0 ? (T)1 : (T)0; }
 template <typename T> auto mSqrt(const T value)->decltype(sqrt(value)) { return sqrt(value); }
 template <typename T> auto mSin(const T value)->decltype(sin(value)) { return sin(value); }
 template <typename T> auto mCos(const T value)->decltype(cos(value)) { return cos(value); }
