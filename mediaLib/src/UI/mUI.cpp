@@ -77,8 +77,8 @@ mFUNCTION(mUI_Initilialize, mPtr<mHardwareWindow> &hardwareWindow, const bool ad
   pColors[ImGuiCol_ScrollbarGrabHovered] = ImVec4(0.75f, 0.75f, 0.75f, 0.80f);
   pColors[ImGuiCol_ScrollbarGrabActive] = ImVec4(0.58f, 0.58f, 0.58f, 1.00f);
   pColors[ImGuiCol_CheckMark] = ImVec4(0.16f, 0.16f, 0.16f, 1.00f);
-  pColors[ImGuiCol_SliderGrab] = ImVec4(0.25f, 0.25f, 0.25f, 0.78f);
-  pColors[ImGuiCol_SliderGrabActive] = ImVec4(0.47f, 0.47f, 0.47f, 0.60f);
+  pColors[ImGuiCol_SliderGrab] = ImVec4(0.25f, 0.25f, 0.25f, 1.00f);
+  pColors[ImGuiCol_SliderGrabActive] = ImVec4(0.47f, 0.47f, 0.47f, 1.00f);
   pColors[ImGuiCol_Button] = ImVec4(0.28f, 0.28f, 0.28f, 0.11f);
   pColors[ImGuiCol_ButtonHovered] = ImVec4(0.24f, 0.24f, 0.24f, 0.15f);
   pColors[ImGuiCol_ButtonActive] = ImVec4(0.16f, 0.16f, 0.16f, 0.22f);
