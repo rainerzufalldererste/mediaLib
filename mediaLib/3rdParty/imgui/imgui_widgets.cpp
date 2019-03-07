@@ -2136,26 +2136,37 @@ bool ImGui::SliderScalar(const char* label, ImGuiDataType data_type, void* v, co
     ItemSize(total_bb, style.FramePadding.y);
 
     // Draw frame
-    const ImU32 frame_col = GetColorU32(g.ActiveId == id ? ImGuiCol_FrameBgActive : g.HoveredId == id ? ImGuiCol_FrameBgHovered : ImGuiCol_FrameBg);
+    //const ImU32 frame_col = GetColorU32(g.ActiveId == id ? ImGuiCol_FrameBgActive : g.HoveredId == id ? ImGuiCol_FrameBgHovered : ImGuiCol_FrameBg);
     RenderNavHighlight(frame_bb, id);
-    RenderFrame(frame_bb.Min, frame_bb.Max, frame_col, true, g.Style.FrameRounding);
+    window->DrawList->AddLine(ImVec2(frame_bb.Min.x, frame_bb.GetCenter().y), ImVec2(frame_bb.Max.x, frame_bb.GetCenter().y), GetColorU32(ImGuiCol_FrameBg), 1.f);
+    //RenderFrame(frame_bb.Min, frame_bb.Max, frame_col, true, g.Style.FrameRounding);
 
     // Slider behavior
     ImRect grab_bb;
     const bool value_changed = SliderBehavior(frame_bb, id, data_type, v, v_min, v_max, format, power, ImGuiSliderFlags_None, &grab_bb);
     if (value_changed)
-        MarkItemEdited(id);
+      MarkItemEdited(id);
+
+    window->DrawList->AddLine(ImVec2(frame_bb.Min.x, frame_bb.GetCenter().y), grab_bb.GetCenter(), GetColorU32(ImGuiCol_SliderGrab), 1.f);
 
     // Render grab
-    window->DrawList->AddRectFilled(grab_bb.Min, grab_bb.Max, GetColorU32(g.ActiveId == id ? ImGuiCol_SliderGrabActive : ImGuiCol_SliderGrab), style.GrabRounding);
+    window->DrawList->AddCircleFilled(grab_bb.GetCenter(), grab_bb.GetWidth() * (g.ActiveId == id ? .5f : (g.HoveredId == id ? .5f : .33f)), GetColorU32(g.ActiveId == id ? ImGuiCol_SliderGrabActive : ImGuiCol_SliderGrab));
+    //window->DrawList->AddTriangleFilled(grab_bb.GetCenter(), grab_bb.GetCenter() + grab_bb.GetSize() * .5f, grab_bb.GetCenter() + grab_bb.GetSize() * ImVec2(-.5f, .5f), GetColorU32(g.ActiveId == id ? ImGuiCol_SliderGrabActive : ImGuiCol_SliderGrab));
 
-    // Display value using user-provided display format so user can add prefix/suffix/decorations to the value.
-    char value_buf[64];
-    const char* value_buf_end = value_buf + DataTypeFormatString(value_buf, IM_ARRAYSIZE(value_buf), data_type, v, format);
-    RenderTextClipped(frame_bb.Min, frame_bb.Max, value_buf, value_buf_end, NULL, ImVec2(0.5f,0.5f));
+    if (hovered || g.HoveredId == id || g.ActiveId == id)
+    {
+      // Display value using user-provided display format so user can add prefix/suffix/decorations to the value.
+      char value_buf[64];
+      const char* value_buf_end = value_buf + DataTypeFormatString(value_buf, IM_ARRAYSIZE(value_buf), data_type, v, format);
+      const ImVec2 valueSize = CalcTextSize(value_buf);
+      const ImVec2 textCenter = grab_bb.GetCenter() - ImVec2(0, valueSize.y + style.ItemInnerSpacing.y * 2.f);
+      window->DrawList->AddRectFilled(textCenter - valueSize * .5f - style.ItemInnerSpacing, textCenter + valueSize * .5f + style.ItemInnerSpacing, GetColorU32(ImGuiCol_FrameBg));
+      RenderText(textCenter - valueSize * .5f, value_buf, value_buf_end);
+      window->DrawList->AddTriangleFilled(textCenter + ImVec2(-style.ItemInnerSpacing.y, style.ItemInnerSpacing.y + valueSize.y * .5f), textCenter + ImVec2(style.ItemInnerSpacing.y, style.ItemInnerSpacing.y + valueSize.y * .5f), textCenter + ImVec2(0, style.ItemInnerSpacing.y * 2.f + valueSize.y * .5f), GetColorU32(ImGuiCol_FrameBg));
+    }
 
     if (label_size.x > 0.0f)
-        RenderText(ImVec2(frame_bb.Max.x + style.ItemInnerSpacing.x, frame_bb.Min.y + style.FramePadding.y), label);
+      RenderText(ImVec2(frame_bb.Max.x + style.ItemInnerSpacing.x, frame_bb.Min.y + style.FramePadding.y), label);
 
     return value_changed;
 }
