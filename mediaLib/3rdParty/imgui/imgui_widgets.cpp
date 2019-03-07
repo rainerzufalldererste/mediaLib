@@ -1904,9 +1904,16 @@ static bool ImGui::SliderBehaviorT(const ImRect& bb, ImGuiID id, ImGuiDataType d
     const float slider_sz = is_horizontal ? (bb.GetWidth() - grab_padding * 2.0f) : (bb.GetHeight() - grab_padding * 2.0f);
     float grab_sz = style.GrabMinSize;
     SIGNEDTYPE v_range = (v_min < v_max ? v_max - v_min : v_min - v_max);
-    if (!is_decimal && v_range >= 0)                                             // v_range < 0 may happen on integer overflows
+
+    if (!is_horizontal)
+    {
+      if (!is_decimal && v_range >= 0)                                             // v_range < 0 may happen on integer overflows
         grab_sz = ImMax((float)(slider_sz / (v_range + 1)), style.GrabMinSize);  // For integer sliders: if possible have the grab size represent 1 unit
+    }
+
     grab_sz = ImMin(grab_sz, slider_sz);
+
+
     const float slider_usable_sz = slider_sz - grab_sz;
     const float slider_usable_pos_min = (is_horizontal ? bb.Min.x : bb.Min.y) + grab_padding + grab_sz*0.5f;
     const float slider_usable_pos_max = (is_horizontal ? bb.Max.x : bb.Max.y) - grab_padding - grab_sz*0.5f;
@@ -2045,10 +2052,11 @@ static bool ImGui::SliderBehaviorT(const ImRect& bb, ImGuiID id, ImGuiDataType d
     if (!is_horizontal)
         grab_t = 1.0f - grab_t;
     const float grab_pos = ImLerp(slider_usable_pos_min, slider_usable_pos_max, grab_t);
+    
     if (is_horizontal)
-        *out_grab_bb = ImRect(grab_pos - grab_sz*0.5f, bb.Min.y + grab_padding, grab_pos + grab_sz*0.5f, bb.Max.y - grab_padding);
+      *out_grab_bb = ImRect(grab_pos - grab_sz * 0.5f, bb.Min.y + grab_padding, grab_pos + grab_sz * 0.5f, bb.Max.y - grab_padding);
     else
-        *out_grab_bb = ImRect(bb.Min.x + grab_padding, grab_pos - grab_sz*0.5f, bb.Max.x - grab_padding, grab_pos + grab_sz*0.5f);
+      *out_grab_bb = ImRect(bb.Min.x + grab_padding, grab_pos - grab_sz * 0.5f, bb.Max.x - grab_padding, grab_pos + grab_sz * 0.5f);
 
     return value_changed;
 }
@@ -2150,7 +2158,7 @@ bool ImGui::SliderScalar(const char* label, ImGuiDataType data_type, void* v, co
     window->DrawList->AddLine(ImVec2(frame_bb.Min.x, frame_bb.GetCenter().y), grab_bb.GetCenter(), GetColorU32(ImGuiCol_SliderGrab), 1.f);
 
     // Render grab
-    window->DrawList->AddCircleFilled(grab_bb.GetCenter(), grab_bb.GetWidth() * (g.ActiveId == id ? .5f : (g.HoveredId == id ? .5f : .33f)), GetColorU32(g.ActiveId == id ? ImGuiCol_SliderGrabActive : ImGuiCol_SliderGrab));
+    window->DrawList->AddCircleFilled(grab_bb.GetCenter(), min(grab_bb.GetHeight(), grab_bb.GetWidth()) * (g.ActiveId == id ? .5f : (g.HoveredId == id ? .5f : .33f)), GetColorU32(g.ActiveId == id ? ImGuiCol_SliderGrabActive : ImGuiCol_SliderGrab));
     //window->DrawList->AddTriangleFilled(grab_bb.GetCenter(), grab_bb.GetCenter() + grab_bb.GetSize() * .5f, grab_bb.GetCenter() + grab_bb.GetSize() * ImVec2(-.5f, .5f), GetColorU32(g.ActiveId == id ? ImGuiCol_SliderGrabActive : ImGuiCol_SliderGrab));
 
     if (hovered || g.HoveredId == id || g.ActiveId == id)

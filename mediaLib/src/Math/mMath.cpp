@@ -1,5 +1,31 @@
 #include "mediaLib.h"
 
+static_assert(mAbs(1) == 1, "Test Failed.");
+static_assert(mAbs(0) == 0, "Test Failed.");
+static_assert(mAbs(-1) == 1, "Test Failed.");
+static_assert(mClamp(1, 0, 1) == 1, "Test Failed.");
+static_assert(mClamp(0, 0, 1) == 0, "Test Failed.");
+static_assert(mClamp(1, 0, 2) == 1, "Test Failed.");
+static_assert(mClamp(0, -1, 1) == 0, "Test Failed.");
+static_assert(mClamp(-1, 1, 2) == 1, "Test Failed.");
+static_assert(mClamp(10, -5, 1) == 1, "Test Failed.");
+static_assert(mSign(10) == 1, "Test Failed.");
+static_assert(mSign(-10) == -1, "Test Failed.");
+static_assert(mSign(10) == 1, "Test Failed.");
+static_assert(mSign<size_t>(10) == 1, "Test Failed.");
+static_assert(mSign(0) == 0, "Test Failed.");
+static_assert(mSign<size_t>(0) == 0, "Test Failed.");
+static_assert(mMin(0, 1) == 0, "Test Failed.");
+static_assert(mMin(1, 0) == 0, "Test Failed.");
+static_assert(mMin(-1, 1) == -1, "Test Failed.");
+static_assert(mMin(1, -1) == -1, "Test Failed.");
+static_assert(mMin(1, 1) == 1, "Test Failed.");
+static_assert(mMax(0, 1) == 1, "Test Failed.");
+static_assert(mMax(1, 0) == 1, "Test Failed.");
+static_assert(mMax(-1, 2) == 2, "Test Failed.");
+static_assert(mMax(2, -1) == 2, "Test Failed.");
+static_assert(mMax(1, 1) == 1, "Test Failed.");
+
 __host__ __device__ mVec3f mColor_UnpackBgraToVec3f(const uint32_t bgraColor)
 {
   const float_t v(1.0f / 0xFF);
