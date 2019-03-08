@@ -71,6 +71,7 @@ struct mFileInfo
   size_t creationTimeStamp;
   size_t lastAccessTimeStamp;
   size_t lastWriteTimeStamp;
+  bool isDirectory, isHidden, isOffline, isSystemResource, isReadonly;
 };
 
 mFUNCTION(mFile_GetDirectoryContents, const mString &directoryPath, OUT mPtr<mQueue<mFileInfo>> *pFiles, IN mAllocator *pAllocator);
