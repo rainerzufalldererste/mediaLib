@@ -27,6 +27,9 @@ mFUNCTION(mUI_PopHeadlineFont);
 mFUNCTION(mUI_PushSubHeadlineFont);
 mFUNCTION(mUI_PopSubHeadlineFont);
 
+mFUNCTION(mUI_PushBoldFont);
+mFUNCTION(mUI_PopBoldFont);
+
 template <typename T>
 inline ImVec2 ToImVec(const mVec2t<T> &vec2t)
 {

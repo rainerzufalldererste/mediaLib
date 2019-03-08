@@ -812,12 +812,17 @@ mFUNCTION(mFile_GetKnownPath_Internal, OUT mString *pString, const GUID &guid)
 mFUNCTION(mFileInfo_FromFindDataWStruct_Internal, IN_OUT mFileInfo *pFileInfo, IN const WIN32_FIND_DATAW *pFileData, IN mAllocator *pAllocator)
 {
   mFUNCTION_SETUP();
-
+  
   mERROR_CHECK(mString_Create(&pFileInfo->name, (wchar_t *)pFileData->cFileName, mARRAYSIZE(pFileData->cFileName), pAllocator));
   pFileInfo->size = ((size_t)pFileData->nFileSizeHigh * (size_t)(MAXDWORD + 1ULL)) + (size_t)pFileData->nFileSizeLow;
   pFileInfo->creationTimeStamp = ((size_t)pFileData->ftCreationTime.dwHighDateTime * (size_t)(MAXDWORD + 1ULL)) + (size_t)pFileData->ftCreationTime.dwLowDateTime;
   pFileInfo->lastAccessTimeStamp = ((size_t)pFileData->ftLastAccessTime.dwHighDateTime * (size_t)(MAXDWORD + 1ULL)) + (size_t)pFileData->ftLastAccessTime.dwLowDateTime;
   pFileInfo->lastWriteTimeStamp = ((size_t)pFileData->ftLastWriteTime.dwHighDateTime * (size_t)(MAXDWORD + 1ULL)) + (size_t)pFileData->ftLastWriteTime.dwLowDateTime;
+  pFileInfo->isDirectory = !!(pFileData->dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY);
+  pFileInfo->isHidden = !!(pFileData->dwFileAttributes & FILE_ATTRIBUTE_HIDDEN);
+  pFileInfo->isOffline = !!(pFileData->dwFileAttributes & FILE_ATTRIBUTE_OFFLINE);
+  pFileInfo->isReadonly = !!(pFileData->dwFileAttributes & FILE_ATTRIBUTE_READONLY);
+  pFileInfo->isSystemResource = !!(pFileData->dwFileAttributes & (FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_DEVICE));
 
   mRETURN_SUCCESS();
 }

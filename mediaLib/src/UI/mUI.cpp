@@ -19,6 +19,7 @@ ImFont *pFont = nullptr;
 ImFont *pHeadline = nullptr;
 ImFont *pSubHeadline = nullptr;
 ImFont *pMonospacedFont = nullptr;
+ImFont *pBold = nullptr;
 
 bool mUI_AutoUpdateMousePosition = true;
 
@@ -51,8 +52,8 @@ mFUNCTION(mUI_Initilialize, mPtr<mHardwareWindow> &hardwareWindow, const bool ad
   pMonospacedFont = mUI_pImguiIO->Fonts->AddFontFromFileTTF("C:/Windows/Fonts/consola.ttf", 13.0f, nullptr, mUI_pImguiIO->Fonts->GetGlyphRangesDefault());
 
   pHeadline = mUI_pImguiIO->Fonts->AddFontFromFileTTF("C:/Windows/Fonts/seguibl.ttf", 52.0f, nullptr, mUI_pImguiIO->Fonts->GetGlyphRangesDefault());
-
   pSubHeadline = mUI_pImguiIO->Fonts->AddFontFromFileTTF("C:/Windows/Fonts/seguisb.ttf", 28.0f, nullptr, mUI_pImguiIO->Fonts->GetGlyphRangesDefault());
+  pBold = mUI_pImguiIO->Fonts->AddFontFromFileTTF("C:/Windows/Fonts/seguisb.ttf", 18.0f, nullptr, mUI_pImguiIO->Fonts->GetGlyphRangesDefault());
 
   if (addUpdateCallback)
     mERROR_CHECK(mHardwareWindow_AddOnAnyEvent(hardwareWindow, mUI_ProcessEvent));
@@ -247,6 +248,26 @@ mFUNCTION(mUI_PopSubHeadlineFont)
   mFUNCTION_SETUP();
 
   if (pSubHeadline != nullptr)
+    ImGui::PopFont();
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mUI_PushBoldFont)
+{
+  mFUNCTION_SETUP();
+
+  if (pBold != nullptr)
+    ImGui::PushFont(pBold);
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mUI_PopBoldFont)
+{
+  mFUNCTION_SETUP();
+
+  if (pBold != nullptr)
     ImGui::PopFont();
 
   mRETURN_SUCCESS();
