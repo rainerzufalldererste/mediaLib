@@ -163,4 +163,6 @@ struct mTexture2DParams
 
 mFUNCTION(mTexture2DParams_ApplyToBoundTexture, const mTexture2DParams &params);
 
+mFUNCTION(mRenderParams_PrintRenderState, const bool onlyNewValues = false);
+
 #endif // mRenderParams_h__

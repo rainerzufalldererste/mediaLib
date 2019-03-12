@@ -481,7 +481,7 @@ inline mFUNCTION(mSpriteBatch_Create_Internal, IN_OUT mSpriteBatch<Args...> *pSp
   
   if (pSpriteBatch->shaderParams.colour)
     mERROR_IF(0 > sprintf_s(fragmentShader, "%s\n\tfragColour0 *= " mSBEColour_UniformName ";", fragmentShader), mR_InternalError);
-  
+
   mERROR_IF(0 > sprintf_s(fragmentShader, "%s\n}\n", fragmentShader), mR_InternalError);
 
   mERROR_CHECK(mSharedPointer_Allocate(&pSpriteBatch->shader, nullptr, (std::function<void(mShader *)>)[](mShader *pData) {mShader_Destroy(pData);}, 1));
@@ -525,18 +525,15 @@ inline mFUNCTION(mSpriteBatch_Internal_SetAlphaBlending, mPtr<mSpriteBatch<Args.
     break;
 
   case mSB_AM_Additive:
-    mERROR_CHECK(mRenderParams_SetBlendingEnabled(true));
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+    mERROR_CHECK(mRenderParams_SetAlphaBlendFunc(mRP_BF_Additive));
     break;
 
   case mSB_AM_AlphaBlend:
-    mERROR_CHECK(mRenderParams_SetBlendingEnabled(true));
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    mERROR_CHECK(mRenderParams_SetAlphaBlendFunc(mRP_BF_AlphaBlend));
     break;
 
   case mSB_AM_Premultiplied:
-    mERROR_CHECK(mRenderParams_SetBlendingEnabled(true));
-    glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+    mERROR_CHECK(mRenderParams_SetAlphaBlendFunc(mRP_BF_Premultiplied));
     break;
 
   default:
@@ -747,7 +744,7 @@ inline mFUNCTION(mSpriteBatch_Internal_RenderObject_Render, mSpriteBatch_Interna
   mERROR_CHECK(mShader_SetUniform(spriteBatch->shader, "screenSize0", mRenderParams_CurrentRenderResolutionF));
   mERROR_CHECK(mShader_SetUniform(spriteBatch->shader, "scale0", renderObject.size));
   mERROR_CHECK(mShader_SetUniform(spriteBatch->shader, "startOffset0", renderObject.position));
-
+  
   // Set uniforms.
   mERROR_CHECK(mForwardTuple(mSpriteBatch_Internal_RenderObject_Render_Unpacker<Args...>::Unpack, *spriteBatch->shader.GetPointer(), renderObject.args));
 
