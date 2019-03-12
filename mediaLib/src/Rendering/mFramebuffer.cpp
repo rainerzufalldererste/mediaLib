@@ -1,6 +1,8 @@
 #include "mFramebuffer.h"
 #include "mScreenQuad.h"
 
+//#define DEBUG_FRAMBUFFER_CREATION
+
 #if defined (mRENDERER_OPENGL)
 GLuint mFrameBuffer_ActiveFrameBufferHandle = 0;
 #endif
@@ -142,7 +144,7 @@ mFUNCTION(mFramebuffer_SetResolution, mPtr<mFramebuffer> &framebuffer, const mVe
   framebuffer->size = size;
   glBindTexture(GL_TEXTURE_2D, framebuffer->texColourBuffer);
 
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, (GLsizei)size.x, (GLsizei)size.y, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)size.x, (GLsizei)size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -255,6 +257,7 @@ mFUNCTION(mFramebuffer_Create_Internal, mFramebuffer *pFramebuffer, const mVec2s
   pFramebuffer->size = size;
   pFramebuffer->textureUnit = (size_t)-1;
 
+#ifdef mRENDERER_OPENGL
   glGenFramebuffers(1, &pFramebuffer->frameBufferHandle);
   glBindFramebuffer(GL_FRAMEBUFFER, pFramebuffer->frameBufferHandle);
   glGenTextures(1, &pFramebuffer->texColourBuffer);
@@ -271,6 +274,11 @@ mFUNCTION(mFramebuffer_Create_Internal, mFramebuffer *pFramebuffer, const mVec2s
   glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, (GLsizei)size.x, (GLsizei)size.y);
 
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
+#endif
+
+#ifdef DEBUG_FRAMBUFFER_CREATION
+  mPRINT_DEBUG("Created Framebuffer %" PRIu64 " with texture %" PRIu64 ".\n", (uint64_t)pFramebuffer->frameBufferHandle, (uint64_t)pFramebuffer->texColourBuffer);
+#endif
 
   mGL_ERROR_CHECK();
 
