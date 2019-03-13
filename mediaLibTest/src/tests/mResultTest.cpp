@@ -28,6 +28,7 @@ mTEST(mResult, TestToString)
     "mR_NotSupported",
     "mR_ResourceAlreadyExists",
     "mR_IOFailure",
+    "mR_InsufficientPrivileges"
   };
 
   const char invalidResult[] = "<Unknown mResult>";

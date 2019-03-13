@@ -1,10 +1,14 @@
 #include "mSystemDialogue.h"
 #include "mSoftwareWindow.h"
 #include "mHardwareWindow.h"
+
 #include "SDL_syswm.h"
+
+#include <shlobj.h>
 
 mFUNCTION(mSystemDialogue_OpenFile_Internal, HWND window, const mString &headlineString, mPtr<mQueue<mKeyValuePair<mString, mString>>> &fileTypeExtentionPairs, OUT bool *pCanceled, OUT mString *pFileName);
 mFUNCTION(mSystemDialogue_OpenFile_SdlWindowInternal, SDL_Window *pWindow, const mString &headlineString, mPtr<mQueue<mKeyValuePair<mString, mString>>> &fileTypeExtentionPairs, OUT bool *pCanceled, OUT mString *pFileName);
+mFUNCTION(mSystemDialogue_SelectDirectory_SdlWindowInternal, SDL_Window *pWindow, const mString &headlineString, OUT OPTIONAL bool *pCanceled, OUT mString *pSelectedDirectory);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -41,6 +45,34 @@ mFUNCTION(mSystemDialogue_OpenFile, mPtr<mHardwareWindow> &window, const mString
   mERROR_CHECK(mHardwareWindow_GetSdlWindowPtr(window, &pSdlWindow));
 
   mERROR_CHECK(mSystemDialogue_OpenFile_SdlWindowInternal(pSdlWindow, headlineString, fileTypeNameExtentionPairs, pCanceled, pOpenedFile));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mSystemDialogue_SelectDirectory, mPtr<mSoftwareWindow> &window, const mString &headlineString, OUT OPTIONAL bool *pCanceled, OUT mString *pSelectedDirectory)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(window == nullptr, mR_ArgumentNull);
+
+  SDL_Window *pSdlWindow;
+  mERROR_CHECK(mSoftwareWindow_GetSdlWindowPtr(window, &pSdlWindow));
+
+  mERROR_CHECK(mSystemDialogue_SelectDirectory_SdlWindowInternal(pSdlWindow, headlineString, pCanceled, pSelectedDirectory));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mSystemDialogue_SelectDirectory, mPtr<mHardwareWindow> &window, const mString &headlineString, OUT OPTIONAL bool *pCanceled, OUT mString *pSelectedDirectory)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(window == nullptr, mR_ArgumentNull);
+
+  SDL_Window *pSdlWindow;
+  mERROR_CHECK(mHardwareWindow_GetSdlWindowPtr(window, &pSdlWindow));
+
+  mERROR_CHECK(mSystemDialogue_SelectDirectory_SdlWindowInternal(pSdlWindow, headlineString, pCanceled, pSelectedDirectory));
 
   mRETURN_SUCCESS();
 }
@@ -104,7 +136,7 @@ mFUNCTION(mSystemDialogue_OpenFile_Internal, HWND window, const mString &headlin
   std::wstring headline;
   mERROR_CHECK(mString_ToWideString(headlineString, &headline));
 
-  wchar_t fileName[256] = { 0 };
+  wchar_t fileName[MAX_PATH] = { 0 };
 
   OPENFILENAMEW dialogueOptions;
   mMemset(&dialogueOptions, 1);
@@ -129,6 +161,65 @@ mFUNCTION(mSystemDialogue_OpenFile_Internal, HWND window, const mString &headlin
 
   if (result != 0)
     mERROR_CHECK(mString_Create(pFileName, fileName, mARRAYSIZE(fileName)));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mSystemDialogue_SelectDirectory_SdlWindowInternal, SDL_Window *pWindow, const mString &headlineString, OUT OPTIONAL bool *pCanceled, OUT mString *pSelectedDirectory)
+{
+  mFUNCTION_SETUP();
+
+  SDL_SysWMinfo wmInfo;
+  SDL_VERSION(&wmInfo.version);
+  mERROR_IF(SDL_FALSE == SDL_GetWindowWMInfo(pWindow, &wmInfo), mR_NotSupported);
+
+  HWND hwnd = wmInfo.info.win.window;
+  mERROR_IF(hwnd == nullptr, mR_NotSupported);
+
+  std::wstring headline;
+  mERROR_CHECK(mString_ToWideString(headlineString, &headline));
+
+  wchar_t folderName[MAX_PATH] = { 0 };
+
+  BROWSEINFOW browseWindowOptions;
+  mERROR_CHECK(mZeroMemory(&browseWindowOptions));
+
+  browseWindowOptions.hwndOwner = hwnd;
+  browseWindowOptions.lpszTitle = (wchar_t *)headline.c_str();
+  browseWindowOptions.pszDisplayName = folderName;
+  browseWindowOptions.ulFlags = BIF_VALIDATE | BIF_USENEWUI | BIF_RETURNONLYFSDIRS;
+
+  const PIDLIST_ABSOLUTE result = SHBrowseForFolderW(&browseWindowOptions);
+  
+  // Free memory used.
+  mDEFER(
+    if (result != nullptr)
+    {
+      IMalloc *pImalloc = nullptr;
+
+      if (SUCCEEDED(SHGetMalloc(&pImalloc)))
+      {
+        pImalloc->Free(result);
+        pImalloc->Release();
+      }
+    }
+  );
+
+  const DWORD error = GetLastError();
+
+  mERROR_IF(error != NO_ERROR, mR_InternalError);
+
+  if (pCanceled != nullptr)
+    *pCanceled = (result == nullptr);
+
+  
+  if (result != nullptr)
+  {
+    wchar_t path[MAX_PATH] = { 0 };
+
+    mERROR_IF(FALSE == SHGetPathFromIDListW(result, path), mR_InternalError);
+    mERROR_CHECK(mString_Create(pSelectedDirectory, path, mARRAYSIZE(path)));
+  }
 
   mRETURN_SUCCESS();
 }
