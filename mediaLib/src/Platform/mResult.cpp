@@ -151,6 +151,10 @@ mFUNCTION(mResult_ToString, const mResult result, OUT mString *pString)
     *pString = "mR_IOFailure";
     break;
 
+  case mR_InsufficientPrivileges:
+    *pString = "mR_InsufficientPrivileges";
+    break;
+
   default:
     *pString = "<Unknown mResult>";
     break;

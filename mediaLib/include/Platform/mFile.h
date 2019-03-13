@@ -76,6 +76,7 @@ struct mFileInfo
 
 mFUNCTION(mFile_GetDirectoryContents, const mString &directoryPath, OUT mPtr<mQueue<mFileInfo>> *pFiles, IN mAllocator *pAllocator);
 mFUNCTION(mFile_GetDirectoryContents, const mString &directoryPath, const bool recursive, OUT mPtr<mQueue<mFileInfo>> *pFiles, IN mAllocator *pAllocator);
+mFUNCTION(mFile_GetInfo, const mString &filename, OUT mFileInfo *pFileInfo);
 
 enum mDriveType
 {

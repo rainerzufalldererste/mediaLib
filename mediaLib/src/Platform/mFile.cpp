@@ -10,6 +10,7 @@
 HRESULT mFile_CreateAndInitializeFileOperation_Internal(REFIID riid, void **ppFileOperation);
 mFUNCTION(mFile_GetKnownPath_Internal, OUT mString *pString, const GUID &guid);
 mFUNCTION(mFileInfo_FromFindDataWStruct_Internal, IN_OUT mFileInfo *pFileInfo, IN const WIN32_FIND_DATAW *pFileData, IN mAllocator *pAllocator);
+mFUNCTION(mFileInfo_FromByHandleFileInformationStruct_Internal, IN_OUT mFileInfo *pFileInfo, IN const BY_HANDLE_FILE_INFORMATION *pFileData);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -645,6 +646,46 @@ mFUNCTION(mFile_GetDirectoryContents, const mString &directoryPath, const bool r
   mRETURN_SUCCESS();
 }
 
+mFUNCTION(mFile_GetInfo, const mString &filename, OUT mFileInfo *pFileInfo)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pFileInfo == nullptr, mR_ArgumentNull);
+  mERROR_IF(filename.hasFailed, mR_InvalidParameter);
+
+  std::wstring wfilename;
+  mERROR_CHECK(mString_ToWideString(filename, &wfilename));
+
+  HANDLE fileHandle = CreateFileW(wfilename.c_str(), STANDARD_RIGHTS_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+
+  if (fileHandle == INVALID_HANDLE_VALUE)
+  {
+    const DWORD error = GetLastError();
+
+    switch (error)
+    {
+    case ERROR_FILE_NOT_FOUND:
+      mRETURN_RESULT(mR_ResourceNotFound);
+
+    case ERROR_ACCESS_DENIED:
+      mRETURN_RESULT(mR_InsufficientPrivileges);
+
+    default:
+      mRETURN_RESULT(mR_InternalError);
+    }
+  }
+
+  mDEFER(CloseHandle(fileHandle));
+
+  BY_HANDLE_FILE_INFORMATION info;
+  mERROR_IF(0 == GetFileInformationByHandle(fileHandle, &info), mR_InternalError); // Sets `GetLastError()`.
+
+  mERROR_CHECK(mString_Create(&pFileInfo->name, filename));
+  mERROR_CHECK(mFileInfo_FromByHandleFileInformationStruct_Internal(pFileInfo, &info));
+
+  mRETURN_SUCCESS();
+}
+
 mFUNCTION(mFile_GetDrives, OUT mPtr<mQueue<mDriveInfo>> *pDrives, IN mAllocator *pAllocator)
 {
   mFUNCTION_SETUP();
@@ -814,6 +855,23 @@ mFUNCTION(mFileInfo_FromFindDataWStruct_Internal, IN_OUT mFileInfo *pFileInfo, I
   mFUNCTION_SETUP();
   
   mERROR_CHECK(mString_Create(&pFileInfo->name, (wchar_t *)pFileData->cFileName, mARRAYSIZE(pFileData->cFileName), pAllocator));
+  pFileInfo->size = ((size_t)pFileData->nFileSizeHigh * (size_t)(MAXDWORD + 1ULL)) + (size_t)pFileData->nFileSizeLow;
+  pFileInfo->creationTimeStamp = ((size_t)pFileData->ftCreationTime.dwHighDateTime * (size_t)(MAXDWORD + 1ULL)) + (size_t)pFileData->ftCreationTime.dwLowDateTime;
+  pFileInfo->lastAccessTimeStamp = ((size_t)pFileData->ftLastAccessTime.dwHighDateTime * (size_t)(MAXDWORD + 1ULL)) + (size_t)pFileData->ftLastAccessTime.dwLowDateTime;
+  pFileInfo->lastWriteTimeStamp = ((size_t)pFileData->ftLastWriteTime.dwHighDateTime * (size_t)(MAXDWORD + 1ULL)) + (size_t)pFileData->ftLastWriteTime.dwLowDateTime;
+  pFileInfo->isDirectory = !!(pFileData->dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY);
+  pFileInfo->isHidden = !!(pFileData->dwFileAttributes & FILE_ATTRIBUTE_HIDDEN);
+  pFileInfo->isOffline = !!(pFileData->dwFileAttributes & FILE_ATTRIBUTE_OFFLINE);
+  pFileInfo->isReadonly = !!(pFileData->dwFileAttributes & FILE_ATTRIBUTE_READONLY);
+  pFileInfo->isSystemResource = !!(pFileData->dwFileAttributes & (FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_DEVICE));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mFileInfo_FromByHandleFileInformationStruct_Internal, IN_OUT mFileInfo *pFileInfo, IN const BY_HANDLE_FILE_INFORMATION *pFileData)
+{
+  mFUNCTION_SETUP();
+
   pFileInfo->size = ((size_t)pFileData->nFileSizeHigh * (size_t)(MAXDWORD + 1ULL)) + (size_t)pFileData->nFileSizeLow;
   pFileInfo->creationTimeStamp = ((size_t)pFileData->ftCreationTime.dwHighDateTime * (size_t)(MAXDWORD + 1ULL)) + (size_t)pFileData->ftCreationTime.dwLowDateTime;
   pFileInfo->lastAccessTimeStamp = ((size_t)pFileData->ftLastAccessTime.dwHighDateTime * (size_t)(MAXDWORD + 1ULL)) + (size_t)pFileData->ftLastAccessTime.dwLowDateTime;

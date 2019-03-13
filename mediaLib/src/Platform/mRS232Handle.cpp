@@ -38,7 +38,22 @@ mFUNCTION(mRS232Handle_Create, OUT mRS232Handle **ppHandle, IN mAllocator *pAllo
   // Open port.
   pHandle->handle = CreateFileA(name, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 
-  mERROR_IF(pHandle->handle == INVALID_HANDLE_VALUE, mR_InternalError);
+  if (pHandle->handle == INVALID_HANDLE_VALUE)
+  {
+    const DWORD error = GetLastError();
+
+    switch (error)
+    {
+    case ERROR_FILE_NOT_FOUND:
+      mRETURN_RESULT(mR_ResourceNotFound);
+
+    case ERROR_ACCESS_DENIED:
+      mRETURN_RESULT(mR_InsufficientPrivileges);
+
+    default:
+      mRETURN_RESULT(mR_InternalError);
+    }
+  }
 
   // Set default timeouts.
   mERROR_CHECK(mRS232Handle_SetTimeouts(pHandle));
