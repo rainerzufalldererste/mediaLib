@@ -1,10 +1,16 @@
 #include "mediaLib.h"
 
-const char *g_mResult_lastErrorFile = nullptr;
-size_t g_mResult_lastErrorLine = 0;
-mResult g_mResult_lastErrorResult = mR_Success;
+thread_local const char *g_mResult_lastErrorFile = nullptr;
+thread_local size_t g_mResult_lastErrorLine = 0;
+thread_local mResult g_mResult_lastErrorResult = mR_Success;
 
-bool g_mResult_breakOnError = false;
+#if !defined(GIT_BUILD)
+bool g_mResult_breakOnError_default = false;
+thread_local bool g_mResult_breakOnError = g_mResult_breakOnError_default;
+#endif
+
+bool g_mResult_silent_default = false;
+thread_local bool g_mResult_silent = g_mResult_silent_default;
 
 void mDebugOut(const char *format, ...)
 {
@@ -28,6 +34,9 @@ void mDebugOut(const char *format, ...)
 
 void mPrintError(char *function, char *file, const int32_t line, const mResult error, const char *expression, const char *commitSHA /* = nullptr */)
 {
+  if (g_mResult_silent)
+    return;
+
 #ifndef GIT_BUILD
   mString errorName;
 #endif
