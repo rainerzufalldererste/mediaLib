@@ -25,12 +25,12 @@ static mINLINE void _ReleaseReference(T **pData)
   }
 }
 
-mFUNCTION(mMediaFileWriter_Create_Internal, OUT mMediaFileWriter *pMediaFileWriter, IN mAllocator *pAllocator, const std::wstring &filename, IN mMediaFileInformation *pMediaFileInformation);
+mFUNCTION(mMediaFileWriter_Create_Internal, OUT mMediaFileWriter *pMediaFileWriter, IN mAllocator *pAllocator, IN const wchar_t *filename, IN mMediaFileInformation *pMediaFileInformation);
 mFUNCTION(mMediaFileWriter_Destroy_Internal, IN_OUT mMediaFileWriter *pMediaFileWriter);
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mMediaFileWriter_Create, OUT mPtr<mMediaFileWriter> *pMediaFileWriter, IN mAllocator *pAllocator, const std::wstring &filename, IN mMediaFileInformation *pMediaFileInformation)
+mFUNCTION(mMediaFileWriter_Create, OUT mPtr<mMediaFileWriter> *pMediaFileWriter, IN mAllocator *pAllocator, IN const wchar_t *filename, IN mMediaFileInformation *pMediaFileInformation)
 {
   mFUNCTION_SETUP();
 
@@ -143,7 +143,7 @@ mFUNCTION(mMediaFileWriter_Finalize, mPtr<mMediaFileWriter> &mediaFileWriter)
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mMediaFileWriter_Create_Internal, OUT mMediaFileWriter *pMediaFileWriter, IN mAllocator *pAllocator, const std::wstring &filename, IN mMediaFileInformation *pMediaFileInformation)
+mFUNCTION(mMediaFileWriter_Create_Internal, OUT mMediaFileWriter *pMediaFileWriter, IN mAllocator *pAllocator, IN const wchar_t *filename, IN mMediaFileInformation *pMediaFileInformation)
 {
   mFUNCTION_SETUP();
 
@@ -161,7 +161,7 @@ mFUNCTION(mMediaFileWriter_Create_Internal, OUT mMediaFileWriter *pMediaFileWrit
   HRESULT hr = S_OK;
   mUnused(hr);
 
-  mERROR_IF(FAILED(hr = MFCreateSinkWriterFromURL(filename.c_str(), nullptr, nullptr, &pMediaFileWriter->pSinkWriter)), mR_InternalError);
+  mERROR_IF(FAILED(hr = MFCreateSinkWriterFromURL(filename, nullptr, nullptr, &pMediaFileWriter->pSinkWriter)), mR_InternalError);
 
   IMFMediaType *pVideoOutputMediaType;
   mDEFER_CALL(&pVideoOutputMediaType, _ReleaseReference);

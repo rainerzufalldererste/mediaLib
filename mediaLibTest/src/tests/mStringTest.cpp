@@ -554,13 +554,14 @@ mTEST(mString, TestWstringCompare)
   mDEFER_CALL(&string, mString_Destroy);
   mTEST_ASSERT_SUCCESS(mString_Create(&string, "🌵🦎🎅testמⴲx", pAllocator));
 
-  std::wstring wstring0;
-  std::wstring wstring1;
+  wchar_t wstring[1024];
+  mTEST_ASSERT_SUCCESS(mString_ToWideString(string, wstring, mARRAYSIZE(wstring)));
 
-  mTEST_ASSERT_SUCCESS(mString_ToWideString(string, &wstring0));
-  wstring1 = (std::wstring)string;
+  mString string2;
+  mDEFER_CALL(&string2, mString_Destroy);
+  mTEST_ASSERT_SUCCESS(mString_Create(&string2, wstring, pAllocator));
 
-  mTEST_ASSERT_EQUAL(wstring0.size(), wstring1.size());
+  mTEST_ASSERT_EQUAL(string, string2);
 
   mTEST_ALLOCATOR_ZERO_CHECK();
 }

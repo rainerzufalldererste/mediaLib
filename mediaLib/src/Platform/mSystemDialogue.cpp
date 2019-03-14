@@ -123,23 +123,25 @@ mFUNCTION(mSystemDialogue_OpenFile_Internal, HWND window, const mString &headlin
     mKeyValuePair<mString, mString> *pKVPair = nullptr;
     mERROR_CHECK(mQueue_PointerAt(fileTypeExtentionPairs, i, &pKVPair));
 
-    std::wstring keyw, valuew;
-    mERROR_CHECK(mString_ToWideString(pKVPair->key, &keyw));
-    mERROR_CHECK(mString_ToWideString(pKVPair->value, &valuew));
+    wchar_t keyw[1024], valuew[1024];
+    size_t keywlength, valuewlength;
 
-    mMemcpy(pExtentions + offset, keyw.c_str(), keyw.length());
-    offset += keyw.length() + 1;
-    mMemcpy(pExtentions + offset, valuew.c_str(), valuew.length());
-    offset += valuew.length() + 1;
+    mERROR_CHECK(mString_ToWideString(pKVPair->key, keyw, mARRAYSIZE(keyw), &keywlength));
+    mERROR_CHECK(mString_ToWideString(pKVPair->value, valuew, mARRAYSIZE(valuew), &valuewlength));
+
+    mMemcpy(pExtentions + offset, keyw, keywlength);
+    offset += keywlength + 1;
+    mMemcpy(pExtentions + offset, valuew, valuewlength);
+    offset += valuewlength + 1;
   }
 
-  std::wstring headline;
-  mERROR_CHECK(mString_ToWideString(headlineString, &headline));
+  wchar_t headline[2048];
+  mERROR_CHECK(mString_ToWideString(headlineString, headline, mARRAYSIZE(headline)));
 
   wchar_t fileName[MAX_PATH] = { 0 };
 
   OPENFILENAMEW dialogueOptions;
-  mMemset(&dialogueOptions, 1);
+  mZeroMemory(&dialogueOptions, 1);
 
   dialogueOptions.lStructSize = sizeof(dialogueOptions);
   dialogueOptions.hwndOwner = window;
@@ -148,12 +150,11 @@ mFUNCTION(mSystemDialogue_OpenFile_Internal, HWND window, const mString &headlin
   dialogueOptions.nFileExtension = 0;
   dialogueOptions.lpstrFilter = pExtentions;
   dialogueOptions.nFilterIndex = 1;
-  dialogueOptions.lpstrTitle = headline.c_str();
+  dialogueOptions.lpstrTitle = headline;
   dialogueOptions.Flags = OFN_ENABLESIZING | OFN_EXPLORER | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR;
 
   const BOOL result = GetOpenFileNameW(&dialogueOptions);
-
-  DWORD error = GetLastError();
+  const DWORD error = GetLastError();
 
   mERROR_IF(error != NO_ERROR, mR_InternalError);
 
@@ -176,8 +177,8 @@ mFUNCTION(mSystemDialogue_SelectDirectory_SdlWindowInternal, SDL_Window *pWindow
   HWND hwnd = wmInfo.info.win.window;
   mERROR_IF(hwnd == nullptr, mR_NotSupported);
 
-  std::wstring headline;
-  mERROR_CHECK(mString_ToWideString(headlineString, &headline));
+  wchar_t headline[1024 * 4];
+  mERROR_CHECK(mString_ToWideString(headlineString, headline, mARRAYSIZE(headline)));
 
   wchar_t folderName[MAX_PATH] = { 0 };
 
@@ -185,7 +186,7 @@ mFUNCTION(mSystemDialogue_SelectDirectory_SdlWindowInternal, SDL_Window *pWindow
   mERROR_CHECK(mZeroMemory(&browseWindowOptions));
 
   browseWindowOptions.hwndOwner = hwnd;
-  browseWindowOptions.lpszTitle = (wchar_t *)headline.c_str();
+  browseWindowOptions.lpszTitle = headline;
   browseWindowOptions.pszDisplayName = folderName;
   browseWindowOptions.ulFlags = BIF_VALIDATE | BIF_USENEWUI | BIF_RETURNONLYFSDIRS;
 

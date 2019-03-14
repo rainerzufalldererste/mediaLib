@@ -20,21 +20,21 @@ mFUNCTION(mFile_Exists, const mString &filename, OUT bool *pExists)
 
   mERROR_IF(pExists == nullptr, mR_ArgumentNull);
 
-  std::wstring wfilename;
-  mERROR_CHECK(mString_ToWideString(filename, &wfilename));
+  wchar_t wfilename[MAX_PATH];
+  mERROR_CHECK(mString_ToWideString(filename, wfilename, mARRAYSIZE(wfilename)));
 
   mERROR_CHECK(mFile_Exists(wfilename, pExists));
 
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mFile_Exists, const std::wstring &filename, OUT bool *pExists)
+mFUNCTION(mFile_Exists, IN const wchar_t *filename, OUT bool *pExists)
 {
   mFUNCTION_SETUP();
 
   mERROR_IF(pExists == nullptr, mR_ArgumentNull);
 
-  *pExists = (PathFileExistsW(filename.c_str()) != FALSE);
+  *pExists = (PathFileExistsW(filename) != FALSE);
 
   mRETURN_SUCCESS();
 }
@@ -48,29 +48,11 @@ mFUNCTION(mFile_ReadAllBytes, const mString &filename, IN OPTIONAL mAllocator *p
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mFile_ReadAllBytes, const std::wstring &filename, IN OPTIONAL mAllocator *pAllocator, OUT mArray<uint8_t> *pBytes)
+mFUNCTION(mFile_ReadAllBytes, IN const wchar_t *filename, IN OPTIONAL mAllocator *pAllocator, OUT mArray<uint8_t> *pBytes)
 {
   mFUNCTION_SETUP();
 
   mERROR_CHECK(mFile_ReadAllItems(filename, pAllocator, pBytes));
-
-  mRETURN_SUCCESS();
-}
-
-mFUNCTION(mFile_ReadAllText, const std::wstring &filename, IN OPTIONAL mAllocator *pAllocator, OUT std::string *pText, const mFile_Encoding /* encoding = mF_E_UTF8 */)
-{
-  mFUNCTION_SETUP();
-
-  mERROR_IF(pText == nullptr, mR_ArgumentNull);
-
-  size_t count = 0;
-  char *text = nullptr;
-
-  mDEFER(mAllocator_FreePtr(nullptr, &text));
-  mERROR_CHECK(mFile_ReadRaw(filename, &text, pAllocator, &count));
-  text[count] = '\0';
-  *pText = std::string(text);
-  mERROR_CHECK(mAllocator_FreePtr(pAllocator, &text));
 
   mRETURN_SUCCESS();
 }
@@ -81,14 +63,14 @@ mFUNCTION(mFile_ReadAllText, const mString &filename, IN OPTIONAL mAllocator *pA
 
   mERROR_IF(pText == nullptr, mR_ArgumentNull);
 
-  std::wstring wstring;
-  mERROR_CHECK(mString_ToWideString(filename, &wstring));
+  wchar_t wfilename[MAX_PATH];
+  mERROR_CHECK(mString_ToWideString(filename, wfilename, mARRAYSIZE(wfilename)));
 
   size_t count = 0;
   char *text = nullptr;
 
   mDEFER(mAllocator_FreePtr(nullptr, &text));
-  mERROR_CHECK(mFile_ReadRaw(wstring, &text, pAllocator, &count));
+  mERROR_CHECK(mFile_ReadRaw(wfilename, &text, pAllocator, &count));
 
   mERROR_IF(count == 0, mR_ResourceNotFound);
 
@@ -99,7 +81,7 @@ mFUNCTION(mFile_ReadAllText, const mString &filename, IN OPTIONAL mAllocator *pA
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mFile_WriteAllBytes, const std::wstring &filename, mArray<uint8_t> &bytes)
+mFUNCTION(mFile_WriteAllBytes, IN const wchar_t *filename, mArray<uint8_t> &bytes)
 {
   mFUNCTION_SETUP();
 
@@ -117,23 +99,14 @@ mFUNCTION(mFile_WriteAllBytes, const mString &filename, mArray<uint8_t> &bytes)
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mFile_WriteAllText, const std::wstring &filename, const std::string &text, const mFile_Encoding /* encoding = mF_E_UTF8 */)
-{
-  mFUNCTION_SETUP();
-
-  mERROR_CHECK(mFile_WriteRaw(filename, text.c_str(), text.length()));
-
-  mRETURN_SUCCESS();
-}
-
 mFUNCTION(mFile_WriteAllText, const mString &filename, const mString &text, const mFile_Encoding /* encoding = mF_E_UTF8 */)
 {
   mFUNCTION_SETUP();
 
-  std::wstring wstring;
-  mERROR_CHECK(mString_ToWideString(filename, &wstring));
+  wchar_t wfilename[MAX_PATH];
+  mERROR_CHECK(mString_ToWideString(filename, wfilename, mARRAYSIZE(wfilename)));
 
-  mERROR_CHECK(mFile_WriteRaw(wstring, text.c_str(), text.bytes - 1));
+  mERROR_CHECK(mFile_WriteRaw(wfilename, text.c_str(), text.bytes - 1));
 
   mRETURN_SUCCESS();
 }
@@ -150,10 +123,10 @@ mFUNCTION(mFile_CreateDirectory, const mString &folderPath)
   mString pathWithoutLastSlash;
   mERROR_CHECK(mString_Substring(path, &pathWithoutLastSlash, 0, path.Count() - 2));
 
-  std::wstring directoryName;
-  mERROR_CHECK(mString_ToWideString(path, &directoryName));
+  wchar_t wdirectoryName[MAX_PATH];
+  mERROR_CHECK(mString_ToWideString(path, wdirectoryName, mARRAYSIZE(wdirectoryName)));
 
-  const int errorCode = SHCreateDirectoryExW(NULL, directoryName.c_str(), NULL);
+  const int errorCode = SHCreateDirectoryExW(NULL, wdirectoryName, NULL);
 
   switch (errorCode)
   {
@@ -194,13 +167,13 @@ mFUNCTION(mFile_DeleteFolder, const mString &folderPath)
   mString pathWithoutLastSlash;
   mERROR_CHECK(mString_Substring(path, &pathWithoutLastSlash, 0, path.Count() - 2));
 
-  std::wstring directoryName;
-  mERROR_CHECK(mString_ToWideString(pathWithoutLastSlash, &directoryName));
+  wchar_t wdirectoryName[MAX_PATH];
+  mERROR_CHECK(mString_ToWideString(path, wdirectoryName, mARRAYSIZE(wdirectoryName)));
 
   HRESULT hr = S_OK;
 
-  wchar_t absolutePath[1024 * 4];
-  const DWORD length = GetFullPathNameW(directoryName.c_str(), mARRAYSIZE(absolutePath), absolutePath, nullptr);
+  wchar_t absolutePath[MAX_PATH];
+  const DWORD length = GetFullPathNameW(wdirectoryName, mARRAYSIZE(absolutePath), absolutePath, nullptr);
   mUnused(length);
 
   IShellItem *pItem = nullptr;
@@ -221,13 +194,13 @@ mFUNCTION(mFile_Copy, const mString &destinationFileName, const mString &sourceF
 {
   mFUNCTION_SETUP();
 
-  std::wstring source;
-  mERROR_CHECK(mString_ToWideString(sourceFileName, &source));
+  wchar_t source[MAX_PATH];
+  mERROR_CHECK(mString_ToWideString(sourceFileName, source, mARRAYSIZE(source)));
 
-  std::wstring target;
-  mERROR_CHECK(mString_ToWideString(destinationFileName, &target));
+  wchar_t target[MAX_PATH];
+  mERROR_CHECK(mString_ToWideString(destinationFileName, target, mARRAYSIZE(source)));
 
-  const BOOL succeeded = CopyFileW(source.c_str(), target.c_str(), !overrideFileIfExistent);
+  const BOOL succeeded = CopyFileW(source, target, !overrideFileIfExistent);
   mERROR_IF(succeeded, mR_Success);
 
   const DWORD errorCode = GetLastError();
@@ -258,13 +231,13 @@ mFUNCTION(mFile_Move, const mString &destinationFileName, const mString &sourceF
     mERROR_CHECK(mFile_Delete(destinationFileName));
   }
 
-  std::wstring source;
-  mERROR_CHECK(mString_ToWideString(sourceFileName, &source));
+  wchar_t source[MAX_PATH];
+  mERROR_CHECK(mString_ToWideString(sourceFileName, source, mARRAYSIZE(source)));
 
-  std::wstring target;
-  mERROR_CHECK(mString_ToWideString(destinationFileName, &target));
+  wchar_t target[MAX_PATH];
+  mERROR_CHECK(mString_ToWideString(destinationFileName, target, mARRAYSIZE(source)));
 
-  const BOOL succeeded = MoveFileW(source.c_str(), target.c_str());
+  const BOOL succeeded = MoveFileW(source, target);
   mERROR_IF(succeeded, mR_Success);
 
   const DWORD errorCode = GetLastError();
@@ -273,14 +246,14 @@ mFUNCTION(mFile_Move, const mString &destinationFileName, const mString &sourceF
   mRETURN_RESULT(mR_Failure);
 }
 
-mFUNCTION(mFile_Delete, const mString &fileName)
+mFUNCTION(mFile_Delete, const mString &filename)
 {
   mFUNCTION_SETUP();
 
-  std::wstring wfile;
-  mERROR_CHECK(mString_ToWideString(fileName, &wfile));
+  wchar_t wfilename[MAX_PATH];
+  mERROR_CHECK(mString_ToWideString(filename, wfilename, mARRAYSIZE(wfilename)));
 
-  const BOOL succeeded = DeleteFileW(wfile.c_str());
+  const BOOL succeeded = DeleteFileW(wfilename);
   mERROR_IF(succeeded, mR_Success);
 
   const DWORD errorCode = GetLastError();
@@ -415,10 +388,10 @@ mFUNCTION(mFile_SetWorkingDirectory, const mString &workingDirectory)
 
   mERROR_IF(workingDirectory.hasFailed, mR_InvalidParameter);
 
-  std::wstring wPath;
-  mERROR_CHECK(mString_ToWideString(workingDirectory, &wPath));
+  wchar_t wPath[MAX_PATH];
+  mERROR_CHECK(mString_ToWideString(workingDirectory, wPath, mARRAYSIZE(wPath)));
 
-  if (!SetCurrentDirectoryW(wPath.c_str()))
+  if (!SetCurrentDirectoryW(wPath))
   {
     const DWORD error = GetLastError();
     mUnused(error);
@@ -538,11 +511,11 @@ mFUNCTION(mFile_GetDirectoryContents, const mString &directoryPath, OUT mPtr<mQu
 
   mERROR_CHECK(mString_Append(actualFolderPath, "*"));
 
-  std::wstring folderPath;
-  mERROR_CHECK(mString_ToWideString(actualFolderPath, &folderPath));
+  wchar_t folderPath[MAX_PATH];
+  mERROR_CHECK(mString_ToWideString(actualFolderPath, folderPath, mARRAYSIZE(folderPath)));
 
-  wchar_t absolutePath[1024 * 4];
-  const DWORD length = GetFullPathNameW(folderPath.c_str(), mARRAYSIZE(absolutePath), absolutePath, nullptr);
+  wchar_t absolutePath[MAX_PATH];
+  const DWORD length = GetFullPathNameW(folderPath, mARRAYSIZE(absolutePath), absolutePath, nullptr);
   mERROR_IF(length == 0, mR_InternalError);
 
   if (*pFiles == nullptr)
@@ -653,10 +626,10 @@ mFUNCTION(mFile_GetInfo, const mString &filename, OUT mFileInfo *pFileInfo)
   mERROR_IF(pFileInfo == nullptr, mR_ArgumentNull);
   mERROR_IF(filename.hasFailed, mR_InvalidParameter);
 
-  std::wstring wfilename;
-  mERROR_CHECK(mString_ToWideString(filename, &wfilename));
+  wchar_t wfilename[MAX_PATH];
+  mERROR_CHECK(mString_ToWideString(filename, wfilename, mARRAYSIZE(wfilename)));
 
-  HANDLE fileHandle = CreateFileW(wfilename.c_str(), STANDARD_RIGHTS_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+  HANDLE fileHandle = CreateFileW(wfilename, STANDARD_RIGHTS_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 
   if (fileHandle == INVALID_HANDLE_VALUE)
   {
@@ -694,7 +667,7 @@ mFUNCTION(mFile_GetDrives, OUT mPtr<mQueue<mDriveInfo>> *pDrives, IN mAllocator 
 
   mERROR_CHECK(mQueue_Create(pDrives, pAllocator));
 
-  wchar_t driveLabels[1024];
+  wchar_t driveLabels[MAX_PATH];
   const size_t length = GetLogicalDriveStringsW(mARRAYSIZE(driveLabels), driveLabels);
   
   if (length == 0 || length >= mARRAYSIZE(driveLabels))
@@ -771,11 +744,11 @@ mFUNCTION(mFile_GetAbsoluteDirectoryPath, OUT mString *pAbsolutePath, const mStr
   mString actualFolderPath;
   mERROR_CHECK(mString_ToDirectoryPath(&actualFolderPath, directoryPath));
 
-  std::wstring folderPath;
-  mERROR_CHECK(mString_ToWideString(actualFolderPath, &folderPath));
+  wchar_t folderPath[MAX_PATH];
+  mERROR_CHECK(mString_ToWideString(actualFolderPath, folderPath, mARRAYSIZE(folderPath)));
 
-  wchar_t absolutePath[1024 * 4];
-  const DWORD length = GetFullPathNameW(folderPath.c_str(), mARRAYSIZE(absolutePath), absolutePath, nullptr);
+  wchar_t absolutePath[MAX_PATH];
+  const DWORD length = GetFullPathNameW(folderPath, mARRAYSIZE(absolutePath), absolutePath, nullptr);
 
   mERROR_CHECK(mString_Create(pAbsolutePath, absolutePath, length + 1, directoryPath.pAllocator));
 
@@ -789,11 +762,11 @@ mFUNCTION(mFile_GetAbsoluteFilePath, OUT mString *pAbsolutePath, const mString &
   mERROR_IF(pAbsolutePath == nullptr, mR_ArgumentNull);
   mERROR_IF(filePath.hasFailed, mR_InvalidParameter);
 
-  std::wstring folderPath;
-  mERROR_CHECK(mString_ToWideString(filePath, &folderPath));
+  wchar_t wfilepath[MAX_PATH];
+  mERROR_CHECK(mString_ToWideString(filePath, wfilepath, mARRAYSIZE(wfilepath)));
 
-  wchar_t absolutePath[1024 * 4];
-  const DWORD length = GetFullPathNameW(folderPath.c_str(), mARRAYSIZE(absolutePath), absolutePath, nullptr);
+  wchar_t absolutePath[MAX_PATH];
+  const DWORD length = GetFullPathNameW(wfilepath, mARRAYSIZE(absolutePath), absolutePath, nullptr);
 
   mERROR_CHECK(mString_Create(pAbsolutePath, absolutePath, length + 1, filePath.pAllocator));
 

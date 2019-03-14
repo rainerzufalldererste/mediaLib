@@ -1,7 +1,7 @@
 #include "mString.h"
 #include "utf8proc.h"
 
-mchar_t mToChar(const char *c, const size_t size)
+mchar_t mToChar(IN const char *c, const size_t size)
 {
   utf8proc_int32_t codePoint;
   utf8proc_iterate((uint8_t *)c, size, &codePoint);
@@ -20,7 +20,7 @@ mString::mString() :
   hasFailed(false)
 { }
 
-mString::mString(const char *text, const size_t size, IN OPTIONAL mAllocator *pAllocator) :
+mString::mString(IN const char *text, const size_t size, IN OPTIONAL mAllocator *pAllocator) :
   text(nullptr),
   pAllocator(nullptr),
   bytes(0),
@@ -39,7 +39,7 @@ epilogue:
   hasFailed = true;
 }
 
-mString::mString(const char *text, IN OPTIONAL mAllocator *pAllocator) : mString(text, strlen(text) + 1, pAllocator)
+mString::mString(IN const char *text, IN OPTIONAL mAllocator *pAllocator) : mString(text, strlen(text) + 1, pAllocator)
 { }
 
 mString::mString(const wchar_t *text, const size_t size, IN OPTIONAL mAllocator *pAllocator /* = nullptr */) : mString()
@@ -250,23 +250,6 @@ mString::operator std::string() const
   return std::string(text);
 }
 
-mString::operator std::wstring() const
-{
-  wchar_t *wtext = nullptr;
-
-  mResult result;
-
-  mDEFER(mAllocator_FreePtr(&mDefaultTempAllocator, &wtext));
-  mERROR_CHECK_GOTO(mAllocator_AllocateZero(&mDefaultTempAllocator, &wtext, bytes * 2), result, epilogue);
-
-  mERROR_IF_GOTO(0 == MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, text, (int)bytes, wtext, (int)bytes * 2), mR_InternalError, result, epilogue);
-
-  return std::wstring(wtext);
-
-epilogue:
-  return std::wstring();
-}
-
 mUtf8StringIterator mString::begin() const
 {
   return mUtf8StringIterator(text, bytes);
@@ -282,7 +265,7 @@ const char *mString::c_str() const
   return text;
 }
 
-mFUNCTION(mString_Create, OUT mString *pString, const char *text, IN OPTIONAL mAllocator *pAllocator /* = nullptr */)
+mFUNCTION(mString_Create, OUT mString *pString, IN const char *text, IN OPTIONAL mAllocator *pAllocator /* = nullptr */)
 {
   mFUNCTION_SETUP();
 
@@ -317,7 +300,7 @@ mFUNCTION(mString_Create, OUT mString *pString, const char *text, IN OPTIONAL mA
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mString_Create, OUT mString *pString, const char *text, size_t size, IN OPTIONAL mAllocator *pAllocator)
+mFUNCTION(mString_Create, OUT mString *pString, IN const char *text, size_t size, IN OPTIONAL mAllocator *pAllocator)
 {
   mFUNCTION_SETUP();
 
@@ -655,29 +638,43 @@ mFUNCTION(mString_GetCount, const mString &string, OUT size_t *pLength)
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mString_ToWideString, const mString &string, std::wstring *pWideString)
-{
-  mFUNCTION_SETUP();
-
-  wchar_t *wtext = nullptr;
-  const size_t capacity = string.bytes * 2;
-
-  mDEFER(mAllocator_FreePtr(&mDefaultTempAllocator, &wtext));
-  mERROR_CHECK(mAllocator_AllocateZero(&mDefaultTempAllocator, &wtext, capacity));
-
-  mERROR_IF(0 == MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, string.text, (int)string.bytes, wtext, (int)capacity), mR_InternalError);
-
-  *pWideString = std::wstring(wtext);
-
-  mRETURN_SUCCESS();
-}
-
-mFUNCTION(mString_ToWideString, const mString &string, wchar_t *pWideString, const size_t bufferSize)
+mFUNCTION(mString_ToWideString, const mString &string, OUT wchar_t *pWideString, const size_t bufferSize)
 {
   mFUNCTION_SETUP();
 
   mERROR_IF(pWideString == nullptr, mR_ArgumentNull);
-  mERROR_IF(0 == MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, string.text, (int)string.bytes, pWideString, (int)bufferSize), mR_InternalError);
+  
+  if (0 == MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, string.text, (int)string.bytes, pWideString, (int)bufferSize))
+  {
+    const DWORD error = GetLastError();
+
+    switch (error)
+    {
+    case ERROR_INSUFFICIENT_BUFFER:
+      mRETURN_RESULT(mR_IndexOutOfBounds);
+
+    case ERROR_NO_UNICODE_TRANSLATION:
+      mRETURN_RESULT(mR_InvalidParameter);
+
+    case ERROR_INVALID_FLAGS:
+    case ERROR_INVALID_PARAMETER:
+    default:
+      mRETURN_RESULT(mR_InternalError);
+    }
+  }
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mString_ToWideString, const mString &string, OUT wchar_t *pWideString, const size_t bufferSize, OUT size_t *pWideStringLength)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pWideStringLength == nullptr, mR_ArgumentNull);
+
+  mERROR_CHECK(mString_ToWideString(string, pWideString, bufferSize));
+
+  *pWideStringLength = wcsnlen_s(pWideString, bufferSize);
 
   mRETURN_SUCCESS();
 }
@@ -1070,7 +1067,7 @@ mFUNCTION(mString_ForEachChar, const mString &string, const std::function<mResul
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mInplaceString_GetCount_Internal, const char *text, const size_t maxSize, OUT size_t *pCount, OUT size_t *pSize)
+mFUNCTION(mInplaceString_GetCount_Internal, IN const char *text, const size_t maxSize, OUT size_t *pCount, OUT size_t *pSize)
 {
   mFUNCTION_SETUP();
 
@@ -1100,7 +1097,7 @@ mFUNCTION(mInplaceString_GetCount_Internal, const char *text, const size_t maxSi
   mRETURN_SUCCESS();
 }
 
-bool mInplaceString_StringsAreEqual_Internal(const char *textA, const char *textB, const size_t bytes, const size_t count)
+bool mInplaceString_StringsAreEqual_Internal(IN const char *textA, IN const char *textB, const size_t bytes, const size_t count)
 {
   size_t offset = 0;
 
