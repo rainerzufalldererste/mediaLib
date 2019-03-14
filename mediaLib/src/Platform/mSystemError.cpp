@@ -194,7 +194,13 @@ mFUNCTION(mSystemError_ShowMessageBox_Internal, const mSystemError_Type type, HW
     break;
   }
 
-  const int result = MessageBoxExW(window, ((std::wstring)text).c_str(), ((std::wstring)title).c_str(), mbmode, MAKELANGID(LANG_NEUTRAL, SUBLANG_NEUTRAL));
+  wchar_t wtext[1024 * 4];
+  mERROR_CHECK(mString_ToWideString(text, wtext, mARRAYSIZE(wtext)));
+
+  wchar_t wtitle[1024 * 4];
+  mERROR_CHECK(mString_ToWideString(title, wtitle, mARRAYSIZE(wtitle)));
+
+  const int result = MessageBoxExW(window, wtext, wtitle, mbmode, MAKELANGID(LANG_NEUTRAL, SUBLANG_NEUTRAL));
 
   if (pResponse != nullptr)
   {

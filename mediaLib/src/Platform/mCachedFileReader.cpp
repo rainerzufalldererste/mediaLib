@@ -9,19 +9,19 @@ mFUNCTION(mCachedFileReader_ReadFrom_Internal, mPtr<mCachedFileReader> &cachedFi
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mCachedFileReader_Create, OUT mPtr<mCachedFileReader> *pCachedFileReader, IN mAllocator *pAllocator, const mString &fileName, const size_t maxCacheSize /* = 1024 * 1024 */)
+mFUNCTION(mCachedFileReader_Create, OUT mPtr<mCachedFileReader> *pCachedFileReader, IN mAllocator *pAllocator, const mString &filename, const size_t maxCacheSize /* = 1024 * 1024 */)
 {
   mFUNCTION_SETUP();
 
   mERROR_IF(pCachedFileReader == nullptr, mR_ArgumentNull);
 
-  std::wstring filenameW;
-  mERROR_CHECK(mString_ToWideString(fileName, &filenameW));
+  wchar_t wfilename[1024];
+  mERROR_CHECK(mString_ToWideString(filename, wfilename, mARRAYSIZE(wfilename)));
 
   // Does the file exist?
   {
     bool fileExists = false;
-    mERROR_CHECK(mFile_Exists(filenameW, &fileExists));
+    mERROR_CHECK(mFile_Exists(wfilename, &fileExists));
     mERROR_IF(!fileExists, mR_ResourceNotFound);
   }
 
@@ -31,7 +31,7 @@ mFUNCTION(mCachedFileReader_Create, OUT mPtr<mCachedFileReader> *pCachedFileRead
   (*pCachedFileReader)->pAllocator = pAllocator;
   (*pCachedFileReader)->maxCacheSize = maxCacheSize;
 
-  const errno_t result = _wsopen_s(&(*pCachedFileReader)->fileHandle, filenameW.c_str(), _O_BINARY, _SH_DENYNO, _S_IREAD);
+  const errno_t result = _wsopen_s(&(*pCachedFileReader)->fileHandle, wfilename, _O_BINARY, _SH_DENYNO, _S_IREAD);
   mERROR_IF(result != 0, mR_ResourceNotFound);
 
   const int64_t fileSize = _lseeki64((*pCachedFileReader)->fileHandle, 0, SEEK_END);

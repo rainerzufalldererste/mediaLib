@@ -7,7 +7,7 @@ typedef int32_t mchar_t;
 
 template <size_t TCount>
 mchar_t mToChar(const char c[TCount]);
-mchar_t mToChar(const char *c, const size_t size);
+mchar_t mToChar(IN const char *c, const size_t size);
 
 struct mIteratedString
 {
@@ -55,8 +55,8 @@ struct mString
   template <size_t TSize>
   mString(const char text[TSize], IN OPTIONAL mAllocator *pAllocator = nullptr);
 
-  mString(const char *text, const size_t size, IN OPTIONAL mAllocator *pAllocator = nullptr);
-  mString(const char *text, IN OPTIONAL mAllocator *pAllocator = nullptr);
+  mString(IN const char *text, const size_t size, IN OPTIONAL mAllocator *pAllocator = nullptr);
+  mString(IN const char *text, IN OPTIONAL mAllocator *pAllocator = nullptr);
 
   template <size_t TSize>
   mString(const wchar_t text[TSize], IN OPTIONAL mAllocator *pAllocator = nullptr);
@@ -84,7 +84,6 @@ struct mString
   bool operator != (const mString &s) const;
 
   explicit operator std::string() const;
-  explicit operator std::wstring() const;
 
   mUtf8StringIterator begin() const;
   mUtf8StringIterator end() const;
@@ -95,8 +94,8 @@ struct mString
 template <size_t TCount>
 mFUNCTION(mString_Create, OUT mString *pString, const char text[TCount], IN OPTIONAL mAllocator *pAllocator = nullptr);
 
-mFUNCTION(mString_Create, OUT mString *pString, const char *text, IN OPTIONAL mAllocator *pAllocator = nullptr);
-mFUNCTION(mString_Create, OUT mString *pString, const char *text, const size_t size, IN OPTIONAL mAllocator *pAllocator = nullptr);
+mFUNCTION(mString_Create, OUT mString *pString, IN const char *text, IN OPTIONAL mAllocator *pAllocator = nullptr);
+mFUNCTION(mString_Create, OUT mString *pString, IN const char *text, const size_t size, IN OPTIONAL mAllocator *pAllocator = nullptr);
 
 template <size_t TCount>
 mFUNCTION(mString_Create, OUT mString *pString, const wchar_t text[TCount], IN OPTIONAL mAllocator *pAllocator = nullptr);
@@ -106,7 +105,7 @@ mFUNCTION(mString_Create, OUT mString *pString, const wchar_t *text, const size_
 mFUNCTION(mString_Create, OUT mString *pString, const mString &from, IN OPTIONAL mAllocator *pAllocator = nullptr);
 
 template <typename ...Args>
-mFUNCTION(mString_CreateFormat, OUT mString *pString, IN OPTIONAL mAllocator *pAllocator, const char *formatString, Args&&... args);
+mFUNCTION(mString_CreateFormat, OUT mString *pString, IN OPTIONAL mAllocator *pAllocator, IN const char *formatString, Args&&... args);
 
 mFUNCTION(mString_Destroy, IN_OUT mString *pString);
 
@@ -115,8 +114,8 @@ mFUNCTION(mString_Reserve, mString &string, const size_t size);
 mFUNCTION(mString_GetByteSize, const mString &string, OUT size_t *pSize);
 mFUNCTION(mString_GetCount, const mString &string, OUT size_t *pLength);
 
-mFUNCTION(mString_ToWideString, const mString &string, std::wstring *pWideString);
-mFUNCTION(mString_ToWideString, const mString &string, wchar_t *pWideString, const size_t bufferSize);
+mFUNCTION(mString_ToWideString, const mString &string, OUT wchar_t *pWideString, const size_t bufferSize);
+mFUNCTION(mString_ToWideString, const mString &string, OUT wchar_t *pWideString, const size_t bufferSize, OUT size_t *pWideStringLength);
 
 mFUNCTION(mString_Substring, const mString &text, OUT mString *pSubstring, const size_t startCharacter);
 mFUNCTION(mString_Substring, const mString &text, OUT mString *pSubstring, const size_t startCharacter, const size_t length);
@@ -174,7 +173,7 @@ inline mFUNCTION(mString_Create, OUT mString *pString, const wchar_t text[TCount
 }
 
 template<typename ...Args>
-inline mFUNCTION(mString_CreateFormat, OUT mString *pString, IN OPTIONAL mAllocator *pAllocator, const char *formatString, Args && ...args)
+inline mFUNCTION(mString_CreateFormat, OUT mString *pString, IN OPTIONAL mAllocator *pAllocator, IN const char *formatString, Args && ...args)
 {
   mFUNCTION_SETUP();
 
@@ -230,10 +229,10 @@ template <size_t TCount, size_t TTextCount>
 mFUNCTION(mInplaceString_Create, OUT mInplaceString<TCount> *pStackString, const char text[TTextCount]);
 
 template <size_t TCount>
-mFUNCTION(mInplaceString_CreateRaw, OUT mInplaceString<TCount> *pStackString, const char *text);
+mFUNCTION(mInplaceString_CreateRaw, OUT mInplaceString<TCount> *pStackString, IN const char *text);
 
 template <size_t TCount>
-mFUNCTION(mInplaceString_Create, OUT mInplaceString<TCount> *pStackString, const char *text, const size_t size);
+mFUNCTION(mInplaceString_Create, OUT mInplaceString<TCount> *pStackString, IN const char *text, const size_t size);
 
 template <size_t TCount, size_t TTextCount>
 mFUNCTION(mInplaceString_Create, OUT mInplaceString<TCount> *pStackString, const mInplaceString<TTextCount> &text);
@@ -250,8 +249,8 @@ mFUNCTION(mInplaceString_GetByteSize, const mInplaceString<TCount> &string, OUT 
 template <size_t TCount>
 mFUNCTION(mInplaceString_GetCount, const mInplaceString<TCount> &string, OUT size_t *pLength);
 
-mFUNCTION(mInplaceString_GetCount_Internal, const char *text, const size_t maxSize, OUT size_t *pCount, OUT size_t *pSize);
-bool mInplaceString_StringsAreEqual_Internal(const char *textA, const char *textB, const size_t bytes, const size_t count);
+mFUNCTION(mInplaceString_GetCount_Internal, IN const char *text, const size_t maxSize, OUT size_t *pCount, OUT size_t *pSize);
+bool mInplaceString_StringsAreEqual_Internal(IN const char *textA, IN const char *textB, const size_t bytes, const size_t count);
 
 template <size_t TCount>
 struct mIsTriviallyMemoryMovable<mInplaceString<TCount>>
@@ -357,7 +356,7 @@ inline mFUNCTION(mInplaceString_Create, OUT mInplaceString<TCount> *pStackString
 }
 
 template<size_t TCount>
-inline mFUNCTION(mInplaceString_CreateRaw, OUT mInplaceString<TCount> *pStackString, const char *text)
+inline mFUNCTION(mInplaceString_CreateRaw, OUT mInplaceString<TCount> *pStackString, IN const char *text)
 {
   mFUNCTION_SETUP();
 
@@ -369,7 +368,7 @@ inline mFUNCTION(mInplaceString_CreateRaw, OUT mInplaceString<TCount> *pStackStr
 }
 
 template<size_t TCount>
-inline mFUNCTION(mInplaceString_Create, OUT mInplaceString<TCount> *pStackString, const char *text, const size_t size)
+inline mFUNCTION(mInplaceString_Create, OUT mInplaceString<TCount> *pStackString, IN const char *text, const size_t size)
 {
   mFUNCTION_SETUP();
 

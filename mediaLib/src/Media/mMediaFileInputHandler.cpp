@@ -38,7 +38,7 @@ struct mMediaFileInputIterator
   bool hasFinished;
 };
 
-mFUNCTION(mMediaFileInputHandler_Create_Internal, IN mMediaFileInputHandler *pData, IN mAllocator *pAllocator, const std::wstring &fileName, const bool enableVideoProcessing, const bool enableAudioProcessing);
+mFUNCTION(mMediaFileInputHandler_Create_Internal, IN mMediaFileInputHandler *pData, IN mAllocator *pAllocator, IN const wchar_t *filename, const bool enableVideoProcessing, const bool enableAudioProcessing);
 mFUNCTION(mMediaFileInputHandler_Destroy_Internal, IN mMediaFileInputHandler *pData);
 mFUNCTION(mMediaFileInputHandler_RunSession_Internal, IN mMediaFileInputHandler *pData);
 mFUNCTION(mMediaFileInputHandler_InitializeExtenalDependencies);
@@ -67,7 +67,7 @@ static mINLINE void _ReleaseReference(T **pData)
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mMediaFileInputHandler_Create, OUT mPtr<mMediaFileInputHandler> *pPtr, IN OPTIONAL mAllocator *pAllocator, const std::wstring &fileName, const mMediaFileInputHandler_CreateFlags createFlags)
+mFUNCTION(mMediaFileInputHandler_Create, OUT mPtr<mMediaFileInputHandler> *pPtr, IN OPTIONAL mAllocator *pAllocator, IN const wchar_t *filename, const mMediaFileInputHandler_CreateFlags createFlags)
 {
   mFUNCTION_SETUP();
 
@@ -87,7 +87,7 @@ mFUNCTION(mMediaFileInputHandler_Create, OUT mPtr<mMediaFileInputHandler> *pPtr,
   mERROR_CHECK(mSharedPointer_Create<mMediaFileInputHandler>(pPtr, pInputHandler, [](mMediaFileInputHandler *pData) { mMediaFileInputHandler_Destroy_Internal(pData); }, pAllocator));
   pInputHandler = nullptr; // to not be destroyed on error.
 
-  mERROR_CHECK(mMediaFileInputHandler_Create_Internal(pPtr->GetPointer(), pAllocator, fileName, (createFlags & mMediaFileInputHandler_CreateFlags::mMMFIH_CF_VideoEnabled) != 0, (createFlags & mMediaFileInputHandler_CreateFlags::mMMFIH_CF_AudioEnabled) != 0));
+  mERROR_CHECK(mMediaFileInputHandler_Create_Internal(pPtr->GetPointer(), pAllocator, filename, (createFlags & mMediaFileInputHandler_CreateFlags::mMMFIH_CF_VideoEnabled) != 0, (createFlags & mMediaFileInputHandler_CreateFlags::mMMFIH_CF_AudioEnabled) != 0));
 
   mRETURN_SUCCESS();
 }
@@ -470,7 +470,7 @@ mFUNCTION(mMediaFileInputHandler_AddAudioStream_Internal, IN mMediaFileInputHand
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mMediaFileInputHandler_Create_Internal, IN mMediaFileInputHandler *pInputHandler, IN mAllocator *pAllocator, const std::wstring &fileName, const bool enableVideoProcessing, const bool enableAudioProcessing)
+mFUNCTION(mMediaFileInputHandler_Create_Internal, IN mMediaFileInputHandler *pInputHandler, IN mAllocator *pAllocator, IN const wchar_t *filename, const bool enableVideoProcessing, const bool enableAudioProcessing)
 {
   mFUNCTION_SETUP();
   mERROR_IF(pInputHandler == nullptr, mR_ArgumentNull);
@@ -514,7 +514,7 @@ mFUNCTION(mMediaFileInputHandler_Create_Internal, IN mMediaFileInputHandler *pIn
     mERROR_IF(FAILED(pAudioMediaType->SetGUID(MF_MT_SUBTYPE, MFAudioFormat_PCM)), mR_InternalError);
   }
 
-  hr = MFCreateSourceReaderFromURL(fileName.c_str(), pAttributes, &pInputHandler->pSourceReader);
+  hr = MFCreateSourceReaderFromURL(filename, pAttributes, &pInputHandler->pSourceReader);
   mERROR_IF(hr == HRESULT_FROM_WIN32(ERROR_PATH_NOT_FOUND), mR_ResourceNotFound);
   mERROR_IF(FAILED(hr), mR_ResourceInvalid);
 
