@@ -47,33 +47,45 @@ enum mResult
 #define mRESULT_RETURN_RESULT_RAW(result) do { mSTDRESULT = result; return mSTDRESULT; } while (0)
 #define mRETURN_SUCCESS() mRESULT_RETURN_RESULT_RAW(mR_Success)
 
-extern const char *g_mResult_lastErrorFile;
-extern size_t g_mResult_lastErrorLine;
-extern mResult g_mResult_lastErrorResult;
+extern thread_local const char *g_mResult_lastErrorFile;
+extern thread_local size_t g_mResult_lastErrorLine;
+extern thread_local mResult g_mResult_lastErrorResult;
 
-extern bool g_mResult_breakOnError;
+#if defined(GIT_BUILD)
+constexpr bool g_mResult_breakOnError = false;
+#else
+extern bool g_mResult_breakOnError_default;
+extern thread_local bool g_mResult_breakOnError;
+#endif
+
+extern bool g_mResult_silent_default;
+extern thread_local bool g_mResult_silent;
 
 #ifdef _DEBUG
-#define mBREAK_ON_FAILURE true
+#define mBREAK_ON_FAILURE 1
 #else
-#define mBREAK_ON_FAILURE false
+#define mBREAK_ON_FAILURE 0
 #endif // _DEBUG
 
-#ifdef mBREAK_ON_FAILURE
-#ifdef mPLATFORM_WINDOWS
-#define mDEBUG_BREAK() \
-      do \
-      { BOOL __isRemoteDebuggerPresent__ = false; \
-        if (!CheckRemoteDebuggerPresent(GetCurrentProcess(), &__isRemoteDebuggerPresent__)) \
-          __isRemoteDebuggerPresent__ = false; \
-        if (IsDebuggerPresent() || __isRemoteDebuggerPresent__) \
-          __debugbreak(); \
-      } while (0)
+#if mBREAK_ON_FAILURE
+  #ifdef mPLATFORM_WINDOWS
+    #ifdef GIT_BUILD
+      #define mDEBUG_BREAK()
+    #else
+      #define mDEBUG_BREAK() \
+        do \
+        { BOOL __isRemoteDebuggerPresent__ = false; \
+          if (!CheckRemoteDebuggerPresent(GetCurrentProcess(), &__isRemoteDebuggerPresent__)) \
+            __isRemoteDebuggerPresent__ = false; \
+          if (IsDebuggerPresent() || __isRemoteDebuggerPresent__) \
+            __debugbreak(); \
+        } while (0)
+    #endif
+  #else
+    #define mDEBUG_BREAK() __builtin_trap()
+  #endif
 #else
-#define mDEBUG_BREAK() __builtin_trap()
-#endif
-#else
-#define mDEBUG_BREAK()
+  #define mDEBUG_BREAK()
 #endif
 
 void mDebugOut(const char *format, ...);
@@ -184,5 +196,45 @@ inline void mDeinit(const std::function<void(void)> &param, Args && ...args)
       goto label; \
     } \
   } while (0)
+
+class mErrorPushSilent_Internal
+{
+private:
+  const bool previouslySilent
+#ifndef GIT_BUILD
+    , previouslyBreaking
+#endif
+    ;
+
+public:
+  mErrorPushSilent_Internal() :
+    previouslySilent(g_mResult_silent)
+#ifndef GIT_BUILD
+    ,
+    previouslyBreaking(g_mResult_breakOnError)
+#endif
+  {
+    if (!previouslySilent)
+      g_mResult_silent = true;
+
+#ifndef GIT_BUILD
+    if (previouslyBreaking)
+      g_mResult_breakOnError = false;
+#endif
+  };
+
+  ~mErrorPushSilent_Internal()
+  {
+    if (!previouslySilent)
+      g_mResult_silent = false;
+
+#ifndef GIT_BUILD
+    if (previouslyBreaking)
+      g_mResult_breakOnError = true;
+#endif
+  }
+};
+
+#define mSILENCE_ERROR(result) (mErrorPushSilent_Internal(), result)
 
 #endif // mResult_h__
