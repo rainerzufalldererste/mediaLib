@@ -80,7 +80,7 @@ mFUNCTION(mTask_Join, IN mTask *pTask, const size_t timeoutMilliseconds /* = mSe
     {
       for (size_t i = 0; i < timeoutMilliseconds; ++i)
       {
-        const mResult result = mSemaphore_Sleep(pTask->pSemaphore, 1);
+        const mResult result = mSILENCE_ERROR(mSemaphore_Sleep(pTask->pSemaphore, 1));
 
         if (mSUCCEEDED(result))
         {
@@ -268,7 +268,7 @@ void mThreadPool_WorkerThread(mThreadPool *pThreadPool)
       mASSERT(mSUCCEEDED(mTask_Destroy(&pTask)), "Error in " __FUNCTION__ ": Failed to destroy task.");
     }
 
-    const mResult result = mSemaphore_Sleep(pThreadPool->pSemaphore, 1);
+    const mResult result = mSILENCE_ERROR(mSemaphore_Sleep(pThreadPool->pSemaphore, 1));
 
     if (result == mR_Timeout)
       continue;

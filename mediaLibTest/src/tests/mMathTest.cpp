@@ -296,3 +296,88 @@ mTEST(mMath, TestClamp)
 
   mTEST_RETURN_SUCCESS();
 }
+
+#define mNUM_x 1
+#define mNUM_y 2
+#define mNUM_z 3
+#define mNUM_w 4
+
+#define mNUMS_2 mNUM_x, mNUM_y
+#define mNUMS_3 mNUMS_2, mNUM_z
+#define mNUMS_4 mNUMS_3, mNUM_w
+
+#define mVECTOR_TEST_SUBSET2(n, a, b) mTEST(mMath, TestVector ## n ## SubSet_ ## a ## _ ## b) { mTEST_ASSERT_EQUAL(mVec ## n ## s(mNUMS_ ## n).a ## b(), mVec2s(mNUM_ ## a, mNUM_ ## b)); mTEST_RETURN_SUCCESS(); }
+
+#define mVECTOR_TEST_SUBSET3(n, a, b, c) mTEST(mMath, TestVector ## n ## SubSet_ ## a ## _ ## b ## _ ## c) { mTEST_ASSERT_EQUAL(mVec ## n ## s(mNUMS_ ## n).a ## b ## c(), mVec3s(mNUM_ ## a, mNUM_ ## b, mNUM_ ## c)); mTEST_RETURN_SUCCESS(); }
+
+#define mVECTOR_TEST_SUBSET4(n, a, b, c, d) mTEST(mMath, TestVector ## n ## SubSet_ ## a ## _ ## b ## _ ## c ## _ ## d) { mTEST_ASSERT_EQUAL(mVec ## n ## s(mNUMS_ ## n).a ## b ## c ## d(), mVec4s(mNUM_ ## a, mNUM_ ## b, mNUM_ ## c, mNUM_ ## d)); mTEST_RETURN_SUCCESS(); }
+
+mVECTOR_TEST_SUBSET2(2, y, x);
+
+mVECTOR_TEST_SUBSET2(3, x, y);
+mVECTOR_TEST_SUBSET2(3, x, z);
+mVECTOR_TEST_SUBSET2(3, y, x);
+mVECTOR_TEST_SUBSET2(3, y, z);
+mVECTOR_TEST_SUBSET2(3, z, x);
+mVECTOR_TEST_SUBSET2(3, z, y);
+
+mVECTOR_TEST_SUBSET2(4, x, y);
+mVECTOR_TEST_SUBSET2(4, x, z);
+mVECTOR_TEST_SUBSET2(4, x, w);
+mVECTOR_TEST_SUBSET2(4, y, x);
+mVECTOR_TEST_SUBSET2(4, y, z);
+mVECTOR_TEST_SUBSET2(4, y, w);
+mVECTOR_TEST_SUBSET2(4, z, x);
+mVECTOR_TEST_SUBSET2(4, z, y);
+mVECTOR_TEST_SUBSET2(4, z, w);
+mVECTOR_TEST_SUBSET2(4, w, x);
+mVECTOR_TEST_SUBSET2(4, w, y);
+mVECTOR_TEST_SUBSET2(4, w, z);
+
+mVECTOR_TEST_SUBSET3(3, x, z, y);
+mVECTOR_TEST_SUBSET3(3, y, x, z);
+mVECTOR_TEST_SUBSET3(3, y, z, x);
+mVECTOR_TEST_SUBSET3(3, z, x, y);
+mVECTOR_TEST_SUBSET3(3, z, y, x);
+
+mVECTOR_TEST_SUBSET3(4, x, y, z);
+mVECTOR_TEST_SUBSET3(4, x, y, w);
+mVECTOR_TEST_SUBSET3(4, x, z, y);
+mVECTOR_TEST_SUBSET3(4, x, z, w);
+mVECTOR_TEST_SUBSET3(4, x, w, y);
+mVECTOR_TEST_SUBSET3(4, x, w, z);
+
+mVECTOR_TEST_SUBSET3(4, y, x, z);
+mVECTOR_TEST_SUBSET3(4, y, x, w);
+mVECTOR_TEST_SUBSET3(4, y, z, x);
+mVECTOR_TEST_SUBSET3(4, y, z, w);
+mVECTOR_TEST_SUBSET3(4, y, w, x);
+mVECTOR_TEST_SUBSET3(4, y, w, z);
+
+mVECTOR_TEST_SUBSET4(4, x, y, w, z);
+mVECTOR_TEST_SUBSET4(4, x, y, z, w);
+mVECTOR_TEST_SUBSET4(4, x, z, y, w);
+mVECTOR_TEST_SUBSET4(4, x, z, w, y);
+mVECTOR_TEST_SUBSET4(4, x, w, y, z);
+mVECTOR_TEST_SUBSET4(4, x, w, z, y);
+
+mVECTOR_TEST_SUBSET4(4, y, x, z, w);
+mVECTOR_TEST_SUBSET4(4, y, x, w, z);
+mVECTOR_TEST_SUBSET4(4, y, z, x, w);
+mVECTOR_TEST_SUBSET4(4, y, z, w, x);
+mVECTOR_TEST_SUBSET4(4, y, w, x, z);
+mVECTOR_TEST_SUBSET4(4, y, w, z, x);
+
+mVECTOR_TEST_SUBSET4(4, z, x, y, w);
+mVECTOR_TEST_SUBSET4(4, z, x, w, y);
+mVECTOR_TEST_SUBSET4(4, z, y, x, w);
+mVECTOR_TEST_SUBSET4(4, z, y, w, x);
+mVECTOR_TEST_SUBSET4(4, z, w, x, y);
+mVECTOR_TEST_SUBSET4(4, z, w, y, x);
+
+mVECTOR_TEST_SUBSET4(4, w, x, y, z);
+mVECTOR_TEST_SUBSET4(4, w, x, z, y);
+mVECTOR_TEST_SUBSET4(4, w, y, x, z);
+mVECTOR_TEST_SUBSET4(4, w, y, z, x);
+mVECTOR_TEST_SUBSET4(4, w, z, x, y);
+mVECTOR_TEST_SUBSET4(4, w, z, y, x);
