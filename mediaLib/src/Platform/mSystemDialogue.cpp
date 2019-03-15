@@ -113,8 +113,8 @@ mFUNCTION(mSystemDialogue_OpenFile_Internal, HWND window, const mString &headlin
   }
 
   wchar_t *pExtentions = nullptr;
-  mDEFER_CALL(&pExtentions, mFreePtrStack);
-  mERROR_CHECK(mAllocStackZero(&pExtentions, extentionDescriptorLength));
+  mDEFER_CALL(&pExtentions, mFreePtr);
+  mERROR_CHECK(mAllocZero(&pExtentions, extentionDescriptorLength));
 
   size_t offset = 0;
 

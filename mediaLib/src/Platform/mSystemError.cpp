@@ -1,6 +1,13 @@
 #include "mSystemError.h"
+
 #include "mHardwareWindow.h"
 #include "mSoftwareWindow.h"
+
+#pragma warning(push)
+#pragma warning(disable: 4091)
+#include <Dbghelp.h>
+#pragma warning(pop)
+
 #include "SDL_syswm.h"
 
 mFUNCTION(mSystemError_ShowMessageBoxSDL_Internal, const mSystemError_Type type, SDL_Window *pWindow, const mString &title, const mString &text, const mSystemError_MessageBoxButton buttons, OUT mSystemError_MessageBoxResponse *pResponse, const size_t defaultButtonIndex, const mSystemError_Authority authority);
@@ -66,6 +73,41 @@ mFUNCTION(mSystemError_ShowMessageBox, mPtr<mSoftwareWindow> &window, const mSys
   mERROR_CHECK(mSoftwareWindow_GetSdlWindowPtr(window, &pSdlWindow));
 
   mERROR_CHECK(mSystemError_ShowMessageBoxSDL_Internal(type, pSdlWindow, title, text, buttons, pResponse, defaultButtonIndex, authority));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mSystemError_WriteMiniDump, const mString &filename, IN OPTIONAL struct _EXCEPTION_POINTERS *pExceptionInfo, const bool includeHeap /* = false */)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(filename.hasFailed || filename.c_str() == nullptr, mR_ArgumentNull);
+
+  HMODULE library = LoadLibraryW(L"Dbghelp.dll");
+  mERROR_IF(library == nullptr, mR_InternalError);
+  mDEFER(FreeLibrary(library));
+
+  typedef BOOL(WINAPI WriteMiniDumpFunc)(HANDLE hProcess, DWORD dwPid, HANDLE fileHandle, MINIDUMP_TYPE DumpType, CONST PMINIDUMP_EXCEPTION_INFORMATION ExceptionParam, CONST PMINIDUMP_USER_STREAM_INFORMATION UserStreamParam, CONST PMINIDUMP_CALLBACK_INFORMATION CallbackParam);
+
+  WriteMiniDumpFunc *pWriteMiniDumpFunc = (WriteMiniDumpFunc *)GetProcAddress(library, "MiniDumpWriteDump");
+
+  mERROR_IF(pWriteMiniDumpFunc == nullptr, mR_InternalError);
+
+  wchar_t wfilename[MAX_PATH];
+  mERROR_CHECK(mString_ToWideString(filename, wfilename, mARRAYSIZE(wfilename)));
+
+  HANDLE fileHandle = CreateFileW(wfilename, GENERIC_WRITE, FILE_SHARE_WRITE, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+  mERROR_IF(fileHandle == INVALID_HANDLE_VALUE, mR_InternalError);
+  mDEFER(CloseHandle(fileHandle));
+
+  _MINIDUMP_EXCEPTION_INFORMATION exceptionInfo;
+  mERROR_CHECK(mZeroMemory(&exceptionInfo));
+
+  exceptionInfo.ThreadId = GetCurrentThreadId();
+  exceptionInfo.ExceptionPointers = pExceptionInfo;
+  exceptionInfo.ClientPointers = FALSE;
+
+  mERROR_IF(TRUE != pWriteMiniDumpFunc(GetCurrentProcess(), GetCurrentProcessId(), fileHandle, includeHeap ? MiniDumpWithFullMemory : MiniDumpNormal, pExceptionInfo == nullptr ? NULL : &exceptionInfo, NULL, NULL), mR_InternalError);
 
   mRETURN_SUCCESS();
 }
