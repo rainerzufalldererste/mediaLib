@@ -102,6 +102,10 @@ T mSmallest(const T scale);
 
 //////////////////////////////////////////////////////////////////////////
 
+#define _mVECTOR_SUBSET_2(a, b) __host__ __device__ inline mVec2t<T> a ## b() { return mVec2t<T>(a, b); }
+#define _mVECTOR_SUBSET_3(a, b, c) __host__ __device__ inline mVec3t<T> a ## b ## c() { return mVec3t<T>(a, b, c); }
+#define _mVECTOR_SUBSET_4(a, b, c, d) __host__ __device__ inline mVec4t<T> a ## b ## c ## d() { return mVec4t<T>(a, b, c, d); }
+
 template <typename T>
 struct mVec2t
 {
@@ -149,6 +153,8 @@ struct mVec2t
   __host__ __device__ inline double Length() const { return mSqrt(x * x + y * y); };
   __host__ __device__ inline T LengthSquared() const { return x * x + y * y; };
   __host__ __device__ inline mVec2t<T> Normalize() { return *this / (T)Length(); };
+
+  _mVECTOR_SUBSET_2(y, x);
 };
 
 template <typename T>
@@ -209,6 +215,19 @@ struct mVec3t
   __host__ __device__ inline mVec3t<T> Normalize() { return *this / (T)Length(); };
 
   __host__ __device__ inline mVec2t<T> ToVector2() const { return mVec2t<T>(x, y); };
+
+  _mVECTOR_SUBSET_2(x, y);
+  _mVECTOR_SUBSET_2(x, z);
+  _mVECTOR_SUBSET_2(y, x);
+  _mVECTOR_SUBSET_2(y, z);
+  _mVECTOR_SUBSET_2(z, x);
+  _mVECTOR_SUBSET_2(z, y);
+
+  _mVECTOR_SUBSET_3(x, z, y);
+  _mVECTOR_SUBSET_3(y, x, z);
+  _mVECTOR_SUBSET_3(y, z, x);
+  _mVECTOR_SUBSET_3(z, x, y);
+  _mVECTOR_SUBSET_3(z, y, x);
 };
 
 template <typename T>
@@ -270,6 +289,69 @@ struct mVec4t
 
   __host__ __device__ inline mVec2t<T> ToVector2() const { return mVec2t<T>(x, y); };
   __host__ __device__ inline mVec3t<T> ToVector3() const { return mVec3t<T>(x, y, z); };
+
+  _mVECTOR_SUBSET_2(x, y);
+  _mVECTOR_SUBSET_2(x, z);
+  _mVECTOR_SUBSET_2(x, w);
+  _mVECTOR_SUBSET_2(y, x);
+  _mVECTOR_SUBSET_2(y, z);
+  _mVECTOR_SUBSET_2(y, w);
+  _mVECTOR_SUBSET_2(z, x);
+  _mVECTOR_SUBSET_2(z, y);
+  _mVECTOR_SUBSET_2(z, w);
+  _mVECTOR_SUBSET_2(w, x);
+  _mVECTOR_SUBSET_2(w, y);
+  _mVECTOR_SUBSET_2(w, z);
+
+  _mVECTOR_SUBSET_3(x, y, z);
+  _mVECTOR_SUBSET_3(x, y, w);
+  _mVECTOR_SUBSET_3(x, z, y);
+  _mVECTOR_SUBSET_3(x, z, w);
+  _mVECTOR_SUBSET_3(x, w, y);
+  _mVECTOR_SUBSET_3(x, w, z);
+
+  _mVECTOR_SUBSET_3(y, x, z);
+  _mVECTOR_SUBSET_3(y, x, w);
+  _mVECTOR_SUBSET_3(y, z, x);
+  _mVECTOR_SUBSET_3(y, z, w);
+  _mVECTOR_SUBSET_3(y, w, x);
+  _mVECTOR_SUBSET_3(y, w, z);
+
+  _mVECTOR_SUBSET_3(z, x, y);
+  _mVECTOR_SUBSET_3(z, x, w);
+  _mVECTOR_SUBSET_3(z, y, x);
+  _mVECTOR_SUBSET_3(z, y, w);
+  _mVECTOR_SUBSET_3(z, w, x);
+  _mVECTOR_SUBSET_3(z, w, y);
+
+  _mVECTOR_SUBSET_4(x, y, z, w);
+  _mVECTOR_SUBSET_4(x, y, w, z);
+  _mVECTOR_SUBSET_4(x, z, y, w);
+  _mVECTOR_SUBSET_4(x, z, w, y);
+  _mVECTOR_SUBSET_4(x, w, y, z);
+  _mVECTOR_SUBSET_4(x, w, z, y);
+
+  _mVECTOR_SUBSET_4(y, x, z, w);
+  _mVECTOR_SUBSET_4(y, x, w, z);
+  _mVECTOR_SUBSET_4(y, z, x, w);
+  _mVECTOR_SUBSET_4(y, z, w, x);
+  _mVECTOR_SUBSET_4(y, w, x, z);
+  _mVECTOR_SUBSET_4(y, w, z, x);
+
+  _mVECTOR_SUBSET_4(z, x, y, w);
+  _mVECTOR_SUBSET_4(z, x, w, y);
+  _mVECTOR_SUBSET_4(z, y, x, w);
+  _mVECTOR_SUBSET_4(z, y, w, x);
+  _mVECTOR_SUBSET_4(z, w, x, y);
+  _mVECTOR_SUBSET_4(z, w, y, x);
+
+  _mVECTOR_SUBSET_4(w, x, y, z);
+  _mVECTOR_SUBSET_4(w, x, z, y);
+  _mVECTOR_SUBSET_4(w, y, x, z);
+  _mVECTOR_SUBSET_4(w, y, z, x);
+  _mVECTOR_SUBSET_4(w, z, x, y);
+  _mVECTOR_SUBSET_4(w, z, y, x);
+
 };
 
 template <typename T>
