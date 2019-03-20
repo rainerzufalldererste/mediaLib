@@ -734,6 +734,41 @@ mFUNCTION(mFile_GetDrives, OUT mPtr<mQueue<mDriveInfo>> *pDrives, IN mAllocator 
   mRETURN_SUCCESS();
 }
 
+mFUNCTION(mFile_GetDrives, OUT mPtr<mQueue<mString>> *pDrives, IN mAllocator *pAllocator)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pDrives == nullptr, mR_ArgumentNull);
+
+  mERROR_CHECK(mQueue_Create(pDrives, pAllocator));
+
+  wchar_t driveLabels[MAX_PATH];
+  const size_t length = GetLogicalDriveStringsW(mARRAYSIZE(driveLabels), driveLabels);
+
+  if (length == 0 || length >= mARRAYSIZE(driveLabels))
+  {
+    const DWORD error = GetLastError();
+    mUnused(error);
+
+    mRETURN_RESULT(mR_InternalError);
+  }
+
+  wchar_t *nextDriveLabel = driveLabels;
+
+  while (*nextDriveLabel != L'\0')
+  {
+    mString driveName;
+    mDEFER_CALL(&driveName, mString_Destroy);
+    mERROR_CHECK(mString_Create(&driveName, nextDriveLabel, pAllocator));
+
+    mERROR_CHECK(mQueue_PushBack(*pDrives, std::move(driveName)));
+
+    nextDriveLabel = &nextDriveLabel[lstrlenW(nextDriveLabel) + 1];
+  }
+
+  mRETURN_SUCCESS();
+}
+
 mFUNCTION(mFile_GetAbsoluteDirectoryPath, OUT mString *pAbsolutePath, const mString &directoryPath)
 {
   mFUNCTION_SETUP();

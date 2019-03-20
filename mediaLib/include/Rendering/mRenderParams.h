@@ -161,7 +161,7 @@ struct mTexture2DParams
   mRenderParams_TextureMinificationFilteringMode minFilter = mRP_TMinFM_BilinearInterpolation;
 };
 
-mFUNCTION(mTexture2DParams_ApplyToBoundTexture, const mTexture2DParams &params);
+mFUNCTION(mTexture2DParams_ApplyToBoundTexture, const mTexture2DParams &params, const bool isMultisampleTexture = false);
 
 mFUNCTION(mRenderParams_PrintRenderState, const bool onlyNewValues = false);
 

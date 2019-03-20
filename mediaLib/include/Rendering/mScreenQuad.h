@@ -19,6 +19,9 @@ mFUNCTION(mScreenQuad_Create, OUT mPtr<mScreenQuad> *pScreenQuad, IN mAllocator 
 
 // texture is called `_texture0`.
 mFUNCTION(mScreenQuad_Create, OUT mPtr<mScreenQuad> *pScreenQuad, IN mAllocator *pAllocator);
+
+// texture is called `_texture0`. sample count is called `_texture0sampleCount`.
+mFUNCTION(mScreenQuad_CreateForMultisampleTexture, OUT mPtr<mScreenQuad> *pScreenQuad, IN mAllocator *pAllocator);
 mFUNCTION(mScreenQuad_CreateFrom, OUT mPtr<mScreenQuad> *pScreenQuad, IN mAllocator *pAllocator, const mString &fragmentShaderPath, const size_t textureCount = 1);
 
 mFUNCTION(mScreenQuad_Destroy, IN_OUT mPtr<mScreenQuad> *pScreenQuad);

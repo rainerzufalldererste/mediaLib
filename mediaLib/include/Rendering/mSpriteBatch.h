@@ -53,6 +53,7 @@ struct mSpriteBatch
   mSpriteBatch_TextureSampleMode textureSampleMode;
   bool isStarted;
   mPtr<mShader> shader;
+  mPtr<mShader> multisampleShader;
   mPtr<mQueue<mSpriteBatch_Internal_RenderObject<Args...>>> enqueuedRenderObjects;
   mSpriteBatch_ShaderParams shaderParams;
 #if defined (mRENDERER_OPENGL)

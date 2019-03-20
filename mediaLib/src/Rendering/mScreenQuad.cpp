@@ -62,6 +62,17 @@ mFUNCTION(mScreenQuad_Create, OUT mPtr<mScreenQuad> *pScreenQuad, IN mAllocator 
   mRETURN_SUCCESS();
 }
 
+mFUNCTION(mScreenQuad_CreateForMultisampleTexture, OUT mPtr<mScreenQuad> *pScreenQuad, IN mAllocator *pAllocator)
+{
+  mFUNCTION_SETUP();
+
+  const mString defaultShader = "#version 150 core\n\nout vec4 outColour0;\n\nuniform sampler2DMS _texture0;\nuniform int _texture0sampleCount;\nin vec2 _texCoord0;\n\nvoid main()\n{\n\toutColour0 = vec4(0);\n\tivec2 position = ivec2(_texCoord0 * textureSize(_texture0));\n\t\n\tfor (int i = 0; i < _texture0sampleCount; i++)\n\t\toutColour0 += texelFetch(_texture0, position, i);\n\t\n\toutColour0 /= float(_texture0sampleCount);\n}\n";
+
+  mERROR_CHECK(mScreenQuad_Create(pScreenQuad, pAllocator, defaultShader, 1));
+
+  mRETURN_SUCCESS();
+}
+
 mFUNCTION(mScreenQuad_CreateFrom, OUT mPtr<mScreenQuad> *pScreenQuad, IN mAllocator *pAllocator, const mString &fragmentShaderPath, const size_t textureCount /* = 1 */)
 {
   mFUNCTION_SETUP();

@@ -1,6 +1,8 @@
 #include "mSpriteBatch.h"
 #include "mForwardTuple.h"
 
+#define mSB_MultisampleCountUniformName "sampleCount0"
+
 template <typename ...Args>
 mFUNCTION(mSpriteBatch_Create_Internal, IN_OUT mSpriteBatch<Args...> *pSpriteBatch);
 
@@ -456,36 +458,49 @@ inline mFUNCTION(mSpriteBatch_Create_Internal, IN_OUT mSpriteBatch<Args...> *pSp
   mERROR_IF(0 > sprintf_s(vertexShader, "%s\n\tposition.y = 1 - position.y;\n\tposition.xy = position.xy * 2 - 1;\n\tposition.z = startOffset0.z;\n\n\tgl_Position = position;\n}\n", vertexShader), mR_InternalError);
 
   // Fragment Shader.
+  char fragmentShaderGetPosition[1024] = "";
   char fragmentShader[1024] = "";
+  char fragmentShaderMS[1024] = "";
 
   mERROR_IF(0 > sprintf_s(fragmentShader, "#version 150 core\n\nout vec4 fragColour0;\n\nin vec2 _texCoord0;\nuniform sampler2D texture0;\n"), mR_InternalError);
+  mERROR_IF(0 > sprintf_s(fragmentShaderMS, "#version 150 core\n\nout vec4 fragColour0;\n\nin vec2 _texCoord0;\nuniform sampler2DMS texture0;\nuniform int " mSB_MultisampleCountUniformName ";\n"), mR_InternalError);
   
   if (pSpriteBatch->shaderParams.colour)
-    mERROR_IF(0 > sprintf_s(fragmentShader, "%s\nuniform vec4 " mSBEColour_UniformName ";", fragmentShader), mR_InternalError);
+    mERROR_IF(0 > sprintf_s(fragmentShaderGetPosition, "%s\nuniform vec4 " mSBEColour_UniformName ";", fragmentShaderGetPosition), mR_InternalError);
   
   if (pSpriteBatch->shaderParams.textureFlip)
-    mERROR_IF(0 > sprintf_s(fragmentShader, "%s\nuniform vec2 " mSBETextureFlip_UniformName ";", fragmentShader), mR_InternalError);
+    mERROR_IF(0 > sprintf_s(fragmentShaderGetPosition, "%s\nuniform vec2 " mSBETextureFlip_UniformName ";", fragmentShaderGetPosition), mR_InternalError);
   
   if (pSpriteBatch->shaderParams.textureCrop)
-    mERROR_IF(0 > sprintf_s(fragmentShader, "%s\nuniform vec4 " mSBETextureCrop_UniformName ";", fragmentShader), mR_InternalError);
+    mERROR_IF(0 > sprintf_s(fragmentShaderGetPosition, "%s\nuniform vec4 " mSBETextureCrop_UniformName ";", fragmentShaderGetPosition), mR_InternalError);
   
-  mERROR_IF(0 > sprintf_s(fragmentShader, "%s\n\nvoid main()\n{\n\tvec2 texturePosition = vec2(1) - _texCoord0;", fragmentShader), mR_InternalError);
+  mERROR_IF(0 > sprintf_s(fragmentShaderGetPosition, "%s\n\nvoid main()\n{\n\tvec2 texturePosition = vec2(1) - _texCoord0;", fragmentShaderGetPosition), mR_InternalError);
   
   if (pSpriteBatch->shaderParams.textureFlip)
-    mERROR_IF(0 > sprintf_s(fragmentShader, "%s\n\ttexturePosition = texturePosition * (1 - 2 * " mSBETextureFlip_UniformName ") + " mSBETextureFlip_UniformName ";", fragmentShader), mR_InternalError);
+    mERROR_IF(0 > sprintf_s(fragmentShaderGetPosition, "%s\n\ttexturePosition = texturePosition * (1 - 2 * " mSBETextureFlip_UniformName ") + " mSBETextureFlip_UniformName ";", fragmentShaderGetPosition), mR_InternalError);
   
   if (pSpriteBatch->shaderParams.textureCrop)
-    mERROR_IF(0 > sprintf_s(fragmentShader, "%s\n\ttexturePosition *= (" mSBETextureCrop_UniformName ".zw - " mSBETextureCrop_UniformName ".xy);\n\ttexturePosition += " mSBETextureCrop_UniformName ".xy;", fragmentShader), mR_InternalError);
+    mERROR_IF(0 > sprintf_s(fragmentShaderGetPosition, "%s\n\ttexturePosition *= (" mSBETextureCrop_UniformName ".zw - " mSBETextureCrop_UniformName ".xy);\n\ttexturePosition += " mSBETextureCrop_UniformName ".xy;", fragmentShaderGetPosition), mR_InternalError);
+
+  mERROR_IF(0 > sprintf_s(fragmentShader, "%s%s", fragmentShader, fragmentShaderGetPosition), mR_InternalError);
+  mERROR_IF(0 > sprintf_s(fragmentShaderMS, "%s%s", fragmentShaderMS, fragmentShaderGetPosition), mR_InternalError);
   
   mERROR_IF(0 > sprintf_s(fragmentShader, "%s\n\tfragColour0 = texture(texture0, texturePosition);", fragmentShader), mR_InternalError);
+  mERROR_IF(0 > sprintf_s(fragmentShaderMS, "%s\n\tvec2 textureSize0 = textureSize(texture0);\n\tfragColour0 = vec4(0);\n\t\n\tfor (int i = 0; i < " mSB_MultisampleCountUniformName "; i++)\n\t{\n\t\tfragColour0 += texelFetch(texture0, ivec2(texturePosition * textureSize0), i);\n\t}\n\t\n\tfragColour0 /= float(" mSB_MultisampleCountUniformName ");", fragmentShaderMS), mR_InternalError);
   
   if (pSpriteBatch->shaderParams.colour)
+  {
     mERROR_IF(0 > sprintf_s(fragmentShader, "%s\n\tfragColour0 *= " mSBEColour_UniformName ";", fragmentShader), mR_InternalError);
+    mERROR_IF(0 > sprintf_s(fragmentShaderMS, "%s\n\tfragColour0 *= " mSBEColour_UniformName ";", fragmentShaderMS), mR_InternalError);
+  }
 
   mERROR_IF(0 > sprintf_s(fragmentShader, "%s\n}\n", fragmentShader), mR_InternalError);
+  mERROR_IF(0 > sprintf_s(fragmentShaderMS, "%s\n}\n", fragmentShaderMS), mR_InternalError);
 
   mERROR_CHECK(mSharedPointer_Allocate(&pSpriteBatch->shader, nullptr, (std::function<void(mShader *)>)[](mShader *pData) {mShader_Destroy(pData);}, 1));
+  mERROR_CHECK(mSharedPointer_Allocate(&pSpriteBatch->multisampleShader, nullptr, (std::function<void(mShader *)>)[](mShader *pData) {mShader_Destroy(pData); }, 1));
   mERROR_CHECK(mShader_Create(pSpriteBatch->shader.GetPointer(), vertexShader, fragmentShader, "fragColour0"));
+  mERROR_CHECK(mShader_Create(pSpriteBatch->multisampleShader.GetPointer(), vertexShader, fragmentShaderMS, "fragColour0"));
 
   mRETURN_SUCCESS();
 }
@@ -509,6 +524,7 @@ inline mFUNCTION(mSpriteBatch_Destroy_Internal, IN_OUT mSpriteBatch<Args...> *pS
 
   mERROR_CHECK(mQueue_Destroy(&pSpriteBatch->enqueuedRenderObjects));
   mERROR_CHECK(mSharedPointer_Destroy(&pSpriteBatch->shader));
+  mERROR_CHECK(mSharedPointer_Destroy(&pSpriteBatch->multisampleShader));
 
   mRETURN_SUCCESS();
 }
@@ -738,15 +754,21 @@ inline mFUNCTION(mSpriteBatch_Internal_RenderObject_Render, mSpriteBatch_Interna
 {
   mFUNCTION_SETUP();
 
-  mERROR_CHECK(mShader_Bind(*spriteBatch->shader.GetPointer()));
-  mERROR_CHECK(mTexture_Bind(*renderObject.texture.GetPointer()));
-  mERROR_CHECK(mShader_SetUniform(spriteBatch->shader, "texture0", renderObject.texture));
-  mERROR_CHECK(mShader_SetUniform(spriteBatch->shader, "screenSize0", mRenderParams_CurrentRenderResolutionF));
-  mERROR_CHECK(mShader_SetUniform(spriteBatch->shader, "scale0", renderObject.size));
-  mERROR_CHECK(mShader_SetUniform(spriteBatch->shader, "startOffset0", renderObject.position));
-  
+  mShader &shader = renderObject.texture->sampleCount > 0 ? *spriteBatch->multisampleShader : *spriteBatch->shader;
+
+
+  mERROR_CHECK(mShader_Bind(shader));
+  mERROR_CHECK(mTexture_Bind(*renderObject.texture));
+  mERROR_CHECK(mShader_SetUniform(shader, "texture0", renderObject.texture));
+  mERROR_CHECK(mShader_SetUniform(shader, "screenSize0", mRenderParams_CurrentRenderResolutionF));
+  mERROR_CHECK(mShader_SetUniform(shader, "scale0", renderObject.size));
+  mERROR_CHECK(mShader_SetUniform(shader, "startOffset0", renderObject.position));
+
   // Set uniforms.
-  mERROR_CHECK(mForwardTuple(mSpriteBatch_Internal_RenderObject_Render_Unpacker<Args...>::Unpack, *spriteBatch->shader.GetPointer(), renderObject.args));
+  mERROR_CHECK(mForwardTuple(mSpriteBatch_Internal_RenderObject_Render_Unpacker<Args...>::Unpack, shader, renderObject.args));
+
+  if (renderObject.texture->sampleCount > 0)
+    mERROR_CHECK(mShader_SetUniform(shader, mSB_MultisampleCountUniformName, (int32_t)renderObject.texture->sampleCount));
 
   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
