@@ -284,7 +284,7 @@ mFUNCTION(mRS232Handle_Read, mRS232Handle *pHandle, OUT uint8_t *pBuffer, const 
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mRS232Handle_Write, mRS232Handle *pHandle, IN const uint8_t *pBuffer, const size_t length, OUT OPTIONAL size_t *pBytesWriteCount)
+mFUNCTION(mRS232Handle_Write, mRS232Handle *pHandle, IN const uint8_t *pBuffer, const size_t length, OUT OPTIONAL size_t *pBytesWriteCount, const bool allowRetryOnTimeout /* = true */)
 {
   mFUNCTION_SETUP();
 
@@ -292,15 +292,30 @@ mFUNCTION(mRS232Handle_Write, mRS232Handle *pHandle, IN const uint8_t *pBuffer, 
 
 #if defined(mPLATFORM_WINDOWS)
   DWORD bytesWritten = 0;
+  bool retried = false;
 
+retry:
   const BOOL succeeded = WriteFile(pHandle->handle, pBuffer, (DWORD)length, &bytesWritten, NULL);
 
   if (!succeeded)
   {
     const DWORD error = GetLastError();
-    mUnused(error);
 
-    mRETURN_RESULT(mR_InternalError);
+    switch (error)
+    {
+    case ERROR_SEM_TIMEOUT:
+
+      if (!allowRetryOnTimeout || retried)
+        mRETURN_RESULT(mR_Timeout);
+
+      mSleep(1);
+      retried = true;
+
+      goto retry;
+
+    default:
+      mRETURN_RESULT(mR_InternalError);
+    }
   }
 
   if (pBytesWriteCount)

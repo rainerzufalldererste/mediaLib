@@ -101,7 +101,7 @@ void mPrintPrepare(mPrintCallbackFunc *pFunc, const char *format, ...)
 {
   if (pFunc != nullptr)
   {
-    char buffer[1024 * 8];
+    char buffer[1024 * 16];
 
     va_list args;
     va_start(args, format);

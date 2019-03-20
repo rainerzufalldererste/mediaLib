@@ -80,6 +80,20 @@ inline T constexpr mClamp(const T value, const T min, const T max)
 template <typename T>
 T mMod(T value, T modulus);
 
+template <typename T>
+inline T mClampWrap(T val, T min, T max)
+{
+  const T dist = max - min;
+
+  if (max <= min)
+    return min;
+
+  if (val < min)
+    val += ((min - val + (dist - T(1))) / (dist)) * (dist); // Clamp above min
+
+  return mMod((val - min), (dist)) + min;
+}
+
 // Euclidean modulo. (For positive modulus).
 template <typename T>
 inline T mEuclideanMod(const T value, const T modulus)

@@ -18,13 +18,6 @@ mFUNCTION(mRenderParams_InitializeToDefault)
 {
   mFUNCTION_SETUP();
 
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-  mGL_ERROR_CHECK();
-
   mRETURN_SUCCESS();
 }
 
@@ -142,6 +135,8 @@ mFUNCTION(mRenderParams_SetCurrentRenderResolution, const mVec2s &resolution)
 #if defined (mRENDERER_OPENGL)
   glViewport(0, 0, (GLsizei)resolution.x, (GLsizei)resolution.y);
 #endif
+
+  mGL_DEBUG_ERROR_CHECK();
 
   mRETURN_SUCCESS();
 }
@@ -400,17 +395,20 @@ mFUNCTION(mRenderParams_GetCurrentGLContext_HWND, HWND *pGLWindow)
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mTexture2DParams_ApplyToBoundTexture, const mTexture2DParams &params)
+mFUNCTION(mTexture2DParams_ApplyToBoundTexture, const mTexture2DParams &params, const bool isMultisampleTexture /* = false */)
 {
   mFUNCTION_SETUP();
 
 #ifdef mRENDERER_OPENGL
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, params.minFilter);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, params.magFilter);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, params.wrapModeX);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, params.wrapModeY);
+  if (!isMultisampleTexture)
+  {
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, params.minFilter);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, params.magFilter);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, params.wrapModeX);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, params.wrapModeY);
 
-  mGL_DEBUG_ERROR_CHECK();
+    mGL_DEBUG_ERROR_CHECK();
+  }
 #else
   mRETURN_RESULT(mR_NotImplemented);
 #endif
@@ -782,6 +780,7 @@ mFUNCTION(mRenderParams_PrintRenderState, const bool onlyNewValues /* = false */
   mGL_PRINT_INTEGER_PARAM(GL_TEXTURE_BINDING_1D);
   mGL_PRINT_BOOL_PARAM(GL_TEXTURE_2D);
   mGL_PRINT_INTEGER_PARAM(GL_TEXTURE_BINDING_2D);
+  mGL_PRINT_INTEGER_PARAM(GL_TEXTURE_BINDING_2D_MULTISAMPLE);
   mGL_PRINT_BOOL_PARAM(GL_TEXTURE_3D);
   mGL_PRINT_INTEGER_PARAM(GL_TEXTURE_BINDING_3D);
   mGL_PRINT_INTEGER_PARAM(GL_TEXTURE_BINDING_BUFFER);

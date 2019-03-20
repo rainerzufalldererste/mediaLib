@@ -17,6 +17,7 @@ struct mTexture
   GLuint textureUnit;
 #endif
 
+  size_t sampleCount;
   bool foreignTexture;
 };
 

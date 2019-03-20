@@ -14,8 +14,8 @@ thread_local bool g_mResult_silent = g_mResult_silent_default;
 
 void mDebugOut(const char *format, ...)
 {
-#if !defined(FINAL)
-  char buffer[1024 * 8];
+#if !defined(GIT_BUILD)
+  char buffer[1024 * 16];
 
   mMemset(buffer, mARRAYSIZE(buffer), 0);
 
@@ -26,7 +26,8 @@ void mDebugOut(const char *format, ...)
 
   buffer[mARRAYSIZE(buffer) - 1] = 0;
 
-  OutputDebugStringA(buffer);
+  if (buffer[0] != '\0')
+    OutputDebugStringA(buffer);
 #else
   mUnused(format);
 #endif
