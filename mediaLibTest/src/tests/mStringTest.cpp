@@ -949,21 +949,6 @@ mTEST(mString, TestSetToWCharT)
   mTEST_ALLOCATOR_ZERO_CHECK();
 }
 
-mTEST(mString, TestToStdString)
-{
-  mTEST_ALLOCATOR_SETUP();
-
-  mString string;
-  mDEFER_CALL(&string, mString_Destroy);
-  mTEST_ASSERT_SUCCESS(mString_Create(&string, "THIS IS NOT EMPTY", pAllocator));
-
-  std::string stdString = (std::string)string;
-
-  mTEST_ASSERT_EQUAL(string.bytes, stdString.size() + 1);
-
-  mTEST_ALLOCATOR_ZERO_CHECK();
-}
-
 mTEST(mString, TestWstringLargerBufferSizeCreate)
 {
   mTEST_ALLOCATOR_SETUP();

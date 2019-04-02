@@ -245,11 +245,6 @@ bool mString::operator!=(const mString &s) const
   return !(*this == s);
 }
 
-mString::operator std::string() const
-{
-  return std::string(text);
-}
-
 mUtf8StringIterator mString::begin() const
 {
   return mUtf8StringIterator(text, bytes);
@@ -494,10 +489,10 @@ mFUNCTION(mString_Create, OUT mString *pString, const wchar_t *text, const size_
     *pString = mString();
     pString->pAllocator = pAllocator;
 
-    if (pString->capacity < size * sizeof(wchar_t))
+    if (pString->capacity < size * sizeof(wchar_t) * 2)
     {
-      mERROR_CHECK(mAllocator_Reallocate(pString->pAllocator, &pString->text, size * sizeof(wchar_t)));
-      pString->capacity = size * sizeof(wchar_t);
+      mERROR_CHECK(mAllocator_Reallocate(pString->pAllocator, &pString->text, size * sizeof(wchar_t) * 2));
+      pString->capacity = size * sizeof(wchar_t) * 2;
     }
   }
   else
@@ -507,8 +502,8 @@ mFUNCTION(mString_Create, OUT mString *pString, const wchar_t *text, const size_
 
     pString->pAllocator = pAllocator;
 
-    mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &pString->text, size * sizeof(wchar_t)));
-    pString->capacity = size * sizeof(wchar_t);
+    mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &pString->text, size * sizeof(wchar_t) * 2));
+    pString->capacity = size * sizeof(wchar_t) * 2;
   }
   
   if (0 == (pString->bytes = WideCharToMultiByte(CP_UTF8, 0, text, (int)size, pString->text, (int)pString->capacity, nullptr, false)))

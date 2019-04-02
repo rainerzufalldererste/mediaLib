@@ -684,3 +684,536 @@ mTEST(mQueue, TestIterateEmptyBackwards)
 
   mTEST_ALLOCATOR_ZERO_CHECK();
 }
+
+mTEST(mQueue, TestConstIterateForward)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  mPtr<mQueue<int64_t>> numberQueue = nullptr;
+  mDEFER_CALL(&numberQueue, mQueue_Destroy);
+  mTEST_ASSERT_SUCCESS(mQueue_Create(&numberQueue, pAllocator));
+
+  mTEST_ASSERT_SUCCESS(mQueue_PushBack(numberQueue, 0LL));
+
+  for (int64_t i = 1; i < 100; i++)
+  {
+    mTEST_ASSERT_SUCCESS(mQueue_PushBack(numberQueue, i));
+    mTEST_ASSERT_SUCCESS(mQueue_PushFront(numberQueue, -i));
+  }
+
+  int64_t lastCount = -100;
+  size_t count = 0;
+
+  const mPtr<mQueue<int64_t>> &constNumberQueue = numberQueue;
+
+  for (const int64_t i : constNumberQueue->Iterate())
+  {
+    mTEST_ASSERT_EQUAL(i, lastCount + 1);
+    lastCount = i;
+    count++;
+  }
+
+  mTEST_ASSERT_EQUAL(lastCount, 99);
+  mTEST_ASSERT_EQUAL(count, 99 * 2 + 1);
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}
+
+mTEST(mQueue, TestConstIterateBackwardsManual)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  mPtr<mQueue<int64_t>> numberQueue = nullptr;
+  mDEFER_CALL(&numberQueue, mQueue_Destroy);
+  mTEST_ASSERT_SUCCESS(mQueue_Create(&numberQueue, pAllocator));
+
+  mTEST_ASSERT_SUCCESS(mQueue_PushBack(numberQueue, 0LL));
+
+  for (int64_t i = 1; i < 100; i++)
+  {
+    mTEST_ASSERT_SUCCESS(mQueue_PushBack(numberQueue, i));
+    mTEST_ASSERT_SUCCESS(mQueue_PushFront(numberQueue, -i));
+  }
+
+  int64_t lastCount = 100;
+  size_t count = 0;
+
+  const mPtr<mQueue<int64_t>> &constNumberQueue = numberQueue;
+
+  for (auto it = constNumberQueue->end(); it != constNumberQueue->begin(); ++it)
+  {
+    mTEST_ASSERT_EQUAL(*it, lastCount - 1);
+    lastCount = *it;
+    count++;
+  }
+
+  mTEST_ASSERT_EQUAL(lastCount, -99);
+  mTEST_ASSERT_EQUAL(count, 99 * 2 + 1);
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}
+
+mTEST(mQueue, TestConstIterateBackwards)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  mPtr<mQueue<int64_t>> numberQueue = nullptr;
+  mDEFER_CALL(&numberQueue, mQueue_Destroy);
+  mTEST_ASSERT_SUCCESS(mQueue_Create(&numberQueue, pAllocator));
+
+  mTEST_ASSERT_SUCCESS(mQueue_PushBack(numberQueue, 0LL));
+
+  for (int64_t i = 1; i < 100; i++)
+  {
+    mTEST_ASSERT_SUCCESS(mQueue_PushBack(numberQueue, i));
+    mTEST_ASSERT_SUCCESS(mQueue_PushFront(numberQueue, -i));
+  }
+
+  int64_t lastCount = 100;
+  size_t count = 0;
+
+  const mPtr<mQueue<int64_t>> &constNumberQueue = numberQueue;
+
+  for (const int64_t i : constNumberQueue->IterateReverse())
+  {
+    mTEST_ASSERT_EQUAL(i, lastCount - 1);
+    lastCount = i;
+    count++;
+  }
+
+  mTEST_ASSERT_EQUAL(lastCount, -99);
+  mTEST_ASSERT_EQUAL(count, 99 * 2 + 1);
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}
+
+mTEST(mQueue, TestConstIterateEmptyForward)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  mPtr<mQueue<int64_t>> numberQueue = nullptr;
+  mDEFER_CALL(&numberQueue, mQueue_Destroy);
+  mTEST_ASSERT_SUCCESS(mQueue_Create(&numberQueue, pAllocator));
+
+  size_t count = 0;
+
+  const mPtr<mQueue<int64_t>> &constNumberQueue = numberQueue;
+
+  for (const int64_t i : *constNumberQueue)
+  {
+    mUnused(i);
+    count += 1;
+  }
+
+  mTEST_ASSERT_EQUAL(count, 0);
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}
+
+mTEST(mQueue, TestConstIterateEmptyBackwards)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  mPtr<mQueue<int64_t>> numberQueue = nullptr;
+  mDEFER_CALL(&numberQueue, mQueue_Destroy);
+  mTEST_ASSERT_SUCCESS(mQueue_Create(&numberQueue, pAllocator));
+
+  size_t count = 0;
+
+  const mPtr<mQueue<int64_t>> &constNumberQueue = numberQueue;
+
+  for (int64_t i : constNumberQueue->IterateReverse())
+  {
+    mUnused(i);
+    count++;
+  }
+
+  mTEST_ASSERT_EQUAL(count, 0);
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}
+
+mTEST(mQueue, TestMin)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  mPtr<mQueue<int64_t>> numberQueue = nullptr;
+  mDEFER_CALL(&numberQueue, mQueue_Destroy);
+  mTEST_ASSERT_SUCCESS(mQueue_Create(&numberQueue, pAllocator));
+
+  for (int64_t i = 0; i <= 100; i++)
+    if (i % 2 == 1)
+      mTEST_ASSERT_SUCCESS(mQueue_PushBack(numberQueue, i));
+    else
+      mTEST_ASSERT_SUCCESS(mQueue_PushFront(numberQueue, i));
+
+  int64_t minValue = -1;
+  mTEST_ASSERT_SUCCESS(mQueue_Min(numberQueue, (std::function<mComparisonResult(const int64_t &, const int64_t &)>)[](const int64_t &a, const int64_t &b) { return a > b ? mCR_Greater : (a < b ? mCR_Less : mCR_Equal); }, &minValue));
+  mTEST_ASSERT_EQUAL(minValue, 0);
+
+  minValue = 0;
+  mTEST_ASSERT_SUCCESS(mQueue_Min(numberQueue, &minValue));
+  mTEST_ASSERT_EQUAL(minValue, 0);
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}
+
+mTEST(mQueue, TestMax)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  mPtr<mQueue<int64_t>> numberQueue = nullptr;
+  mDEFER_CALL(&numberQueue, mQueue_Destroy);
+  mTEST_ASSERT_SUCCESS(mQueue_Create(&numberQueue, pAllocator));
+
+  for (int64_t i = 0; i <= 100; i++)
+    if (i % 2 == 1)
+      mTEST_ASSERT_SUCCESS(mQueue_PushBack(numberQueue, i));
+    else
+      mTEST_ASSERT_SUCCESS(mQueue_PushFront(numberQueue, i));
+
+  int64_t maxValue = -1;
+  mTEST_ASSERT_SUCCESS(mQueue_Max(numberQueue, (std::function<mComparisonResult(const int64_t &, const int64_t &)>)[](const int64_t &a, const int64_t &b) { return a > b ? mCR_Greater : (a < b ? mCR_Less : mCR_Equal); }, &maxValue));
+  mTEST_ASSERT_EQUAL(maxValue, 100);
+
+  maxValue = 0;
+  mTEST_ASSERT_SUCCESS(mQueue_Max(numberQueue, &maxValue));
+  mTEST_ASSERT_EQUAL(maxValue, 100);
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}
+
+mTEST(mQueue, TestContains)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  mPtr<mQueue<int64_t>> numberQueue = nullptr;
+  mDEFER_CALL(&numberQueue, mQueue_Destroy);
+  mTEST_ASSERT_SUCCESS(mQueue_Create(&numberQueue, pAllocator));
+
+  for (int64_t i = 0; i <= 100; i++)
+    mTEST_ASSERT_SUCCESS(mQueue_PushBack(numberQueue, i));
+
+  bool contained = false;
+  mTEST_ASSERT_SUCCESS(mQueue_Contains(numberQueue, (int64_t)0, (std::function<bool (const int64_t &, const int64_t &)>)[](const int64_t &a, const int64_t &b) { return a == b; }, &contained));
+  mTEST_ASSERT_EQUAL(contained, true);
+  
+  mTEST_ASSERT_SUCCESS(mQueue_Contains(numberQueue, (int64_t)-1, (std::function<bool(const int64_t &, const int64_t &)>)[](const int64_t &a, const int64_t &b) { return a == b; }, &contained));
+  mTEST_ASSERT_EQUAL(contained, false);
+
+  mTEST_ASSERT_SUCCESS(mQueue_Contains(numberQueue, (int64_t)100, (std::function<bool(const int64_t &, const int64_t &)>)[](const int64_t &a, const int64_t &b) { return a == b; }, &contained));
+  mTEST_ASSERT_EQUAL(contained, true);
+
+  mTEST_ASSERT_SUCCESS(mQueue_Contains(numberQueue, (int64_t)101, (std::function<bool(const int64_t &, const int64_t &)>)[](const int64_t &a, const int64_t &b) { return a == b; }, &contained));
+  mTEST_ASSERT_EQUAL(contained, false);
+
+  mTEST_ASSERT_SUCCESS(mQueue_Contains(numberQueue, (int64_t)50, (std::function<bool(const int64_t &, const int64_t &)>)[](const int64_t &a, const int64_t &b) { return a == b; }, &contained));
+  mTEST_ASSERT_EQUAL(contained, true);
+
+  mTEST_ASSERT_SUCCESS(mQueue_Contains(numberQueue, (int64_t)-100, (std::function<bool(const int64_t &, const int64_t &)>)[](const int64_t &a, const int64_t &b) { return a == b; }, &contained));
+  mTEST_ASSERT_EQUAL(contained, false);
+
+  mTEST_ASSERT_SUCCESS(mQueue_Contains(numberQueue, (int64_t)0, &contained));
+  mTEST_ASSERT_EQUAL(contained, true);
+
+  mTEST_ASSERT_SUCCESS(mQueue_Contains(numberQueue, (int64_t)-1, &contained));
+  mTEST_ASSERT_EQUAL(contained, false);
+
+  mTEST_ASSERT_SUCCESS(mQueue_Contains(numberQueue, (int64_t)100, &contained));
+  mTEST_ASSERT_EQUAL(contained, true);
+
+  mTEST_ASSERT_SUCCESS(mQueue_Contains(numberQueue, (int64_t)101, &contained));
+  mTEST_ASSERT_EQUAL(contained, false);
+
+  mTEST_ASSERT_SUCCESS(mQueue_Contains(numberQueue, (int64_t)50, &contained));
+  mTEST_ASSERT_EQUAL(contained, true);
+
+  mTEST_ASSERT_SUCCESS(mQueue_Contains(numberQueue, (int64_t)-100, &contained));
+  mTEST_ASSERT_EQUAL(contained, false);
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}
+
+mTEST(mQueue, TestRemoveDuplicates)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  mPtr<mQueue<int64_t>> numberQueue = nullptr;
+  mDEFER_CALL(&numberQueue, mQueue_Destroy);
+  mTEST_ASSERT_SUCCESS(mQueue_Create(&numberQueue, pAllocator));
+
+  constexpr size_t targetValue = 100;
+
+  for (int64_t i = 0; i < targetValue; i++)
+  {
+    mTEST_ASSERT_SUCCESS(mQueue_PushBack(numberQueue, i));
+    mTEST_ASSERT_SUCCESS(mQueue_PushFront(numberQueue, i));
+  }
+
+  {
+    mPtr<mQueue<int64_t>> numberQueue0 = nullptr;
+
+    mTEST_ASSERT_SUCCESS(mQueue_RemoveDuplicates(numberQueue, &numberQueue0, pAllocator, (std::function<bool(const int64_t &, const int64_t &)>)[](const int64_t &a, const int64_t &b) { return a == b; }));
+
+    size_t count0 = 0;
+    mTEST_ASSERT_SUCCESS(mQueue_GetCount(numberQueue0, &count0));
+
+    mTEST_ASSERT_EQUAL(targetValue, count0);
+
+    mPtr<mQueue<int64_t>> numberQueue1 = nullptr;
+
+    mTEST_ASSERT_SUCCESS(mQueue_RemoveDuplicates(numberQueue0, &numberQueue1, pAllocator, (std::function<bool(const int64_t &, const int64_t &)>)[](const int64_t &a, const int64_t &b) { return a == b; }));
+
+    size_t count1 = 0;
+    mTEST_ASSERT_SUCCESS(mQueue_GetCount(numberQueue1, &count1));
+
+    for (const auto &_value : numberQueue->Iterate())
+    {
+      bool contained = false;
+      mTEST_ASSERT_SUCCESS(mQueue_Contains(numberQueue0, _value, &contained));
+
+      mTEST_ASSERT_TRUE(contained);
+    }
+
+    for (size_t i = 0; i < count0; i++)
+    {
+      mTEST_ASSERT_EQUAL((*numberQueue0)[i], (*numberQueue1)[i]);
+      mTEST_ASSERT_EQUAL((*numberQueue0)[i], (*numberQueue)[i]); // Implementation Dependent.
+    }
+
+    mTEST_ASSERT_EQUAL(count1, count0);
+  }
+
+  {
+    mPtr<mQueue<int64_t>> numberQueue0 = nullptr;
+
+    mTEST_ASSERT_SUCCESS(mQueue_RemoveDuplicates(numberQueue, &numberQueue0, pAllocator));
+
+    size_t count0 = 0;
+    mTEST_ASSERT_SUCCESS(mQueue_GetCount(numberQueue0, &count0));
+
+    mTEST_ASSERT_EQUAL(targetValue, count0);
+
+    mPtr<mQueue<int64_t>> numberQueue1 = nullptr;
+
+    mTEST_ASSERT_SUCCESS(mQueue_RemoveDuplicates(numberQueue0, &numberQueue1, pAllocator));
+
+    size_t count1 = 0;
+    mTEST_ASSERT_SUCCESS(mQueue_GetCount(numberQueue1, &count1));
+
+    for (const auto &_value : numberQueue->Iterate())
+    {
+      bool contained = false;
+      mTEST_ASSERT_SUCCESS(mQueue_Contains(numberQueue0, _value, &contained));
+
+      mTEST_ASSERT_TRUE(contained);
+    }
+
+    for (size_t i = 0; i < count0; i++)
+    {
+      mTEST_ASSERT_EQUAL((*numberQueue0)[i], (*numberQueue1)[i]);
+      mTEST_ASSERT_EQUAL((*numberQueue0)[i], (*numberQueue)[i]); // Implementation Dependent.
+    }
+
+    mTEST_ASSERT_EQUAL(count1, count0);
+  }
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}
+
+mTEST(mQueue, TestSelect)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  mPtr<mQueue<int64_t>> numberQueue = nullptr;
+  mDEFER_CALL(&numberQueue, mQueue_Destroy);
+  mTEST_ASSERT_SUCCESS(mQueue_Create(&numberQueue, pAllocator));
+
+  constexpr size_t targetValue = 100;
+
+  for (int64_t i = 0; i < targetValue; i++)
+  {
+    mTEST_ASSERT_SUCCESS(mQueue_PushBack(numberQueue, i));
+    mTEST_ASSERT_SUCCESS(mQueue_PushFront(numberQueue, i));
+  }
+
+  {
+    mPtr<mQueue<int64_t>> numberQueue0 = nullptr;
+
+    mTEST_ASSERT_SUCCESS(mQueue_Select(numberQueue, &numberQueue0, pAllocator, (std::function<bool(const int64_t &)>)[](const int64_t &a) { return a == 50; }));
+
+    size_t count0 = 0;
+    mTEST_ASSERT_SUCCESS(mQueue_GetCount(numberQueue0, &count0));
+
+    mTEST_ASSERT_EQUAL(2, count0);
+
+    mPtr<mQueue<int64_t>> numberQueue1 = nullptr;
+
+    mTEST_ASSERT_SUCCESS(mQueue_Select(numberQueue0, &numberQueue1, pAllocator, (std::function<bool(const int64_t &)>)[](const int64_t &a) { return a == 50; }));
+
+    size_t count1 = 0;
+    mTEST_ASSERT_SUCCESS(mQueue_GetCount(numberQueue1, &count1));
+
+    for (size_t i = 0; i < 2; i++)
+      mTEST_ASSERT_EQUAL((*numberQueue0)[i], 50);
+
+    mTEST_ASSERT_EQUAL(count1, count0);
+
+    bool any = false;
+    mTEST_ASSERT_SUCCESS(mQueue_Any(numberQueue1, &any));
+
+    mTEST_ASSERT_TRUE(any);
+  }
+
+  {
+    mPtr<mQueue<int64_t>> numberQueue0 = nullptr;
+
+    struct _internal
+    {
+      static bool is_fifty(int64_t a)
+      {
+        return a == 50;
+      }
+    };
+
+    mTEST_ASSERT_SUCCESS(mQueue_Select(numberQueue, &numberQueue0, pAllocator, _internal::is_fifty));
+
+    size_t count0 = 0;
+    mTEST_ASSERT_SUCCESS(mQueue_GetCount(numberQueue0, &count0));
+
+    mTEST_ASSERT_EQUAL(2, count0);
+
+    mPtr<mQueue<int64_t>> numberQueue1 = nullptr;
+
+    mTEST_ASSERT_SUCCESS(mQueue_Select(numberQueue0, &numberQueue1, pAllocator, _internal::is_fifty));
+
+    size_t count1 = 0;
+    mTEST_ASSERT_SUCCESS(mQueue_GetCount(numberQueue1, &count1));
+
+    for (size_t i = 0; i < 2; i++)
+      mTEST_ASSERT_EQUAL((*numberQueue0)[i], 50);
+
+    mTEST_ASSERT_EQUAL(count1, count0);
+
+    bool any = false;
+    mTEST_ASSERT_SUCCESS(mQueue_Any(numberQueue1, &any));
+
+    mTEST_ASSERT_TRUE(any);
+  }
+
+  {
+    mPtr<mQueue<int64_t>> numberQueue0 = nullptr;
+
+    struct _internal
+    {
+      static bool is_twohundred(int64_t a)
+      {
+        return a == 200;
+      }
+    };
+
+    mTEST_ASSERT_SUCCESS(mQueue_Select(numberQueue, &numberQueue0, pAllocator, _internal::is_twohundred));
+
+    size_t count0 = 0;
+    mTEST_ASSERT_SUCCESS(mQueue_GetCount(numberQueue0, &count0));
+
+    mTEST_ASSERT_EQUAL(0, count0);
+
+    mPtr<mQueue<int64_t>> numberQueue1 = nullptr;
+
+    mTEST_ASSERT_SUCCESS(mQueue_Select(numberQueue0, &numberQueue1, pAllocator, _internal::is_twohundred));
+
+    size_t count1 = 0;
+    mTEST_ASSERT_SUCCESS(mQueue_GetCount(numberQueue1, &count1));
+
+    mTEST_ASSERT_EQUAL(count1, count0);
+
+    bool any = true;
+    mTEST_ASSERT_SUCCESS(mQueue_Any(numberQueue1, &any));
+
+    mTEST_ASSERT_FALSE(any);
+  }
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}
+
+mTEST(mQueue, TestCopyTo)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  mPtr<mQueue<int64_t>> numberQueue = nullptr;
+  mDEFER_CALL(&numberQueue, mQueue_Destroy);
+  mTEST_ASSERT_SUCCESS(mQueue_Create(&numberQueue, pAllocator));
+
+  constexpr size_t targetValue = 100;
+
+  for (int64_t i = 0; i < targetValue; i++)
+  {
+    mTEST_ASSERT_SUCCESS(mQueue_PushBack(numberQueue, i));
+    mTEST_ASSERT_SUCCESS(mQueue_PushFront(numberQueue, i));
+  }
+
+  mPtr<mQueue<int64_t>> numberQueue0 = nullptr;
+  mTEST_ASSERT_SUCCESS(mQueue_CopyTo(numberQueue, &numberQueue0, pAllocator));
+
+  mTEST_ASSERT_EQUAL(numberQueue->count, numberQueue0->count);
+
+  for (size_t i = 0; i < numberQueue->count; i++)
+    mTEST_ASSERT_EQUAL((*numberQueue)[i], (*numberQueue0)[i]);
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}
+
+mTEST(mQueue, TestOrderBy)
+{
+  mTEST_ALLOCATOR_SETUP();
+  
+  {
+    mPtr<mQueue<int64_t>> numberQueue = nullptr;
+    mDEFER_CALL(&numberQueue, mQueue_Destroy);
+    mTEST_ASSERT_SUCCESS(mQueue_Create(&numberQueue, pAllocator));
+
+    constexpr size_t targetValue = 1024;
+
+    for (int64_t i = 0; i < targetValue; i++)
+    {
+      mTEST_ASSERT_SUCCESS(mQueue_PushBack(numberQueue, i));
+      mTEST_ASSERT_SUCCESS(mQueue_PushFront(numberQueue, i));
+    }
+
+    mTEST_ASSERT_SUCCESS(mQueue_OrderBy(numberQueue));
+
+    int64_t first;
+    mTEST_ASSERT_SUCCESS(mQueue_PeekFront(numberQueue, &first));
+
+    for (size_t i = 1; i < numberQueue->count; i++)
+      mTEST_ASSERT_TRUE((*numberQueue)[i] >= first);
+  }
+
+  {
+    mPtr<mQueue<int64_t>> numberQueue = nullptr;
+    mDEFER_CALL(&numberQueue, mQueue_Destroy);
+    mTEST_ASSERT_SUCCESS(mQueue_Create(&numberQueue, pAllocator));
+
+    constexpr size_t targetValue = 1024;
+
+    for (int64_t i = 0; i < targetValue; i++)
+    {
+      if (i % 4 < 2)
+        mTEST_ASSERT_SUCCESS(mQueue_PushBack(numberQueue, i));
+      
+      if (i % 3 > 1)
+        mTEST_ASSERT_SUCCESS(mQueue_PushFront(numberQueue, i));
+    }
+
+    mTEST_ASSERT_SUCCESS(mQueue_OrderBy(numberQueue, (std::function<mComparisonResult(const int64_t &, const int64_t &)>)[](const int64_t &a, const int64_t &b) { return a > b ? mCR_Greater : (a < b ? mCR_Less : mCR_Equal); }));
+
+    int64_t first;
+    mTEST_ASSERT_SUCCESS(mQueue_PeekFront(numberQueue, &first));
+
+    for (size_t i = 1; i < numberQueue->count; i++)
+      mTEST_ASSERT_TRUE((*numberQueue)[i] >= first);
+  }
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}

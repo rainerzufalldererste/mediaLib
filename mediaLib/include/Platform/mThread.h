@@ -32,7 +32,7 @@ struct _mThread_ThreadInternalIntegerSequenceGenerator<0, TCountArgs...>
   typedef _mThread_ThreadInternalSequence<TCountArgs...> type;
 };
 
-template<class TFunctionDecay>
+template<typename TFunctionDecay>
 struct _mThread_ThreadInternal_Decay
 {
   template <typename TFunction, typename ...Args>
@@ -54,41 +54,32 @@ struct _mThread_ThreadInternal_Decay<mResult>
   }
 };
 
-template <typename TFunction>
-struct _mThread_ThreadInternal_ReturnTypeOf;
-
-template <typename TReturnType, typename... Args>
-struct _mThread_ThreadInternal_ReturnTypeOf<TReturnType(*)(Args...)>
-{
-  typedef TReturnType type;
-};
-
-template<class TFunction, class Args, size_t ...TCountArgs>
+template<typename TFunction, typename Args, size_t ...TCountArgs>
 void _mThread_ThreadInternal_CallFunctionUnpack(mThread *pThread, TFunction function, Args params, _mThread_ThreadInternalSequence<TCountArgs...>)
 {
   mUnused(params); // Ignore warnings in case the function does not take any arguments.
-  pThread->result = _mThread_ThreadInternal_Decay<_mThread_ThreadInternal_ReturnTypeOf<TFunction>::type>::CallFunction(function, std::get<TCountArgs>(params) ...);
+  pThread->result = _mThread_ThreadInternal_Decay<decltype(function(std::get<TCountArgs>(params)...))>::CallFunction(function, std::get<TCountArgs>(params) ...);
 }
 
-template<class TFunction, class Args>
-void _mThread_ThreadInternalFunc(mThread *pThread, TFunction *pFunction, Args args)
+template<typename TFunction, typename Args>
+void _mThread_ThreadInternalFunc(mThread *pThread, TFunction function, Args args)
 {
-  mASSERT(pThread != nullptr && pFunction != nullptr, "pThread and pFunction cannot be nullptr.");
+  mASSERT(pThread != nullptr || function == nullptr, "pThread cannot be nullptr.");
 
   pThread->threadState = mT_TS_Running;
 
-  _mThread_ThreadInternal_CallFunctionUnpack(pThread, *pFunction, args, typename _mThread_ThreadInternalIntegerSequenceGenerator<std::tuple_size<Args>::value>::type());
+  _mThread_ThreadInternal_CallFunctionUnpack(pThread, function, args, typename _mThread_ThreadInternalIntegerSequenceGenerator<std::tuple_size<Args>::value>::type());
 
   pThread->threadState = mT_TS_Stopped;
 }
 
 // Creates and starts a thread.
-template<class TFunction, class... Args>
-mFUNCTION(mThread_Create, OUT mThread **ppThread, IN OPTIONAL mAllocator *pAllocator, TFunction *pFunction, Args&&... args)
+template<typename TFunction, typename... Args>
+mFUNCTION(mThread_Create, OUT mThread **ppThread, IN OPTIONAL mAllocator *pAllocator, TFunction function, Args&&... args)
 {
   mFUNCTION_SETUP();
 
-  mERROR_IF(ppThread == nullptr, mR_ArgumentNull);
+  mERROR_IF(ppThread == nullptr || function == nullptr, mR_ArgumentNull);
 
   mDEFER_CALL_ON_ERROR(ppThread, mSetToNullptr);
   mDEFER_ON_ERROR(mAllocator_FreePtr(pAllocator, ppThread));
@@ -100,7 +91,7 @@ mFUNCTION(mThread_Create, OUT mThread **ppThread, IN OPTIONAL mAllocator *pAlloc
   new (&(*ppThread)->threadState) std::atomic<mThread_ThreadState>(mT_TS_NotStarted);
 
   auto tupleRef = std::make_tuple(std::forward<Args>(args)...);
-  new (&(*ppThread)->handle) std::thread (&_mThread_ThreadInternalFunc<TFunction, decltype(tupleRef)>, *ppThread, pFunction, tupleRef);
+  new (&(*ppThread)->handle) std::thread (&_mThread_ThreadInternalFunc<TFunction, decltype(tupleRef)>, *ppThread, function, tupleRef);
   
   mRETURN_SUCCESS();
 }

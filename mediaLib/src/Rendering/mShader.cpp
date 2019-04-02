@@ -62,9 +62,11 @@ mFUNCTION(mShader_Create, OUT mShader *pShader, const mString &vertexShader, con
 
   if (status != GL_TRUE)
   {
-    mPRINT_ERROR("Error compiling vertex shader:\n");
+    mPRINT_ERROR("Error compiling vertex shader.\n");
+#ifndef GIT_BUILD
     mPRINT_ERROR(vertexSource);
-    mPRINT_ERROR("\n\nThe following error occured:\n");
+#endif
+    mPRINT_ERROR("The following error occured:\n");
     char buffer[1024];
     glGetShaderInfoLog(vertexShaderHandle, sizeof(buffer), nullptr, buffer);
     mPRINT_ERROR(buffer);
@@ -104,9 +106,11 @@ mFUNCTION(mShader_Create, OUT mShader *pShader, const mString &vertexShader, con
 
   if (status != GL_TRUE)
   {
-    mPRINT_ERROR("Error compiling fragment shader:\n");
+    mPRINT_ERROR("Error compiling fragment shader.\n");
+#ifndef GIT_BUILD
     mPRINT_ERROR(fragmentSource);
-    mPRINT_ERROR("\n\nThe following error occured:\n");
+#endif
+    mPRINT_ERROR("The following error occured:\n");
     char buffer[1024];
     glGetShaderInfoLog(fragmentShaderHandle, sizeof(buffer), nullptr, buffer);
     mPRINT_ERROR(buffer);

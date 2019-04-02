@@ -313,33 +313,33 @@ mFUNCTION(mThreadPool_Destroy, IN_OUT mPtr<mThreadPool> *pThreadPool)
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mThreadPool_EnqueueTask, mPtr<mThreadPool> &threadPool, IN mTask *pTask)
+mFUNCTION(mThreadPool_EnqueueTask, mPtr<mThreadPool> &asyncTaskHandler, IN mTask *pTask)
 {
   mFUNCTION_SETUP();
 
-  mERROR_IF(threadPool == nullptr || pTask == nullptr, mR_ArgumentNull);
+  mERROR_IF(asyncTaskHandler == nullptr || pTask == nullptr, mR_ArgumentNull);
 
   // Enqueue task.
   {
     ++pTask->referenceCount;
 
-    mERROR_CHECK(mSemaphore_Lock(threadPool->pSemaphore));
-    mDEFER_CALL(threadPool->pSemaphore, mSemaphore_Unlock);
-    mERROR_CHECK(mQueue_PushBack(threadPool->queue, pTask));
+    mERROR_CHECK(mSemaphore_Lock(asyncTaskHandler->pSemaphore));
+    mDEFER_CALL(asyncTaskHandler->pSemaphore, mSemaphore_Unlock);
+    mERROR_CHECK(mQueue_PushBack(asyncTaskHandler->queue, pTask));
   }
 
-  mERROR_CHECK(mSemaphore_WakeOne(threadPool->pSemaphore));
+  mERROR_CHECK(mSemaphore_WakeOne(asyncTaskHandler->pSemaphore));
 
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mThreadPool_GetThreadCount, mPtr<mThreadPool> &threadPool, OUT size_t *pThreadCount)
+mFUNCTION(mThreadPool_GetThreadCount, mPtr<mThreadPool> &asyncTaskHandler, OUT size_t *pThreadCount)
 {
   mFUNCTION_SETUP();
 
-  mERROR_IF(threadPool == nullptr || pThreadCount == nullptr, mR_ArgumentNull);
+  mERROR_IF(asyncTaskHandler == nullptr || pThreadCount == nullptr, mR_ArgumentNull);
 
-  *pThreadCount = threadPool->threadCount;
+  *pThreadCount = asyncTaskHandler->threadCount;
 
   mRETURN_SUCCESS();
 }
@@ -379,7 +379,7 @@ mFUNCTION(mThreadPool_Create_Internal, mThreadPool *pThreadPool, IN OPTIONAL mAl
   mERROR_CHECK(mAllocator_AllocateZero(pThreadPool->pAllocator, &pThreadPool->ppThreads, pThreadPool->threadCount));
 
   for (size_t i = 0; i < pThreadPool->threadCount; ++i)
-    mERROR_CHECK(mThread_Create(&pThreadPool->ppThreads[i], pThreadPool->pAllocator, &mThreadPool_WorkerThread, pThreadPool));
+    mERROR_CHECK(mThread_Create(&pThreadPool->ppThreads[i], pThreadPool->pAllocator, mThreadPool_WorkerThread, pThreadPool));
 
   mRETURN_SUCCESS();
 }

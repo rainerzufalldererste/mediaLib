@@ -69,14 +69,14 @@ struct mFontDescription_Internal
     FontSizeFactor = 2
   };
 
-  mInplaceString<255> fontFileName;
+  mInplaceString<MAX_PATH> fontFileName;
   uint64_t fontSize;
   texture_font_t *pTextureFont = nullptr;
   uint64_t glyphRange0;
   uint64_t glyphRange1;
   mPtr<mQueue<mPtr<mQueue<mchar_t>>>> additionalGlyphRanges;
 
-  bool operator==(const mFontDescription &description)
+  bool operator==(const mFontDescription &description) const
   {
     return fontSize == (uint64_t)roundf(description.fontSize * FontSizeFactor) && description.fontFileName == fontFileName;
   }
@@ -86,8 +86,10 @@ mFUNCTION(mFontRenderer_Destroy_Internal, mFontRenderer *pFontRenderer);
 mFUNCTION(mFontRenderer_UpdateFontAtlas_Internal, mPtr<mFontRenderer> &fontRenderer);
 mFUNCTION(mFontRenderer_DrawEnqueuedText_Internal, mPtr<mFontRenderer> &fontRenderer);
 mFUNCTION(mFontRenderer_AddFont_Internal, mPtr<mFontRenderer> &fontRenderer, const mFontDescription &fontDescription, OUT size_t *pIndex);
-mFUNCTION(mFontRenderer_LoadGlyph_Internal, mPtr<mFontRenderer> &fontRenderer, mFontDescription_Internal *pFontDescription, const mchar_t codePoint, const char *character, const size_t bytes, OUT bool *pUnloadedChar);
-mFUNCTION(mFontRenderer_LoadGlyphs_Internal, mPtr<mFontRenderer> &fontRenderer, mFontDescription_Internal *pFontDescription, const mString &string, OUT bool *pUnloadedChars);
+mFUNCTION(mFontRenderer_FontDescriptionAlreadyContainsChar, mPtr<mFontRenderer> &fontRenderer, mFontDescription_Internal *pFontDescription, const float_t originalFontSize, const mchar_t codePoint, const char *character, OUT bool *pContainsChar);
+mFUNCTION(mFontRenderer_LoadGlyph_Internal, mPtr<mFontRenderer> &fontRenderer, mFontDescription_Internal *pFontDescription, const size_t queueFontIndex, const float_t originalFontSize, const mchar_t codePoint, const char *character, const size_t bytes, OUT bool *pFailedToLoadChar, const bool attemptToLoadFromBackupFont = true);
+mFUNCTION(mFontRenderer_AddCharToFontDescription, mPtr<mFontRenderer> &fontRenderer, mFontDescription_Internal *pFontDescription, const mchar_t codePoint, const char *character);
+mFUNCTION(mFontRenderer_LoadGlyphs_Internal, mPtr<mFontRenderer> &fontRenderer, mFontDescription_Internal *pFontDescription, const size_t queueFontIndex, const float_t originalFontSize, const mString &string, OUT bool *pFailedToLoadChars);
 mFUNCTION(mFontRenderer_ClearGlyphs_Internal, mPtr<mFontRenderer> &fontRenderer);
 
 struct mFontTextureAtlas
@@ -127,7 +129,21 @@ struct mFontRenderer
   uint32_t *pIndexBuffer;
   size_t indexBufferCapacity;
   bool addedGlyph;
+  mRectangle2D<float_t> renderedArea;
+  mPtr<mQueue<mString>> backupFonts;
 };
+
+//////////////////////////////////////////////////////////////////////////
+
+mRectangle2D<float_t> mFontDescrption_GetDisplayBounds(const mRectangle2D<float_t> &displayBounds)
+{
+  mVec2f position = displayBounds.position;
+  position.y = mRenderParams_CurrentRenderResolutionF.y - displayBounds.position.y - displayBounds.h;
+
+  return mRectangle2D<float_t>(position, displayBounds.size);
+}
+
+//////////////////////////////////////////////////////////////////////////
 
 mFUNCTION(mFontRenderer_Create, OUT mPtr<mFontRenderer> *pFontRenderer, IN mAllocator *pAllocator, const size_t width /* = 2048 */, const size_t height /* = 2048 */)
 {
@@ -150,6 +166,7 @@ mFUNCTION(mFontRenderer_Create, OUT mPtr<mFontRenderer> *pFontRenderer, IN mAllo
   mERROR_CHECK(mIndexedRenderDataBuffer_Create(&(*pFontRenderer)->indexDataBuffer, pAllocator, mFontRenderer_VertexShader, mFontRenderer_FragmentShader, true, false));
   mERROR_CHECK(mQueue_Create(&(*pFontRenderer)->currentFrameTextureAtlasses, pAllocator));
   mERROR_CHECK(mQueue_Create(&(*pFontRenderer)->availableTextureAtlasses, pAllocator));
+  mERROR_CHECK(mQueue_Create(&(*pFontRenderer)->backupFonts, pAllocator));
 
   mRETURN_SUCCESS();
 }
@@ -183,6 +200,8 @@ mFUNCTION(mFontRenderer_SetPosition, mPtr<mFontRenderer> &fontRenderer, const mV
 
   fontRenderer->resetPosition = fontRenderer->position = position;
 
+  mERROR_CHECK(mFontRenderer_ResetRenderedRect(fontRenderer));
+
   mRETURN_SUCCESS();
 }
 
@@ -196,6 +215,8 @@ mFUNCTION(mFontRenderer_SetDisplayPosition, mPtr<mFontRenderer> &fontRenderer, c
   _position.y = mRenderParams_CurrentRenderResolutionF.y - position.y;
 
   fontRenderer->resetPosition = fontRenderer->position = _position;
+
+  mERROR_CHECK(mFontRenderer_ResetRenderedRect(fontRenderer));
 
   mRETURN_SUCCESS();
 }
@@ -225,6 +246,66 @@ mFUNCTION(mFontRenderer_GetCurrentDisplayPosition, mPtr<mFontRenderer> &fontRend
   mRETURN_SUCCESS();
 }
 
+mFUNCTION(mFontRenderer_ResetRenderedRect, mPtr<mFontRenderer> &fontRenderer)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(fontRenderer == nullptr, mR_ArgumentNull);
+
+  fontRenderer->renderedArea = mRectangle2D<float_t>(fontRenderer->position, mVec2f(0));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mFontRenderer_GetRenderedRect, mPtr<mFontRenderer> &fontRenderer, OUT mRectangle2D<float_t> *pRenderedArea)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(fontRenderer == nullptr || pRenderedArea == nullptr, mR_ArgumentNull);
+
+  *pRenderedArea = fontRenderer->renderedArea;
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mFontRenderer_GetRenderedDisplayRect, mPtr<mFontRenderer> &fontRenderer, OUT mRectangle2D<float_t> *pRenderedArea)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(fontRenderer == nullptr || pRenderedArea == nullptr, mR_ArgumentNull);
+
+  mRectangle2D<float_t> area = fontRenderer->renderedArea;
+
+  area.position.y = mRenderParams_CurrentRenderResolutionF.y - area.y - area.height;
+
+  *pRenderedArea = area;
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mFontRenderer_AddBackupFont, mPtr<mFontRenderer> &fontRenderer, const mString &backupFont)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(fontRenderer == nullptr, mR_ArgumentNull);
+  mERROR_IF(backupFont.bytes <= 1, mR_InvalidParameter);
+
+  mERROR_CHECK(mQueue_PushBack(fontRenderer->backupFonts, backupFont));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mFontRenderer_ClearBackupFonts, mPtr<mFontRenderer> &fontRenderer)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(fontRenderer == nullptr, mR_ArgumentNull);
+  
+  mERROR_CHECK(mQueue_Clear(fontRenderer->backupFonts));
+
+  mRETURN_SUCCESS();
+}
+
 mFUNCTION(mFontRenderer_Begin, mPtr<mFontRenderer> &fontRenderer, const mMatrix &matrix /* = mMatrix::Scale(2.0f / mRenderParams_CurrentRenderResolutionF.x, 2.0f / mRenderParams_CurrentRenderResolutionF.y, 1) * mMatrix::Translation(-1, -1, 0) */)
 {
   mFUNCTION_SETUP();
@@ -235,6 +316,8 @@ mFUNCTION(mFontRenderer_Begin, mPtr<mFontRenderer> &fontRenderer, const mMatrix 
   fontRenderer->started = true;
   fontRenderer->matrix = matrix;
   fontRenderer->position = fontRenderer->resetPosition;
+
+  mERROR_CHECK(mFontRenderer_ResetRenderedRect(fontRenderer));
 
   mRETURN_SUCCESS();
 }
@@ -378,7 +461,9 @@ mFUNCTION(mFontRenderer_Draw, mPtr<mFontRenderer> &fontRenderer, const mFontDesc
     {
       bool failedToLoadChars = false;
       bool unloadedChars = false;
-      mERROR_CHECK(mFontRenderer_LoadGlyph_Internal(fontRenderer, pFontDescription, _char.codePoint, _char.character, _char.characterSize, &unloadedChars));
+      mERROR_CHECK(mFontRenderer_LoadGlyph_Internal(fontRenderer, pFontDescription, fontIndex, fontDescription.fontSize, _char.codePoint, _char.character, _char.characterSize, &unloadedChars, !fontDescription.ignoreBackupFonts));
+
+      mERROR_CHECK(mQueue_PointerAt(fontRenderer->textureAtlas->fonts, fontIndex, &pFontDescription)); // Might have moved due to the fontQueue growing if we loaded a character from a newly loaded backup font.
 
       if (unloadedChars)
       {
@@ -416,7 +501,7 @@ mFUNCTION(mFontRenderer_Draw, mPtr<mFontRenderer> &fontRenderer, const mFontDesc
           mERROR_CHECK(mQueue_PointerAt(fontRenderer->textureAtlas->fonts, fontIndex, &pFontDescription));
         }
 
-        mERROR_CHECK(mFontRenderer_LoadGlyph_Internal(fontRenderer, pFontDescription, _char.codePoint, _char.character, _char.characterSize, &unloadedChars));
+        mERROR_CHECK(mFontRenderer_LoadGlyph_Internal(fontRenderer, pFontDescription, fontIndex, fontDescription.fontSize, _char.codePoint, _char.character, _char.characterSize, &unloadedChars, !fontDescription.ignoreBackupFonts));
 
         mERROR_IF(unloadedChars, mR_ArgumentOutOfBounds);
       }
@@ -425,19 +510,58 @@ mFUNCTION(mFontRenderer_Draw, mPtr<mFontRenderer> &fontRenderer, const mFontDesc
 
       if (pGlyph == nullptr)
       {
-        if (!failedToLoadChars && !fontRenderer->startedRenderable)
-          goto dealWithUnloadedChars;
+        bool checkBackupFonts = !fontDescription.ignoreBackupFonts;
 
-        pGlyph = texture_font_find_glyph(pFontDescription->pTextureFont, nullptr);
+        if (checkBackupFonts)
+        {
+          mERROR_CHECK(mQueue_Any(fontRenderer->backupFonts, &checkBackupFonts));
+
+          if (checkBackupFonts)
+          {
+            for (const mString &_backupFont : fontRenderer->backupFonts->Iterate())
+            {
+              mFontDescription backupFontDescription;
+              backupFontDescription.fontSize = fontDescription.fontSize;
+              mERROR_CHECK(mInplaceString_Create(&backupFontDescription.fontFileName, _backupFont));
+
+              size_t backupFontIndex;
+              mERROR_CHECK(mFontRenderer_AddFont_Internal(fontRenderer, backupFontDescription, &backupFontIndex));
+
+              mFontDescription_Internal *pBackupFontDescription = nullptr;
+              mERROR_CHECK(mQueue_PointerAt(fontRenderer->textureAtlas->fonts, backupFontIndex, &pBackupFontDescription));
+
+              pGlyph = texture_font_find_glyph(pBackupFontDescription->pTextureFont, _char.character);
+
+              if (pGlyph != nullptr)
+              {
+                if (pGlyph->glyph_index == 0)
+                  continue;
+                else
+                  break;
+              }
+            }
+          }
+        }
 
         if (pGlyph == nullptr)
-          continue;
+        {
+          if (!failedToLoadChars && !fontRenderer->startedRenderable)
+            goto dealWithUnloadedChars;
+
+          pGlyph = texture_font_find_glyph(pFontDescription->pTextureFont, nullptr);
+
+          if (pGlyph == nullptr)
+            continue;
+        }
       }
 
       float kerning = 0.0f;
 
+      const char *actualPreviousChar = previousChar;
+
+    retry_render:
       if (index > 0)
-        kerning = texture_glyph_get_kerning(pGlyph, previousChar);
+        kerning = texture_glyph_get_kerning(pGlyph, actualPreviousChar);
 
       previousChar = _char.character;
 
@@ -445,29 +569,77 @@ mFUNCTION(mFontRenderer_Draw, mPtr<mFontRenderer> &fontRenderer, const mFontDesc
 
       fontRenderer->position.x += kerning;
 
-      int64_t x0 = (int64_t)(fontRenderer->position.x + pGlyph->offset_x);
-      int64_t y0 = (int64_t)(fontRenderer->position.y + pGlyph->offset_y);
-      int64_t x1 = (int64_t)(x0 + pGlyph->width);
-      int64_t y1 = (int64_t)(y0 - pGlyph->height);
+      const float_t x0 = (fontRenderer->position.x + pGlyph->offset_x);
+      const float_t y0 = (fontRenderer->position.y + pGlyph->offset_y);
+      const float_t x1 = (x0 + pGlyph->width);
+      const float_t y1 = (y0 - pGlyph->height);
 
-      float_t s0 = pGlyph->s0;
-      float_t t0 = pGlyph->t0;
-      float_t s1 = pGlyph->s1;
-      float_t t1 = pGlyph->t1;
+      mRectangle2D<float_t> glyphBounds(x0, y1, x1 - x0, y0 - y1); // Flipped because it's in OpenGL space.
 
-      mERROR_CHECK(mBinaryChunk_WriteData(fontRenderer->enqueuedText, mVec3f((float_t)x0, (float_t)y0, 0)));
+      if (fontDescription.hasBounds && !fontDescription.bounds.Contains(glyphBounds))
+      {
+        switch (fontDescription.boundMode)
+        {
+        case mFD_BM_Stop:
+        {
+          mRETURN_SUCCESS();
+
+          break;
+        }
+
+        case mFD_BM_BreakLineOnBound:
+        {
+          if (fontDescription.bounds.position.y + fontDescription.bounds.size.y > fontRenderer->position.y + fontDescription.lineHeightRatio * fontDescription.fontSize)
+          {
+            previousChar = "\n";
+            fontRenderer->position.x = fontRenderer->resetPosition.x;
+            fontRenderer->position.y -= fontDescription.lineHeightRatio * fontDescription.fontSize;
+            
+            goto retry_render;
+          }
+          else
+          {
+            mRETURN_SUCCESS();
+          }
+
+          break;
+        }
+
+        case mFD_BM_StopWithTrippleDot:
+        {
+          mFontDescription description = fontDescription;
+          description.hasBounds = false;
+
+          mERROR_CHECK(mFontRenderer_Draw(fontRenderer, description, "...", colour));
+
+          mRETURN_SUCCESS();
+        }
+
+        default:
+          break;
+        }
+      }
+
+      fontRenderer->renderedArea.GrowToContain(glyphBounds);
+
+      const float_t s0 = pGlyph->s0;
+      const float_t t0 = pGlyph->t0;
+      const float_t s1 = pGlyph->s1;
+      const float_t t1 = pGlyph->t1;
+
+      mERROR_CHECK(mBinaryChunk_WriteData(fontRenderer->enqueuedText, mVec3f(x0, y0, 0)));
       mERROR_CHECK(mBinaryChunk_WriteData(fontRenderer->enqueuedText, mVec2f(s0, t0)));
       mERROR_CHECK(mBinaryChunk_WriteData(fontRenderer->enqueuedText, (mVec4f)colour));
 
-      mERROR_CHECK(mBinaryChunk_WriteData(fontRenderer->enqueuedText, mVec3f((float_t)x0, (float_t)y1, 0)));
+      mERROR_CHECK(mBinaryChunk_WriteData(fontRenderer->enqueuedText, mVec3f(x0, y1, 0)));
       mERROR_CHECK(mBinaryChunk_WriteData(fontRenderer->enqueuedText, mVec2f(s0, t1)));
       mERROR_CHECK(mBinaryChunk_WriteData(fontRenderer->enqueuedText, (mVec4f)colour));
 
-      mERROR_CHECK(mBinaryChunk_WriteData(fontRenderer->enqueuedText, mVec3f((float_t)x1, (float_t)y1, 0)));
+      mERROR_CHECK(mBinaryChunk_WriteData(fontRenderer->enqueuedText, mVec3f(x1, y1, 0)));
       mERROR_CHECK(mBinaryChunk_WriteData(fontRenderer->enqueuedText, mVec2f(s1, t1)));
       mERROR_CHECK(mBinaryChunk_WriteData(fontRenderer->enqueuedText, (mVec4f)colour));
 
-      mERROR_CHECK(mBinaryChunk_WriteData(fontRenderer->enqueuedText, mVec3f((float_t)x1, (float_t)y0, 0)));
+      mERROR_CHECK(mBinaryChunk_WriteData(fontRenderer->enqueuedText, mVec3f(x1, y0, 0)));
       mERROR_CHECK(mBinaryChunk_WriteData(fontRenderer->enqueuedText, mVec2f(s1, t0)));
       mERROR_CHECK(mBinaryChunk_WriteData(fontRenderer->enqueuedText, (mVec4f)colour));
 
@@ -494,6 +666,7 @@ mFUNCTION(mFontRenderer_Destroy_Internal, mFontRenderer *pFontRenderer)
   mERROR_CHECK(mAllocator_FreePtr(pFontRenderer->pAllocator, &pFontRenderer->pIndexBuffer));
   mERROR_CHECK(mQueue_Destroy(&pFontRenderer->currentFrameTextureAtlasses));
   mERROR_CHECK(mQueue_Destroy(&pFontRenderer->availableTextureAtlasses));
+  mERROR_CHECK(mQueue_Destroy(&pFontRenderer->backupFonts));
 
   mRETURN_SUCCESS();
 }
@@ -594,14 +767,15 @@ mFUNCTION(mFontRenderer_AddFont_Internal, mPtr<mFontRenderer> &fontRenderer, con
   size_t fontCount = 0;
   mERROR_CHECK(mQueue_GetCount(fontRenderer->textureAtlas->fonts, &fontCount));
 
-  for (size_t i = 0; i < fontCount; i++)
-  {
-    mFontDescription_Internal *pDesc = nullptr;
-    mERROR_CHECK(mQueue_PointerAt(fontRenderer->textureAtlas->fonts, i, &pDesc));
+  size_t index = (size_t)-1;
 
-    if (*pDesc == fontDescription)
+  for (const mFontDescription_Internal &_fontDescription : fontRenderer->textureAtlas->fonts->Iterate())
+  {
+    ++index;
+
+    if (_fontDescription == fontDescription)
     {
-      *pIndex = i;
+      *pIndex = index;
       mRETURN_SUCCESS();
     }
   }
@@ -621,11 +795,11 @@ mFUNCTION(mFontRenderer_AddFont_Internal, mPtr<mFontRenderer> &fontRenderer, con
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mFontRenderer_LoadGlyph_Internal, mPtr<mFontRenderer> &fontRenderer, mFontDescription_Internal *pFontDescription, const mchar_t codePoint, const char *character, const size_t /* bytes */, OUT bool *pUnloadedChar)
+mFUNCTION(mFontRenderer_FontDescriptionAlreadyContainsChar, mPtr<mFontRenderer> & /* fontRenderer */, mFontDescription_Internal *pFontDescription, const float_t /* originalFontSize */, const mchar_t codePoint, const char * /* character */, OUT bool *pContainsChar)
 {
   mFUNCTION_SETUP();
 
-  *pUnloadedChar = false;
+  *pContainsChar = true;
 
   if (codePoint >= 0 && codePoint < 64)
   {
@@ -636,6 +810,146 @@ mFUNCTION(mFontRenderer_LoadGlyph_Internal, mPtr<mFontRenderer> &fontRenderer, m
   {
     if (pFontDescription->glyphRange1 & (1ULL << (codePoint - 64)))
       mRETURN_SUCCESS();
+  }
+  else if (pFontDescription->additionalGlyphRanges != nullptr)
+  {
+    const size_t index = codePoint & (mFontDescription_Internal::HashMapSize - 1);
+
+    mPtr<mQueue<mchar_t>> *pQueue = nullptr;
+    mERROR_CHECK(mQueue_PointerAt(pFontDescription->additionalGlyphRanges, index, &pQueue));
+
+    for (const mchar_t c : (*pQueue)->Iterate())
+    {
+      if (c == codePoint)
+        mRETURN_SUCCESS();
+    }
+  }
+
+  *pContainsChar = false;
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mFontRenderer_LoadGlyph_Internal, mPtr<mFontRenderer> &fontRenderer, mFontDescription_Internal *pFontDescription, const size_t queueFontIndex, const float_t originalFontSize, const mchar_t codePoint, const char *character, const size_t /* bytes */, OUT bool *pFailedToLoadChar, const bool attemptToLoadFromBackupFont /* = true */)
+{
+  mFUNCTION_SETUP();
+
+  *pFailedToLoadChar = false;
+
+  bool containsChar = false;
+  mERROR_CHECK(mFontRenderer_FontDescriptionAlreadyContainsChar(fontRenderer, pFontDescription, originalFontSize, codePoint, character, &containsChar));
+
+  if (containsChar)
+    mRETURN_SUCCESS();
+
+  bool checkBackupFonts = attemptToLoadFromBackupFont;
+
+  if (checkBackupFonts)
+  {
+    bool hasBackupFonts = false;
+    mERROR_CHECK(mQueue_Any(fontRenderer->backupFonts, &hasBackupFonts));
+
+    // Does nothing if !hasBackupFonts.
+    for (const auto &_backupFont : fontRenderer->backupFonts->Iterate())
+    {
+      if (_backupFont != pFontDescription->fontFileName.c_str())
+      {
+        mFontDescription fontDescription;
+        fontDescription.fontSize = originalFontSize;
+        mERROR_CHECK(mInplaceString_Create(&fontDescription.fontFileName, _backupFont));
+
+        size_t fontIndex;
+        mERROR_CHECK(mFontRenderer_AddFont_Internal(fontRenderer, fontDescription, &fontIndex));
+
+        mFontDescription_Internal *pBackupFontDescription = nullptr;
+        mERROR_CHECK(mQueue_PointerAt(fontRenderer->textureAtlas->fonts, fontIndex, &pBackupFontDescription));
+        mERROR_CHECK(mQueue_PointerAt(fontRenderer->textureAtlas->fonts, queueFontIndex, &pFontDescription)); // This pointer might have changed due to the queue growing.
+
+        bool backupFontContainsChar = false;
+        mERROR_CHECK(mFontRenderer_FontDescriptionAlreadyContainsChar(fontRenderer, pBackupFontDescription, originalFontSize, codePoint, character, &backupFontContainsChar));
+
+        if (backupFontContainsChar)
+          mRETURN_SUCCESS();
+      }
+    }
+  }
+
+  // Load glyph.
+  size_t glyphLoaded = texture_font_load_glyph(pFontDescription->pTextureFont, character, checkBackupFonts ? TRUE : FALSE);
+
+  if (glyphLoaded != 0)
+  {
+    texture_glyph_t *pGlyph = texture_font_find_glyph(pFontDescription->pTextureFont, character);
+    
+    if (pGlyph->glyph_index == 0)
+      glyphLoaded = 0;
+  }
+
+  if (checkBackupFonts && glyphLoaded == 0)
+  {
+    for (const auto &_backupFont : fontRenderer->backupFonts->Iterate())
+    {
+      if (_backupFont != pFontDescription->fontFileName.c_str())
+      {
+        // We've already checked earlier: This font does not contain the glyph.
+
+        mFontDescription fontDescription;
+        fontDescription.fontSize = originalFontSize;
+        mERROR_CHECK(mInplaceString_Create(&fontDescription.fontFileName, _backupFont));
+
+        size_t fontIndex;
+        mERROR_CHECK(mFontRenderer_AddFont_Internal(fontRenderer, fontDescription, &fontIndex));
+
+        mFontDescription_Internal *pBackupFontDescription = nullptr;
+        mERROR_CHECK(mQueue_PointerAt(fontRenderer->textureAtlas->fonts, fontIndex, &pBackupFontDescription));
+        mERROR_CHECK(mQueue_PointerAt(fontRenderer->textureAtlas->fonts, queueFontIndex, &pFontDescription)); // This pointer might have changed due to the queue growing.
+        
+        // Load glyph.
+        size_t backupGlyphLoaded = texture_font_load_glyph(pBackupFontDescription->pTextureFont, character, TRUE);
+
+        if (backupGlyphLoaded != 0)
+        {
+          texture_glyph_t *pGlyph = texture_font_find_glyph(pBackupFontDescription->pTextureFont, character);
+
+          if (pGlyph->glyph_index == 0)
+            backupGlyphLoaded = 0;
+        }
+
+        if (backupGlyphLoaded != 0)
+        {
+          mERROR_CHECK(mFontRenderer_AddCharToFontDescription(fontRenderer, pBackupFontDescription, codePoint, character));
+
+          *pFailedToLoadChar = false;
+
+          mRETURN_SUCCESS();
+        }
+      }
+    }
+
+    glyphLoaded = texture_font_load_glyph(pFontDescription->pTextureFont, character, FALSE);
+  }
+
+  *pFailedToLoadChar = (0 == glyphLoaded);
+
+  if (!*pFailedToLoadChar)
+    mERROR_CHECK(mFontRenderer_AddCharToFontDescription(fontRenderer, pFontDescription, codePoint, character));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mFontRenderer_AddCharToFontDescription, mPtr<mFontRenderer> &fontRenderer, mFontDescription_Internal *pFontDescription, const mchar_t codePoint, const char * /* character */)
+{
+  mFUNCTION_SETUP();
+
+  fontRenderer->addedGlyph = true;
+
+  if (codePoint >= 0 && codePoint < 64)
+  {
+    pFontDescription->glyphRange0 |= (1ULL << (codePoint));
+  }
+  else if (codePoint >= 64 && codePoint < 128)
+  {
+    pFontDescription->glyphRange1 |= (1ULL << (codePoint - 64));
   }
   else
   {
@@ -659,59 +973,28 @@ mFUNCTION(mFontRenderer_LoadGlyph_Internal, mPtr<mFontRenderer> &fontRenderer, m
     mPtr<mQueue<mchar_t>> *pQueue = nullptr;
     mERROR_CHECK(mQueue_PointerAt(pFontDescription->additionalGlyphRanges, index, &pQueue));
 
-    for (mchar_t c : **pQueue)
-    {
-      if (c == codePoint)
-        mRETURN_SUCCESS();
-    }
-  }
-
-  // Load glyph.
-  const size_t glyphLoaded = texture_font_load_glyph(pFontDescription->pTextureFont, character);
-  *pUnloadedChar = 0 == glyphLoaded;
-
-  if (!*pUnloadedChar)
-  {
-    fontRenderer->addedGlyph = true;
-
-    if (codePoint >= 0 && codePoint < 64)
-    {
-      pFontDescription->glyphRange0 |= (1ULL << (codePoint));
-    }
-    else if (codePoint >= 64 && codePoint < 128)
-    {
-      pFontDescription->glyphRange1 |= (1ULL << (codePoint - 64));
-    }
-    else
-    {
-      const size_t index = codePoint & (mFontDescription_Internal::HashMapSize - 1);
-
-      mPtr<mQueue<mchar_t>> *pQueue = nullptr;
-      mERROR_CHECK(mQueue_PointerAt(pFontDescription->additionalGlyphRanges, index, &pQueue));
-
-      mERROR_CHECK(mQueue_PushBack(*pQueue, codePoint));
-    }
+    mERROR_CHECK(mQueue_PushBack(*pQueue, codePoint));
   }
 
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mFontRenderer_LoadGlyphs_Internal, mPtr<mFontRenderer> &fontRenderer, mFontDescription_Internal *pFontDescription, const mString &string, OUT bool *pUnloadedChars)
+mFUNCTION(mFontRenderer_LoadGlyphs_Internal, mPtr<mFontRenderer> &fontRenderer, mFontDescription_Internal *pFontDescription, const size_t queueFontIndex, const float_t originalFontSize, const mString &string, OUT bool *pFailedToLoadChars)
 {
   mFUNCTION_SETUP();
 
-  *pUnloadedChars = false;
+  *pFailedToLoadChars = false;
 
   for (auto &&_char : string)
   {
     mFUNCTION_SETUP();
 
     bool unloadedChar = false;
-    mERROR_CHECK(mFontRenderer_LoadGlyph_Internal(fontRenderer, pFontDescription, _char.codePoint, _char.character, _char.characterSize, &unloadedChar));
+    mERROR_CHECK(mFontRenderer_LoadGlyph_Internal(fontRenderer, pFontDescription, queueFontIndex, originalFontSize, _char.codePoint, _char.character, _char.characterSize, &unloadedChar));
 
     if (unloadedChar)
     {
-      *pUnloadedChars = true;
+      *pFailedToLoadChars = true;
       mRETURN_SUCCESS();
     }
   }

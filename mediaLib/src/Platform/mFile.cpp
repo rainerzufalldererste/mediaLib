@@ -214,8 +214,87 @@ mFUNCTION(mFile_Copy, const mString &destinationFileName, const mString &sourceF
     mRETURN_RESULT(mR_ResourceNotFound);
 
   default:
-    mRETURN_RESULT(mR_Failure);
+    mRETURN_RESULT(mR_IOFailure);
   }
+}
+
+struct mFile_ProgressCallbackParams
+{
+  const std::function<mResult(const double_t progress)> &func;
+  BOOL *pCanceled;
+  mResult innerResult;
+
+  mFile_ProgressCallbackParams(BOOL *pCanceled, const std::function<mResult(const double_t progress)> &func) :
+    pCanceled(pCanceled),
+    func(func)
+  { }
+};
+
+struct mFile_ProgressCallback_Internal
+{
+  static DWORD WINAPI Callback(
+    _In_     LARGE_INTEGER TotalFileSize,
+    _In_     LARGE_INTEGER TotalBytesTransferred,
+    _In_     LARGE_INTEGER /* StreamSize */,
+    _In_     LARGE_INTEGER /* StreamBytesTransferred */,
+    _In_     DWORD /* dwStreamNumber */,
+    _In_     DWORD /* dwCallbackReason */,
+    _In_     HANDLE /* hSourceFile */,
+    _In_     HANDLE /* hDestinationFile */,
+    _In_opt_ LPVOID lpData)
+  {
+    mFile_ProgressCallbackParams *pParams = reinterpret_cast<mFile_ProgressCallbackParams *>(lpData);
+
+    if (mFAILED(pParams->innerResult = pParams->func(TotalBytesTransferred.QuadPart / (double_t)TotalFileSize.QuadPart)))
+    {
+      *pParams->pCanceled = TRUE;
+      return PROGRESS_CANCEL;
+    }
+
+    return ERROR_SUCCESS;
+  }
+};
+
+mFUNCTION(mFile_Copy, const mString &destinationFileName, const mString &sourceFileName, const std::function<mResult(const double_t progress)> &progressCallback, const bool overrideFileIfExistent)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(progressCallback == nullptr, mR_ArgumentNull);
+
+  wchar_t source[MAX_PATH];
+  mERROR_CHECK(mString_ToWideString(sourceFileName, source, mARRAYSIZE(source)));
+
+  wchar_t target[MAX_PATH];
+  mERROR_CHECK(mString_ToWideString(destinationFileName, target, mARRAYSIZE(source)));
+
+  BOOL canceled = FALSE;
+  mFile_ProgressCallbackParams parameters(&canceled, progressCallback);
+
+  if (0 == CopyFileExW(source, target, &mFile_ProgressCallback_Internal::Callback, reinterpret_cast<void *>(&parameters), &canceled, (overrideFileIfExistent ? 0 : COPY_FILE_FAIL_IF_EXISTS) | COPY_FILE_NO_BUFFERING
+  ))
+  {
+    if (canceled == TRUE)
+      mRETURN_RESULT(mFAILED(parameters.innerResult) ? parameters.innerResult : mR_Break);
+
+    const DWORD error = GetLastError();
+
+    switch (error)
+    {
+    case ERROR_REQUEST_ABORTED:
+      mRETURN_RESULT(mFAILED(parameters.innerResult) ? parameters.innerResult : mR_Break);
+
+    case ERROR_FILE_EXISTS:
+      mRETURN_RESULT(mR_Failure);
+
+    case ERROR_FILE_NOT_FOUND:
+      mRETURN_RESULT(mR_ResourceNotFound);
+
+    default:
+      mRETURN_RESULT(mR_IOFailure);
+    }
+  }
+
+  mRETURN_SUCCESS();
 }
 
 mFUNCTION(mFile_Move, const mString &destinationFileName, const mString &sourceFileName, const bool overrideFileIfExistent /* = true */)
@@ -243,7 +322,49 @@ mFUNCTION(mFile_Move, const mString &destinationFileName, const mString &sourceF
   const DWORD errorCode = GetLastError();
   mUnused(errorCode);
 
-  mRETURN_RESULT(mR_Failure);
+  mRETURN_RESULT(mR_IOFailure);
+}
+
+mFUNCTION(mFile_Move, const mString &destinationFileName, const mString &sourceFileName, const std::function<mResult(const double_t progress)> &progressCallback, const bool overrideFileIfExistent)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(progressCallback == nullptr, mR_ArgumentNull);
+
+  wchar_t source[MAX_PATH];
+  mERROR_CHECK(mString_ToWideString(sourceFileName, source, mARRAYSIZE(source)));
+
+  wchar_t target[MAX_PATH];
+  mERROR_CHECK(mString_ToWideString(destinationFileName, target, mARRAYSIZE(source)));
+
+  BOOL canceled = FALSE;
+  mFile_ProgressCallbackParams parameters(&canceled, progressCallback);
+
+  if (0 == MoveFileWithProgressW(source, target, &mFile_ProgressCallback_Internal::Callback, reinterpret_cast<void *>(&parameters), (overrideFileIfExistent ? MOVEFILE_REPLACE_EXISTING : 0) | MOVEFILE_COPY_ALLOWED
+  ))
+  {
+    if (canceled == TRUE)
+      mRETURN_RESULT(mFAILED(parameters.innerResult) ? parameters.innerResult : mR_Break);
+
+    const DWORD error = GetLastError();
+
+    switch (error)
+    {
+    case ERROR_REQUEST_ABORTED:
+      mRETURN_RESULT(mFAILED(parameters.innerResult) ? parameters.innerResult : mR_Break);
+
+    case ERROR_FILE_EXISTS:
+      mRETURN_RESULT(mR_Failure);
+
+    case ERROR_FILE_NOT_FOUND:
+      mRETURN_RESULT(mR_ResourceNotFound);
+
+    default:
+      mRETURN_RESULT(mR_IOFailure);
+    }
+  }
+
+  mRETURN_SUCCESS();
 }
 
 mFUNCTION(mFile_Delete, const mString &filename)
@@ -264,7 +385,7 @@ mFUNCTION(mFile_Delete, const mString &filename)
     mRETURN_RESULT(mR_ResourceNotFound);
 
   default:
-    mRETURN_RESULT(mR_Failure);
+    mRETURN_RESULT(mR_IOFailure);
   }
 }
 
