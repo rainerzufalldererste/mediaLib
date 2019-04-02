@@ -101,7 +101,7 @@ mFUNCTION(mAudioSourceWav_GetBuffer_Internal, mPtr<mAudioSource> &audioSource, O
   mERROR_IF(audioSource == nullptr || pBuffer == nullptr, mR_ArgumentNull);
   mERROR_IF(channelIndex >= audioSource->channelCount, mR_IndexOutOfBounds);
 
-  mAudioSourceWav *pAudioSourceWav = (mAudioSourceWav *)audioSource.GetPointer();
+  mAudioSourceWav *pAudioSourceWav = static_cast<mAudioSourceWav *>(audioSource.GetPointer());
 
   const size_t readSize = mMin((bufferLength + pAudioSourceWav->riffWaveHeader.fmtBlockAlign) * sizeof(int16_t) * pAudioSourceWav->channelCount, pAudioSourceWav->riffWaveHeader.dataSubchunkSize - (pAudioSourceWav->readPosition - pAudioSourceWav->startOffset));
   const size_t readItems = mMin(bufferLength * sizeof(int16_t) * pAudioSourceWav->channelCount, pAudioSourceWav->riffWaveHeader.dataSubchunkSize - (pAudioSourceWav->readPosition - pAudioSourceWav->startOffset)) / (sizeof(int16_t) * pAudioSourceWav->channelCount);
@@ -127,7 +127,7 @@ mFUNCTION(mAudioSourceWav_MoveToNextBuffer_Internal, mPtr<mAudioSource> &audioSo
 
   mERROR_IF(audioSource == nullptr, mR_ArgumentNull);
 
-  mAudioSourceWav *pAudioSourceWav = (mAudioSourceWav *)audioSource.GetPointer();
+  mAudioSourceWav *pAudioSourceWav = static_cast<mAudioSourceWav *>(audioSource.GetPointer());
 
   pAudioSourceWav->readPosition += ((samples * pAudioSourceWav->channelCount) / pAudioSourceWav->riffWaveHeader.fmtBlockAlign) * pAudioSourceWav->riffWaveHeader.fmtBlockAlign * sizeof(int16_t);
 

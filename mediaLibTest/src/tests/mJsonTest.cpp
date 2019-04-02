@@ -26,7 +26,7 @@ mTEST(mJsonWriter, TestCleanupDouble)
   const char *name = "a";
   mTEST_ASSERT_SUCCESS(mJsonWriter_BeginArray(jsonWriter, name));
 
-  for (size_t i = 0; i < 1024 * 8; i++)
+  for (size_t i = 0; i < 8; i++)
   {
     mTEST_ASSERT_SUCCESS(mJsonWriter_AddArrayValue(jsonWriter, (double_t)i));
   }
@@ -48,7 +48,7 @@ mTEST(mJsonWriter, TestCleanupMString)
   const char *name = "a";
   mTEST_ASSERT_SUCCESS(mJsonWriter_BeginArray(jsonWriter, name));
 
-  for (size_t i = 0; i < 1024 * 8; i++)
+  for (size_t i = 0; i < 8; i++)
   {
     mString string;
     mDEFER_CALL(&string, mString_Destroy);
@@ -73,7 +73,7 @@ mTEST(mJsonWriter, TestCleanupCString)
   char testString[255];
   mTEST_ASSERT_SUCCESS(mJsonWriter_BeginArray(jsonWriter, name));
 
-  for (size_t i = 0; i < 1024 * 8; i++)
+  for (size_t i = 0; i < 8; i++)
   {
     sprintf_s(testString, "%" PRIu64, i);
     mTEST_ASSERT_SUCCESS(mJsonWriter_AddArrayValue(jsonWriter, testString));
@@ -96,10 +96,8 @@ mTEST(mJsonWriter, TestCleanupBool)
   const char *name = "a";
   mTEST_ASSERT_SUCCESS(mJsonWriter_BeginArray(jsonWriter, name));
 
-  for (size_t i = 0; i < 1024 * 8; i++)
-  {
+  for (size_t i = 0; i < 8; i++)
     mTEST_ASSERT_SUCCESS(mJsonWriter_AddArrayValue(jsonWriter, i % 2 == 0));
-  }
 
   mTEST_ASSERT_SUCCESS(mJsonWriter_EndArray(jsonWriter));
 

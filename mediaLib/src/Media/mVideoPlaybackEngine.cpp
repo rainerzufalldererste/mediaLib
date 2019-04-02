@@ -6,7 +6,7 @@
 struct mVideoPlaybackEngine
 {
   mThread *pPlaybackThread;
-  mPtr<mThreadPool> threadPool;
+  mPtr<mThreadPool> asyncTaskHandler;
   mPtr<mQueue<mPtr<mImageBuffer>>> imageQueue;
   mPtr<mQueue<mPtr<mImageBuffer>>> freeImageBuffers;
   mMutex *pQueueMutex;
@@ -26,7 +26,7 @@ struct mVideoPlaybackEngine
   void *pLastFramePtr;
 };
 
-mFUNCTION(mVideoPlaybackEngine_Create_Internal, IN mVideoPlaybackEngine *pPlaybackEngine, IN mAllocator *pAllocator, IN const wchar_t *fileName, mPtr<mThreadPool> &threadPool, const size_t videoStreamIndex, const mPixelFormat outputPixelFormat, const size_t playbackFlags);
+mFUNCTION(mVideoPlaybackEngine_Create_Internal, IN mVideoPlaybackEngine *pPlaybackEngine, IN mAllocator *pAllocator, IN const wchar_t *fileName, mPtr<mThreadPool> &asyncTaskHandler, const size_t videoStreamIndex, const mPixelFormat outputPixelFormat, const size_t playbackFlags);
 mFUNCTION(mVideoPlaybackEngine_Destroy_Internal, IN_OUT mVideoPlaybackEngine *pPlaybackEngine);
 
 mFUNCTION(mVideoPlaybackEngine_PlaybackThread, mVideoPlaybackEngine *pPlaybackEngine)
@@ -107,7 +107,7 @@ mFUNCTION(mVideoPlaybackEngine_PlaybackThread, mVideoPlaybackEngine *pPlaybackEn
     playbackTime = videoStreamType.timePoint;
 
     mERROR_CHECK(mImageBuffer_AllocateBuffer(currentImageBuffer, rawImageBuffer->currentSize, pPlaybackEngine->targetPixelFormat));
-    mERROR_CHECK(mPixelFormat_TransformBuffer(rawImageBuffer, currentImageBuffer, pPlaybackEngine->threadPool));
+    mERROR_CHECK(mPixelFormat_TransformBuffer(rawImageBuffer, currentImageBuffer, pPlaybackEngine->asyncTaskHandler));
 
     // Push ImageBuffer to queue.
     {
@@ -129,13 +129,13 @@ mFUNCTION(mVideoPlaybackEngine_PlaybackThread, mVideoPlaybackEngine *pPlaybackEn
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mVideoPlaybackEngine_Create, OUT mPtr<mVideoPlaybackEngine> *pPlaybackEngine, IN mAllocator *pAllocator, IN const wchar_t *fileName, mPtr<mThreadPool> &threadPool, const size_t videoStreamIndex /* = 0 */, const mPixelFormat outputPixelFormat /* = mPF_B8G8R8A8 */, const size_t playbackFlags /* = mVideoPlaybackEngine_PlaybackFlags::mVPE_PF_None */)
+mFUNCTION(mVideoPlaybackEngine_Create, OUT mPtr<mVideoPlaybackEngine> *pPlaybackEngine, IN mAllocator *pAllocator, IN const wchar_t *fileName, mPtr<mThreadPool> &asyncTaskHandler, const size_t videoStreamIndex /* = 0 */, const mPixelFormat outputPixelFormat /* = mPF_B8G8R8A8 */, const size_t playbackFlags /* = mVideoPlaybackEngine_PlaybackFlags::mVPE_PF_None */)
 {
   mFUNCTION_SETUP();
 
   mERROR_CHECK(mSharedPointer_Allocate(pPlaybackEngine, pAllocator, (std::function<void(mVideoPlaybackEngine *)>)[](mVideoPlaybackEngine *pData) { mVideoPlaybackEngine_Destroy_Internal(pData); }, 1));
 
-  mERROR_CHECK(mVideoPlaybackEngine_Create_Internal(pPlaybackEngine->GetPointer(), pAllocator, fileName, threadPool, videoStreamIndex, outputPixelFormat, playbackFlags));
+  mERROR_CHECK(mVideoPlaybackEngine_Create_Internal(pPlaybackEngine->GetPointer(), pAllocator, fileName, asyncTaskHandler, videoStreamIndex, outputPixelFormat, playbackFlags));
 
   mRETURN_SUCCESS();
 }
@@ -244,12 +244,12 @@ mFUNCTION(mVideoPlaybackEngine_GetCurrentFrame, mPtr<mVideoPlaybackEngine> &play
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mVideoPlaybackEngine_Create_Internal, IN mVideoPlaybackEngine *pPlaybackEngine, IN mAllocator *pAllocator, IN const wchar_t *fileName, mPtr<mThreadPool> &threadPool, const size_t videoStreamIndex, const mPixelFormat outputPixelFormat, const size_t playbackFlags)
+mFUNCTION(mVideoPlaybackEngine_Create_Internal, IN mVideoPlaybackEngine *pPlaybackEngine, IN mAllocator *pAllocator, IN const wchar_t *fileName, mPtr<mThreadPool> &asyncTaskHandler, const size_t videoStreamIndex, const mPixelFormat outputPixelFormat, const size_t playbackFlags)
 {
   mFUNCTION_SETUP();
 
   pPlaybackEngine->pAllocator = pAllocator;
-  pPlaybackEngine->threadPool = threadPool;
+  pPlaybackEngine->asyncTaskHandler = asyncTaskHandler;
   pPlaybackEngine->videoStreamIndex = videoStreamIndex;
   pPlaybackEngine->targetPixelFormat = outputPixelFormat;
   pPlaybackEngine->maxQueuedFrames = 8;
@@ -283,7 +283,7 @@ mFUNCTION(mVideoPlaybackEngine_Destroy_Internal, IN_OUT mVideoPlaybackEngine *pP
   mERROR_CHECK(mThread_Join(pPlaybackEngine->pPlaybackThread));
   mERROR_CHECK(mThread_Destroy(&pPlaybackEngine->pPlaybackThread));
 
-  mERROR_CHECK(mThreadPool_Destroy(&pPlaybackEngine->threadPool));
+  mERROR_CHECK(mThreadPool_Destroy(&pPlaybackEngine->asyncTaskHandler));
   mERROR_CHECK(mMutex_Destroy(&pPlaybackEngine->pQueueMutex));
 
   mPtr<mImageBuffer> imageBuffer;

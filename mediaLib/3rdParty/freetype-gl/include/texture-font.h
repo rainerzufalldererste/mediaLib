@@ -194,6 +194,11 @@ typedef struct texture_glyph_t
      */
     float outline_thickness;
 
+
+    /**
+     * The Glyph Index inside the font file. (0 if the font does not contain the glyph)
+     */
+    unsigned int glyph_index;
 } texture_glyph_t;
 
 
@@ -395,7 +400,8 @@ typedef struct texture_font_t
  */
   texture_glyph_t *
   texture_font_get_glyph( texture_font_t * self,
-                          const char * codepoint );
+                          const char * codepoint,
+                          const int failIfNotContained );
 
 /** 
  * Request an already loaded glyph from the font. 
@@ -419,7 +425,8 @@ typedef struct texture_font_t
  */
   int
   texture_font_load_glyph( texture_font_t * self,
-                           const char * codepoint );
+                           const char * codepoint,
+                           const int failIfNotContained);
 
 /**
  * Request the loading of several glyphs at once.
@@ -433,7 +440,8 @@ typedef struct texture_font_t
  */
   size_t
   texture_font_load_glyphs( texture_font_t * self,
-                            const char * codepoints );
+                            const char * codepoints,
+                            const int failIfNotContained);
   /*
    *Increases the size of a fonts texture atlas
    *Invalidates all pointers to font->atlas->data

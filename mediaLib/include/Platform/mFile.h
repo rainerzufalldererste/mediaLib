@@ -42,7 +42,9 @@ mFUNCTION(mFile_WriteRaw, const mString &filename, IN T *pData, const size_t cou
 mFUNCTION(mFile_CreateDirectory, const mString &folderPath);
 mFUNCTION(mFile_DeleteFolder, const mString &folderPath);
 mFUNCTION(mFile_Copy, const mString &destinationFileName, const mString &sourceFileName, const bool overrideFileIfExistent = false);
+mFUNCTION(mFile_Copy, const mString &destinationFileName, const mString &sourceFileName, const std::function<mResult(const double_t progress)> &progressCallback, const bool overrideFileIfExistent);
 mFUNCTION(mFile_Move, const mString &destinationFileName, const mString &sourceFileName, const bool overrideFileIfExistent = false);
+mFUNCTION(mFile_Move, const mString &destinationFileName, const mString &sourceFileName, const std::function<mResult(const double_t progress)> &progressCallback, const bool overrideFileIfExistent = false);
 mFUNCTION(mFile_Delete, const mString &filename);
 
 mFUNCTION(mFile_GetTempDirectory, OUT mString *pString);

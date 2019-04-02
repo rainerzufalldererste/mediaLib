@@ -863,7 +863,7 @@ namespace mPixelFormat_Transform
     mRETURN_SUCCESS();
   }
 
-  mFUNCTION(mPixelFormat_Transform_YUV420ToBgra, mPtr<mImageBuffer> &source, mPtr<mImageBuffer> &target, mPtr<mThreadPool> &threadPool)
+  mFUNCTION(mPixelFormat_Transform_YUV420ToBgra, mPtr<mImageBuffer> &source, mPtr<mImageBuffer> &target, mPtr<mThreadPool> &asyncTaskHandler)
   {
     mFUNCTION_SETUP();
 
@@ -889,7 +889,7 @@ namespace mPixelFormat_Transform
     size_t targetUnitSize;
     mERROR_CHECK(mPixelFormat_GetUnitSize(target->pixelFormat, &targetUnitSize));
 
-    if (threadPool == nullptr)
+    if (asyncTaskHandler == nullptr)
     {
       mERROR_CHECK(mPixelFormat_Transform_YUV420ToBgra_Wrapper(pBuffer0, pBuffer1, pBuffer2, pOutPixels, target->currentSize.x, target->currentSize.y, target->lineStride, sourceLineStride0, sourceLineStride1, targetUnitSize));
     }
@@ -897,7 +897,7 @@ namespace mPixelFormat_Transform
     {
       mTask **ppTasks = nullptr;
       size_t threadCount;
-      mERROR_CHECK(mThreadPool_GetThreadCount(threadPool, &threadCount));
+      mERROR_CHECK(mThreadPool_GetThreadCount(asyncTaskHandler, &threadCount));
 
       mAllocator *pAllocator = &mDefaultAllocator;
       mDEFER(mAllocator_FreePtr(pAllocator, &ppTasks));
@@ -914,7 +914,7 @@ namespace mPixelFormat_Transform
         mERROR_CHECK_GOTO(mTask_CreateWithLambda(&ppTasks[i], pAllocator, [=]() { return mPixelFormat_Transform_YUV420ToBgra_Wrapper(pBuffer0 + i * yOffset, pBuffer1 + i * uvOffset, pBuffer2 + i * uvOffset, pOutPixels + i * bgraOffset, target->currentSize.x, subHeight, target->lineStride, sourceLineStride0, sourceLineStride1, targetUnitSize); }), result, epilogue);
 
       for (size_t i = 0; i < threadCount; ++i)
-        mERROR_CHECK_GOTO(mThreadPool_EnqueueTask(threadPool, ppTasks[i]), result, epilogue);
+        mERROR_CHECK_GOTO(mThreadPool_EnqueueTask(asyncTaskHandler, ppTasks[i]), result, epilogue);
 
       for (size_t i = 0; i < threadCount; ++i)
         mERROR_CHECK_GOTO(mTask_Join(ppTasks[i]), result, epilogue);
@@ -986,7 +986,7 @@ namespace mPixelFormat_Transform
     mRETURN_SUCCESS();
   }
 
-  mFUNCTION(mPixelFormat_Transform_RgbaToBgra, mPtr<mImageBuffer> &source, mPtr<mImageBuffer> &target, mPtr<mThreadPool> &threadPool)
+  mFUNCTION(mPixelFormat_Transform_RgbaToBgra, mPtr<mImageBuffer> &source, mPtr<mImageBuffer> &target, mPtr<mThreadPool> &asyncTaskHandler)
   {
     mFUNCTION_SETUP();
 
@@ -996,7 +996,7 @@ namespace mPixelFormat_Transform
     const size_t targetStride = target->lineStride;
     const size_t sourceStride = source->lineStride;
 
-    if (threadPool == nullptr)
+    if (asyncTaskHandler == nullptr)
     {
       mERROR_CHECK(mPixelFormat_Transform_RgbaToBgra_BgraToRgba(pSource, sourceStride, pTarget, targetStride, size));
     }
@@ -1004,7 +1004,7 @@ namespace mPixelFormat_Transform
     {
       mTask **ppTasks = nullptr;
       size_t threadCount;
-      mERROR_CHECK(mThreadPool_GetThreadCount(threadPool, &threadCount));
+      mERROR_CHECK(mThreadPool_GetThreadCount(asyncTaskHandler, &threadCount));
 
       mAllocator *pAllocator = &mDefaultAllocator;
       mDEFER(mAllocator_FreePtr(pAllocator, &ppTasks));
@@ -1021,7 +1021,7 @@ namespace mPixelFormat_Transform
         mERROR_CHECK_GOTO(mTask_CreateWithLambda(&ppTasks[i], pAllocator, [=]() {return mPixelFormat_Transform_RgbaToBgra_BgraToRgba(pSource + sourceOffset, sourceStride, pTarget + targetOffset, targetStride, subSize);}), result, epilogue);
 
       for (size_t i = 0; i < threadCount; ++i)
-        mERROR_CHECK_GOTO(mThreadPool_EnqueueTask(threadPool, ppTasks[i]), result, epilogue);
+        mERROR_CHECK_GOTO(mThreadPool_EnqueueTask(asyncTaskHandler, ppTasks[i]), result, epilogue);
 
       for (size_t i = 0; i < threadCount; ++i)
         mERROR_CHECK_GOTO(mTask_Join(ppTasks[i]), result, epilogue);
@@ -1037,11 +1037,11 @@ namespace mPixelFormat_Transform
     mRETURN_SUCCESS();
   }
 
-  mFUNCTION(mPixelFormat_Transform_BgraToRgba, mPtr<mImageBuffer> &source, mPtr<mImageBuffer> &target, mPtr<mThreadPool> &threadPool)
+  mFUNCTION(mPixelFormat_Transform_BgraToRgba, mPtr<mImageBuffer> &source, mPtr<mImageBuffer> &target, mPtr<mThreadPool> &asyncTaskHandler)
   {
     mFUNCTION_SETUP();
 
-    mERROR_CHECK(mPixelFormat_Transform_RgbaToBgra(source, target, threadPool));
+    mERROR_CHECK(mPixelFormat_Transform_RgbaToBgra(source, target, asyncTaskHandler));
 
     mRETURN_SUCCESS();
   }
@@ -1051,7 +1051,7 @@ namespace mPixelFormat_Transform
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mPixelFormat_TransformBuffer, mPtr<mImageBuffer> &source, mPtr<mImageBuffer> &target, mPtr<mThreadPool> &threadPool)
+mFUNCTION(mPixelFormat_TransformBuffer, mPtr<mImageBuffer> &source, mPtr<mImageBuffer> &target, mPtr<mThreadPool> &asyncTaskHandler)
 {
   using namespace mPixelFormat_Transform;
 
@@ -1076,13 +1076,13 @@ mFUNCTION(mPixelFormat_TransformBuffer, mPtr<mImageBuffer> &source, mPtr<mImageB
     {
     case mPF_YUV420:
     {
-      mERROR_CHECK(mPixelFormat_Transform_YUV420ToBgra(source, target, threadPool));
+      mERROR_CHECK(mPixelFormat_Transform_YUV420ToBgra(source, target, asyncTaskHandler));
       break;
     }
 
     case mPF_R8G8B8A8:
     {
-      mERROR_CHECK(mPixelFormat_Transform_RgbaToBgra(source, target, threadPool));
+      mERROR_CHECK(mPixelFormat_Transform_RgbaToBgra(source, target, asyncTaskHandler));
       break;
     }
 
@@ -1112,7 +1112,7 @@ mFUNCTION(mPixelFormat_TransformBuffer, mPtr<mImageBuffer> &source, mPtr<mImageB
     {
     case mPF_B8G8R8A8:
     {
-      mERROR_CHECK(mPixelFormat_Transform_BgraToRgba(source, target, threadPool));
+      mERROR_CHECK(mPixelFormat_Transform_BgraToRgba(source, target, asyncTaskHandler));
       break;
     }
 

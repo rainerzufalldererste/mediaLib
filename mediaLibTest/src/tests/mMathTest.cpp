@@ -381,3 +381,289 @@ mVECTOR_TEST_SUBSET4(4, w, y, x, z);
 mVECTOR_TEST_SUBSET4(4, w, y, z, x);
 mVECTOR_TEST_SUBSET4(4, w, z, x, y);
 mVECTOR_TEST_SUBSET4(4, w, z, y, x);
+
+mTEST(mRectangle2D, TestConstruct)
+{
+  {
+    mRectangle2D<int32_t> rect;
+
+    mTEST_ASSERT_EQUAL(rect.x, 0);
+    mTEST_ASSERT_EQUAL(rect.y, 0);
+    mTEST_ASSERT_EQUAL(rect.w, 0);
+    mTEST_ASSERT_EQUAL(rect.h, 0);
+  }
+
+  {
+    mRectangle2D<int32_t> rect(1, 2, 3, 4);
+
+    mTEST_ASSERT_EQUAL(rect.x, 1);
+    mTEST_ASSERT_EQUAL(rect.y, 2);
+    mTEST_ASSERT_EQUAL(rect.w, 3);
+    mTEST_ASSERT_EQUAL(rect.h, 4);
+    mTEST_ASSERT_EQUAL(rect.width, 3);
+    mTEST_ASSERT_EQUAL(rect.height, 4);
+    mTEST_ASSERT_EQUAL(rect.position, mVec2t<int32_t>(1, 2));
+    mTEST_ASSERT_EQUAL(rect.size, mVec2t<int32_t>(3, 4));
+    mTEST_ASSERT_EQUAL(rect.asVector4, mVec4t<int32_t>(1, 2, 3, 4));
+    mTEST_ASSERT_EQUAL(rect.asArray[0], 1);
+    mTEST_ASSERT_EQUAL(rect.asArray[1], 2);
+    mTEST_ASSERT_EQUAL(rect.asArray[2], 3);
+    mTEST_ASSERT_EQUAL(rect.asArray[3], 4);
+  }
+
+  {
+    mRectangle2D<int32_t> rect(mVec2t<int32_t>(1, 2), mVec2t<int32_t>(3, 4));
+
+    mTEST_ASSERT_EQUAL(rect.x, 1);
+    mTEST_ASSERT_EQUAL(rect.y, 2);
+    mTEST_ASSERT_EQUAL(rect.w, 3);
+    mTEST_ASSERT_EQUAL(rect.h, 4);
+  }
+
+  {
+    mRectangle2D<int32_t> rect = mRectangle2D<int32_t>(1, 2, 3, 4);
+
+    mTEST_ASSERT_EQUAL(rect.x, 1);
+    mTEST_ASSERT_EQUAL(rect.y, 2);
+    mTEST_ASSERT_EQUAL(rect.w, 3);
+    mTEST_ASSERT_EQUAL(rect.h, 4);
+  }
+
+  mTEST_RETURN_SUCCESS();
+}
+
+mTEST(mRectangle2D, TestEqual)
+{
+  mRectangle2D<int32_t> rect(1, 2, 3, 4);
+
+  mTEST_ASSERT_TRUE(rect == mRectangle2D<int32_t>(1, 2, 3, 4));
+  mTEST_ASSERT_TRUE(rect != mRectangle2D<int32_t>(0, 2, 3, 4));
+  mTEST_ASSERT_TRUE(rect != mRectangle2D<int32_t>(1, 0, 3, 4));
+  mTEST_ASSERT_TRUE(rect != mRectangle2D<int32_t>(1, 2, 0, 4));
+  mTEST_ASSERT_TRUE(rect != mRectangle2D<int32_t>(1, 2, 3, 0));
+
+  mTEST_RETURN_SUCCESS();
+}
+
+mTEST(mRectangle2D, TestContainsVector)
+{
+  {
+    mRectangle2D<int32_t> rect(0, 0, 2, 2);
+
+    mTEST_ASSERT_TRUE(rect.Contains(mVec2t<int32_t>(0, 0)));
+    mTEST_ASSERT_TRUE(rect.Contains(mVec2t<int32_t>(0, 1)));
+    mTEST_ASSERT_TRUE(rect.Contains(mVec2t<int32_t>(1, 0)));
+    mTEST_ASSERT_TRUE(rect.Contains(mVec2t<int32_t>(1, 1)));
+
+    mTEST_ASSERT_FALSE(rect.Contains(mVec2t<int32_t>(0, -1)));
+    mTEST_ASSERT_FALSE(rect.Contains(mVec2t<int32_t>(-1, 0)));
+    mTEST_ASSERT_FALSE(rect.Contains(mVec2t<int32_t>(-1, -1)));
+
+    mTEST_ASSERT_FALSE(rect.Contains(mVec2t<int32_t>(0, 3)));
+    mTEST_ASSERT_FALSE(rect.Contains(mVec2t<int32_t>(3, 0)));
+    mTEST_ASSERT_FALSE(rect.Contains(mVec2t<int32_t>(3, 2)));
+  }
+
+  {
+    constexpr int32_t startX = 20;
+    constexpr int32_t startY = 2;
+    constexpr int32_t sizeX = 11;
+    constexpr int32_t sizeY = 8;
+
+    mRectangle2D<int32_t> rect(startX, startY, sizeX, sizeY);
+
+    mTEST_ASSERT_TRUE(rect.Contains(mVec2t<int32_t>(startX, startY)));
+    mTEST_ASSERT_TRUE(rect.Contains(mVec2t<int32_t>(startX, startY + sizeY - 1)));
+    mTEST_ASSERT_TRUE(rect.Contains(mVec2t<int32_t>(startX + sizeX - 1, startY)));
+    mTEST_ASSERT_TRUE(rect.Contains(mVec2t<int32_t>(startX + sizeX - 1, startY + sizeY - 1)));
+
+    mTEST_ASSERT_TRUE(rect.Contains(mVec2t<int32_t>(startX + sizeX / 2, startY + sizeY / 2)));
+
+    mTEST_ASSERT_FALSE(rect.Contains(mVec2t<int32_t>(startX, startY - 1)));
+    mTEST_ASSERT_FALSE(rect.Contains(mVec2t<int32_t>(startX - 1, startY)));
+    mTEST_ASSERT_FALSE(rect.Contains(mVec2t<int32_t>(startX - 1, startY - 1)));
+
+    mTEST_ASSERT_FALSE(rect.Contains(mVec2t<int32_t>(startX, startY + sizeY)));
+    mTEST_ASSERT_FALSE(rect.Contains(mVec2t<int32_t>(startX + sizeX, startY)));
+    mTEST_ASSERT_FALSE(rect.Contains(mVec2t<int32_t>(startX + sizeX, startY + sizeY)));
+  }
+
+  {
+    constexpr int32_t startX = -10;
+    constexpr int32_t startY = -4;
+    constexpr int32_t sizeX = 1380;
+    constexpr int32_t sizeY = 124;
+
+    mRectangle2D<int32_t> rect(startX, startY, sizeX, sizeY);
+
+    mTEST_ASSERT_TRUE(rect.Contains(mVec2t<int32_t>(startX, startY)));
+    mTEST_ASSERT_TRUE(rect.Contains(mVec2t<int32_t>(startX, startY + sizeY - 1)));
+    mTEST_ASSERT_TRUE(rect.Contains(mVec2t<int32_t>(startX + sizeX - 1, startY)));
+    mTEST_ASSERT_TRUE(rect.Contains(mVec2t<int32_t>(startX + sizeX - 1, startY + sizeY - 1)));
+
+    mTEST_ASSERT_TRUE(rect.Contains(mVec2t<int32_t>(startX + sizeX / 2, startY + sizeY / 2)));
+
+    mTEST_ASSERT_FALSE(rect.Contains(mVec2t<int32_t>(startX, startY - 1)));
+    mTEST_ASSERT_FALSE(rect.Contains(mVec2t<int32_t>(startX - 1, startY)));
+    mTEST_ASSERT_FALSE(rect.Contains(mVec2t<int32_t>(startX - 1, startY - 1)));
+
+    mTEST_ASSERT_FALSE(rect.Contains(mVec2t<int32_t>(startX, startY + sizeY)));
+    mTEST_ASSERT_FALSE(rect.Contains(mVec2t<int32_t>(startX + sizeX, startY)));
+    mTEST_ASSERT_FALSE(rect.Contains(mVec2t<int32_t>(startX + sizeX, startY + sizeY)));
+  }
+
+  {
+    constexpr int32_t startX = 10;
+    constexpr int32_t startY = -4;
+    constexpr int32_t sizeX = 1;
+    constexpr int32_t sizeY = 124;
+
+    mRectangle2D<int32_t> rect(startX, startY, sizeX, sizeY);
+
+    mTEST_ASSERT_TRUE(rect.Contains(mVec2t<int32_t>(startX, startY)));
+    mTEST_ASSERT_TRUE(rect.Contains(mVec2t<int32_t>(startX, startY + sizeY - 1)));
+    mTEST_ASSERT_TRUE(rect.Contains(mVec2t<int32_t>(startX + sizeX - 1, startY)));
+    mTEST_ASSERT_TRUE(rect.Contains(mVec2t<int32_t>(startX + sizeX - 1, startY + sizeY - 1)));
+
+    mTEST_ASSERT_TRUE(rect.Contains(mVec2t<int32_t>(startX + sizeX / 2, startY + sizeY / 2)));
+
+    mTEST_ASSERT_FALSE(rect.Contains(mVec2t<int32_t>(startX, startY - 1)));
+    mTEST_ASSERT_FALSE(rect.Contains(mVec2t<int32_t>(startX - 1, startY)));
+    mTEST_ASSERT_FALSE(rect.Contains(mVec2t<int32_t>(startX - 1, startY - 1)));
+
+    mTEST_ASSERT_FALSE(rect.Contains(mVec2t<int32_t>(startX, startY + sizeY)));
+    mTEST_ASSERT_FALSE(rect.Contains(mVec2t<int32_t>(startX + sizeX, startY)));
+    mTEST_ASSERT_FALSE(rect.Contains(mVec2t<int32_t>(startX + sizeX, startY + sizeY)));
+  }
+
+  {
+    constexpr int32_t startX = -15;
+    constexpr int32_t startY = 4;
+    constexpr int32_t sizeX = 10;
+    constexpr int32_t sizeY = 24;
+
+    mRectangle2D<int32_t> rect(startX, startY, sizeX, sizeY);
+
+    mTEST_ASSERT_TRUE(rect.Contains(mVec2t<int32_t>(startX, startY)));
+    mTEST_ASSERT_TRUE(rect.Contains(mVec2t<int32_t>(startX, startY + sizeY - 1)));
+    mTEST_ASSERT_TRUE(rect.Contains(mVec2t<int32_t>(startX + sizeX - 1, startY)));
+    mTEST_ASSERT_TRUE(rect.Contains(mVec2t<int32_t>(startX + sizeX - 1, startY + sizeY - 1)));
+
+    mTEST_ASSERT_TRUE(rect.Contains(mVec2t<int32_t>(startX + sizeX / 2, startY + sizeY / 2)));
+
+    mTEST_ASSERT_FALSE(rect.Contains(mVec2t<int32_t>(startX, startY - 1)));
+    mTEST_ASSERT_FALSE(rect.Contains(mVec2t<int32_t>(startX - 1, startY)));
+    mTEST_ASSERT_FALSE(rect.Contains(mVec2t<int32_t>(startX - 1, startY - 1)));
+
+    mTEST_ASSERT_FALSE(rect.Contains(mVec2t<int32_t>(startX, startY + sizeY)));
+    mTEST_ASSERT_FALSE(rect.Contains(mVec2t<int32_t>(startX + sizeX, startY)));
+    mTEST_ASSERT_FALSE(rect.Contains(mVec2t<int32_t>(startX + sizeX, startY + sizeY)));
+  }
+
+  mTEST_RETURN_SUCCESS();
+}
+
+mTEST(mRectangle2D, TestContainsRectangle)
+{
+  {
+    constexpr int32_t startX = -1, startY = -10, sizeX = 10, sizeY = 20;
+
+    mRectangle2D<int32_t> rect(startX, startY, sizeX, sizeY);
+
+    mTEST_ASSERT_TRUE(rect.Contains(mRectangle2D<int32_t>(startX, startY, 1, 1)));
+    mTEST_ASSERT_TRUE(rect.Contains(mRectangle2D<int32_t>(startX, startY, 0, 0)));
+    mTEST_ASSERT_TRUE(rect.Contains(mRectangle2D<int32_t>(startX, startY, sizeX, sizeY)));
+    mTEST_ASSERT_TRUE(rect.Contains(mRectangle2D<int32_t>(startX, startY, sizeX - 1, sizeY - 1)));
+    mTEST_ASSERT_TRUE(rect.Contains(mRectangle2D<int32_t>(startX, startY + 1, sizeX, sizeY - 1)));
+    mTEST_ASSERT_TRUE(rect.Contains(mRectangle2D<int32_t>(startX + 1, startY, sizeX - 1, sizeY)));
+    mTEST_ASSERT_TRUE(rect.Contains(mRectangle2D<int32_t>(startX + 1, startY + 1, sizeX - 1, sizeY - 1)));
+
+    mTEST_ASSERT_FALSE(rect.Contains(mRectangle2D<int32_t>(startX, startY + 1, sizeX, sizeY)));
+    mTEST_ASSERT_FALSE(rect.Contains(mRectangle2D<int32_t>(startX + 1, startY, sizeX, sizeY)));
+    mTEST_ASSERT_FALSE(rect.Contains(mRectangle2D<int32_t>(startX + 1, startY + 1, sizeX, sizeY)));
+    mTEST_ASSERT_FALSE(rect.Contains(mRectangle2D<int32_t>(startX - 1, startY, 1, 1)));
+    mTEST_ASSERT_FALSE(rect.Contains(mRectangle2D<int32_t>(startX - 1, startY, sizeX + 1, 1)));
+    mTEST_ASSERT_FALSE(rect.Contains(mRectangle2D<int32_t>(startX - 1, startY, sizeX + 2, 1)));
+    mTEST_ASSERT_FALSE(rect.Contains(mRectangle2D<int32_t>(startX, startY - 1, 1, 1)));
+    mTEST_ASSERT_FALSE(rect.Contains(mRectangle2D<int32_t>(startX, startY - 1, sizeX, sizeY + 1)));
+    mTEST_ASSERT_FALSE(rect.Contains(mRectangle2D<int32_t>(startX, startY - 1, sizeX, sizeY + 2)));
+    mTEST_ASSERT_FALSE(rect.Contains(mRectangle2D<int32_t>(startX - 1, startY - 1, sizeX + 2, sizeY + 2)));
+  }
+
+  mTEST_RETURN_SUCCESS();
+}
+
+mTEST(mRectangle2D, TestScale)
+{
+  {
+    mRectangle2D<int32_t> rect(10, 12, 13, 14);
+    mRectangle2D<int32_t> rect0 = rect.ScaleCopy(mVec2t<int32_t>(10, 20));
+    mRectangle2D<int32_t> rect1 = rect.ScaleSelf(mVec2t<int32_t>(10, 20));
+
+    mTEST_ASSERT_EQUAL(rect0, rect1);
+    
+    mTEST_ASSERT_EQUAL(rect0, mRectangle2D<int32_t>(10 * 10, 12 * 20, 13 * 10, 14 * 20));
+    mTEST_ASSERT_EQUAL(rect1, mRectangle2D<int32_t>(10 * 10, 12 * 20, 13 * 10, 14 * 20));
+  }
+
+  mTEST_RETURN_SUCCESS();
+}
+
+mTEST(mRectangle2D, TestOffset)
+{
+  {
+    mRectangle2D<int32_t> rect(10, 12, 13, 14);
+    mRectangle2D<int32_t> rect0 = rect.OffsetCopy(mVec2t<int32_t>(10, 20));
+    mRectangle2D<int32_t> rect1 = rect.OffsetSelf(mVec2t<int32_t>(10, 20));
+
+    mTEST_ASSERT_EQUAL(rect0, rect1);
+
+    mTEST_ASSERT_EQUAL(rect0, mRectangle2D<int32_t>(10 + 10, 12 + 20, 13, 14));
+    mTEST_ASSERT_EQUAL(rect1, mRectangle2D<int32_t>(10 + 10, 12 + 20, 13, 14));
+  }
+
+  mTEST_RETURN_SUCCESS();
+}
+
+mTEST(mRectangle2D, TestGrowToContainRectangle)
+{
+  {
+    mRectangle2D<int64_t> rect(12, 2, 8, 18);
+
+    mTEST_ASSERT_EQUAL(mRectangle2D<int64_t>(rect).GrowToContain(mRectangle2D<int64_t>(rect)), mRectangle2D<int64_t>(rect));
+    mTEST_ASSERT_EQUAL(mRectangle2D<int64_t>(rect).GrowToContain(mRectangle2D<int64_t>(15, 10, 4, 6)), mRectangle2D<int64_t>(rect));
+    mTEST_ASSERT_EQUAL(mRectangle2D<int64_t>(rect).GrowToContain(mRectangle2D<int64_t>(15, 10, 5, 6)), mRectangle2D<int64_t>(rect));
+    mTEST_ASSERT_EQUAL(mRectangle2D<int64_t>(rect).GrowToContain(mRectangle2D<int64_t>(15, 10, 5, 10)), mRectangle2D<int64_t>(rect));
+    mTEST_ASSERT_EQUAL(mRectangle2D<int64_t>(rect).GrowToContain(mRectangle2D<int64_t>(10, 10, 5, 5)), mRectangle2D<int64_t>(10, 2, 10, 18));
+    mTEST_ASSERT_EQUAL(mRectangle2D<int64_t>(rect).GrowToContain(mRectangle2D<int64_t>(0, 10, 40, 5)), mRectangle2D<int64_t>(0, 2, 40, 18));
+    mTEST_ASSERT_EQUAL(mRectangle2D<int64_t>(rect).GrowToContain(mRectangle2D<int64_t>(12, 0, 8, 1)), mRectangle2D<int64_t>(12, 0, 8, 20));
+    mTEST_ASSERT_EQUAL(mRectangle2D<int64_t>(rect).GrowToContain(mRectangle2D<int64_t>(0, 0, 1, 1)), mRectangle2D<int64_t>(0, 0, 20, 20));
+    mTEST_ASSERT_EQUAL(mRectangle2D<int64_t>(rect).GrowToContain(mRectangle2D<int64_t>(0, 0, 40, 40)), mRectangle2D<int64_t>(0, 0, 40, 40));
+  }
+  {
+    mRectangle2D<int64_t> rect(-1, -1, 2, 2);
+
+    mTEST_ASSERT_EQUAL(mRectangle2D<int64_t>(rect).GrowToContain(mRectangle2D<int64_t>(rect)), mRectangle2D<int64_t>(rect));
+    mTEST_ASSERT_EQUAL(mRectangle2D<int64_t>(rect).GrowToContain(mRectangle2D<int64_t>(0, 0, 1, 1)), mRectangle2D<int64_t>(rect));
+    mTEST_ASSERT_EQUAL(mRectangle2D<int64_t>(rect).GrowToContain(mRectangle2D<int64_t>(1, 1, 0, 0)), mRectangle2D<int64_t>(rect));
+    mTEST_ASSERT_EQUAL(mRectangle2D<int64_t>(rect).GrowToContain(mRectangle2D<int64_t>(-1, -1, 1, 1)), mRectangle2D<int64_t>(rect));
+    mTEST_ASSERT_EQUAL(mRectangle2D<int64_t>(rect).GrowToContain(mRectangle2D<int64_t>(-2, -2, 1, 1)), mRectangle2D<int64_t>(-2, -2, 3, 3));
+    mTEST_ASSERT_EQUAL(mRectangle2D<int64_t>(rect).GrowToContain(mRectangle2D<int64_t>(1, 1, 1, 1)), mRectangle2D<int64_t>(-1, -1, 3, 3));
+  }
+
+  mTEST_RETURN_SUCCESS();
+}
+
+mTEST(mRectangle2D, TestGrowToContainVector)
+{
+  mRectangle2D<int64_t> rect(-1, -1, 2, 2);
+  mRectangle2D<int64_t> originalRect(rect);
+
+  mTEST_ASSERT_EQUAL(rect.GrowToContain(mVec2i(-1, -1)), originalRect);
+  mTEST_ASSERT_EQUAL(rect.GrowToContain(mVec2i(0, 0)), originalRect);
+  mTEST_ASSERT_EQUAL(rect.GrowToContain(mVec2i(1, 1)), mRectangle2D<int64_t>(-1, -1, 3, 3));
+  mTEST_ASSERT_EQUAL(rect.GrowToContain(mVec2i(-1, -2)), mRectangle2D<int64_t>(-1, -2, 3, 4));
+  mTEST_ASSERT_EQUAL(rect.GrowToContain(mVec2i(-2, 2)), mRectangle2D<int64_t>(-2, -2, 4, 5));
+
+  mTEST_RETURN_SUCCESS();
+}

@@ -116,6 +116,15 @@ T mSmallest(const T scale);
 
 //////////////////////////////////////////////////////////////////////////
 
+enum mComparisonResult : int8_t
+{
+  mCR_Less = -1,
+  mCR_Equal = 0,
+  mCR_Greater = 1,
+};
+
+//////////////////////////////////////////////////////////////////////////
+
 #define _mVECTOR_SUBSET_2(a, b) __host__ __device__ inline mVec2t<T> a ## b() { return mVec2t<T>(a, b); }
 #define _mVECTOR_SUBSET_3(a, b, c) __host__ __device__ inline mVec3t<T> a ## b ## c() { return mVec3t<T>(a, b, c); }
 #define _mVECTOR_SUBSET_4(a, b, c, d) __host__ __device__ inline mVec4t<T> a ## b ## c ## d() { return mVec4t<T>(a, b, c, d); }
@@ -275,7 +284,10 @@ struct mVec4t
   __host__ __device__ inline mVec4t() : x(0), y(0), z(0), w(0) {}
   __host__ __device__ inline explicit mVec4t(T _v) : x(_v), y(_v), z(_v), w(_v) {}
   __host__ __device__ inline mVec4t(T _x, T _y, T _z, T _w) : x(_x), y(_y), z(_z), w(_w) {}
-  __host__ __device__ inline explicit mVec4t(mVec3t<T> vector3, T _w) : x(vector3.x), y(vector3.y), z(vector3.z), w(_w) {}
+  __host__ __device__ inline explicit mVec4t(const mVec3t<T> vec3, const T _w) : x(vec3.x), y(vec3.y), z(vec3.z), w(_w) {}
+  __host__ __device__ inline explicit mVec4t(const T _x, const mVec3t<T> vec3) : x(_x), y(vec3.x), z(vec3.y), w(vec3.z) {}
+  __host__ __device__ inline explicit mVec4t(const mVec2t<T> vec2, const T _z, const T _w) : x(vec2.x), y(vec2.y), z(_z), w(_w) {}
+  __host__ __device__ inline explicit mVec4t(const mVec2t<T> vec2a, const mVec2t<T> vec2b) : x(vec2a.x), y(vec2a.y), z(vec2b.x), w(vec2b.y) {}
 
   template <typename T2> __host__ __device__ inline explicit mVec4t(const mVec4t<T2> &cast) : x((T)cast.x), y((T)cast.y), z((T)cast.z), w((T)cast.w) {}
 
@@ -424,42 +436,106 @@ struct mRectangle2D
   __host__ __device__ inline mRectangle2D(const T x, const T y, const T w, const T h) : x(x), y(y), w(w), h(h) { }
   __host__ __device__ inline mRectangle2D(const mVec2t<T> &position, const mVec2t<T> size) : position(position), size(size) { }
 
+  __host__ __device__ inline bool operator == (const mRectangle2D<T> &rect) const
+  {
+    return position == rect.position && size == rect.size;
+  }
+
+  __host__ __device__ inline bool operator != (const mRectangle2D<T> &rect) const
+  {
+    return position != rect.position || size != rect.size;
+  }
+
   __host__ __device__ inline bool Contains(const mVec2t<T> &_position) const
   {
-    return _position.x >= x && _position.y >= y && _position.x - x < w && _position.y - y < h;
+    return _position.x >= x && _position.y >= y && _position.x < x + w && _position.y < y + h;
   }
 
-  __host__ __device__ inline mRectangle2D<float_t> OffsetCopy(mVec2t<T> offset) const
+  __host__ __device__ inline bool Contains(const mRectangle2D<T> &rect) const
   {
-    return mRectangle2D<float_t>(position + offset, size);
+    const mVec2t<T> rend = rect.position + rect.size;
+    const mVec2t<T> end = position + size;
+
+    return rect.x >= x && rect.y >= y && rect.x <= end.x && rect.y <= end.y && rend.x >= x && rend.y >= y && rend.x <= end.x && rend.y <= end.y;
   }
 
-  __host__ __device__ inline mRectangle2D<float_t> & OffsetSelf(mVec2t<T> offset)
+  __host__ __device__ inline mRectangle2D<T> OffsetCopy(mVec2t<T> offset) const
+  {
+    return mRectangle2D<T>(position + offset, size);
+  }
+
+  __host__ __device__ inline mRectangle2D<T> & OffsetSelf(mVec2t<T> offset)
   {
     position += offset;
     return *this;
   }
 
-  __host__ __device__ inline mRectangle2D<float_t> ScaleCopy(const T scale) const
+  __host__ __device__ inline mRectangle2D<T> ScaleCopy(const T scale) const
   {
-    return mRectangle2D<float_t>(position * scale, size * scale);
+    return mRectangle2D<T>(position * scale, size * scale);
   }
 
-  __host__ __device__ inline mRectangle2D<float_t> ScaleSelf(const T scale)
+  __host__ __device__ inline mRectangle2D<T> ScaleSelf(const T scale)
   {
     asVector4 *= scale;
     return *this;
   }
 
-  __host__ __device__ inline mRectangle2D<float_t> ScaleCopy(const mVec2t<T> scale) const
+  __host__ __device__ inline mRectangle2D<T> ScaleCopy(const mVec2t<T> scale) const
   {
-    return mRectangle2D<float_t>(position * scale, size * scale);
+    return mRectangle2D<T>(position * scale, size * scale);
   }
 
-  __host__ __device__ inline mRectangle2D<float_t> ScaleSelf(const mVec2t<T> scale)
+  __host__ __device__ inline mRectangle2D<T> ScaleSelf(const mVec2t<T> scale)
   {
     position *= scale;
     size *= scale;
+    return *this;
+  }
+
+  __host__ __device__ inline mRectangle2D<T> GrowToContain(const mRectangle2D<T> &rect)
+  {
+    if (position.x > rect.x)
+    {
+      size.x += (position.x - rect.x);
+      position.x = rect.x;
+    }
+
+    if (position.y > rect.y)
+    {
+      size.y += (position.y - rect.y);
+      position.y = rect.y;
+    }
+
+    if (position.x + size.x < rect.position.x + rect.size.x)
+      size.x = (rect.position.x + rect.size.x) - position.x;
+
+    if (position.y + size.y < rect.position.y + rect.size.y)
+      size.y = (rect.position.y + rect.size.y) - position.y;
+
+    return *this;
+  }
+
+  __host__ __device__ inline mRectangle2D<T> GrowToContain(const mVec2t<T> &v)
+  {
+    if (position.x > v.x)
+    {
+      size.x += (position.x - v.x);
+      position.x = v.x;
+    }
+
+    if (position.y > v.y)
+    {
+      size.y += (position.y - v.y);
+      position.y = v.y;
+    }
+
+    if (position.x + size.x <= v.x)
+      size.x = v.x - position.x + 1;
+
+    if (position.y + size.y <= v.y)
+      size.y = v.y - position.y + 1;
+
     return *this;
   }
 };

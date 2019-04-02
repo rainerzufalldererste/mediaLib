@@ -17,6 +17,6 @@ mFUNCTION(mRS232Handle_GetPortsFromName, const char *name, OUT mPtr<mQueue<uint3
 #endif
 
 mFUNCTION(mRS232Handle_Read, mRS232Handle *pHandle, OUT uint8_t *pBuffer, const size_t length, OUT OPTIONAL size_t *pBytesReadCount);
-mFUNCTION(mRS232Handle_Write, mRS232Handle *pHandle, IN const uint8_t *pBuffer, const size_t length, OUT OPTIONAL size_t *pBytesWriteCount, const bool allowRetryOnTimeout = true);
+mFUNCTION(mRS232Handle_Write, mRS232Handle *pHandle, IN const uint8_t *pBuffer, const size_t length, OUT OPTIONAL size_t *pBytesWriteCount, const size_t retryTimeMs = 1);
 
 #endif // mRS232Handle_h__

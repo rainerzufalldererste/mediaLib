@@ -3,13 +3,28 @@
 
 #include "mRenderParams.h"
 
+enum mFontDescription_BoundMode
+{
+  mFD_BM_Stop,
+  mFD_BM_BreakLineOnBound,
+  mFD_BM_StopWithTrippleDot,
+};
+
 struct mFontDescription
 {
-  mInplaceString<255> fontFileName;
+  mInplaceString<MAX_PATH> fontFileName;
   float_t fontSize = 24.0f;
   float_t lineHeightRatio = 1.0f;
   float_t glyphSpacingRatio = 1.0f;
+
+  bool hasBounds = false;
+  mRectangle2D<float_t> bounds;
+  mFontDescription_BoundMode boundMode = mFD_BM_Stop;
+
+  bool ignoreBackupFonts = false;
 };
+
+mRectangle2D<float_t> mFontDescrption_GetDisplayBounds(const mRectangle2D<float_t> &displayBounds);
 
 struct mFontRenderer;
 struct mFontRenderable;
@@ -29,6 +44,13 @@ mFUNCTION(mFontRenderer_SetPosition, mPtr<mFontRenderer> &fontRenderer, const mV
 mFUNCTION(mFontRenderer_SetDisplayPosition, mPtr<mFontRenderer> &fontRenderer, const mVec2f position);
 mFUNCTION(mFontRenderer_GetCurrentPosition, mPtr<mFontRenderer> &fontRenderer, OUT mVec2f *pPosition);
 mFUNCTION(mFontRenderer_GetCurrentDisplayPosition, mPtr<mFontRenderer> &fontRenderer, OUT mVec2f *pPosition);
+
+mFUNCTION(mFontRenderer_ResetRenderedRect, mPtr<mFontRenderer> &fontRenderer);
+mFUNCTION(mFontRenderer_GetRenderedRect, mPtr<mFontRenderer> &fontRenderer, OUT mRectangle2D<float_t> *pRenderedArea);
+mFUNCTION(mFontRenderer_GetRenderedDisplayRect, mPtr<mFontRenderer> &fontRenderer, OUT mRectangle2D<float_t> *pRenderedArea);
+
+mFUNCTION(mFontRenderer_AddBackupFont, mPtr<mFontRenderer> &fontRenderer, const mString &backupFont);
+mFUNCTION(mFontRenderer_ClearBackupFonts, mPtr<mFontRenderer> &fontRenderer);
 
 mFUNCTION(mFontRenderable_Draw, mPtr<mFontRenderable> &fontRenderable, const mMatrix &matrix = mMatrix::Scale(2.0f / mRenderParams_CurrentRenderResolutionF.x, 2.0f / mRenderParams_CurrentRenderResolutionF.y, 1) * mMatrix::Translation(-1, -1, 0));
 mFUNCTION(mFontRenderable_Destroy, IN_OUT mPtr<mFontRenderable> *pFontRenderable);

@@ -83,8 +83,6 @@ struct mString
   bool operator == (const mString &s) const;
   bool operator != (const mString &s) const;
 
-  explicit operator std::string() const;
-
   mUtf8StringIterator begin() const;
   mUtf8StringIterator end() const;
 
