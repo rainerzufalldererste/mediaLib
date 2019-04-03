@@ -108,11 +108,26 @@ T mMinValue();
 template <typename T>
 T mMaxValue();
 
-template <typename T>
+template <typename T, typename std::enable_if<std::is_floating_point<T>::value>::type* = nullptr>
 T mSmallest();
 
-template <typename T>
-T mSmallest(const T scale);
+template <typename T, typename std::enable_if<std::is_integral<T>::value>::type* = nullptr>
+T mSmallest()
+{
+  return (T)1;
+}
+
+template <typename T, typename std::enable_if<std::is_integral<T>::value>::type* = nullptr>
+T mSmallest(const T)
+{
+  return mSmallest<T>();
+}
+
+template <typename T, typename std::enable_if<std::is_floating_point<T>::value>::type* = nullptr>
+T mSmallest(const T scale)
+{
+  return mSmallest<T>() * scale;
+}
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -238,6 +253,49 @@ struct mVec3t
   __host__ __device__ inline mVec3t<T> Normalize() { return *this / (T)Length(); };
 
   __host__ __device__ inline mVec2t<T> ToVector2() const { return mVec2t<T>(x, y); };
+
+  __host__ __device__ inline mVec3t<T> CartesianToSpherical() const
+  {
+    const auto r = Length();
+
+    return mVec3t<T>((T)r, (T)mATan2(y, x), (T)mATan2(mSqrt(x * x + y * y), z));
+  };
+
+  __host__ __device__ inline mVec3t<T> SphericalToCartesian() const
+  {
+    const auto sinTheta = mSin(y);
+
+    return mVec3t<T>(x * sinTheta * mCos(z), x * sinTheta * mSin(z), x * mCos(y));
+  };
+
+  __host__ __device__ inline mVec3t<T> SphericalToCylindrical() const
+  {
+    return mVec3t<T>(x * mSin(y), z, x * mCos(y));
+  };
+
+  __host__ __device__ inline mVec3t<T> CylindricalToSpherical() const
+  {
+    const auto r = mSqrt(x * x + z * z);
+    
+    return mVec3t<T>((T)r, y, (T)mACos(z / r));
+  };
+
+  __host__ __device__ inline mVec3t<T> CylindricalToCartesian() const
+  {
+    return mVec3t<T>(x * mCos(y), x * mSin(y), z);
+  };
+
+  __host__ __device__ inline mVec3t<T> CartesianToCylindrical() const
+  {
+    const auto p = mSqrt(x * x + y * y);
+    
+    if (x == 0 && y == 0)
+      return mVec3t<T>(p, 0, z);
+    else if (x >= 0)
+      return mVec3t<T>(p, (T)mASin(y / p), z);
+    else
+      return mVec3t<T>(p, (T)(-mASin(y / p) + mPI), z);
+  };
 
   _mVECTOR_SUBSET_2(x, y);
   _mVECTOR_SUBSET_2(x, z);
@@ -531,10 +589,10 @@ struct mRectangle2D
     }
 
     if (position.x + size.x <= v.x)
-      size.x = v.x - position.x + 1;
+      size.x = v.x - position.x + mSmallest<T>(v.x);
 
     if (position.y + size.y <= v.y)
-      size.y = v.y - position.y + 1;
+      size.y = v.y - position.y + mSmallest<T>(v.y);
 
     return *this;
   }

@@ -786,7 +786,10 @@ mFUNCTION(mFile_GetDrives, OUT mPtr<mQueue<mDriveInfo>> *pDrives, IN mAllocator 
 
   mERROR_IF(pDrives == nullptr, mR_ArgumentNull);
 
-  mERROR_CHECK(mQueue_Create(pDrives, pAllocator));
+  if (*pDrives == nullptr)
+    mERROR_CHECK(mQueue_Create(pDrives, pAllocator));
+  else
+    mERROR_CHECK(mQueue_Clear(*pDrives));
 
   wchar_t driveLabels[MAX_PATH];
   const size_t length = GetLogicalDriveStringsW(mARRAYSIZE(driveLabels), driveLabels);
@@ -861,7 +864,10 @@ mFUNCTION(mFile_GetDrives, OUT mPtr<mQueue<mString>> *pDrives, IN mAllocator *pA
 
   mERROR_IF(pDrives == nullptr, mR_ArgumentNull);
 
-  mERROR_CHECK(mQueue_Create(pDrives, pAllocator));
+  if (*pDrives == nullptr)
+    mERROR_CHECK(mQueue_Create(pDrives, pAllocator));
+  else
+    mERROR_CHECK(mQueue_Clear(*pDrives));
 
   wchar_t driveLabels[MAX_PATH];
   const size_t length = GetLogicalDriveStringsW(mARRAYSIZE(driveLabels), driveLabels);

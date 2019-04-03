@@ -94,7 +94,12 @@ struct mDriveInfo
   mDriveType driveType;
 };
 
+// Retrieves a list of available drives with additional drive information on the current machine.
+// If the queue is null, creates a queue, otherwise clears the queue.
 mFUNCTION(mFile_GetDrives, OUT mPtr<mQueue<mDriveInfo>> *pDrives, IN mAllocator *pAllocator);
+
+// Retrieves a list of available drives with additional drive information on the current machine.
+// If the queue is null, creates a queue, otherwise clears the queue.
 mFUNCTION(mFile_GetDrives, OUT mPtr<mQueue<mString>> *pDrives, IN mAllocator *pAllocator);
 
 mFUNCTION(mFile_GetAbsoluteDirectoryPath, OUT mString *pAbsolutePath, const mString &directoryPath);

@@ -756,7 +756,6 @@ inline mFUNCTION(mSpriteBatch_Internal_RenderObject_Render, mSpriteBatch_Interna
 
   mShader &shader = renderObject.texture->sampleCount > 0 ? *spriteBatch->multisampleShader : *spriteBatch->shader;
 
-
   mERROR_CHECK(mShader_Bind(shader));
   mERROR_CHECK(mTexture_Bind(*renderObject.texture));
   mERROR_CHECK(mShader_SetUniform(shader, "texture0", renderObject.texture));
