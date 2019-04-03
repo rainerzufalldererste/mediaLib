@@ -185,19 +185,13 @@ mchar_t mString::operator[](const size_t index) const
 
 mString mString::operator+(const mString &s) const
 {
+  if (s.bytes <= 1 || s.count <= 1 || s.c_str() == nullptr)
+    return *this;
+  else if (this->bytes <= 1 || this->count <= 1 || this->c_str() == nullptr)
+    return s;
+
   mString ret;
   mResult result = mR_Success;
-
-  if (s.bytes <= 1 || s.count <= 1)
-  {
-    ret = *this;
-    return ret;
-  }
-  else if (this->bytes <= 1 || this->count <= 1)
-  {
-    ret = s;
-    return ret;
-  }
 
   mERROR_CHECK_GOTO(mAllocator_AllocateZero(this->pAllocator, &ret.text, this->bytes + s.bytes - 1), result, epilogue);
   ret.capacity = this->bytes + s.bytes - 1;
