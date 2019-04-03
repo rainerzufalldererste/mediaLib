@@ -212,54 +212,6 @@ double_t mMaxValue<double_t>()
 }
 
 template<>
-int8_t mSmallest<int8_t>()
-{
-  return 1;
-}
-
-template<>
-uint8_t mSmallest<uint8_t>()
-{
-  return 1;
-};
-
-template<>
-int16_t mSmallest<int16_t>()
-{
-  return 1;
-};
-
-template<>
-uint16_t mSmallest<uint16_t>()
-{
-  return 1;
-};
-
-template<>
-int32_t mSmallest<int32_t>()
-{
-  return 1;
-};
-
-template<>
-uint32_t mSmallest<uint32_t>()
-{
-  return 1;
-};
-
-template<>
-int64_t mSmallest<int64_t>()
-{
-  return 1;
-};
-
-template<>
-uint64_t mSmallest<uint64_t>()
-{
-  return 1;
-};
-
-template<>
 float_t mSmallest<float_t>()
 {
   return FLT_EPSILON;
@@ -269,18 +221,6 @@ template<>
 double_t mSmallest<double_t>()
 {
   return DBL_EPSILON;
-};
-
-template<>
-float_t mSmallest<float>(const float_t scale)
-{
-  return mSmallest<float>() * scale;
-};
-
-template<>
-double_t mSmallest<double>(const double_t scale)
-{
-  return mSmallest<double>() * scale;
 };
 
 template <>
