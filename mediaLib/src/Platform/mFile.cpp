@@ -270,8 +270,7 @@ mFUNCTION(mFile_Copy, const mString &destinationFileName, const mString &sourceF
   BOOL canceled = FALSE;
   mFile_ProgressCallbackParams parameters(&canceled, progressCallback);
 
-  if (0 == CopyFileExW(source, target, &mFile_ProgressCallback_Internal::Callback, reinterpret_cast<void *>(&parameters), &canceled, (overrideFileIfExistent ? 0 : COPY_FILE_FAIL_IF_EXISTS) | COPY_FILE_NO_BUFFERING
-  ))
+  if (0 == CopyFileExW(source, target, &mFile_ProgressCallback_Internal::Callback, reinterpret_cast<void *>(&parameters), &canceled, (overrideFileIfExistent ? 0 : COPY_FILE_FAIL_IF_EXISTS) | COPY_FILE_NO_BUFFERING))
   {
     if (canceled == TRUE)
       mRETURN_RESULT(mFAILED(parameters.innerResult) ? parameters.innerResult : mR_Break);
@@ -340,8 +339,7 @@ mFUNCTION(mFile_Move, const mString &destinationFileName, const mString &sourceF
   BOOL canceled = FALSE;
   mFile_ProgressCallbackParams parameters(&canceled, progressCallback);
 
-  if (0 == MoveFileWithProgressW(source, target, &mFile_ProgressCallback_Internal::Callback, reinterpret_cast<void *>(&parameters), (overrideFileIfExistent ? MOVEFILE_REPLACE_EXISTING : 0) | MOVEFILE_COPY_ALLOWED
-  ))
+  if (0 == MoveFileWithProgressW(source, target, &mFile_ProgressCallback_Internal::Callback, reinterpret_cast<void *>(&parameters), (overrideFileIfExistent ? MOVEFILE_REPLACE_EXISTING : 0) | MOVEFILE_COPY_ALLOWED))
   {
     if (canceled == TRUE)
       mRETURN_RESULT(mFAILED(parameters.innerResult) ? parameters.innerResult : mR_Break);
