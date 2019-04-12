@@ -45,12 +45,15 @@ struct mRDBAttributeQuery_Internal<T>
   static mFUNCTION(SetAttribute, IN mShader *pShader, const size_t totalSize, const size_t offset)
   {
     mFUNCTION_SETUP();
-
+     
 #if defined(mRENDERER_OPENGL)
     const GLuint attributeIndex = glGetAttribLocation(pShader->shaderProgram, T::AttributeName());
+    mGL_DEBUG_ERROR_CHECK();
+
     glEnableVertexAttribArray(attributeIndex);
     glVertexAttribPointer(attributeIndex, (GLint)sizeof(float_t), T::DataType(), GL_FALSE, (GLsizei)totalSize, (const void *)offset);
 #endif
+    mGL_DEBUG_ERROR_CHECK();
 
     mRETURN_SUCCESS();
   }
@@ -207,6 +210,8 @@ inline mFUNCTION(mRenderDataBuffer_SetVertexBuffer, mRenderDataBuffer<Args...> &
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
   glBindBuffer(GL_ARRAY_BUFFER, buffer.vbo);
   glBufferData(GL_ARRAY_BUFFER, sizeof(U) * count, pData, buffer.constantlyChangedVertices ? GL_DYNAMIC_DRAW : GL_STATIC_DRAW);
+
+  mGL_DEBUG_ERROR_CHECK();
 #endif
 
   buffer.validVBO = true;
@@ -248,8 +253,11 @@ inline mFUNCTION(mRenderDataBuffer_Draw, mRenderDataBuffer<Args...> &buffer)
 
   mERROR_IF(!buffer.validVBO && mRDBAttributeQuery_Internal<Args...>::GetSize() > 0, mR_ResourceStateInvalid);
 
+  mGL_DEBUG_ERROR_CHECK();
+
 #if defined(mRENDERER_OPENGL)
   glBindBuffer(GL_ARRAY_BUFFER, buffer.vbo);
+  mGL_DEBUG_ERROR_CHECK();
 #endif
 
   mERROR_CHECK(mShader_Bind(*buffer.shader));
@@ -258,6 +266,8 @@ inline mFUNCTION(mRenderDataBuffer_Draw, mRenderDataBuffer<Args...> &buffer)
 #if defined(mRENDERER_OPENGL)
   glDrawArrays(buffer.vertexRenderMode, 0, (GLsizei)buffer.count);
 #endif
+
+  mGL_DEBUG_ERROR_CHECK();
 
   mRETURN_SUCCESS();
 }

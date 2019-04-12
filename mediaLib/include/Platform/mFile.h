@@ -156,6 +156,9 @@ inline mFUNCTION(mFile_ReadRaw, const wchar_t *filename, OUT T **ppData, IN mAll
   mERROR_IF(0 != fseek(pFile, 0, SEEK_SET), mR_IOFailure);
 
   mERROR_CHECK(mAllocator_Allocate(pAllocator, (uint8_t **)ppData, length + 1));
+  
+  mERROR_CHECK(mZeroMemory(&((*ppData)[length]), 1)); // To zero terminate strings. This is out of bounds for all other data types anyways.
+
   const size_t readLength = fread(*ppData, 1, length, pFile);
 
   *pCount = readLength / sizeof(T);
