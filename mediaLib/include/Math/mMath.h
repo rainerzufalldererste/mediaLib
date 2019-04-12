@@ -598,6 +598,47 @@ struct mRectangle2D
   }
 };
 
+template <typename T>
+struct mTriangle
+{
+  T position0, position1, position2;
+
+  inline mTriangle()
+  { }
+
+  inline mTriangle(const T position0, const T position1, const T position2) :
+    position0(position0),
+    position1(position1),
+    position2(position2)
+  { }
+};
+
+template <typename T>
+using mTriangle2D = mTriangle<mVec2t<T>>;
+
+template <typename T>
+using mTriangle3D = mTriangle<mVec3t<T>>;
+
+template <typename T>
+struct mLine
+{
+  T position0, position1;
+
+  inline mLine()
+  { }
+
+  inline mLine(const T position0, const T position1) :
+    position0(position0),
+    position1(position1)
+  { }
+};
+
+template <typename T>
+using mLine2D = mLine<mVec2t<T>>;
+
+template <typename T>
+using mLine3D = mLine<mVec3t<T>>;
+
 struct mVector;
 
 mVec3f mColor_UnpackBgraToVec3f(const uint32_t bgraColor);

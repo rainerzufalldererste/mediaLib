@@ -324,6 +324,90 @@ mFUNCTION(mRenderParams_SetBlendingEnabled, const bool enabled /*= true*/)
   mRETURN_SUCCESS();
 }
 
+mFUNCTION(mRenderParams_SetDepthTestEnabled, const bool enabled /*= true*/)
+{
+  mFUNCTION_SETUP();
+
+#if defined(mRENDERER_OPENGL)
+  (enabled ? glEnable : glDisable)(GL_DEPTH_TEST);
+#else
+  mRETURN_RESULT(mR_NotImplemented);
+#endif
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mRenderParams_SetDepthMaskEnabled, const bool enabled)
+{
+  mFUNCTION_SETUP();
+
+#if defined(mRENDERER_OPENGL)
+  glDepthMask(enabled ? GL_TRUE : GL_FALSE);
+#else
+  mRETURN_RESULT(mR_NotImplemented);
+#endif
+
+  mGL_DEBUG_ERROR_CHECK();
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mRenderParams_SetScissorTestEnabled, const bool enabled)
+{
+  mFUNCTION_SETUP();
+
+#if defined(mRENDERER_OPENGL)
+  (enabled ? glEnable : glDisable)(GL_SCISSOR_TEST);
+#else
+  mRETURN_RESULT(mR_NotImplemented);
+#endif
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mRenderParams_GetMaxDepthPrecisionBits, OUT size_t *pDepth)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pDepth == nullptr, mR_ArgumentNull);
+
+#if defined(mRENDERER_OPENGL)
+  const HDC hdc = wglGetCurrentDC();
+  int32_t pixelFormatCount = 1;
+  size_t maxDepthBits = 0;
+  
+  for (size_t i = 1; i <= pixelFormatCount; i++)
+  {
+    PIXELFORMATDESCRIPTOR pixelFormat = { 0 };
+
+    pixelFormatCount = DescribePixelFormat(hdc, (int32_t)i, sizeof(PIXELFORMATDESCRIPTOR), &pixelFormat);
+    mERROR_IF(pixelFormatCount == 0, mR_OperationNotSupported);
+
+    if (pixelFormat.cDepthBits > maxDepthBits && pixelFormat.cBlueBits >= 8 && pixelFormat.cRedBits >= 8 && pixelFormat.cGreenBits >= 8)
+      maxDepthBits = (size_t)pixelFormat.cDepthBits;
+  }
+
+  *pDepth = maxDepthBits;
+#else
+  mRETURN_RESULT(mR_NotImplemented);
+#endif
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mRenderParams_SetDepthPrecisionBits, const size_t bits)
+{
+  mFUNCTION_SETUP();
+
+#if defined(mRENDERER_OPENGL)
+  mERROR_IF(0 != SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, (int32_t)bits), mR_OperationNotSupported);
+#else
+  mRETURN_RESULT(mR_NotImplemented);
+#endif
+
+  mRETURN_SUCCESS();
+}
+
 mFUNCTION(mRenderParams_SetAlphaBlendFunc, const mRenderParam_BlendFunc blendFunc)
 {
   mFUNCTION_SETUP();
@@ -358,6 +442,62 @@ mFUNCTION(mRenderParams_SetAlphaBlendFunc, const mRenderParam_BlendFunc blendFun
     mRETURN_RESULT(mR_OperationNotSupported);
     break;
   }
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mRenderParams_SetDepthFunc, const mRenderParams_DepthFunc depthFunc)
+{
+  mFUNCTION_SETUP();
+
+  switch (depthFunc)
+  {
+  case mRP_DF_NoDepth:
+    mERROR_CHECK(mRenderParams_SetDepthTestEnabled(false));
+    break;
+
+  case mRP_DF_Less:
+    mERROR_CHECK(mRenderParams_SetDepthTestEnabled(true));
+    glDepthFunc(GL_LESS);
+    break;
+
+  case mRP_DF_Greater:
+    mERROR_CHECK(mRenderParams_SetDepthTestEnabled(true));
+    glDepthFunc(GL_GREATER);
+    break;
+
+  case mRP_DF_Equal:
+    mERROR_CHECK(mRenderParams_SetDepthTestEnabled(true));
+    glDepthFunc(GL_EQUAL);
+    break;
+
+  case mRP_DF_LessOrEqual:
+    mERROR_CHECK(mRenderParams_SetDepthTestEnabled(true));
+    glDepthFunc(GL_LEQUAL);
+    break;
+
+  case mRP_DF_GreaterOrEqual:
+    mERROR_CHECK(mRenderParams_SetDepthTestEnabled(true));
+    glDepthFunc(GL_GEQUAL);
+    break;
+
+  case mRP_DF_NotEqual:
+    mERROR_CHECK(mRenderParams_SetDepthTestEnabled(true));
+    glDepthFunc(GL_NOTEQUAL);
+    break;
+
+  case mRP_DF_Always:
+    mERROR_CHECK(mRenderParams_SetDepthTestEnabled(true));
+    glDepthFunc(GL_ALWAYS);
+    break;
+
+
+  default:
+    mRETURN_RESULT(mR_OperationNotSupported);
+    break;
+  }
+
+  mGL_DEBUG_ERROR_CHECK();
 
   mRETURN_SUCCESS();
 }
@@ -835,7 +975,7 @@ mFUNCTION(mRenderParams_PrintRenderState, const bool onlyNewValues /* = false */
   mGL_PRINT_FRAMEBUFFER_ATTACHMENT_PARAM(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_FRAMEBUFFER_ATTACHMENT_BLUE_SIZE);
   mGL_PRINT_FRAMEBUFFER_ATTACHMENT_PARAM(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_FRAMEBUFFER_ATTACHMENT_ALPHA_SIZE);
 
-  mGL_ERROR_CHECK();
+  glGetError(); // Clear glError.
 
   mPRINT_DEBUG("================================================\nEND OF GL STATE\n");
 

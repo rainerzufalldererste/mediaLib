@@ -93,6 +93,12 @@ mFUNCTION(mRenderParams_ClearDepth);
 mFUNCTION(mRenderParams_ClearTargetDepthAndColour, const mVector &colour = mVector(0, 0, 0, 1));
 
 mFUNCTION(mRenderParams_SetBlendingEnabled, const bool enabled = true);
+mFUNCTION(mRenderParams_SetDepthTestEnabled, const bool enabled = true);
+mFUNCTION(mRenderParams_SetDepthMaskEnabled, const bool enabled = true);
+mFUNCTION(mRenderParams_SetScissorTestEnabled, const bool enabled = true);
+
+mFUNCTION(mRenderParams_GetMaxDepthPrecisionBits, OUT size_t *pDepth);
+mFUNCTION(mRenderParams_SetDepthPrecisionBits, const size_t bits);
 
 enum mRenderParam_BlendFunc
 {
@@ -104,6 +110,20 @@ enum mRenderParam_BlendFunc
 };
 
 mFUNCTION(mRenderParams_SetAlphaBlendFunc, const mRenderParam_BlendFunc blendFunc);
+
+enum mRenderParams_DepthFunc
+{
+  mRP_DF_Less,
+  mRP_DF_Greater,
+  mRP_DF_Equal,
+  mRP_DF_LessOrEqual,
+  mRP_DF_GreaterOrEqual,
+  mRP_DF_NotEqual,
+  mRP_DF_Always,
+  mRP_DF_NoDepth,
+};
+
+mFUNCTION(mRenderParams_SetDepthFunc, const mRenderParams_DepthFunc depthFunc);
 
 #if defined(mRENDERER_OPENGL) && defined(_WIN32)
 mFUNCTION(mRenderParams_GetCurrentGLContext_WGLRC, HGLRC *pGLContext);
