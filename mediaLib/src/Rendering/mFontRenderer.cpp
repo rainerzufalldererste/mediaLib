@@ -126,6 +126,8 @@ struct mFontRenderer
   bool started;
   bool startedRenderable;
   mVec2f position, resetPosition;
+  mVec3f spacialOrigin;
+  mVec3f right, up;
   uint32_t *pIndexBuffer;
   size_t indexBufferCapacity;
   bool addedGlyph;
@@ -188,6 +190,17 @@ mFUNCTION(mFontRenderer_AddFont, mPtr<mFontRenderer> &fontRenderer, const mFontD
 
   size_t unused;
   mERROR_CHECK(mFontRenderer_AddFont_Internal(fontRenderer, fontDescription, &unused));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mFontRenderer_SetOrigin, mPtr<mFontRenderer> &fontRenderer, const mVec3f position)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(fontRenderer == nullptr, mR_ArgumentNull);
+
+  fontRenderer->spacialOrigin = position;
 
   mRETURN_SUCCESS();
 }
@@ -306,7 +319,7 @@ mFUNCTION(mFontRenderer_ClearBackupFonts, mPtr<mFontRenderer> &fontRenderer)
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mFontRenderer_Begin, mPtr<mFontRenderer> &fontRenderer, const mMatrix &matrix /* = mMatrix::Scale(2.0f / mRenderParams_CurrentRenderResolutionF.x, 2.0f / mRenderParams_CurrentRenderResolutionF.y, 1) * mMatrix::Translation(-1, -1, 0) */)
+mFUNCTION(mFontRenderer_Begin, mPtr<mFontRenderer> &fontRenderer, const mMatrix &matrix /* = mMatrix::Scale(2.0f / mRenderParams_CurrentRenderResolutionF.x, 2.0f / mRenderParams_CurrentRenderResolutionF.y, 1) * mMatrix::Translation(-1, -1, 0) */, const mVec3f right /* = mVec3f(1, 0, 0) */, const mVec3f up /* = mVec3f(0, 1, 0) */)
 {
   mFUNCTION_SETUP();
 
@@ -316,6 +329,9 @@ mFUNCTION(mFontRenderer_Begin, mPtr<mFontRenderer> &fontRenderer, const mMatrix 
   fontRenderer->started = true;
   fontRenderer->matrix = matrix;
   fontRenderer->position = fontRenderer->resetPosition;
+  fontRenderer->spacialOrigin = mVec3f(0);
+  fontRenderer->right = right;
+  fontRenderer->up = up;
 
   mERROR_CHECK(mFontRenderer_ResetRenderedRect(fontRenderer));
 
@@ -569,10 +585,10 @@ mFUNCTION(mFontRenderer_Draw, mPtr<mFontRenderer> &fontRenderer, const mFontDesc
 
       fontRenderer->position.x += kerning;
 
-      const float_t x0 = (fontRenderer->position.x + pGlyph->offset_x);
-      const float_t y0 = (fontRenderer->position.y + pGlyph->offset_y);
-      const float_t x1 = (x0 + pGlyph->width);
-      const float_t y1 = (y0 - pGlyph->height);
+      const float_t x0 = (fontRenderer->position.x + pGlyph->offset_x) * fontDescription.scale;
+      const float_t y0 = (fontRenderer->position.y + pGlyph->offset_y) * fontDescription.scale;
+      const float_t x1 = (x0 + pGlyph->width * fontDescription.scale);
+      const float_t y1 = (y0 - pGlyph->height * fontDescription.scale);
 
       mRectangle2D<float_t> glyphBounds(x0, y1, x1 - x0, y0 - y1); // Flipped because it's in OpenGL space.
 
@@ -627,19 +643,19 @@ mFUNCTION(mFontRenderer_Draw, mPtr<mFontRenderer> &fontRenderer, const mFontDesc
       const float_t s1 = pGlyph->s1;
       const float_t t1 = pGlyph->t1;
 
-      mERROR_CHECK(mBinaryChunk_WriteData(fontRenderer->enqueuedText, mVec3f(x0, y0, 0)));
+      mERROR_CHECK(mBinaryChunk_WriteData(fontRenderer->enqueuedText, x0 * fontRenderer->right + y0 * fontRenderer->up + fontRenderer->spacialOrigin));
       mERROR_CHECK(mBinaryChunk_WriteData(fontRenderer->enqueuedText, mVec2f(s0, t0)));
       mERROR_CHECK(mBinaryChunk_WriteData(fontRenderer->enqueuedText, (mVec4f)colour));
 
-      mERROR_CHECK(mBinaryChunk_WriteData(fontRenderer->enqueuedText, mVec3f(x0, y1, 0)));
+      mERROR_CHECK(mBinaryChunk_WriteData(fontRenderer->enqueuedText, x0 * fontRenderer->right + y1 * fontRenderer->up + fontRenderer->spacialOrigin));
       mERROR_CHECK(mBinaryChunk_WriteData(fontRenderer->enqueuedText, mVec2f(s0, t1)));
       mERROR_CHECK(mBinaryChunk_WriteData(fontRenderer->enqueuedText, (mVec4f)colour));
 
-      mERROR_CHECK(mBinaryChunk_WriteData(fontRenderer->enqueuedText, mVec3f(x1, y1, 0)));
+      mERROR_CHECK(mBinaryChunk_WriteData(fontRenderer->enqueuedText, x1 * fontRenderer->right + y1 * fontRenderer->up + fontRenderer->spacialOrigin));
       mERROR_CHECK(mBinaryChunk_WriteData(fontRenderer->enqueuedText, mVec2f(s1, t1)));
       mERROR_CHECK(mBinaryChunk_WriteData(fontRenderer->enqueuedText, (mVec4f)colour));
 
-      mERROR_CHECK(mBinaryChunk_WriteData(fontRenderer->enqueuedText, mVec3f(x1, y0, 0)));
+      mERROR_CHECK(mBinaryChunk_WriteData(fontRenderer->enqueuedText, x1 * fontRenderer->right + y0 * fontRenderer->up + fontRenderer->spacialOrigin));
       mERROR_CHECK(mBinaryChunk_WriteData(fontRenderer->enqueuedText, mVec2f(s1, t0)));
       mERROR_CHECK(mBinaryChunk_WriteData(fontRenderer->enqueuedText, (mVec4f)colour));
 

@@ -225,6 +225,10 @@ struct mVec3t
 
   __host__ __device__ inline mVec3t() : x(0), y(0), z(0) {}
   __host__ __device__ inline explicit mVec3t(T _v) : x(_v), y(_v), z(_v) {}
+
+  // Cartesian: x, y, z;
+  // Spherical: radius, theta, phi;
+  // Cylindrical: rho, phi, z;
   __host__ __device__ inline mVec3t(T _x, T _y, T _z) : x(_x), y(_y), z(_z) {}
   __host__ __device__ inline explicit mVec3t(mVec2t<T> vector2, T _z) : x(vector2.x), y(vector2.y), z(_z) {}
 
@@ -295,6 +299,16 @@ struct mVec3t
       return mVec3t<T>(p, (T)mASin(y / p), z);
     else
       return mVec3t<T>(p, (T)(-mASin(y / p) + mPI), z);
+  };
+
+  __host__ __device__ inline static mVec3t<T> Cross(const mVec3t<T> a, const mVec3t<T> b)
+  {
+    return mVec3t<T>(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
+  };
+
+  __host__ __device__ inline static T Dot(const mVec3t<T> a, const mVec3t<T> b)
+  {
+    return a.x * b.x + a.y * b.y + a.z * b.z;
   };
 
   _mVECTOR_SUBSET_2(x, y);
@@ -639,6 +653,28 @@ using mLine2D = mLine<mVec2t<T>>;
 template <typename T>
 using mLine3D = mLine<mVec3t<T>>;
 
+template <typename T>
+struct mPlane
+{
+  T position, direction0, direction1;
+
+  static mPlane FromPoints(const T position0, const T position1, const T position2)
+  {
+    return { position0, position1 - position0, position2 - position0 };;
+  }
+
+  static mPlane FromPointAndDirections(const T position, const T direction0, const T direction1)
+  {
+    return { position, direction0, direction1 };
+  }
+};
+
+template <typename T>
+using mPlane2D = mPlane<mVec2t<T>>;
+
+template <typename T>
+using mPlane3D = mPlane<mVec3t<T>>;
+
 struct mVector;
 
 mVec3f mColor_UnpackBgraToVec3f(const uint32_t bgraColor);
@@ -678,9 +714,9 @@ inline mVec2t<U> mBarycentricInterpolationFactors(const T &p, const T &q, const 
 template<typename T, typename U>
 inline mVec3t<U> mBarycentricInterpolationFactors(const mVec2t<T> &p, const mVec2t<T> &q, const mVec2t<T> &r, const mVec2t<U> &x)
 {
-  const U divisor = (p.x*(r.y - q.y) + q.x*(p.y - r.y) + r.x*(q.y - p.y));
-  const U wp = (x.x*(r.y - q.y) + q.x*(x.y - r.y) + r.x*(q.y - x.y)) / divisor;
-  const U wq = -(x.x*(r.y - p.y) + p.x*(x.y - r.y) + r.x*(p.y - x.y)) / divisor;
+  const U divisor = (p.x * (r.y - q.y) + q.x * (p.y - r.y) + r.x * (q.y - p.y));
+  const U wp = (x.x * (r.y - q.y) + q.x * (x.y - r.y) + r.x * (q.y - x.y)) / divisor;
+  const U wq = -(x.x * (r.y - p.y) + p.x * (x.y - r.y) + r.x * (p.y - x.y)) / divisor;
 
   return mVec3t<U>(wp, wq, 1 - wp - wq);
 }
@@ -688,16 +724,33 @@ inline mVec3t<U> mBarycentricInterpolationFactors(const mVec2t<T> &p, const mVec
 template<typename T, typename U>
 inline mVec4t<U> mBarycentricInterpolationFactors(const mVec3t<T> &p, const mVec3t<T> &q, const mVec3t<T> &r, const mVec3t<T> &s, const mVec3t<U> &x)
 {
-  const U val0 = (p.y*(s.z - r.z) + r.y*(p.z - s.z) + (r.z - p.z)*s.y);
-  const U val1 = (s.y*(x.z - r.z) + r.y*(s.z - x.z) + (r.z - s.z)*x.y);
-  const U val2 = (p.y*(x.z - s.z) + s.y*(p.z - x.z) + (s.z - p.z)*x.y);
+  const U val0 = (p.y * (s.z - r.z) + r.y * (p.z - s.z) + (r.z - p.z) * s.y);
+  const U val1 = (s.y * (x.z - r.z) + r.y * (s.z - x.z) + (r.z - s.z) * x.y);
+  const U val2 = (p.y * (x.z - s.z) + s.y * (p.z - x.z) + (s.z - p.z) * x.y);
 
-  const U divisor = (q.x*val0 + p.x*(r.y*(s.z - q.z) + q.y*(r.z - s.z) + (q.z - r.z)*s.y) + r.x*(q.y*(s.z - p.z) + p.y*(q.z - s.z) + (p.z - q.z)*s.y) + (p.y*(r.z - q.z) + q.y*(p.z - r.z) + (q.z - p.z)*r.y)*s.x);
-  const U wp = -(r.x*(q.y*(x.z - s.z) + s.y*(q.z - x.z) + (s.z - q.z)*x.y) + q.x*val1 + s.x*(r.y*(x.z - q.z) + q.y*(r.z - x.z) + (q.z - r.z)*x.y) + (q.y*(s.z - r.z) + r.y*(q.z - s.z) + (r.z - q.z)*s.y)*x.x) / divisor;
-  const U wq = (r.x*val2 + p.x*val1 + s.x*(r.y*(x.z - p.z) + p.y*(r.z - x.z) + (p.z - r.z)*x.y) + val0*x.x) / divisor;
-  const U wr = -(q.x*val2 + p.x*(s.y*(x.z - q.z) + q.y*(s.z - x.z) + (q.z - s.z)*x.y) + s.x*(q.y*(x.z - p.z) + p.y*(q.z - x.z) + (p.z - q.z)*x.y) + (p.y*(s.z - q.z) + q.y*(p.z - s.z) + (q.z - p.z)*s.y)*x.x) / divisor;
+  const U divisor = (q.x * val0 + p.x * (r.y * (s.z - q.z) + q.y * (r.z - s.z) + (q.z - r.z) * s.y) + r.x * (q.y * (s.z - p.z) + p.y * (q.z - s.z) + (p.z - q.z) * s.y) + (p.y * (r.z - q.z) + q.y * (p.z - r.z) + (q.z - p.z) * r.y) * s.x);
+  const U wp = -(r.x * (q.y * (x.z - s.z) + s.y * (q.z - x.z) + (s.z - q.z) * x.y) + q.x * val1 + s.x * (r.y * (x.z - q.z) + q.y * (r.z - x.z) + (q.z - r.z) * x.y) + (q.y * (s.z - r.z) + r.y * (q.z - s.z) + (r.z - q.z) * s.y) * x.x) / divisor;
+  const U wq = (r.x * val2 + p.x * val1 + s.x * (r.y * (x.z - p.z) + p.y * (r.z - x.z) + (p.z - r.z) * x.y) + val0 * x.x) / divisor;
+  const U wr = -(q.x * val2 + p.x * (s.y * (x.z - q.z) + q.y * (s.z - x.z) + (q.z - s.z) * x.y) + s.x * (q.y * (x.z - p.z) + p.y * (q.z - x.z) + (p.z - q.z) * x.y) + (p.y * (s.z - q.z) + q.y * (p.z - s.z) + (q.z - p.z) * s.y) * x.x) / divisor;
 
   return mVec4t<U>(wp, wq, wr, 1 - wp - wq - wr)
+}
+
+template <typename T>
+bool mIntersects(const mPlane3D<T> &plane, const mLine3D<T> &line, OUT OPTIONAL mVec3t<T> *pHitPosition)
+{
+  const mVec3t<T> diff = line.position0 - line.position1;
+  const mVec3t<T> normal = mVec3t<T>::Cross(plane.direction0, plane.direction1).Normalize();
+
+  const T denominator = normal.x * diff.x + normal.y * diff.y + normal.z * diff.z;
+  const T u = (normal.x * line.position0.x + normal.y * line.position0.y + normal.z * line.position0.z -mVec3t<T>::Dot(plane.position, normal)) / denominator;
+
+  const bool hit = (denominator != 0);
+
+  if (pHitPosition != nullptr && hit)
+    *pHitPosition = line.position0 + u * (line.position1 - line.position0);
+
+  return hit;
 }
 
 #endif // mMath_h__
