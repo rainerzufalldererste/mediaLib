@@ -6,6 +6,7 @@
 #pragma warning(push) 
 #pragma warning(disable: 4577)
 #include "DirectXMath.h"
+#include "DirectXCollision.h"
 #pragma warning(pop)
 
 #include "mMath.h"
@@ -355,6 +356,7 @@ struct mMatrix
 #pragma warning(pop)
 
 
+  mINLINE mMatrix() { }
   mINLINE mMatrix(DirectX::XMMATRIX _m) : m(_m) { }
 
   mINLINE mMatrix operator*(const mMatrix &q1) const { return Multiply(q1); }
@@ -440,5 +442,17 @@ mINLINE mVector mVector::Transform4(const mMatrix &matrix) const { return mVecto
 
 mINLINE /* static */ mQuaternion mVECTORCALL mQuaternion::RotationMatrix(const mMatrix &m) { return mQuaternion(DirectX::XMQuaternionRotationMatrix(m.m)); };
 
+template <>
+mINLINE bool mIntersects<float_t>(const mTriangle3D<float_t> &triangle, const mLine3D<float_t> &line, OUT OPTIONAL float_t *pDistance /* = nullptr */)
+{
+  float_t distance;
+
+  const bool ret = DirectX::TriangleTests::Intersects(mVector(line.position0).v, mVector(line.position1 - line.position0).v, mVector(triangle.position0).v, mVector(triangle.position1).v, mVector(triangle.position2).v, distance);
+
+  if (pDistance != nullptr)
+    *pDistance = distance;
+
+  return ret;
+}
 
 #endif // mFastMath_h__

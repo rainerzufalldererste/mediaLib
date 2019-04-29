@@ -17,6 +17,9 @@ struct mScreenQuad
 
 mFUNCTION(mScreenQuad_Create, OUT mPtr<mScreenQuad> *pScreenQuad, IN mAllocator *pAllocator, const mString &fragmentShader, const size_t textureCount = 1);
 
+#define mScreenQuad_TextureName "_texture0"
+#define mScreenQuad_TextureSampleCountName "_texture0sampleCount"
+
 // texture is called `_texture0`.
 mFUNCTION(mScreenQuad_Create, OUT mPtr<mScreenQuad> *pScreenQuad, IN mAllocator *pAllocator);
 

@@ -32,9 +32,9 @@ double_t ParseFloat(const char *start, const char **end)
 
     if (*_end == 'e' || *_end == 'E')
     {
-      _end++;
+      start = ++_end;
 
-      if ((*_end >= '0' && *_end <= '9') || *_end == '-')
+      if ((*start >= '0' && *start <= '9') || *start == '-')
       {
         ret *= mPow(10, strtoll(start, &_end, 10));
 
@@ -44,6 +44,16 @@ double_t ParseFloat(const char *start, const char **end)
   }
   else
   {
+    ret *= sign;
+
+    if (*_end == 'e' || *_end == 'E')
+    {
+      start = ++_end;
+
+      if ((*start >= '0' && *start <= '9') || *start == '-')
+        ret *= mPow(10, strtoll(start, &_end, 10));
+    }
+
     *end = _end;
   }
 
@@ -148,7 +158,7 @@ mFUNCTION(mObjReader_Parse, const char *contents, const size_t size, IN mAllocat
 
         while (index < mARRAYSIZE(floats))
         {
-          if ((*text < '0' || *text > '9') && *text != '-')
+          if ((*text < '0' || *text > '9') && *text != '-' && *text != '.')
             break;
 
           floats[index] = (float_t)ParseFloat(text, &text);
@@ -212,14 +222,14 @@ mFUNCTION(mObjReader_Parse, const char *contents, const size_t size, IN mAllocat
         while (*text == ' ')
           ++text;
 
-        float_t floats[3];
+        float_t floats[3] = { 0, 0, 0 };
         size_t index = 0;
 
         // read texture coordinate.
 
         while (index < mARRAYSIZE(floats))
         {
-          if ((*text < '0' || *text > '9') && *text != '-')
+          if ((*text < '0' || *text > '9') && *text != '-' && *text != '.')
             break;
 
           floats[index] = (float_t)ParseFloat(text, &text);
@@ -230,9 +240,9 @@ mFUNCTION(mObjReader_Parse, const char *contents, const size_t size, IN mAllocat
           ++index;
         }
 
-        mERROR_IF(index != 3, mR_ResourceInvalid);
-
+        mERROR_IF(index < 1, mR_ResourceInvalid);
         mERROR_CHECK(mQueue_PushBack(textureCoordinates, mVec3f(floats[0], floats[1], floats[2])));
+
         pObjInfo->hasTextureCoordinates = true;
 
         break;
@@ -255,7 +265,7 @@ mFUNCTION(mObjReader_Parse, const char *contents, const size_t size, IN mAllocat
 
         while (index < mARRAYSIZE(floats))
         {
-          if ((*text < '0' || *text > '9') && *text != '-')
+          if ((*text < '0' || *text > '9') && *text != '-' && *text != '.')
             break;
 
           floats[index] = (float_t)ParseFloat(text, &text);
@@ -297,7 +307,7 @@ mFUNCTION(mObjReader_Parse, const char *contents, const size_t size, IN mAllocat
       size_t count;
       mERROR_CHECK(mQueue_GetCount(vertices, &count));
 
-      mERROR_IF((*text < '0' || *text > '9') && *text != '-', mR_ResourceInvalid);
+      mERROR_IF((*text < '0' || *text > '9') && *text != '-' && *text != '.', mR_ResourceInvalid);
 
       int64_t index = ParseInt(text, &text);
       mObjVertexInfo lastVertex;
@@ -306,14 +316,14 @@ mFUNCTION(mObjReader_Parse, const char *contents, const size_t size, IN mAllocat
       if (index < 0)
         mERROR_CHECK(mQueue_PeekAt(vertices, (size_t)((int64_t)count + index), &currentVertex));
       else
-        mERROR_CHECK(mQueue_PeekAt(vertices, (size_t)index, &currentVertex));
+        mERROR_CHECK(mQueue_PeekAt(vertices, (size_t)(index - 1), &currentVertex));
 
       while (*text == ' ')
         ++text;
 
       while (true)
       {
-        if ((*text < '0' || *text > '9') && *text != '-')
+        if ((*text < '0' || *text > '9') && *text != '-' && *text != '.')
           break;
 
         lastVertex = currentVertex;
@@ -367,7 +377,7 @@ mFUNCTION(mObjReader_Parse, const char *contents, const size_t size, IN mAllocat
 
       while (true)
       {
-        if ((*text < '0' || *text > '9') && *text != '-')
+        if ((*text < '0' || *text > '9') && *text != '-' && *text != '.')
           break;
 
         previousVertex = currentVertex;
@@ -384,7 +394,7 @@ mFUNCTION(mObjReader_Parse, const char *contents, const size_t size, IN mAllocat
         currentVertex.position = vertex.position;
         currentVertex.colour = vertex.colour;
 
-        if (*text == ' ')
+        if (*text == ' ' || *text == '\r' || *text == '\n' || *text == '\t')
           goto end_vertex;
         
         mERROR_IF(*text != '/', mR_ResourceInvalid);
@@ -393,7 +403,7 @@ mFUNCTION(mObjReader_Parse, const char *contents, const size_t size, IN mAllocat
 
         if (*text != '/')
         {
-          mERROR_IF((*text < '0' || *text > '9') && *text != '-', mR_ResourceInvalid);
+          mERROR_IF((*text < '0' || *text > '9') && *text != '-' && *text != '.', mR_ResourceInvalid);
 
           const int64_t texCoordIndex = ParseInt(text, &text);
 
@@ -404,7 +414,7 @@ mFUNCTION(mObjReader_Parse, const char *contents, const size_t size, IN mAllocat
 
           currentVertex.hasTextureCoord = true;
 
-          if (*text == ' ')
+          if (*text == ' ' || *text == '\r' || *text == '\n' || *text == '\t')
             goto end_vertex;
 
           mERROR_IF(*text != '/', mR_ResourceInvalid);
@@ -412,7 +422,7 @@ mFUNCTION(mObjReader_Parse, const char *contents, const size_t size, IN mAllocat
 
         ++text;
 
-        mERROR_IF((*text < '0' || *text > '9') && *text != '-', mR_ResourceInvalid);
+        mERROR_IF((*text < '0' || *text > '9') && *text != '-' && *text != '.', mR_ResourceInvalid);
 
         const int64_t normalIndex = ParseInt(text, &text);
 
