@@ -10,10 +10,11 @@ struct mNamedEnumWrapper
   ~mNamedEnumWrapper();
 
   mNamedEnumWrapper<T> & Initialize(const std::initializer_list<T> &values, const char *commaSeparatedNames);
+  mNamedEnumWrapper<T> & Initialize(const std::initializer_list<T> &values, const std::initializer_list<const char *> &names);
 
   size_t m_count = 0;
   mPtr<mHashMap<mString, T>> m_byName = nullptr;
-  char **m_pByValue = nullptr;
+  const char **m_pByValue = nullptr;
   char *m_commaSeparatedNames = nullptr;
   bool isInitialized = false;
   size_t *m_pReferenceCount = nullptr;
@@ -34,7 +35,12 @@ const char * mNamedEnumWrapper_GetName(const T value);
 
 #define mNAMED_ENUM(Name, ...) \
 enum Name { mCONCAT_LITERALS(Name, _Invalid), __VA_ARGS__, mCONCAT_LITERALS(Name, _Count) }; \
-static mNamedEnumWrapper<Name> mCONCAT_LITERALS(mNAMED_ENUM_WRAPPER_PREFIX, Name) = mNamedEnumWrapper_GetNamedEnumWrapper<Name>().Initialize({ mCONCAT_LITERALS(Name, _Invalid), __VA_ARGS__ }, mCONCAT_LITERALS(mCONCAT_LITERALS("Name", "_Invalid, "), #__VA_ARGS__))
+static mNamedEnumWrapper<Name> mCONCAT_LITERALS(mNAMED_ENUM_WRAPPER_PREFIX, Name) = mNamedEnumWrapper_GetNamedEnumWrapper<Name>().Initialize({ mCONCAT_LITERALS(Name, _Invalid), __VA_ARGS__ }, mCONCAT_LITERALS(mCONCAT_LITERALS(#Name, "_Invalid, "), #__VA_ARGS__))
+
+#define mNAMED_ENUM_COMMA(x) x ,
+#define mNAMED_ENUM_STRINGIFY_COMMA(x) #x ,
+#define mNAMED_ENUM_FROM_X_MACRO(Name, xmacro) enum Name { mCONCAT_LITERALS(Name, _Invalid), xmacro(mNAMED_ENUM_COMMA) mCONCAT_LITERALS(Name, _Count) }; \
+static mNamedEnumWrapper<Name> mCONCAT_LITERALS(mNAMED_ENUM_WRAPPER_PREFIX, Name) = mNamedEnumWrapper_GetNamedEnumWrapper<Name>().Initialize({ mCONCAT_LITERALS(Name, _Invalid), xmacro(mNAMED_ENUM_COMMA) }, { mCONCAT_LITERALS(#Name, "_Invalid, "), xmacro(mNAMED_ENUM_STRINGIFY_COMMA) } )
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -114,7 +120,10 @@ inline mNamedEnumWrapper<T> & mNamedEnumWrapper<T>::Initialize(const std::initia
     }
 
     m_pByValue[count] = lastIndex;
-    mERROR_CHECK_GOTO(mHashMap_Add(m_byName, (mString)lastIndex, &value), result, epilogue);
+
+    mString name;
+    mERROR_CHECK_GOTO(mString_Create(&name, lastIndex, nullptr), result, epilogue);
+    mERROR_CHECK_GOTO(mHashMap_Add(m_byName, std::move(name), &value), result, epilogue);
 
     if (nextIndex == nullptr || lastIndex == nullptr)
     {
@@ -126,6 +135,57 @@ inline mNamedEnumWrapper<T> & mNamedEnumWrapper<T>::Initialize(const std::initia
 
     ++count;
     ++nextIndex;
+  }
+
+  isInitialized = true;
+  return *this;
+
+epilogue:
+  m_count = 0;
+  return *this;
+}
+
+template<typename T>
+inline mNamedEnumWrapper<T> & mNamedEnumWrapper<T>::Initialize(const std::initializer_list<T> &values, const std::initializer_list<const char *> &names)
+{
+  if (isInitialized)
+  {
+    if (m_pReferenceCount != nullptr)
+      ++*m_pReferenceCount;
+
+    return *this;
+  }
+
+  mResult result = mR_Success;
+
+  m_count = values.size();
+  mERROR_IF_GOTO(m_count != names.size(), mR_IndexOutOfBounds, result, epilogue);
+
+  mERROR_CHECK_GOTO(mAllocator_AllocateZero(nullptr, &m_pReferenceCount, 1), result, epilogue);
+  ++*m_pReferenceCount;
+
+  mERROR_CHECK_GOTO(mAllocator_AllocateZero(nullptr, &m_pByValue, m_count), result, epilogue);
+  mERROR_CHECK_GOTO(mHashMap_Create(&m_byName, nullptr, 256), result, epilogue);
+
+  auto _begin = names.begin();
+  auto _end = names.end();
+
+  size_t count = 0;
+
+  for (T value : values)
+  {
+    mERROR_IF_GOTO(!(_begin != _end), mR_InvalidParameter, result, epilogue);
+
+    const char *currentName = *_begin;
+
+    m_pByValue[count] = currentName;
+    count++;
+
+    mString name;
+    mERROR_CHECK_GOTO(mString_Create(&name, currentName, nullptr), result, epilogue);
+    mERROR_CHECK_GOTO(mHashMap_Add(m_byName, std::move(name), &value), result, epilogue);
+
+    ++_begin;
   }
 
   isInitialized = true;

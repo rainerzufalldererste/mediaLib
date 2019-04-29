@@ -49,6 +49,9 @@ template <typename T> constexpr T mMin(const T a, const T b) { return (a <= b) ?
 template <typename T, typename U>
 constexpr auto mLerp(const T a, const T b, const U ratio) -> decltype(a + (b - a) * ratio) { return a + (b - a) * ratio; }
 
+template <typename T, typename U = T>
+constexpr U mInverseLerp(const T value, const T min, const T max) { return (U)(value - min) / (U)(max - min); }
+
 template <typename T, typename U>
 auto mBiLerp(const T a, const T b, const T c, const T d, const U ratio1, const U ratio2) -> decltype(mLerp(mLerp(a, b, ratio1), mLerp(c, d, ratio1), ratio2)) { return mLerp(mLerp(a, b, ratio1), mLerp(c, d, ratio1), ratio2); }
 
@@ -126,7 +129,7 @@ T mSmallest(const T)
 template <typename T, typename std::enable_if<std::is_floating_point<T>::value>::type* = nullptr>
 T mSmallest(const T scale)
 {
-  return mSmallest<T>() * scale;
+  return mSmallest<T>() * mAbs(scale);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -200,6 +203,9 @@ __host__ __device__ inline mVec2t<T>  operator *  (const T a, const mVec2t<T> b)
 
 template <typename T>
 __host__ __device__ inline mVec2t<T>  operator /  (const T a, const mVec2t<T> b) { return mVec2t<T>(a / b.x, a / b.y); };
+
+template <typename T> T mMax(const mVec2t<T> &v) { return mMax(v.x, v.y); }
+template <typename T> T mMin(const mVec2t<T> &v) { return mMin(v.x, v.y); }
 
 typedef mVec2t<size_t> mVec2s;
 typedef mVec2t<int64_t> mVec2i;
@@ -331,6 +337,9 @@ __host__ __device__ inline mVec3t<T>  operator *  (const T a, const mVec3t<T> b)
 template <typename T>
 __host__ __device__ inline mVec3t<T>  operator /  (const T a, const mVec3t<T> b) { return mVec3t<T>(a / b.x, a / b.y, a / b.z); };
 
+template <typename T> T mMax(const mVec3t<T> &v) { return mMax(mMax(v.x, v.y), v.z); }
+template <typename T> T mMin(const mVec3t<T> &v) { return mMin(mMin(v.x, v.y), v.z); }
+
 typedef mVec3t<size_t> mVec3s;
 typedef mVec3t<int64_t> mVec3i;
 typedef mVec3t<uint64_t> mVec3u;
@@ -458,6 +467,9 @@ __host__ __device__ inline mVec4t<T>  operator *  (const T a, const mVec4t<T> b)
 template <typename T>
 __host__ __device__ inline mVec4t<T>  operator /  (const T a, const mVec4t<T> b) { return mVec4t<T>(a / b.x, a / b.y, a / b.z, a / b.w); };
 
+template <typename T> T mMax(const mVec4t<T> &v) { return mMax(mMax(v.x, v.y), mMax(v.z, v.w)); }
+template <typename T> T mMin(const mVec4t<T> &v) { return mMin(mMin(v.x, v.y), mMin(v.z, v.w)); }
+
 typedef mVec4t<size_t> mVec4s;
 typedef mVec4t<int64_t> mVec4i;
 typedef mVec4t<uint64_t> mVec4u;
@@ -529,6 +541,26 @@ struct mRectangle2D
     const mVec2t<T> end = position + size;
 
     return rect.x >= x && rect.y >= y && rect.x <= end.x && rect.y <= end.y && rend.x >= x && rend.y >= y && rend.x <= end.x && rend.y <= end.y;
+  }
+
+  __host__ __device__ inline mRectangle2D<T> Intersect(const mRectangle2D<T> &rect) const
+  {
+    const float_t _x = mMax(x, rect.x);
+    const float_t _y = mMax(y, rect.y);
+    const float_t _w = mMin(x + width, rect.x + rect.width) - _x;
+    const float_t _h = mMin(y + height, rect.y + rect.height) - _y;
+
+    return mRectangle2D<float_t>(_x, _y, _w, _h);
+  }
+
+  __host__ __device__ inline bool Intersects(const mRectangle2D<T> &rect) const
+  {
+    const float_t _sx = mMax(x, rect.x);
+    const float_t _sy = mMax(y, rect.y);
+    const float_t _ex = mMin(x + width, rect.x + rect.width);
+    const float_t _ey = mMin(y + height, rect.y + rect.height);
+
+    return _sx < _ex && _sy < _ey;
   }
 
   __host__ __device__ inline mRectangle2D<T> OffsetCopy(mVec2t<T> offset) const
@@ -609,6 +641,19 @@ struct mRectangle2D
       size.y = v.y - position.y + mSmallest<T>(v.y);
 
     return *this;
+  }
+
+  __host__ __device__ inline void GetCorners(mVec2t<T> corners[4]) const
+  {
+    corners[0] = position;
+
+    corners[1] = position;
+    corners[1].x += width;
+
+    corners[2] = position;
+    corners[2].y += height;
+
+    corners[3] = position + size;
   }
 };
 
@@ -751,6 +796,165 @@ bool mIntersects(const mPlane3D<T> &plane, const mLine3D<T> &line, OUT OPTIONAL 
     *pHitPosition = line.position0 + u * (line.position1 - line.position0);
 
   return hit;
+}
+
+// 3D Parallelogram on Line.
+// paralellogramPos0 should be at uv (0, 0).
+// paralellogramPos1 should be at uv (1, 0).
+// paralellogramPos2 should be at uv (0, 1).
+// paralellogramPos0 + (paralellogramPos1 - paralellogramPos0) + (paralellogramPos2 - paralellogramPos0) should be at uv (1, 1).
+template <typename T>
+bool mIntersects(const mVec3t<T> &paralellogramPos0, const mVec3t<T> &paralellogramPos1, const mVec3t<T> &paralellogramPos2, const mLine3D<T> &line, OUT OPTIONAL mVec2t<T> *pParalellogramUV = nullptr, OUT OPTIONAL T *pLineDirectionFactor = nullptr)
+{
+  const mVec3t<T> paraPos = paralellogramPos0;
+  const mVec3t<T> paraDirX = paralellogramPos1 - paralellogramPos0;
+  const mVec3t<T> paraDirY = paralellogramPos2 - paralellogramPos0;
+  const mVec3t<T> linePosition = line.position0;
+  const mVec3t<T> lineDirection = line.position1 - line.position0;
+
+  // linepos_x + x * linedir_x = planepos_x + a * planedir0_x + b * planedir1_x
+  // linepos_y + x * linedir_y = planepos_y + a * planedir0_y + b * planedir1_y
+  // linepos_z + x * linedir_z = planepos_z + a * planedir0_z + b * planedir1_z
+  //
+  // Retrieves:
+  //
+  // a = (pd1_x*(ld_y*(pp_z-lp_z)-ld_z*pp_y+ld_z*lp_y)+ld_x*(pd1_y*(lp_z-pp_z)+pd1_z*pp_y-lp_y*pd1_z)+(ld_z*pd1_y-ld_y*pd1_z)*pp_x+lp_x*(ld_y*pd1_z-ld_z*pd1_y))/(ld_x*(pd0_z*pd1_y-pd0_y*pd1_z)+pd0_x*(ld_y*pd1_z-ld_z*pd1_y)+(ld_z*pd0_y-ld_y*pd0_z)*pd1_x)
+  // b = -(pd0_x*(ld_y*(pp_z-lp_z)-ld_z*pp_y+ld_z*lp_y)+ld_x*(pd0_y*(lp_z-pp_z)+pd0_z*pp_y-lp_y*pd0_z)+(ld_z*pd0_y-ld_y*pd0_z)*pp_x+lp_x*(ld_y*pd0_z-ld_z*pd0_y))/(ld_x*(pd0_z*pd1_y-pd0_y*pd1_z)+pd0_x*(ld_y*pd1_z-ld_z*pd1_y)+(ld_z*pd0_y-ld_y*pd0_z)*pd1_x)
+  // x = (pd1_x*(pd0_y*(pp_z-lp_z)-pd0_z*pp_y+lp_y*pd0_z)+pd0_x*(pd1_y*(lp_z-pp_z)+pd1_z*pp_y-lp_y*pd1_z)+(pd0_z*pd1_y-pd0_y*pd1_z)*pp_x+lp_x*(pd0_y*pd1_z-pd0_z*pd1_y))/(ld_x*(pd0_z*pd1_y-pd0_y*pd1_z)+pd0_x*(ld_y*pd1_z-ld_z*pd1_y)+(ld_z*pd0_y-ld_y*pd0_z)*pd1_x)
+  //
+  // Where: linepos = lp, linedir = ld, planepos = pp, planedir0 = pd0, planedir1 = pd1
+
+  const T lpy_sdXz = linePosition.y * paraDirX.z;
+  const T ldy_sdXz = lineDirection.y * paraDirX.z;
+  const T ldz_sdXy = lineDirection.z * paraDirX.y;
+  const T ldz_sdYy = lineDirection.z * paraDirY.y;
+  const T ldy_sdYz = lineDirection.y * paraDirY.z;
+  const T sdXy_sdYz = paraDirX.y * paraDirY.z;
+  const T sdXz_sdYy = paraDirX.z * paraDirY.y;
+  const T sdXz_ppy = paraDirX.z * paraPos.y;
+  const T cross_sdX_sdY_x = (sdXz_sdYy - sdXy_sdYz);
+  const T cross_ld_sdY_x = (ldy_sdYz - ldz_sdYy);
+  const T cross_ld_sdX_x = (ldz_sdXy - ldy_sdXz);
+  const T param2 = 1.f / (lineDirection.x * cross_sdX_sdY_x + paraDirX.x * cross_ld_sdY_x + cross_ld_sdX_x * paraDirY.x);
+  const T param1 = (lineDirection.y * (paraPos.z - linePosition.z) - lineDirection.z * paraPos.y + lineDirection.z * linePosition.y);
+  const T param0 = (paraDirY.y * (linePosition.z - paraPos.z) + paraDirY.z * paraPos.y - linePosition.y * paraDirY.z);
+
+  const T a = (paraDirY.x * param1 + lineDirection.x * param0 + (ldz_sdYy - ldy_sdYz) * paraPos.x + linePosition.x * cross_ld_sdY_x) * param2;
+  const T b = -(paraDirX.x * param1 + lineDirection.x * (paraDirX.y * (linePosition.z - paraPos.z) + sdXz_ppy - lpy_sdXz) + cross_ld_sdX_x * paraPos.x + linePosition.x * (ldy_sdXz - ldz_sdXy)) * param2;
+  const T x = (paraDirY.x * (paraDirX.y * (paraPos.z - linePosition.z) - sdXz_ppy + lpy_sdXz) + paraDirX.x * param0 + cross_sdX_sdY_x * paraPos.x + linePosition.x * (sdXy_sdYz - sdXz_sdYy)) * param2;
+
+  if (pParalellogramUV != nullptr)
+    *pParalellogramUV = mVec2t<T>(a, b);
+
+  if (pLineDirectionFactor != nullptr)
+    *pLineDirectionFactor = x;
+
+  return (x >= 0 || a >= 0 || a <= 1 || b >= 0 || b <= 1);
+}
+
+template <typename T>
+bool mIntersects(const mTriangle3D<T> &triangle, const mLine3D<T> &line, OUT OPTIONAL T *pDistance = nullptr)
+{
+  mVec3t<T> e1, e2;
+  mVec3t<T> p, q, r;
+  T det, inv_det, u, v;
+  T t;
+  const mVec3t<T> lineDirection = line.position1 - line.position0;
+
+  // Find vectors for two edges sharing V1
+  e1 = triangle.position1 - triangle.position0;
+  e2 = triangle.position2 - triangle.position0;
+
+  // Begin calculating determinant - also used to calculate u parameter
+  p = mVec3t<T>::Cross(lineDirection, e2);
+
+  // if determinant is near zero, ray lies in plane of triangle
+  det = mVec3t<T>::Dot(e1, p);
+
+  if (mAbs(det) < mSmallest<T>())
+    return false;
+  
+  inv_det = 1.f / det;
+
+  // calculate distance from V1 to ray origin
+  r = line.position0 - triangle.position0;
+
+  // Calculate u parameter and test bound
+  u = mVec3t<T>::Dot(r, p) * inv_det;
+
+  // The intersection lies outside of the triangle
+  if (u < 0.f || u > 1.f)
+    return false;
+
+  // Prepare to test v parameter
+  q = mVec3t<T>::Cross(r, e1);
+
+  // Calculate V parameter and test bound
+  v = mVec3t<T>::Dot(lineDirection, q) * inv_det;
+
+  // The intersection lies outside of the triangle
+  if (v < 0.f || u + v  > 1.f)
+    return false;
+
+  // Calculate Time To Intersection
+  t = mVec3t<T>::Dot(e2, q) * inv_det;
+
+  if (t > mSmallest<T>()) // ray intersection
+  {
+    if (pDistance != nullptr)
+      *pDistance = t;
+
+    return true;
+  }
+
+  return false;
+}
+
+template <typename T>
+mINLINE bool mIntersects(const mTriangle3D<T> &triangle, const mLine3D<T> &line, OUT mVec3t<T> *pBarycentricTrianglePos, OUT OPTIONAL T *pDistance)
+{
+  T distance;
+
+  if (mIntersects(triangle, line, &distance))
+  {
+    const mVec3t<T> tri0 = triangle.position0;
+    const mVec3t<T> tri1 = triangle.position1;
+    const mVec3t<T> tri2 = triangle.position2;
+    const mVec3t<T> p = line.position0 + (line.position1 - line.position0) * distance;
+
+    // tri0_x * a + tri1_x * b + tri2_x * c = p_x,
+    // tri0_y * a + tri1_y * b + tri2_y * c = p_y,
+    // tri0_z * a + tri1_z * b + tri2_z * c = p_z
+    //
+    // Retrieves:
+    //
+    // a = (p_x*(tri1_z*tri2_y - tri1_y*tri2_z) + tri1_x*(p_y*tri2_z - p_z*tri2_y) + (p_z*tri1_y - p_y*tri1_z)*tri2_x) / (tri0_x*(tri1_z*tri2_y - tri1_y*tri2_z) + tri1_x*(tri0_y*tri2_z - tri0_z*tri2_y) + (tri0_z*tri1_y - tri0_y*tri1_z)*tri2_x)
+    // b = -(p_x*(tri0_z*tri2_y - tri0_y*tri2_z) + tri0_x*(p_y*tri2_z - p_z*tri2_y) + (p_z*tri0_y - p_y*tri0_z)*tri2_x) / (tri0_x*(tri1_z*tri2_y - tri1_y*tri2_z) + tri1_x*(tri0_y*tri2_z - tri0_z*tri2_y) + (tri0_z*tri1_y - tri0_y*tri1_z)*tri2_x)
+    // c = (p_x*(tri0_z*tri1_y - tri0_y*tri1_z) + tri0_x*(p_y*tri1_z - p_z*tri1_y) + (p_z*tri0_y - p_y*tri0_z)*tri1_x) / (tri0_x*(tri1_z*tri2_y - tri1_y*tri2_z) + tri1_x*(tri0_y*tri2_z - tri0_z*tri2_y) + (tri0_z*tri1_y - tri0_y*tri1_z)*tri2_x)
+
+    const T param8 = p.y * tri1.z;
+    const T param7 = p.z * tri1.y;
+    const T param6 = tri0.z * tri2.y;
+    const T param5 = tri0.y * tri2.z;
+    const T param4 = (p.z * tri0.y - p.y * tri0.z);
+    const T param3 = (tri0.z * tri1.y - tri0.y * tri1.z);
+    const T param2 = (p.y * tri2.z - p.z * tri2.y);
+    const T param1 = (tri1.z * tri2.y - tri1.y * tri2.z);
+    const T param0 = (T)1 / (tri0.x * param1 + tri1.x * (param5 - param6) + param3 * tri2.x);
+
+    const T a = (p.x * param1 + tri1.x * param2 + (param7 - param8) * tri2.x) * param0;
+    const T b = -(p.x * (param6 - param5) + tri0.x * param2 + param4 * tri2.x) * param0;
+    const T c = (p.x * param3 + tri0.x * (param8 - param7) + param4 * tri1.x) * param0;
+
+    *pBarycentricTrianglePos = mVec3t<T>(a, b, c);
+
+    if (pDistance != nullptr)
+      *pDistance = distance;
+
+    return true;
+  }
+
+  return false;
 }
 
 #endif // mMath_h__
