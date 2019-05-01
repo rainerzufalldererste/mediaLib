@@ -13,17 +13,46 @@ struct mAllocator;
 #endif
 
 template <typename T>
+struct mIsSharedPointer
+{
+  static constexpr bool value = false;
+};
+
+template <typename T>
+class mSharedPointer;
+
+template <typename T>
+struct mIsSharedPointer<mSharedPointer<T>>
+{
+  static constexpr bool value = true;
+};
+
+template <typename T>
 class mSharedPointer
 {
 public:
   mSharedPointer();
   mSharedPointer(nullptr_t);
+
   mSharedPointer(const mSharedPointer<T> &copy);
   mSharedPointer(mSharedPointer<T> &&move);
+
+  template <typename T2, typename std::enable_if<!std::is_same<T, T2>::value && (std::is_base_of<T2, T>::value || std::is_base_of<T, T2>::value)>* = nullptr>
+  explicit mSharedPointer(const mSharedPointer<T2> &copy);
+
+  template <typename T2, typename std::enable_if<!std::is_same<T, T2>::value && (std::is_base_of<T2, T>::value || std::is_base_of<T, T2>::value)>* = nullptr>
+  explicit mSharedPointer(mSharedPointer<T2> &&move);
+  
   ~mSharedPointer();
 
   mSharedPointer<T>& operator = (const mSharedPointer<T> &copy);
   mSharedPointer<T>& operator = (mSharedPointer<T> &&move);
+
+  template <typename T2, typename = std::enable_if<!std::is_same<T, T2>::value && std::is_base_of<T, T2>::value>>
+  mSharedPointer<T>& operator = (const mSharedPointer<T2> &copy);
+
+  template <typename T2, typename = std::enable_if<!std::is_same<T, T2>::value && std::is_base_of<T, T2>::value>>
+  mSharedPointer<T>& operator = (mSharedPointer<T2> &&move);
 
   T* operator -> ();
   const T* operator -> () const;
@@ -38,7 +67,7 @@ public:
   operator bool() const;
   bool operator !() const;
 
-  template <typename T2, typename std::enable_if_t<std::is_convertible<T2, bool>::value, int>* = nullptr >
+  template <typename T2, typename std::enable_if_t<!mIsSharedPointer<T2>::value && std::is_convertible<T2, bool>::value, int>* = nullptr>
   operator T2() const;
 
   const T* GetPointer() const;
@@ -49,13 +78,278 @@ public:
   
   struct PointerParams
   {
-    volatile size_t referenceCount;
+    volatile size_t referenceCount = 0;
     uint8_t freeResource : 1;
     uint8_t freeParameters : 1;
-    mAllocator *pAllocator;
-    std::function<void (T*)> cleanupFunction;
-    void *pUserData;
+    mAllocator *pAllocator = nullptr;
+    std::function<void (T*)> cleanupFunction = nullptr;
+    void *pUserData = nullptr;
+
+    PointerParams() :
+      freeResource(0),
+      freeParameters(0)
+    { }
+    
   } *m_pParams;
+};
+
+// Be very careful with this! This should not be passed to functions that do under no circumstance keep a copy of the shared pointer.
+template <typename T>
+class mReferencePack : public mSharedPointer<T>
+{
+public:
+  typename mSharedPointer<T>::PointerParams m_pointerParams;
+
+  mReferencePack()
+  {
+    mSharedPointer<T>::m_pParams = nullptr;
+    mSharedPointer<T>::m_pData = nullptr;
+    m_pointerParams.referenceCount = 1;
+  }
+
+  mReferencePack(T *pValue)
+  {
+    mSharedPointer<T>::m_pParams = &m_pointerParams;
+    mSharedPointer<T>::m_pData = pValue;
+    m_pointerParams.referenceCount = 1;
+  }
+
+  mReferencePack(T *pValue, const std::function<void(T *pData)> &cleanupFunc)
+  {
+    mSharedPointer<T>::m_pParams = &m_pointerParams;
+    mSharedPointer<T>::m_pData = pValue;
+    m_pointerParams.cleanupFunction = cleanupFunc;
+    m_pointerParams.referenceCount = 1;
+  }
+
+  mReferencePack(T *pValue, std::function<void(T *pData)> &&cleanupFunc)
+  {
+    mSharedPointer<T>::m_pParams = &m_pointerParams;
+    mSharedPointer<T>::m_pData = pValue;
+    m_pointerParams.cleanupFunction = std::move(cleanupFunc);
+    m_pointerParams.referenceCount = 1;
+  }
+
+  mReferencePack(mReferencePack<T> &&move) :
+    m_pointerParams(std::move(move.m_pointerParams))
+  {
+    mSharedPointer<T>::m_pParams = &m_pointerParams;
+    mSharedPointer<T>::m_pData = move.m_pData;
+
+    mASSERT_DEBUG(m_pointerParams.referenceCount == 1, "Not all references of the mReferencePack<%s> have been returned.", typeid(T).name());
+
+    move.m_pData = nullptr;
+    move.m_pParams = nullptr;
+  }
+
+  mReferencePack<T> & operator=(mReferencePack<T> &&move)
+  {
+    mASSERT_DEBUG(m_pointerParams.referenceCount == 1, "Not all references of the mReferencePack<%s> have been returned.", typeid(T).name());
+    mASSERT_DEBUG(move.m_pointerParams.referenceCount == 1, "Not all references of the mReferencePack<%s> have been returned.", typeid(T).name());
+
+    // Cleanup
+    {
+      if (mSharedPointer<T>::m_pData != nullptr && m_pointerParams.cleanupFunction && m_pointerParams.referenceCount == 1)
+        m_pointerParams.cleanupFunction(mSharedPointer<T>::m_pData);
+    }
+
+    m_pointerParams = std::move(move);
+    mSharedPointer<T>::m_pParams = &m_pointerParams;
+    mSharedPointer<T>::m_pData = move.m_pData;
+
+    move.m_pData = nullptr;
+    move.m_pParams = nullptr;
+  }
+
+  mReferencePack(const mReferencePack<T> &copy) = delete;
+  mReferencePack<T> & operator = (const mReferencePack<T> &copy) = delete;
+
+  operator mSharedPointer<T>()
+  {
+    return *static_cast<mSharedPointer<T> *>(this);
+  }
+
+  operator const mSharedPointer<T>() const
+  {
+    return *static_cast<mSharedPointer<T> *>(this);
+  }
+
+  mSharedPointer<T> & ToPtr()
+  {
+    return *static_cast<mSharedPointer<T> *>(this);
+  }
+
+  const mSharedPointer<T> & ToPtr() const
+  {
+    return *static_cast<mSharedPointer<T> *>(this);
+  }
+
+  ~mReferencePack<T>()
+  {
+    mASSERT_DEBUG(m_pointerParams.referenceCount == 1, "Not all references of the mReferencePack<%s> have been returned.", typeid(T).name());
+
+    if (mSharedPointer<T>::m_pData != nullptr && m_pointerParams.cleanupFunction && m_pointerParams.referenceCount == 1)
+      m_pointerParams.cleanupFunction(mSharedPointer<T>::m_pData);
+
+    mSharedPointer<T>::m_pData = nullptr;
+    mSharedPointer<T>::m_pParams = nullptr;
+  }
+};
+
+template <typename T>
+class mUniqueContainer : public mSharedPointer<T>
+{
+private:
+  template <typename T = T>
+  typename std::enable_if<(std::is_move_constructible<T>::value || std::is_arithmetic<T>::value) && mIsTriviallyMemoryMovable<T>::value>::type
+    MoveConstructFunc(IN mUniqueContainer<T> *pMove)
+  {
+    new (&m_pointerParams) mSharedPointer<T>::PointerParams(std::move(pMove->m_pointerParams));
+    mSharedPointer<T>::m_pParams = &m_pointerParams;
+    mSharedPointer<T>::m_pData = &m_value;
+
+    mASSERT_DEBUG(m_pointerParams.referenceCount == 1, "Not all references of the mUniqueContainer<%s> have been returned.", typeid(T).name());
+
+    memmove(&m_value, &pMove->m_value, sizeof(T));
+    pMove->m_pData = nullptr;
+    pMove->m_pParams = nullptr;
+  }
+
+  template <typename T = T>
+  typename std::enable_if<(std::is_move_constructible<T>::value || std::is_arithmetic<T>::value) && !mIsTriviallyMemoryMovable<T>::value>::type
+    MoveConstructFunc(IN mUniqueContainer<T> *pMove)
+  {
+    new (&m_pointerParams) mSharedPointer<T>::PointerParams(std::move(pMove->m_pointerParams));
+    mSharedPointer<T>::m_pParams = &m_pointerParams;
+    new (&m_value) T(std::move(pMove->m_value));
+    mSharedPointer<T>::m_pData = &m_value;
+
+    mASSERT_DEBUG(m_pointerParams.referenceCount == 1, "Not all references of the mUniqueContainer<%s> have been returned.", typeid(T).name());
+
+    pMove->m_pData = nullptr;
+    pMove->m_pParams = nullptr;
+  }
+
+  template <typename T = T>
+  typename std::enable_if<(std::is_move_assignable<T>::value || std::is_arithmetic<T>::value) && mIsTriviallyMemoryMovable<T>::value>::type
+    MoveAssignFunc(IN mUniqueContainer<T> *pMove)
+  {
+    mASSERT_DEBUG(m_pointerParams.referenceCount == 1, "Not all references of the mUniqueContainer<%s> have been returned.", typeid(T).name());
+    mASSERT_DEBUG(pMove->m_pointerParams.referenceCount == 1, "Not all references of the mUniqueContainer<%s> have been returned.", typeid(T).name());
+
+    // Cleanup
+    {
+      if (mSharedPointer<T>::m_pData != nullptr && m_pointerParams.cleanupFunction && m_pointerParams.referenceCount == 1)
+        m_pointerParams.cleanupFunction(mSharedPointer<T>::m_pData);
+    }
+
+    m_pointerParams = std::move(pMove->m_pointerParams);
+    mSharedPointer<T>::m_pParams = &m_pointerParams;
+    memmove(&m_value, &pMove->m_value, sizeof(T));
+    mSharedPointer<T>::m_pData = &m_value;
+
+    pMove->m_pData = nullptr;
+    pMove->m_pParams = nullptr;
+  }
+
+  template <typename T = T>
+  typename std::enable_if<(std::is_move_assignable<T>::value || std::is_arithmetic<T>::value) && !mIsTriviallyMemoryMovable<T>::value>::type
+    MoveAssignFunc(IN mUniqueContainer<T> *pMove)
+  {
+    mASSERT_DEBUG(m_pointerParams.referenceCount == 1, "Not all references of the mUniqueContainer<%s> have been returned.", typeid(T).name());
+    mASSERT_DEBUG(pMove->m_pointerParams.referenceCount == 1, "Not all references of the mUniqueContainer<%s> have been returned.", typeid(T).name());
+
+    // Cleanup
+    {
+      if (mSharedPointer<T>::m_pData != nullptr && m_pointerParams.cleanupFunction && m_pointerParams.referenceCount == 1)
+        m_pointerParams.cleanupFunction(mSharedPointer<T>::m_pData);
+    }
+
+    m_pointerParams = std::move(pMove->m_pointerParams);
+    mSharedPointer<T>::m_pParams = &m_pointerParams;
+    m_value = std::move(pMove->m_value);
+    mSharedPointer<T>::m_pData = &m_value;
+
+    pMove->m_pData = nullptr;
+    pMove->m_pParams = nullptr;
+  }
+
+public:
+  typename mSharedPointer<T>::PointerParams m_pointerParams;
+  T m_value;
+
+  template <typename... Args>
+  mUniqueContainer(Args &&...args)
+  {
+    new (&m_value) T(std::forward<Args>(args)...);
+    mSharedPointer<T>::m_pData = &m_value;
+    mSharedPointer<T>::m_pParams = &m_pointerParams;
+    m_pointerParams.referenceCount = 1;
+  }
+
+  template <typename... Args>
+  static mUniqueContainer CreateWithCleanupFunction(const std::function<void(T *)> &cleanupFunc, Args &&...args)
+  {
+    uint8_t ret[sizeof(mUniqueContainer<T>)];
+    mUniqueContainer<T> *pRet = reinterpret_cast<mUniqueContainer<T> *>(ret);
+    new (pRet) mUniqueContainer<T>(std::forward<Args>(args)...);
+    pRet->m_pointerParams.cleanupFunction = cleanupFunc;
+    return std::move(*pRet);
+  }
+
+  template <typename... Args>
+  static mUniqueContainer CreateWithCleanupFunction(std::function<void(T *)> &&cleanupFunc, Args &&...args)
+  {
+    uint8_t ret[sizeof(mUniqueContainer<T>)];
+    mUniqueContainer<T> *pRet = reinterpret_cast<mUniqueContainer<T> *>(ret);
+    new (pRet) mUniqueContainer<T>(std::forward<Args>(args)...);
+    pRet->m_pointerParams.cleanupFunction = std::move(cleanupFunc);
+    return std::move(*pRet);
+  }
+
+  mUniqueContainer(mUniqueContainer<T> &&move)
+  {
+    MoveConstructFunc(&move);
+  }
+
+  mUniqueContainer<T> & operator=(mUniqueContainer<T> &&move)
+  {
+    MoveAssignFunc(&move);
+  }
+
+  mUniqueContainer(const mUniqueContainer<T> &copy) = delete;
+  mUniqueContainer<T> & operator = (const mUniqueContainer<T> &copy) = delete;
+
+  operator mSharedPointer<T>()
+  {
+    return *static_cast<mSharedPointer<T> *>(this);
+  }
+
+  operator const mSharedPointer<T>() const
+  {
+    return *static_cast<mSharedPointer<T> *>(this);
+  }
+
+  mSharedPointer<T> & ToPtr()
+  {
+    return *static_cast<mSharedPointer<T> *>(this);
+  }
+
+  const mSharedPointer<T> & ToPtr() const
+  {
+    return *static_cast<mSharedPointer<T> *>(this);
+  }
+
+  ~mUniqueContainer<T>()
+  {
+    mASSERT_DEBUG(m_pointerParams.referenceCount == 1, "Not all references of the mUniqueContainer<%s> have been returned.", typeid(T).name());
+
+    if (mSharedPointer<T>::m_pData != nullptr && m_pointerParams.cleanupFunction)
+      m_pointerParams.cleanupFunction(&m_value);
+
+    mSharedPointer<T>::m_pData = nullptr;
+    mSharedPointer<T>::m_pParams = nullptr;
+  }
 };
 
 template <typename T>
@@ -245,6 +539,37 @@ inline mSharedPointer<T>::mSharedPointer(mSharedPointer<T> &&move)
 }
 
 template<typename T>
+template <typename T2, typename std::enable_if<!std::is_same<T, T2>::value && (std::is_base_of<T2, T>::value || std::is_base_of<T, T2>::value)>*>
+inline mSharedPointer<T>::mSharedPointer(const mSharedPointer<T2> &copy)
+  : m_pData(nullptr), m_pParams(nullptr)
+{
+  if (copy == nullptr)
+    return;
+
+  m_pData = static_cast<T *>(copy.m_pData);
+  m_pParams = reinterpret_cast<decltype(m_pParams)>(copy.m_pParams);
+
+  ++m_pParams->referenceCount;
+}
+
+template<typename T>
+template <typename T2, typename std::enable_if<!std::is_same<T, T2>::value && (std::is_base_of<T2, T>::value || std::is_base_of<T, T2>::value)>*>
+inline mSharedPointer<T>::mSharedPointer(mSharedPointer<T2> &&move)
+  : m_pData(nullptr), m_pParams(nullptr)
+{
+  if (move == nullptr)
+    return;
+
+  m_pData = static_cast<T *>(move.m_pData);
+  m_pParams = reinterpret_cast<decltype(m_pParams)>(move.m_pParams);
+
+  move.m_pData = nullptr;
+  move.m_pParams = nullptr;
+
+  move.~mSharedPointer<T2>();
+}
+
+template<typename T>
 inline mSharedPointer<T>::~mSharedPointer()
 {
   if (*this == nullptr)
@@ -316,6 +641,47 @@ inline mSharedPointer<T>& mSharedPointer<T>::operator=(mSharedPointer<T> &&move)
 
   m_pData = move.m_pData;
   m_pParams = move.m_pParams;
+
+  move.m_pData = nullptr;
+  move.m_pParams = nullptr;
+
+  return *this;
+}
+
+template<typename T>
+template <typename T2, typename>
+inline mSharedPointer<T>& mSharedPointer<T>::operator=(const mSharedPointer<T2> &copy)
+{
+  this->~mSharedPointer<T>();
+
+  if (copy == nullptr)
+    return *this;
+
+  m_pData = static_cast<T *>(copy.m_pData);
+  m_pParams = reinterpret_cast<decltype(m_pParams)>(copy.m_pParams);
+
+  ++m_pParams->referenceCount;
+
+  return *this;
+}
+
+template<typename T>
+template <typename T2, typename>
+inline mSharedPointer<T>& mSharedPointer<T>::operator=(mSharedPointer<T2> &&move)
+{
+  if (move != nullptr && *this != nullptr && move.m_pData == m_pData)
+  {
+    move.~mSharedPointer<T2>();
+    return *this;
+  }
+
+  this->~mSharedPointer<T>();
+
+  if (move == nullptr)
+    return *this;
+
+  m_pData = static_cast<T *>(move.m_pData);
+  m_pParams = reinterpret_cast<decltype(m_pParams)>(move.m_pParams);
 
   move.m_pData = nullptr;
   move.m_pParams = nullptr;
@@ -401,7 +767,7 @@ inline bool mSharedPointer<T>::operator!() const
 }
 
 template<typename T>
-template<typename T2, typename std::enable_if_t<std::is_convertible<T2, bool>::value, int>* /* = nullptr */ >
+template<typename T2, typename std::enable_if_t<!mIsSharedPointer<T2>::value && std::is_convertible<T2, bool>::value, int>* /* = nullptr */>
 inline mSharedPointer<T>::operator T2() const
 {
   mSTATIC_ASSERT((std::is_same<bool, T2>::value), "mSharedPointer cannot be cast to the given type.");

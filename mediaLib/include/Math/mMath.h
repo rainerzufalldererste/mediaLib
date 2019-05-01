@@ -143,6 +143,18 @@ enum mComparisonResult : int8_t
 
 //////////////////////////////////////////////////////////////////////////
 
+template <typename T>
+struct mMath_DistanceTypeOf
+{
+  typedef double_t type;
+};
+
+template <>
+struct mMath_DistanceTypeOf<float_t>
+{
+  typedef float_t type;
+};
+
 #define _mVECTOR_SUBSET_2(a, b) __host__ __device__ inline mVec2t<T> a ## b() { return mVec2t<T>(a, b); }
 #define _mVECTOR_SUBSET_3(a, b, c) __host__ __device__ inline mVec3t<T> a ## b ## c() { return mVec3t<T>(a, b, c); }
 #define _mVECTOR_SUBSET_4(a, b, c, d) __host__ __device__ inline mVec4t<T> a ## b ## c ## d() { return mVec4t<T>(a, b, c, d); }
@@ -191,7 +203,7 @@ struct mVec2t
   __host__ __device__ inline bool       operator == (const mVec2t<T> &a) const { return x == a.x && y == a.y; };
   __host__ __device__ inline bool       operator != (const mVec2t<T> &a) const { return x != a.x || y != a.y; };
 
-  __host__ __device__ inline double Length() const { return mSqrt(x * x + y * y); };
+  __host__ __device__ inline typename mMath_DistanceTypeOf<T>::type Length() const { return mSqrt(x * x + y * y); };
   __host__ __device__ inline T LengthSquared() const { return x * x + y * y; };
   __host__ __device__ inline mVec2t<T> Normalize() { return *this / (T)Length(); };
 
@@ -258,7 +270,7 @@ struct mVec3t
   __host__ __device__ inline bool       operator == (const mVec3t<T> &a) const { return x == a.x && y == a.y && z == a.z; };
   __host__ __device__ inline bool       operator != (const mVec3t<T> &a) const { return x != a.x || y != a.y || z != a.z; };
 
-  __host__ __device__ inline double Length() const { return mSqrt(x * x + y * y + z * z); };
+  __host__ __device__ inline typename mMath_DistanceTypeOf<T>::type Length() const { return mSqrt(x * x + y * y + z * z); };
   __host__ __device__ inline T LengthSquared() const { return x * x + y * y + z * z; };
   __host__ __device__ inline mVec3t<T> Normalize() { return *this / (T)Length(); };
 
@@ -390,7 +402,7 @@ struct mVec4t
   __host__ __device__ inline bool       operator == (const mVec4t<T> &a) const { return x == a.x && y == a.y && z == a.z && w == a.w; };
   __host__ __device__ inline bool       operator != (const mVec4t<T> &a) const { return x != a.x || y != a.y || z != a.z || w != a.w; };
 
-  __host__ __device__ inline double Length() const { return mSqrt(x * x + y * y + z * z + w * w); };
+  __host__ __device__ inline typename mMath_DistanceTypeOf<T>::type Length() const { return mSqrt(x * x + y * y + z * z + w * w); };
   __host__ __device__ inline T LengthSquared() const { return x * x + y * y + z * z + w * w; };
   __host__ __device__ inline mVec4t<T> Normalize() { return *this / (T)Length(); };
 
