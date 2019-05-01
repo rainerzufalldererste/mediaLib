@@ -49,10 +49,10 @@ inline mAABB2<T>::mAABB2(const mVec2t<T> startPosition, const mVec2t<T> endPosit
   endPos = endPosition;
 
   if (startPos.x > endPos.x)
-    mSwap(startPos.x, endPos.x);
+    std::swap(startPos.x, endPos.x);
 
   if (startPos.y > endPos.y)
-    mSwap(startPos.y, endPos.y);
+    std::swap(startPos.y, endPos.y);
 }
 
 template<typename T>
@@ -147,7 +147,7 @@ inline TRet mAABB2<T>::GetClosestDistance(const mVec2t<T> position) const
       else
         comp.y = startPos.y;
 
-      return udMag2(mVec2D::create(comp - position));
+      return (TRet)mVec2t<T>(comp - position).Length();
     }
   }
   else // ycomp & !xcomp
@@ -185,11 +185,11 @@ inline TRet mAABB2<T>::GetClosestDistanceSquared(const mVec2t<T> position) const
       if (xcomp == 1)
       {
         const TRet ret = (TRet)(position.x - endPos.x);
-        return ret * ret;
+        return (TRet)(ret * ret);
       }
 
       const TRet ret = (TRet)(startPos.x - position.x);
-      return ret * ret;
+      return (TRet)(ret * ret);
     }
     else
     {
@@ -205,7 +205,7 @@ inline TRet mAABB2<T>::GetClosestDistanceSquared(const mVec2t<T> position) const
       else
         comp.y = startPos.y;
 
-      return udMagSq2(mVec2D::create(comp - position));
+      return (TRet)mVec2t<T>(comp - position).LengthSquared();
     }
   }
   else // ycomp & !xcomp
@@ -213,11 +213,11 @@ inline TRet mAABB2<T>::GetClosestDistanceSquared(const mVec2t<T> position) const
     if (ycomp == 1)
     {
       const TRet ret = (TRet)(position.y - endPos.y);
-      return ret * ret;
+      return (TRet)(ret * ret);
     }
 
     const TRet ret = (TRet)(startPos.y - position.y);
-    return ret * ret;
+    return (TRet)(ret * ret);
   }
 }
 
