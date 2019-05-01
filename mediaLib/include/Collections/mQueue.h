@@ -112,6 +112,9 @@ template <typename T>
 mFUNCTION(mQueue_Create, OUT mPtr<mQueue<T>> *pQueue, IN OPTIONAL mAllocator *pAllocator);
 
 template <typename T>
+mFUNCTION(mQueue_Create, OUT mUniqueContainer<mQueue<T>> *pQueue, IN OPTIONAL mAllocator *pAllocator);
+
+template <typename T>
 mFUNCTION(mQueue_Destroy, IN_OUT mPtr<mQueue<T>> *pQueue);
 
 template <typename T>
@@ -244,6 +247,20 @@ inline mFUNCTION(mQueue_Create, OUT mPtr<mQueue<T>> *pQueue, IN OPTIONAL mAlloca
   mDEFER_CALL_ON_ERROR(pQueue, mSharedPointer_Destroy);
   mERROR_CHECK(mSharedPointer_Create(pQueue, pQueueRaw, (std::function<void(mQueue<T> *)>)[](mQueue<T> *pData) { mQueue_Destroy_Internal<T>(pData); }, pAllocator));
   pQueueRaw = nullptr;
+
+  (*pQueue)->pAllocator = pAllocator;
+
+  mRETURN_SUCCESS();
+}
+
+template<typename T>
+inline mFUNCTION(mQueue_Create, OUT mUniqueContainer<mQueue<T>> *pQueue, IN OPTIONAL mAllocator *pAllocator)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pQueue == nullptr, mR_ArgumentNull);
+
+  *pQueue = mUniqueContainer<mQueue<T>>::CreateWithCleanupFunction([](mQueue<T> *pData) { mQueue_Destroy_Internal<T>(pData); });
 
   (*pQueue)->pAllocator = pAllocator;
 
