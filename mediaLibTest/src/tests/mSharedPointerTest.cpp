@@ -7,26 +7,56 @@ mTEST(mSharedPointer, TestCastDerived)
   struct Base
   {
     size_t a;
+    size_t *pData;
   };
 
   struct Derived : Base
   {
     size_t b;
+    size_t *pDerivedData;
   };
 
-  mPtr<Base> a;
-  mPtr<Base> b;
-  mPtr<Derived> c;
-  mPtr<Derived> d;
+  {
+    mPtr<Base> a;
+    mPtr<Base> b;
+    mPtr<Derived> c;
+    mPtr<Derived> d;
 
-  a = c;
-  b = std::move(c);
+    a = c;
+    b = std::move(c);
 
-  mPtr<Base> e(d);
-  mPtr<Base> f(std::move(d));
+    mPtr<Base> e(d);
+    mPtr<Base> f(std::move(d));
 
-  mPtr<Derived> g(a);
-  mPtr<Derived> h(std::move(b));
+    mPtr<Derived> g(a);
+    mPtr<Derived> h(std::move(b));
+  }
+
+  {
+    mPtr<Derived> derived;
+    size_t derived_data = 0;
+    mTEST_ASSERT_SUCCESS(mSharedPointer_Allocate<Derived>(&derived, pAllocator, [](Derived *pData) { (*pData->pDerivedData)++; }, 1));
+
+    derived->pDerivedData = &derived_data;
+
+    mPtr<Base> base;
+    size_t base_data = 10;
+    mTEST_ASSERT_SUCCESS(mSharedPointer_Allocate<Base>(&base, pAllocator, [](Base *pData) { (*pData->pData)++; }, 1));
+
+    base->pData = &base_data;
+
+    mPtr<Base> tmp = (mPtr<Base>)derived;
+    derived = (mPtr<Derived>)base;
+    base = tmp;
+
+    mTEST_ASSERT_SUCCESS(mSharedPointer_Destroy(&tmp));
+
+    mTEST_ASSERT_SUCCESS(mSharedPointer_Destroy(&derived));
+    mTEST_ASSERT_EQUAL(base_data, 11);
+
+    mTEST_ASSERT_SUCCESS(mSharedPointer_Destroy(&base));
+    mTEST_ASSERT_EQUAL(derived_data, 1);
+  }
 
   mTEST_ALLOCATOR_ZERO_CHECK();
 }
