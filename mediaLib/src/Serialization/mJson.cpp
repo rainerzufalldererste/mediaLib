@@ -2,6 +2,7 @@
 #include "mQueue.h"
 #include "mFile.h"
 
+#define CJSON_HIDE_SYMBOLS
 #include "cJSON/cJSON.h"
 #include "cJSON/cJSON_Utils.h"
 
