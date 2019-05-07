@@ -44,9 +44,14 @@ struct mUtf8StringIterator
 struct mString
 {
   char *text;
-  mAllocator *pAllocator;
+  mAllocator *pAllocator = &mDefaultAllocator;
+  
+  // Includes null terminator.
   size_t bytes;
+
+  // Includes null terminator.
   size_t count;
+
   size_t capacity;
   bool hasFailed;
 
@@ -72,7 +77,12 @@ struct mString
   mString & operator = (const mString &copy);
   mString & operator = (mString &&move);
 
+  // Size in bytes.
+  // Includes null terminator.
   size_t Size() const;
+
+  // Number of utf8 characters in this string.
+  // Includes null terminator.
   size_t Count() const;
 
   mchar_t operator[](const size_t index) const;
@@ -86,7 +96,12 @@ struct mString
   mUtf8StringIterator begin() const;
   mUtf8StringIterator end() const;
 
-  const char * c_str() const;
+  inline const char * c_str() const { return text; };
+
+  bool StartsWith(const mString &s) const;
+  bool EndsWith(const mString &s) const;
+
+  bool Contains(const mString &s) const;
 };
 
 template <size_t TCount>
@@ -129,6 +144,20 @@ mFUNCTION(mString_ToDirectoryPath, OUT mString *pString, const mString &text);
 mFUNCTION(mString_ToFilePath, OUT mString *pString, const mString &text);
 
 mFUNCTION(mString_Equals, const mString &stringA, const mString &stringB, bool *pAreEqual);
+
+mFUNCTION(mString_StartsWith, const mString &stringA, const mString &start, OUT bool *pStartsWith);
+mFUNCTION(mString_EndsWith, const mString &stringA, const mString &end, OUT bool *pEndsWith);
+
+mFUNCTION(mString_FindFirst, const mString &string, const mString &find, OUT size_t *pStartChar, OUT bool *pContained);
+mFUNCTION(mString_Contains, const mString &stringA, const mString &contained, OUT bool *pContains);
+
+mFUNCTION(mString_RemoveChar, const mString &string, const mchar_t remove, OUT mString *pResult);
+mFUNCTION(mString_RemoveString, const mString &string, const mString &remove, OUT mString *pResult);
+
+mFUNCTION(mString_Replace, const mString &string, const mString &replace, const mString &with, OUT mString *pResult);
+
+mFUNCTION(mString_TrimStart, const mString &string, const mchar_t trimmedChar, OUT mString *pTrimmedString);
+mFUNCTION(mString_TrimEnd, const mString &string, const mchar_t trimmedChar, OUT mString *pTrimmedString);
 
 // parameters to the lambda:
 //   mchar_t: utf-8 codepoint for comparisons

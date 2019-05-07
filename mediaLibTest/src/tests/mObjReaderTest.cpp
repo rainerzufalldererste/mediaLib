@@ -47,13 +47,13 @@ s On
 
   mTEST_ASSERT_SUCCESS(mObjReader_Parse(testObj, sizeof(testObj), pAllocator, &info, mOPP_KeepVertices));
 
-  mTEST_ASSERT_TRUE(info.hasVertices);
-  mTEST_ASSERT_TRUE(info.hasLines);
-  mTEST_ASSERT_TRUE(info.hasColours);
-  mTEST_ASSERT_TRUE(info.hasTextureCoordinates);
-  mTEST_ASSERT_TRUE(info.hasNormals);
-  mTEST_ASSERT_TRUE(info.hasTriangles);
-  mTEST_ASSERT_TRUE(info.smoothShading);
+  mTEST_ASSERT_TRUE((bool)info.hasVertices);
+  mTEST_ASSERT_TRUE((bool)info.hasLines);
+  mTEST_ASSERT_TRUE((bool)info.hasColours);
+  mTEST_ASSERT_TRUE((bool)info.hasTextureCoordinates);
+  mTEST_ASSERT_TRUE((bool)info.hasNormals);
+  mTEST_ASSERT_TRUE((bool)info.hasTriangles);
+  mTEST_ASSERT_TRUE((bool)info.smoothShading);
 
   mTEST_ASSERT_EQUAL(info.vertices->count, 6);
   mTEST_ASSERT_EQUAL(info.triangles->count, 6);
@@ -62,17 +62,17 @@ s On
   mTEST_ASSERT_FLOAT_EQUALS(0.123f, (*info.vertices)[0].position.x);
   mTEST_ASSERT_FLOAT_EQUALS(0.234f, (*info.vertices)[0].position.y);
   mTEST_ASSERT_FLOAT_EQUALS(0.345f, (*info.vertices)[0].position.z);
-  mTEST_ASSERT_FALSE((*info.vertices)[0].hasColour);
+  mTEST_ASSERT_FALSE((bool)(*info.vertices)[0].hasColour);
 
   mTEST_ASSERT_FLOAT_EQUALS(0.234f, (*info.vertices)[1].position.x);
   mTEST_ASSERT_FLOAT_EQUALS(0.345f, (*info.vertices)[1].position.y);
   mTEST_ASSERT_FLOAT_EQUALS(0.456f, (*info.vertices)[1].position.z);
-  mTEST_ASSERT_FALSE((*info.vertices)[1].hasColour);
+  mTEST_ASSERT_FALSE((bool)(*info.vertices)[1].hasColour);
 
   mTEST_ASSERT_FLOAT_EQUALS(0.345f, (*info.vertices)[2].position.x);
   mTEST_ASSERT_FLOAT_EQUALS(0.456f, (*info.vertices)[2].position.y);
   mTEST_ASSERT_FLOAT_EQUALS(0.567f, (*info.vertices)[2].position.z);
-  mTEST_ASSERT_TRUE((*info.vertices)[2].hasColour);
+  mTEST_ASSERT_TRUE((bool)(*info.vertices)[2].hasColour);
   mTEST_ASSERT_FLOAT_EQUALS(1, (*info.vertices)[2].colour.x);
   mTEST_ASSERT_FLOAT_EQUALS(0.5f, (*info.vertices)[2].colour.y);
   mTEST_ASSERT_FLOAT_EQUALS(0, (*info.vertices)[2].colour.z);
@@ -80,7 +80,7 @@ s On
   mTEST_ASSERT_FLOAT_EQUALS(0.456f, (*info.vertices)[3].position.x);
   mTEST_ASSERT_FLOAT_EQUALS(0.567f, (*info.vertices)[3].position.y);
   mTEST_ASSERT_FLOAT_EQUALS(0.678f, (*info.vertices)[3].position.z);
-  mTEST_ASSERT_TRUE((*info.vertices)[3].hasColour);
+  mTEST_ASSERT_TRUE((bool)(*info.vertices)[3].hasColour);
   mTEST_ASSERT_FLOAT_EQUALS(0, (*info.vertices)[3].colour.x);
   mTEST_ASSERT_FLOAT_EQUALS(.33f, (*info.vertices)[3].colour.y);
   mTEST_ASSERT_FLOAT_EQUALS(-.66e1, (*info.vertices)[3].colour.z);
@@ -88,66 +88,66 @@ s On
   mTEST_ASSERT_FLOAT_EQUALS(1e-1f, (*info.vertices)[4].position.x);
   mTEST_ASSERT_FLOAT_EQUALS(0.1e1f, (*info.vertices)[4].position.y);
   mTEST_ASSERT_FLOAT_EQUALS(-0.e-1f, (*info.vertices)[4].position.z);
-  mTEST_ASSERT_FALSE((*info.vertices)[4].hasColour);
+  mTEST_ASSERT_FALSE((bool)(*info.vertices)[4].hasColour);
 
   mTEST_ASSERT_FLOAT_EQUALS(0.000000000001f, (*info.vertices)[5].position.x);
   mTEST_ASSERT_FLOAT_EQUALS(10000000000.0f, (*info.vertices)[5].position.y);
   mTEST_ASSERT_FLOAT_EQUALS(-1, (*info.vertices)[5].position.z);
-  mTEST_ASSERT_FALSE((*info.vertices)[5].hasColour);
+  mTEST_ASSERT_FALSE((bool)(*info.vertices)[5].hasColour);
 
   mTEST_ASSERT_EQUAL((*info.triangles)[0].position0.position, (*info.vertices)[0].position);
   mTEST_ASSERT_EQUAL((*info.triangles)[0].position0.hasColour, (*info.vertices)[0].hasColour);
-  mTEST_ASSERT_FALSE((*info.triangles)[0].position0.hasNormal);
-  mTEST_ASSERT_FALSE((*info.triangles)[0].position0.hasTextureCoord);
+  mTEST_ASSERT_FALSE((bool)(*info.triangles)[0].position0.hasNormal);
+  mTEST_ASSERT_FALSE((bool)(*info.triangles)[0].position0.hasTextureCoord);
 
   mTEST_ASSERT_EQUAL((*info.triangles)[0].position1.position, (*info.vertices)[1].position);
   mTEST_ASSERT_EQUAL((*info.triangles)[0].position1.hasColour, (*info.vertices)[1].hasColour);
-  mTEST_ASSERT_FALSE((*info.triangles)[0].position1.hasNormal);
-  mTEST_ASSERT_FALSE((*info.triangles)[0].position1.hasTextureCoord);
+  mTEST_ASSERT_FALSE((bool)(*info.triangles)[0].position1.hasNormal);
+  mTEST_ASSERT_FALSE((bool)(*info.triangles)[0].position1.hasTextureCoord);
 
   mTEST_ASSERT_EQUAL((*info.triangles)[0].position2.position, (*info.vertices)[2].position);
   mTEST_ASSERT_EQUAL((*info.triangles)[0].position2.hasColour, (*info.vertices)[2].hasColour);
   mTEST_ASSERT_EQUAL((*info.triangles)[0].position2.colour, (*info.vertices)[2].colour);
-  mTEST_ASSERT_FALSE((*info.triangles)[0].position2.hasNormal);
-  mTEST_ASSERT_FALSE((*info.triangles)[0].position2.hasTextureCoord);
+  mTEST_ASSERT_FALSE((bool)(*info.triangles)[0].position2.hasNormal);
+  mTEST_ASSERT_FALSE((bool)(*info.triangles)[0].position2.hasTextureCoord);
 
   mTEST_ASSERT_EQUAL((*info.triangles)[1].position0.position, (*info.vertices)[0].position);
   mTEST_ASSERT_EQUAL((*info.triangles)[1].position0.hasColour, (*info.vertices)[0].hasColour);
-  mTEST_ASSERT_FALSE((*info.triangles)[1].position0.hasNormal);
-  mTEST_ASSERT_FALSE((*info.triangles)[1].position0.hasTextureCoord);
+  mTEST_ASSERT_FALSE((bool)(*info.triangles)[1].position0.hasNormal);
+  mTEST_ASSERT_FALSE((bool)(*info.triangles)[1].position0.hasTextureCoord);
 
   mTEST_ASSERT_EQUAL((*info.triangles)[1].position1.position, (*info.vertices)[1].position);
   mTEST_ASSERT_EQUAL((*info.triangles)[1].position1.hasColour, (*info.vertices)[1].hasColour);
-  mTEST_ASSERT_FALSE((*info.triangles)[1].position1.hasNormal);
-  mTEST_ASSERT_FALSE((*info.triangles)[1].position1.hasTextureCoord);
+  mTEST_ASSERT_FALSE((bool)(*info.triangles)[1].position1.hasNormal);
+  mTEST_ASSERT_FALSE((bool)(*info.triangles)[1].position1.hasTextureCoord);
 
   mTEST_ASSERT_EQUAL((*info.triangles)[1].position2.position, (*info.vertices)[2].position);
   mTEST_ASSERT_EQUAL((*info.triangles)[1].position2.hasColour, (*info.vertices)[2].hasColour);
   mTEST_ASSERT_EQUAL((*info.triangles)[1].position2.colour, (*info.vertices)[2].colour);
-  mTEST_ASSERT_FALSE((*info.triangles)[1].position2.hasNormal);
-  mTEST_ASSERT_FALSE((*info.triangles)[1].position2.hasTextureCoord);
+  mTEST_ASSERT_FALSE((bool)(*info.triangles)[1].position2.hasNormal);
+  mTEST_ASSERT_FALSE((bool)(*info.triangles)[1].position2.hasTextureCoord);
 
   mTEST_ASSERT_EQUAL((*info.triangles)[2].position0.position, (*info.vertices)[0].position);
   mTEST_ASSERT_EQUAL((*info.triangles)[2].position0.hasColour, (*info.vertices)[0].hasColour);
-  mTEST_ASSERT_FALSE((*info.triangles)[2].position0.hasNormal);
-  mTEST_ASSERT_FALSE((*info.triangles)[2].position0.hasTextureCoord);
+  mTEST_ASSERT_FALSE((bool)(*info.triangles)[2].position0.hasNormal);
+  mTEST_ASSERT_FALSE((bool)(*info.triangles)[2].position0.hasTextureCoord);
 
   mTEST_ASSERT_EQUAL((*info.triangles)[2].position1.position, (*info.vertices)[2].position);
   mTEST_ASSERT_EQUAL((*info.triangles)[2].position1.hasColour, (*info.vertices)[2].hasColour);
   mTEST_ASSERT_EQUAL((*info.triangles)[2].position1.colour, (*info.vertices)[2].colour);
-  mTEST_ASSERT_FALSE((*info.triangles)[2].position1.hasNormal);
-  mTEST_ASSERT_FALSE((*info.triangles)[2].position1.hasTextureCoord);
+  mTEST_ASSERT_FALSE((bool)(*info.triangles)[2].position1.hasNormal);
+  mTEST_ASSERT_FALSE((bool)(*info.triangles)[2].position1.hasTextureCoord);
 
   mTEST_ASSERT_EQUAL((*info.triangles)[2].position2.position, (*info.vertices)[3].position);
   mTEST_ASSERT_EQUAL((*info.triangles)[2].position2.hasColour, (*info.vertices)[3].hasColour);
   mTEST_ASSERT_EQUAL((*info.triangles)[2].position2.colour, (*info.vertices)[3].colour);
-  mTEST_ASSERT_FALSE((*info.triangles)[2].position2.hasNormal);
-  mTEST_ASSERT_FALSE((*info.triangles)[2].position2.hasTextureCoord);
+  mTEST_ASSERT_FALSE((bool)(*info.triangles)[2].position2.hasNormal);
+  mTEST_ASSERT_FALSE((bool)(*info.triangles)[2].position2.hasTextureCoord);
 
   mTEST_ASSERT_EQUAL((*info.triangles)[3].position0.position, (*info.vertices)[1].position);
   mTEST_ASSERT_EQUAL((*info.triangles)[3].position0.hasColour, (*info.vertices)[1].hasColour);
-  mTEST_ASSERT_FALSE((*info.triangles)[3].position0.hasNormal);
-  mTEST_ASSERT_TRUE((*info.triangles)[3].position0.hasTextureCoord);
+  mTEST_ASSERT_FALSE((bool)(*info.triangles)[3].position0.hasNormal);
+  mTEST_ASSERT_TRUE((bool)(*info.triangles)[3].position0.hasTextureCoord);
   mTEST_ASSERT_FLOAT_EQUALS(0.5f, (*info.triangles)[3].position0.textureCoord.x);
   mTEST_ASSERT_FLOAT_EQUALS(0, (*info.triangles)[3].position0.textureCoord.y);
   mTEST_ASSERT_FLOAT_EQUALS(0, (*info.triangles)[3].position0.textureCoord.z);
@@ -155,8 +155,8 @@ s On
   mTEST_ASSERT_EQUAL((*info.triangles)[3].position1.position, (*info.vertices)[2].position);
   mTEST_ASSERT_EQUAL((*info.triangles)[3].position1.hasColour, (*info.vertices)[2].hasColour);
   mTEST_ASSERT_EQUAL((*info.triangles)[3].position1.colour, (*info.vertices)[2].colour);
-  mTEST_ASSERT_FALSE((*info.triangles)[3].position1.hasNormal);
-  mTEST_ASSERT_TRUE((*info.triangles)[3].position1.hasTextureCoord);
+  mTEST_ASSERT_FALSE((bool)(*info.triangles)[3].position1.hasNormal);
+  mTEST_ASSERT_TRUE((bool)(*info.triangles)[3].position1.hasTextureCoord);
   mTEST_ASSERT_FLOAT_EQUALS(0.25f, (*info.triangles)[3].position1.textureCoord.x);
   mTEST_ASSERT_FLOAT_EQUALS(0.5f, (*info.triangles)[3].position1.textureCoord.y);
   mTEST_ASSERT_FLOAT_EQUALS(0, (*info.triangles)[3].position1.textureCoord.z);
@@ -164,16 +164,16 @@ s On
   mTEST_ASSERT_EQUAL((*info.triangles)[3].position2.position, (*info.vertices)[3].position);
   mTEST_ASSERT_EQUAL((*info.triangles)[3].position2.hasColour, (*info.vertices)[3].hasColour);
   mTEST_ASSERT_EQUAL((*info.triangles)[3].position2.colour, (*info.vertices)[3].colour);
-  mTEST_ASSERT_FALSE((*info.triangles)[3].position2.hasNormal);
-  mTEST_ASSERT_TRUE((*info.triangles)[3].position2.hasTextureCoord);
+  mTEST_ASSERT_FALSE((bool)(*info.triangles)[3].position2.hasNormal);
+  mTEST_ASSERT_TRUE((bool)(*info.triangles)[3].position2.hasTextureCoord);
   mTEST_ASSERT_FLOAT_EQUALS(0.125f, (*info.triangles)[3].position2.textureCoord.x);
   mTEST_ASSERT_FLOAT_EQUALS(0.25f, (*info.triangles)[3].position2.textureCoord.y);
   mTEST_ASSERT_FLOAT_EQUALS(0.5f, (*info.triangles)[3].position2.textureCoord.z);
 
   mTEST_ASSERT_EQUAL((*info.triangles)[4].position0.position, (*info.vertices)[4].position);
   mTEST_ASSERT_EQUAL((*info.triangles)[4].position0.hasColour, (*info.vertices)[4].hasColour);
-  mTEST_ASSERT_TRUE((*info.triangles)[4].position0.hasNormal);
-  mTEST_ASSERT_TRUE((*info.triangles)[4].position0.hasTextureCoord);
+  mTEST_ASSERT_TRUE((bool)(*info.triangles)[4].position0.hasNormal);
+  mTEST_ASSERT_TRUE((bool)(*info.triangles)[4].position0.hasTextureCoord);
   mTEST_ASSERT_FLOAT_EQUALS(0.125f, (*info.triangles)[4].position0.textureCoord.x);
   mTEST_ASSERT_FLOAT_EQUALS(0.25f, (*info.triangles)[4].position0.textureCoord.y);
   mTEST_ASSERT_FLOAT_EQUALS(0.5f, (*info.triangles)[4].position0.textureCoord.z);
@@ -183,8 +183,8 @@ s On
 
   mTEST_ASSERT_EQUAL((*info.triangles)[4].position1.position, (*info.vertices)[5].position);
   mTEST_ASSERT_EQUAL((*info.triangles)[4].position1.hasColour, (*info.vertices)[5].hasColour);
-  mTEST_ASSERT_TRUE((*info.triangles)[4].position1.hasNormal);
-  mTEST_ASSERT_TRUE((*info.triangles)[4].position1.hasTextureCoord);
+  mTEST_ASSERT_TRUE((bool)(*info.triangles)[4].position1.hasNormal);
+  mTEST_ASSERT_TRUE((bool)(*info.triangles)[4].position1.hasTextureCoord);
   mTEST_ASSERT_FLOAT_EQUALS(0.25f, (*info.triangles)[4].position1.textureCoord.x);
   mTEST_ASSERT_FLOAT_EQUALS(0.5f, (*info.triangles)[4].position1.textureCoord.y);
   mTEST_ASSERT_FLOAT_EQUALS(0, (*info.triangles)[4].position1.textureCoord.z);
@@ -194,8 +194,8 @@ s On
 
   mTEST_ASSERT_EQUAL((*info.triangles)[4].position2.position, (*info.vertices)[0].position);
   mTEST_ASSERT_EQUAL((*info.triangles)[4].position2.hasColour, (*info.vertices)[0].hasColour);
-  mTEST_ASSERT_TRUE((*info.triangles)[4].position2.hasNormal);
-  mTEST_ASSERT_TRUE((*info.triangles)[4].position2.hasTextureCoord);
+  mTEST_ASSERT_TRUE((bool)(*info.triangles)[4].position2.hasNormal);
+  mTEST_ASSERT_TRUE((bool)(*info.triangles)[4].position2.hasTextureCoord);
   mTEST_ASSERT_FLOAT_EQUALS(0.5f, (*info.triangles)[4].position2.textureCoord.x);
   mTEST_ASSERT_FLOAT_EQUALS(0, (*info.triangles)[4].position2.textureCoord.y);
   mTEST_ASSERT_FLOAT_EQUALS(0, (*info.triangles)[4].position2.textureCoord.z);
@@ -205,16 +205,16 @@ s On
 
   mTEST_ASSERT_EQUAL((*info.triangles)[5].position0.position, (*info.vertices)[0].position);
   mTEST_ASSERT_EQUAL((*info.triangles)[5].position0.hasColour, (*info.vertices)[0].hasColour);
-  mTEST_ASSERT_TRUE((*info.triangles)[5].position0.hasNormal);
-  mTEST_ASSERT_FALSE((*info.triangles)[5].position0.hasTextureCoord);
+  mTEST_ASSERT_TRUE((bool)(*info.triangles)[5].position0.hasNormal);
+  mTEST_ASSERT_FALSE((bool)(*info.triangles)[5].position0.hasTextureCoord);
   mTEST_ASSERT_FLOAT_EQUALS(0.0f, (*info.triangles)[5].position0.normal.x);
   mTEST_ASSERT_FLOAT_EQUALS(0.000f, (*info.triangles)[5].position0.normal.y);
   mTEST_ASSERT_FLOAT_EQUALS(1.f, (*info.triangles)[5].position0.normal.z);
 
   mTEST_ASSERT_EQUAL((*info.triangles)[5].position1.position, (*info.vertices)[1].position);
   mTEST_ASSERT_EQUAL((*info.triangles)[5].position1.hasColour, (*info.vertices)[1].hasColour);
-  mTEST_ASSERT_TRUE((*info.triangles)[5].position1.hasNormal);
-  mTEST_ASSERT_FALSE((*info.triangles)[5].position1.hasTextureCoord);
+  mTEST_ASSERT_TRUE((bool)(*info.triangles)[5].position1.hasNormal);
+  mTEST_ASSERT_FALSE((bool)(*info.triangles)[5].position1.hasTextureCoord);
   mTEST_ASSERT_FLOAT_EQUALS(1.1f, (*info.triangles)[5].position1.normal.x);
   mTEST_ASSERT_FLOAT_EQUALS(1234567890.f, (*info.triangles)[5].position1.normal.y);
   mTEST_ASSERT_FLOAT_EQUALS(0.0f, (*info.triangles)[5].position1.normal.z);
@@ -222,8 +222,8 @@ s On
   mTEST_ASSERT_EQUAL((*info.triangles)[5].position2.position, (*info.vertices)[2].position);
   mTEST_ASSERT_EQUAL((*info.triangles)[5].position2.hasColour, (*info.vertices)[2].hasColour);
   mTEST_ASSERT_EQUAL((*info.triangles)[5].position2.colour, (*info.vertices)[2].colour);
-  mTEST_ASSERT_TRUE((*info.triangles)[5].position2.hasNormal);
-  mTEST_ASSERT_FALSE((*info.triangles)[5].position2.hasTextureCoord);
+  mTEST_ASSERT_TRUE((bool)(*info.triangles)[5].position2.hasNormal);
+  mTEST_ASSERT_FALSE((bool)(*info.triangles)[5].position2.hasTextureCoord);
   mTEST_ASSERT_FLOAT_EQUALS(.01f, (*info.triangles)[5].position2.normal.x);
   mTEST_ASSERT_FLOAT_EQUALS(-.1f, (*info.triangles)[5].position2.normal.y);
   mTEST_ASSERT_FLOAT_EQUALS(.0f, (*info.triangles)[5].position2.normal.z);
