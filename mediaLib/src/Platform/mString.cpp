@@ -249,9 +249,31 @@ mUtf8StringIterator mString::end() const
   return mUtf8StringIterator(nullptr, 0);
 }
 
-const char *mString::c_str() const
+bool mString::StartsWith(const mString &s) const
 {
-  return text;
+  bool startsWith = false;
+
+  const mResult result = mString_StartsWith(*this, s, &startsWith);
+
+  return mSUCCEEDED(result) && startsWith;
+}
+
+bool mString::EndsWith(const mString &s) const
+{
+  bool endsWith = false;
+
+  const mResult result = mString_EndsWith(*this, s, &endsWith);
+
+  return mSUCCEEDED(result) && endsWith;
+}
+
+bool mString::Contains(const mString &s) const
+{
+  bool contained = false;
+
+  const mResult result = mString_Contains(*this, s, &contained);
+
+  return mSUCCEEDED(result) && contained;
 }
 
 mFUNCTION(mString_Create, OUT mString *pString, IN const char *text, IN OPTIONAL mAllocator *pAllocator /* = nullptr */)
@@ -1055,6 +1077,541 @@ mFUNCTION(mString_ForEachChar, const mString &string, const std::function<mResul
 
   mRETURN_SUCCESS();
 }
+
+mFUNCTION(mString_StartsWith, const mString &stringA, const mString &start, OUT bool *pStartsWith)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pStartsWith == nullptr, mR_ArgumentNull);
+  
+  *pStartsWith = false;
+
+  mERROR_IF(stringA.hasFailed || start.hasFailed, mR_InvalidParameter);
+
+  if (stringA.bytes <= 1 || start.bytes <= 1)
+  {
+    *pStartsWith = start.bytes <= 1;
+    mRETURN_SUCCESS();
+  }
+
+  mERROR_IF(start.count > stringA.count, mR_Success); // pStartsWith is already false.
+
+  size_t offset = 0;
+
+  for (size_t i = 0; i < start.count - 1; ++i) // Exclude null char.
+  {
+    utf8proc_int32_t codePointA;
+    ptrdiff_t characterSizeA = utf8proc_iterate((uint8_t *)stringA.text + offset, stringA.bytes - offset, &codePointA);
+
+    utf8proc_int32_t codePointB;
+    utf8proc_iterate((uint8_t *)start.text + offset, stringA.bytes - offset, &codePointB);
+
+    mERROR_IF(codePointA != codePointB, mR_Success); // pStartsWith is already false.
+
+    offset += characterSizeA;
+
+    if (characterSizeA == 0)
+      break;
+  }
+
+  *pStartsWith = true;
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mString_EndsWith, const mString &stringA, const mString &end, OUT bool *pEndsWith)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pEndsWith == nullptr, mR_ArgumentNull);
+
+  *pEndsWith = false;
+
+  mERROR_IF(stringA.hasFailed || end.hasFailed, mR_InvalidParameter);
+
+  if (stringA.bytes <= 1 || end.bytes <= 1)
+  {
+    *pEndsWith = end.bytes <= 1;
+    mRETURN_SUCCESS();
+  }
+
+  mERROR_IF(end.count > stringA.count, mR_Success);
+
+  size_t stringOffset = 0;
+
+  for (size_t i = 0; i < stringA.count - end.count; ++i) // Exclude null char.
+  {
+    utf8proc_int32_t codePoint;
+    const ptrdiff_t characterSize = utf8proc_iterate((uint8_t *)stringA.text + stringOffset, stringA.bytes - stringOffset, &codePoint);
+    stringOffset += characterSize;
+
+    if (characterSize == 0)
+      break;
+  }
+
+  size_t endOffset = 0;
+
+  for (size_t i = 0; i < end.count - 1; ++i) // Exclude null char.
+  {
+    utf8proc_int32_t codePointA;
+    const ptrdiff_t characterSizeA = utf8proc_iterate((uint8_t *)stringA.text + stringOffset, stringA.bytes - stringOffset, &codePointA);
+
+    utf8proc_int32_t codePointB;
+    utf8proc_iterate((uint8_t *)end.text + endOffset, stringA.bytes - endOffset, &codePointB);
+
+    mERROR_IF(codePointA != codePointB, mR_Success); // pEndsWith is already false.
+
+    stringOffset += characterSizeA;
+    endOffset += characterSizeA;
+
+    if (characterSizeA == 0)
+      break;
+  }
+
+  *pEndsWith = true;
+
+  mRETURN_SUCCESS();
+}
+
+// `pKmp` should be zeroed.
+void mString_GetKmp(const mString &string, IN_OUT mchar_t *pString, IN_OUT size_t *pKmp)
+{
+  pKmp[0] = 0;
+
+  const size_t length = string.count - 1;
+  size_t offset = 0;
+
+  for (size_t i = 0; i < length; i++)
+  {
+    utf8proc_int32_t codePoint;
+    const ptrdiff_t characterSize = utf8proc_iterate((uint8_t *)string.text + offset, string.bytes - offset, &codePoint);
+    offset += characterSize;
+
+    pString[i] = codePoint;
+
+    if (characterSize == 0)
+      return;
+  }
+
+  for (size_t i = 1, k = 0; i < length; ++i)
+  {
+    while (k > 0 && pString[k] != pString[i])
+      k = pKmp[k - 1];
+    
+    if (pString[k] == pString[i])
+      ++k;
+    
+    pKmp[i] = k;
+  }
+}
+
+ void mString_FindNextWithKMP(const mString &string, const size_t offsetChar, const size_t offsetBytes, IN const mchar_t *pFind, const size_t findCountWithoutNull, IN const size_t *pKmp, OUT size_t *pStartChar, OUT size_t *pOffset, OUT bool *pContained)
+{
+   *pContained = false;
+
+   const size_t chars = string.count - offsetChar - 1;
+
+   if (findCountWithoutNull == 0 || findCountWithoutNull > chars)
+     return;
+   
+   size_t offset = offsetBytes;
+
+   for (size_t i = 0, k = 0; i < chars; i++)
+   {
+     utf8proc_int32_t codePoint;
+     const ptrdiff_t characterSize = utf8proc_iterate((uint8_t *)string.text + offset, string.bytes - offset, &codePoint);
+     offset += characterSize;
+
+     while (k > 0 && pFind[k] != codePoint)
+       k = pKmp[k - 1];
+     
+     if (pFind[k] == codePoint)
+       ++k;
+     
+     if (k == findCountWithoutNull)
+     {
+       *pStartChar = offsetChar + i - k + 1;
+       *pOffset = offset;
+       *pContained = true;
+
+       return;
+     }
+   }
+}
+
+mFUNCTION(mString_FindFirst, const mString &string, const mString &find, OUT size_t *pStartChar, OUT bool *pContained)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pContained == nullptr || pStartChar == nullptr, mR_ArgumentNull);
+  
+  *pContained = false;
+
+  mERROR_IF(string.hasFailed || find.hasFailed, mR_InvalidParameter);
+  mERROR_IF(pStartChar == nullptr || pContained == nullptr, mR_InvalidParameter);
+  
+  if (string.count <= 1 || find.count <= 1)
+  {
+    *pStartChar = 0;
+    *pContained = find.count <= 1;
+    mRETURN_SUCCESS();
+  }
+
+  // TODO: Add a brute force variant for small strings.
+
+  size_t *pKmp = nullptr;
+  mchar_t *pChars = nullptr;
+
+  mDEFER(mAllocator_FreePtr(&mDefaultTempAllocator, &pKmp));
+  mDEFER(mAllocator_FreePtr(&mDefaultTempAllocator, &pChars));
+  mERROR_CHECK(mAllocator_AllocateZero(&mDefaultTempAllocator, &pKmp, find.count - 1));
+  mERROR_CHECK(mAllocator_Allocate(&mDefaultTempAllocator, &pChars, find.count - 1));
+
+  mString_GetKmp(find, pChars, pKmp);
+
+  size_t _unusedOffset;
+  mString_FindNextWithKMP(string, 0, 0, pChars, find.count - 1, pKmp, pStartChar, &_unusedOffset, pContained);
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mString_Contains, const mString &string, const mString &contained, OUT bool *pContains)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pContains == nullptr, mR_ArgumentNull);
+
+  *pContains = false;
+
+  mERROR_IF(string.hasFailed || contained.hasFailed, mR_InvalidParameter);
+
+  if (string.count <= 1 || contained.count <= 1)
+  {
+    *pContains = contained.count <= 1;
+    mRETURN_SUCCESS();
+  }
+
+  // TODO: Add a brute force variant for small strings.
+
+  size_t *pKmp = nullptr;
+  mchar_t *pChars = nullptr;
+
+  mDEFER(mAllocator_FreePtr(&mDefaultTempAllocator, &pKmp));
+  mDEFER(mAllocator_FreePtr(&mDefaultTempAllocator, &pChars));
+  mERROR_CHECK(mAllocator_AllocateZero(&mDefaultTempAllocator, &pKmp, contained.count - 1));
+  mERROR_CHECK(mAllocator_Allocate(&mDefaultTempAllocator, &pChars, contained.count - 1));
+
+  mString_GetKmp(contained, pChars, pKmp);
+
+  size_t _unusedStartChar, _unusedOffset;
+  mString_FindNextWithKMP(string, 0, 0, pChars, contained.count - 1, pKmp, &_unusedStartChar, &_unusedOffset, pContains);
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mString_TrimStart, const mString &string, const mchar_t trimmedChar, OUT mString *pTrimmedString)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pTrimmedString == nullptr, mR_ArgumentNull);
+  mERROR_IF(string.hasFailed || trimmedChar == 0, mR_InvalidParameter);
+  
+  size_t byteOffset = 0;
+  size_t charOffset = 0;
+
+  for (; charOffset < string.count - 1; charOffset++)
+  {
+    utf8proc_int32_t codePoint;
+    const ptrdiff_t characterSize = utf8proc_iterate((uint8_t *)string.text + byteOffset, string.bytes - byteOffset, &codePoint);
+    
+    if (codePoint != trimmedChar || characterSize == 0)
+      break;
+
+    byteOffset += characterSize;
+  }
+
+  mERROR_CHECK(mString_Create(pTrimmedString, "", pTrimmedString->pAllocator));
+  mERROR_CHECK(mString_Reserve(*pTrimmedString, string.bytes - byteOffset));
+  pTrimmedString->text[0] = '\0';
+
+  if (charOffset < string.count - 1)
+  {
+    pTrimmedString->bytes = string.bytes - byteOffset;
+    pTrimmedString->count = string.count - charOffset;
+    mERROR_CHECK(mMemcpy(pTrimmedString->text, string.text + byteOffset, string.bytes - byteOffset));
+  }
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mString_TrimEnd, const mString &string, const mchar_t trimmedChar, OUT mString *pTrimmedString)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pTrimmedString == nullptr, mR_ArgumentNull);
+  mERROR_IF(string.hasFailed || trimmedChar == 0, mR_InvalidParameter);
+
+  size_t byteOffset = 0;
+  
+  size_t firstMatchingChar = 0;
+  size_t firstMatchingByte = 0;
+
+  for (size_t charOffset = 0; charOffset < string.count - 1; charOffset++)
+  {
+    utf8proc_int32_t codePoint;
+    const ptrdiff_t characterSize = utf8proc_iterate((uint8_t *)string.text + byteOffset, string.bytes - byteOffset, &codePoint);
+    byteOffset += characterSize;
+
+    if (codePoint != trimmedChar)
+    {
+      firstMatchingChar = charOffset + 1;
+      firstMatchingByte = byteOffset;
+    }
+
+    if (characterSize == 0)
+      break;
+  }
+
+  mERROR_CHECK(mString_Create(pTrimmedString, "", pTrimmedString->pAllocator));
+  mERROR_CHECK(mString_Reserve(*pTrimmedString, firstMatchingByte + 1));
+  pTrimmedString->text[0] = '\0';
+
+  if (firstMatchingByte > 0)
+  {
+    pTrimmedString->bytes = firstMatchingByte + 1;
+    pTrimmedString->count = firstMatchingChar + 1;
+    mERROR_CHECK(mMemcpy(pTrimmedString->text, string.text, firstMatchingByte));
+    pTrimmedString->text[firstMatchingByte] = '\0';
+  }
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mString_RemoveChar, const mString &string, const mchar_t remove, OUT mString *pResult)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pResult == nullptr, mR_ArgumentNull);
+  mERROR_IF(string.hasFailed || remove == 0, mR_InvalidParameter);
+
+  mERROR_CHECK(mString_Create(pResult, "", pResult->pAllocator));
+  mERROR_CHECK(mString_Reserve(*pResult, string.bytes));
+  pResult->text[0] = '\0';
+
+  bool lastWasMatch = false;
+  size_t firstNoMatchByte = 0;
+  size_t sourceOffset = 0;
+  size_t destinationOffset = 0;
+  size_t destinationCharCount = 0;
+  size_t destinationCharSize = 0;
+  ptrdiff_t characterSize = 0;
+
+  for (size_t charOffset = 0; charOffset < string.count - 1; charOffset++)
+  {
+    utf8proc_int32_t codePoint;
+    characterSize = utf8proc_iterate((uint8_t *)string.text + sourceOffset, string.bytes - sourceOffset, &codePoint);
+    sourceOffset += characterSize;
+
+    if (characterSize == 0)
+      break;
+
+    if (codePoint == remove)
+    {
+      const size_t size = (sourceOffset - characterSize) - firstNoMatchByte;
+
+      if (!lastWasMatch && size > 0)
+      {
+        mERROR_CHECK(mMemcpy(pResult->text + destinationOffset, string.text + firstNoMatchByte, size));
+        destinationOffset += size;
+      }
+      
+      firstNoMatchByte = sourceOffset;
+      lastWasMatch = true;
+    }
+    else
+    {
+      lastWasMatch = false;
+      ++destinationCharCount;
+      destinationCharSize += characterSize;
+    }
+  }
+
+  if (!lastWasMatch)
+  {
+    const size_t size = sourceOffset - firstNoMatchByte;
+    mERROR_CHECK(mMemcpy(pResult->text + destinationOffset, string.text + firstNoMatchByte, size));
+    destinationOffset += size;
+  }
+
+  pResult->text[destinationOffset] = '\0';
+  pResult->count = destinationCharCount + 1;
+  pResult->bytes = destinationCharSize + 1;
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mString_RemoveString, const mString &string, const mString &remove, OUT mString *pResult)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pResult == nullptr, mR_ArgumentNull);
+  mERROR_IF(string.hasFailed || remove.hasFailed, mR_InvalidParameter);
+
+  if (remove.bytes <= 1 || string.bytes <= 1 || remove.count > string.count)
+  {
+    mERROR_CHECK(mString_Create(pResult, string, pResult->pAllocator));
+    mRETURN_SUCCESS();
+  }
+
+  mERROR_CHECK(mString_Create(pResult, "", pResult->pAllocator));
+  mERROR_CHECK(mString_Reserve(*pResult, string.bytes));
+
+  size_t *pKmp = nullptr;
+  mchar_t *pChars = nullptr;
+
+  mDEFER(mAllocator_FreePtr(&mDefaultTempAllocator, &pKmp));
+  mDEFER(mAllocator_FreePtr(&mDefaultTempAllocator, &pChars));
+  mERROR_CHECK(mAllocator_AllocateZero(&mDefaultTempAllocator, &pKmp, remove.count - 1));
+  mERROR_CHECK(mAllocator_Allocate(&mDefaultTempAllocator, &pChars, remove.count - 1));
+
+  mString_GetKmp(remove, pChars, pKmp);
+
+  size_t charOffsetAfter, byteOffsetAfter;
+  size_t charOffset = 0;
+  size_t byteOffset = 0;
+  size_t destinationOffset = 0;
+  size_t destinationNotBytes = 0;
+  size_t destinationNotCount = 0;
+  bool contained = false;
+
+  while (charOffset < string.count - 1)
+  {
+    mString_FindNextWithKMP(string, charOffset, byteOffset, pChars, remove.count - 1, pKmp, &charOffsetAfter, &byteOffsetAfter, &contained);
+
+    if (!contained)
+    {
+      const size_t size = string.bytes - 1 - byteOffset;
+      mERROR_CHECK(mMemcpy(pResult->text + destinationOffset, string.text + byteOffset, size));
+      destinationOffset += size;
+
+      break;
+    }
+    else if (byteOffsetAfter - (remove.bytes - 1) != byteOffset)
+    {
+      const size_t size = byteOffsetAfter - (remove.bytes - 1) - byteOffset;
+      mERROR_CHECK(mMemcpy(pResult->text + destinationOffset, string.text + byteOffset, size));
+      destinationOffset += size;
+    }
+
+    charOffset = charOffsetAfter;
+    byteOffset = byteOffsetAfter;
+
+    destinationNotBytes += remove.bytes - 1;
+    destinationNotCount += remove.count - 1;
+  }
+
+  pResult->text[destinationOffset] = '\0';
+  pResult->bytes = string.bytes - destinationNotBytes;
+  pResult->count = string.count - destinationNotCount;
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mString_Replace, const mString &string, const mString &replace, const mString &with, OUT mString *pResult)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pResult == nullptr, mR_ArgumentNull);
+  mERROR_IF(string.hasFailed || replace.hasFailed || with.hasFailed, mR_InvalidParameter);
+
+  if (replace.bytes <= 1 || string.bytes <= 1 || replace.count > string.count)
+  {
+    mERROR_CHECK(mString_Create(pResult, string, pResult->pAllocator));
+    mRETURN_SUCCESS();
+  }
+
+  mERROR_CHECK(mString_Create(pResult, "", pResult->pAllocator));
+  mERROR_CHECK(mString_Reserve(*pResult, string.bytes));
+
+  size_t *pKmp = nullptr;
+  mchar_t *pChars = nullptr;
+
+  mDEFER(mAllocator_FreePtr(&mDefaultTempAllocator, &pKmp));
+  mDEFER(mAllocator_FreePtr(&mDefaultTempAllocator, &pChars));
+  mERROR_CHECK(mAllocator_AllocateZero(&mDefaultTempAllocator, &pKmp, replace.count - 1));
+  mERROR_CHECK(mAllocator_Allocate(&mDefaultTempAllocator, &pChars, replace.count - 1));
+
+  mString_GetKmp(replace, pChars, pKmp);
+
+  size_t charOffsetAfter, byteOffsetAfter;
+  size_t charOffset = 0;
+  size_t byteOffset = 0;
+  size_t destinationOffset = 0;
+  size_t destinationNotBytes = 0;
+  size_t destinationNotCount = 0;
+  size_t destinationAddedBytes = 0;
+  size_t destinationAddedCount = 0;
+  bool contained = false;
+
+  while (charOffset < string.count - 1)
+  {
+    mString_FindNextWithKMP(string, charOffset, byteOffset, pChars, replace.count - 1, pKmp, &charOffsetAfter, &byteOffsetAfter, &contained);
+
+    if (!contained)
+    {
+      const size_t size = string.bytes - 1 - byteOffset;
+
+      if (destinationOffset + size >= pResult->capacity)
+        mERROR_CHECK(mString_Reserve(*pResult, mMax(pResult->capacity * 2, pResult->capacity + destinationOffset + size)));
+
+      mERROR_CHECK(mMemcpy(pResult->text + destinationOffset, string.text + byteOffset, size));
+      destinationOffset += size;
+
+      break;
+    }
+    else if (byteOffsetAfter - (replace.bytes - 1) != byteOffset)
+    {
+      const size_t size = byteOffsetAfter - (replace.bytes - 1) - byteOffset;
+
+      if (destinationOffset + size + with.bytes >= pResult->capacity)
+        mERROR_CHECK(mString_Reserve(*pResult, mMax(pResult->capacity * 2, pResult->capacity + destinationOffset + size + with.bytes)));
+
+      mERROR_CHECK(mMemcpy(pResult->text + destinationOffset, string.text + byteOffset, size));
+      destinationOffset += size;
+
+      mERROR_CHECK(mMemcpy(pResult->text + destinationOffset, with.text, with.bytes - 1));
+      destinationOffset += with.bytes - 1;
+
+      destinationAddedBytes += with.bytes - 1;
+      destinationAddedCount += with.count - 1;
+    }
+    else
+    {
+      if (destinationOffset + with.bytes >= pResult->capacity)
+        mERROR_CHECK(mString_Reserve(*pResult, mMax(pResult->capacity * 2, pResult->capacity + destinationOffset + with.bytes)));
+
+      mERROR_CHECK(mMemcpy(pResult->text + destinationOffset, with.text, with.bytes - 1));
+      destinationOffset += with.bytes - 1;
+
+      destinationAddedBytes += with.bytes - 1;
+      destinationAddedCount += with.count - 1;
+    }
+
+    charOffset = charOffsetAfter;
+    byteOffset = byteOffsetAfter;
+
+    destinationNotBytes += replace.bytes - 1;
+    destinationNotCount += replace.count - 1;
+  }
+
+  pResult->text[destinationOffset] = '\0';
+  pResult->bytes = string.bytes - destinationNotBytes + destinationAddedBytes;
+  pResult->count = string.count - destinationNotCount + destinationAddedCount;
+
+  mRETURN_SUCCESS();
+}
+
+//////////////////////////////////////////////////////////////////////////
 
 mFUNCTION(mInplaceString_GetCount_Internal, IN const char *text, const size_t maxSize, OUT size_t *pCount, OUT size_t *pSize)
 {
