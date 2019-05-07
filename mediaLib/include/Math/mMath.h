@@ -41,7 +41,18 @@ template <typename T> auto mASin(const T value)->decltype(asin(value)) { return 
 template <typename T> auto mACos(const T value)->decltype(acos(value)) { return acos(value); }
 template <typename T> auto mATan(const T value)->decltype(atan(value)) { return atan(value); }
 template <typename T, typename U> auto mATan2(const T value, const U value2)->decltype(atan2(value, value2)) { return atan2(value, value2); }
-template <typename T, typename U> auto mPow(const T value, const U value2)->decltype(pow(value, value2)) { return pow(value, value2); }
+
+template <typename U>
+auto mPow(const float_t value, const U value2) -> typename std::enable_if_t<!std::is_same<U, double_t>::value, float_t>
+{
+  return powf(value, (float_t)value2);
+}
+
+template <typename T, typename U>
+auto mPow(const T value, const U value2) -> typename std::enable_if_t<!std::is_same<U, float_t>::value || !std::is_same<T, float_t>::value, decltype(pow(value, value2))>
+{
+  return pow(value, value2);
+}
 
 template <typename T> constexpr T mMax(const T a, const T b) { return (a >= b) ? a : b; }
 template <typename T> constexpr T mMin(const T a, const T b) { return (a <= b) ? a : b; }
@@ -967,6 +978,200 @@ mINLINE bool mIntersects(const mTriangle3D<T> &triangle, const mLine3D<T> &line,
   }
 
   return false;
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+template<>
+constexpr int8_t mMinValue<int8_t>()
+{
+  return INT8_MIN;
+}
+
+template<>
+constexpr int16_t mMinValue<int16_t>()
+{
+  return INT16_MIN;
+}
+
+template<>
+constexpr int32_t mMinValue<int32_t>()
+{
+  return INT32_MIN;
+}
+
+template<>
+constexpr int64_t mMinValue<int64_t>()
+{
+  return INT64_MIN;
+}
+
+template<>
+constexpr uint8_t mMinValue<uint8_t>()
+{
+  return 0;
+}
+
+template<>
+constexpr uint16_t mMinValue<uint16_t>()
+{
+  return 0;
+}
+
+template<>
+constexpr uint32_t mMinValue<uint32_t>()
+{
+  return 0;
+}
+
+template<>
+constexpr uint64_t mMinValue<uint64_t>()
+{
+  return 0;
+}
+
+template<>
+constexpr float_t mMinValue<float_t>()
+{
+  return -FLT_MAX;
+}
+
+template<>
+constexpr double_t mMinValue<double_t>()
+{
+  return -DBL_MAX;
+}
+
+template<>
+constexpr int8_t mMaxValue<int8_t>()
+{
+  return INT8_MAX;
+}
+
+template<>
+constexpr int16_t mMaxValue<int16_t>()
+{
+  return INT16_MAX;
+}
+
+template<>
+constexpr int32_t mMaxValue<int32_t>()
+{
+  return INT32_MAX;
+}
+
+template<>
+constexpr int64_t mMaxValue<int64_t>()
+{
+  return INT64_MAX;
+}
+
+template<>
+constexpr uint8_t mMaxValue<uint8_t>()
+{
+  return UINT8_MAX;
+}
+
+template<>
+constexpr uint16_t mMaxValue<uint16_t>()
+{
+  return UINT16_MAX;
+}
+
+template<>
+constexpr uint32_t mMaxValue<uint32_t>()
+{
+  return UINT32_MAX;
+}
+
+template<>
+constexpr uint64_t mMaxValue<uint64_t>()
+{
+  return UINT64_MAX;
+}
+
+template<>
+constexpr float_t mMaxValue<float_t>()
+{
+  return FLT_MAX;
+}
+
+template<>
+constexpr double_t mMaxValue<double_t>()
+{
+  return DBL_MAX;
+}
+
+template<>
+constexpr float_t mSmallest<float_t>()
+{
+  return FLT_EPSILON;
+};
+
+template<>
+constexpr double_t mSmallest<double_t>()
+{
+  return DBL_EPSILON;
+};
+
+template <>
+uint64_t constexpr mMod<uint64_t>(uint64_t value, uint64_t modulus)
+{
+  return value % modulus;
+}
+
+template <>
+int64_t constexpr mMod<int64_t>(int64_t value, int64_t modulus)
+{
+  return value % modulus;
+}
+
+template <>
+uint32_t constexpr mMod<uint32_t>(uint32_t value, uint32_t modulus)
+{
+  return value % modulus;
+}
+
+template <>
+int32_t constexpr mMod<int32_t>(int32_t value, int32_t modulus)
+{
+  return value % modulus;
+}
+
+template <>
+uint16_t constexpr mMod<uint16_t>(uint16_t value, uint16_t modulus)
+{
+  return value % modulus;
+}
+
+template <>
+int16_t constexpr mMod<int16_t>(int16_t value, int16_t modulus)
+{
+  return value % modulus;
+}
+
+template <>
+uint8_t constexpr mMod<uint8_t>(uint8_t value, uint8_t modulus)
+{
+  return value % modulus;
+}
+
+template <>
+int8_t constexpr mMod<int8_t>(int8_t value, int8_t modulus)
+{
+  return value % modulus;
+}
+
+template <>
+inline float_t mMod<float_t>(float_t value, float_t modulus)
+{
+  return fmodf(value, modulus);
+}
+
+template <>
+inline double_t mMod<double_t>(double_t value, double_t modulus)
+{
+  return fmod(value, modulus);
 }
 
 #endif // mMath_h__

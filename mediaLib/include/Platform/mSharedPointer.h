@@ -432,7 +432,7 @@ inline mFUNCTION(mSharedPointer_Allocate, OUT mSharedPointer<T> *pOutSharedPoint
   mRETURN_SUCCESS();
 }
 
-template <typename T, typename TInherited>
+template <typename T, typename TInherited, typename std::enable_if<std::is_base_of<T *, TInherited *>::value>* = nullptr>
 inline mFUNCTION(mSharedPointer_AllocateInherited, OUT mSharedPointer<T> *pOutSharedPointer, IN mAllocator *pAllocator, const std::function<void(TInherited *)> &function, OUT OPTIONAL TInherited **ppInherited)
 {
   mFUNCTION_SETUP();

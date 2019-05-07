@@ -1,140 +1,4 @@
 #include "mAudioEngine.h"
-#include "mCachedFileReader.h"
-
-struct mAudioSourceWav : mAudioSource
-{
-  mPtr<mCachedFileReader> fileReader;
-
-  struct
-  {
-    uint8_t riffHeader[4];
-    uint32_t chunkSize; // RIFF Chunk Size.
-    uint8_t waveHeader[4];
-
-    // fmt sub chunk.
-    uint8_t fmtSubchunkID[4]; // "fmt ".
-    uint32_t fmtSubchunkSize; // Size of the fmt chunk.
-    uint16_t fmtAudioFormat; // Audio format 1=PCM, 6=mulaw, 7=alaw, 257=IBM Mu-Law, 258=IBM A-Law, 259=ADPCM.
-    uint16_t fmtChannelCount;
-    uint32_t fmtSampleRate;
-    uint32_t fmtBytesPerSec;
-    uint16_t fmtBlockAlign; // 2=16-bit mono, 4=16-bit stereo.
-    uint16_t fmtBitsPerSample;
-
-    // data sub chunk.
-    uint8_t dataSubchunkID[4]; // "data".
-    uint32_t dataSubchunkSize; // Data length.
-  } riffWaveHeader;
-
-  size_t readPosition;
-  size_t startOffset;
-};
-
-mFUNCTION(mAudioSourceWav_Destroy_Internal, IN_OUT mAudioSourceWav *pAudioSource);
-mFUNCTION(mAudioSourceWav_GetBuffer_Internal, mPtr<mAudioSource> &audioSource, OUT float_t *pBuffer, const size_t bufferLength, const size_t channelIndex);
-mFUNCTION(mAudioSourceWav_MoveToNextBuffer_Internal, mPtr<mAudioSource> &audioSource, const size_t samples);
-
-//////////////////////////////////////////////////////////////////////////
-
-mFUNCTION(mAudioSourceWav_Create, OUT mPtr<mAudioSource> *pAudioSource, IN mAllocator *pAllocator, const mString &filename)
-{
-  mFUNCTION_SETUP();
-
-  mAudioSourceWav *pAudioSourceWav = nullptr;
-  mERROR_CHECK(mSharedPointer_AllocateInherited(pAudioSource, pAllocator, (std::function<void(mAudioSourceWav *)>)[](mAudioSourceWav *pData){mAudioSourceWav_Destroy_Internal(pData);}, &pAudioSourceWav));
-
-  mDEFER_CALL_ON_ERROR(pAudioSource, mSharedPointer_Destroy);
-
-  pAudioSourceWav->volume = 1.0f;
-
-  static_assert(sizeof(decltype(mAudioSourceWav::riffWaveHeader)) == (sizeof(uint32_t) * 5 + sizeof(uint16_t) * 4 + sizeof(uint8_t) * 4 * 4), "struct packing invalid");
-
-  mERROR_CHECK(mCachedFileReader_Create(&pAudioSourceWav->fileReader, pAllocator, filename, 1024 * 1024 * 4));
-  mERROR_CHECK(mCachedFileReader_ReadAt(pAudioSourceWav->fileReader, 0, sizeof(decltype(mAudioSourceWav::riffWaveHeader)), (uint8_t *)&pAudioSourceWav->riffWaveHeader));
-
-  mERROR_IF(pAudioSourceWav->riffWaveHeader.riffHeader[0] != 'R' || pAudioSourceWav->riffWaveHeader.riffHeader[1] != 'I' || pAudioSourceWav->riffWaveHeader.riffHeader[2] != 'F' || pAudioSourceWav->riffWaveHeader.riffHeader[3] != 'F', mR_ResourceInvalid);
-  mERROR_IF(pAudioSourceWav->riffWaveHeader.waveHeader[0] != 'W' || pAudioSourceWav->riffWaveHeader.waveHeader[1] != 'A' || pAudioSourceWav->riffWaveHeader.waveHeader[2] != 'V' || pAudioSourceWav->riffWaveHeader.waveHeader[3] != 'E', mR_ResourceInvalid);
-  mERROR_IF(pAudioSourceWav->riffWaveHeader.fmtSubchunkID[0] != 'f' || pAudioSourceWav->riffWaveHeader.fmtSubchunkID[1] != 'm' || pAudioSourceWav->riffWaveHeader.fmtSubchunkID[2] != 't' || pAudioSourceWav->riffWaveHeader.fmtSubchunkID[3] != ' ', mR_ResourceInvalid);
-  mERROR_IF(pAudioSourceWav->riffWaveHeader.dataSubchunkID[0] != 'd' || pAudioSourceWav->riffWaveHeader.dataSubchunkID[1] != 'a' || pAudioSourceWav->riffWaveHeader.dataSubchunkID[2] != 't' || pAudioSourceWav->riffWaveHeader.dataSubchunkID[3] != 'a', mR_ResourceInvalid);
-  mERROR_IF(pAudioSourceWav->riffWaveHeader.fmtBitsPerSample != 16, mR_ResourceIncompatible);
-  mERROR_IF(pAudioSourceWav->riffWaveHeader.fmtBlockAlign != 2 && pAudioSourceWav->riffWaveHeader.fmtBlockAlign != 4, mR_ResourceIncompatible);
-  mERROR_IF(pAudioSourceWav->riffWaveHeader.fmtChannelCount != 1 && pAudioSourceWav->riffWaveHeader.fmtChannelCount != 2, mR_ResourceIncompatible);
-
-  pAudioSourceWav->readPosition = pAudioSourceWav->startOffset = sizeof(decltype(mAudioSourceWav::riffWaveHeader));
-  pAudioSourceWav->sampleRate = (size_t)pAudioSourceWav->riffWaveHeader.fmtSampleRate;
-  pAudioSourceWav->channelCount = (size_t)pAudioSourceWav->riffWaveHeader.fmtChannelCount;
-
-  pAudioSourceWav->pGetBufferFunc = mAudioSourceWav_GetBuffer_Internal;
-  pAudioSourceWav->pMoveToNextBufferFunc = mAudioSourceWav_MoveToNextBuffer_Internal;
-
-  mRETURN_SUCCESS();
-}
-
-mFUNCTION(mAudioSourceWav_Destroy, IN_OUT mPtr<mAudioSource> *pAudioSource)
-{
-  mFUNCTION_SETUP();
-
-  mERROR_IF(pAudioSource == nullptr, mR_ArgumentNull);
-
-  mERROR_CHECK(mSharedPointer_Destroy(pAudioSource));
-
-  mRETURN_SUCCESS();
-}
-
-//////////////////////////////////////////////////////////////////////////
-
-mFUNCTION(mAudioSourceWav_Destroy_Internal, IN_OUT mAudioSourceWav *pAudioSource)
-{
-  mFUNCTION_SETUP();
-
-  mERROR_IF(pAudioSource == nullptr, mR_ArgumentNull);
-
-  mERROR_CHECK(mCachedFileReader_Destroy(&pAudioSource->fileReader));
-
-  mRETURN_SUCCESS();
-}
-
-mFUNCTION(mAudioSourceWav_GetBuffer_Internal, mPtr<mAudioSource> &audioSource, OUT float_t *pBuffer, const size_t bufferLength, const size_t channelIndex)
-{
-  mFUNCTION_SETUP();
-
-  mERROR_IF(audioSource == nullptr || pBuffer == nullptr, mR_ArgumentNull);
-  mERROR_IF(channelIndex >= audioSource->channelCount, mR_IndexOutOfBounds);
-
-  mAudioSourceWav *pAudioSourceWav = static_cast<mAudioSourceWav *>(audioSource.GetPointer());
-
-  const size_t readSize = mMin((bufferLength + pAudioSourceWav->riffWaveHeader.fmtBlockAlign) * sizeof(int16_t) * pAudioSourceWav->channelCount, pAudioSourceWav->riffWaveHeader.dataSubchunkSize - (pAudioSourceWav->readPosition - pAudioSourceWav->startOffset));
-  const size_t readItems = mMin(bufferLength * sizeof(int16_t) * pAudioSourceWav->channelCount, pAudioSourceWav->riffWaveHeader.dataSubchunkSize - (pAudioSourceWav->readPosition - pAudioSourceWav->startOffset)) / (sizeof(int16_t) * pAudioSourceWav->channelCount);
-
-  int16_t *pData = nullptr;
-  mERROR_CHECK(mCachedFileReader_PointerAt(pAudioSourceWav->fileReader, pAudioSourceWav->readPosition, readSize, (uint8_t **)&pData));
-
-  for (size_t i = 0; i < readItems; i++)
-    pBuffer[i] = (float_t)pData[i * pAudioSourceWav->channelCount + channelIndex] / (float_t)(INT16_MAX);
-
-  if (readItems < bufferLength)
-  {
-    mERROR_CHECK(mMemset(pBuffer + readItems, bufferLength - readItems));
-    pAudioSourceWav->stopPlayback = true;
-  }
-
-  mRETURN_SUCCESS();
-}
-
-mFUNCTION(mAudioSourceWav_MoveToNextBuffer_Internal, mPtr<mAudioSource> &audioSource, const size_t samples)
-{
-  mFUNCTION_SETUP();
-
-  mERROR_IF(audioSource == nullptr, mR_ArgumentNull);
-
-  mAudioSourceWav *pAudioSourceWav = static_cast<mAudioSourceWav *>(audioSource.GetPointer());
-
-  pAudioSourceWav->readPosition += ((samples * pAudioSourceWav->channelCount) / pAudioSourceWav->riffWaveHeader.fmtBlockAlign) * pAudioSourceWav->riffWaveHeader.fmtBlockAlign * sizeof(int16_t);
-
-  mRETURN_SUCCESS();
-}
-
-//////////////////////////////////////////////////////////////////////////
 
 #include "SDL.h"
 #include "SDL_audio.h"
@@ -179,6 +43,7 @@ mFUNCTION(mAudioEngine_Create, OUT mPtr<mAudioEngine> *pAudioEngine, IN mAllocat
   (*pAudioEngine)->bufferSize = have.samples;
   (*pAudioEngine)->channelCount = have.channels;
   (*pAudioEngine)->sampleRate = have.freq;
+  (*pAudioEngine)->pAllocator = pAllocator;
 
   mERROR_CHECK(mAudioEngine_SetPaused(*pAudioEngine, false));
 
@@ -212,12 +77,22 @@ mFUNCTION(mAudioEngine_AddAudioSource, mPtr<mAudioEngine> &audioEngine, mPtr<mAu
   mFUNCTION_SETUP();
 
   mERROR_IF(audioEngine == nullptr || audioSource == nullptr, mR_ArgumentNull);
+  mERROR_IF(audioSource->isBeingConsumed == true, mR_ResourceStateInvalid);
+
+  mPtr<mAudioSource> audioSourceToAdd;
+
+  if (audioSource->sampleRate != audioEngine->sampleRate)
+    mERROR_CHECK(mAudioSourceResampler_Create(&audioSourceToAdd, audioEngine->pAllocator, audioSource, audioEngine->sampleRate));
+  else
+    audioSourceToAdd = audioSource;
 
   mERROR_CHECK(mMutex_Lock(audioEngine->pMutex));
   mDEFER_CALL(audioEngine->pMutex, mMutex_Unlock);
 
+  audioSource->isBeingConsumed = true;
+
   size_t unusedIndex;
-  mERROR_CHECK(mPool_Add(audioEngine->audioSources, std::move(audioSource), &unusedIndex));
+  mERROR_CHECK(mPool_Add(audioEngine->audioSources, std::move(audioSourceToAdd), &unusedIndex));
 
   mRETURN_SUCCESS();
 }
@@ -260,10 +135,15 @@ mFUNCTION(mAudioEngine_ManagedAudioCallback_Internal, IN mAudioEngine *pAudioEng
 
     for (size_t channel = 0; channel < mMin(pAudioEngine->channelCount, (*_item)->channelCount); channel++)
     {
-      const mResult result = (*(*_item)->pGetBufferFunc)(*_item, pAudioEngine->audioCallbackBuffer + bufferLength * channel, bufferLength, channel);
+      size_t bufferCount;
+
+      const mResult result = (*(*_item)->pGetBufferFunc)(*_item, pAudioEngine->audioCallbackBuffer + bufferLength * channel, bufferLength, channel, &bufferCount);
 
       if (mFAILED(result))
       {
+        if (result != mR_EndOfStream)
+          mPRINT_ERROR("Audio Source failed with error code 0x%" PRIx64 " in pGetBufferFunc.\n", (uint64_t)result);
+
         (*_item)->hasBeenConsumed = true;
         mERROR_CHECK(mQueue_PushBack(pAudioEngine->unusedAudioSources, _item.index));
         continue;
@@ -276,6 +156,9 @@ mFUNCTION(mAudioEngine_ManagedAudioCallback_Internal, IN mAudioEngine *pAudioEng
 
       if (mFAILED(result))
       {
+        if (result != mR_EndOfStream)
+          mPRINT_ERROR("Audio Source failed with error code 0x%" PRIx64 " in pMoveToNextBufferFunc.\n", (uint64_t)result);
+
         (*_item)->hasBeenConsumed = true;
         mERROR_CHECK(mQueue_PushBack(pAudioEngine->unusedAudioSources, _item.index));
         continue;
@@ -288,15 +171,12 @@ mFUNCTION(mAudioEngine_ManagedAudioCallback_Internal, IN mAudioEngine *pAudioEng
     {
       if ((*_item)->channelCount >= pAudioEngine->channelCount)
       {
-        for (size_t i = 0; i < perChannelLength; i++)
-          for (size_t channel = 0; channel < pAudioEngine->channelCount; channel++)
-            pStream[i * pAudioEngine->channelCount + channel] += pAudioEngine->audioCallbackBuffer[i + bufferLength * channel] * volume;
+        for (size_t channel = 0; channel < pAudioEngine->channelCount; channel++)
+          mERROR_CHECK(mAudio_AddToInterleavedFromChannelWithVolumeFloat(pStream, &pAudioEngine->audioCallbackBuffer[bufferLength * channel], channel, pAudioEngine->channelCount, bufferLength, volume));
       }
       else if ((*_item)->channelCount == 1)
       {
-        for (size_t channel = 0; channel < pAudioEngine->channelCount; channel++)
-          for (size_t i = 0; i < perChannelLength; i++)
-            pStream[i * pAudioEngine->channelCount + channel] += pAudioEngine->audioCallbackBuffer[i] * volume;
+        mERROR_CHECK(mAudio_AddToInterleavedBufferFromMonoWithVolumeFloat(pStream, pAudioEngine->audioCallbackBuffer, pAudioEngine->channelCount, bufferLength, volume));
       }
       else
       {
@@ -305,21 +185,14 @@ mFUNCTION(mAudioEngine_ManagedAudioCallback_Internal, IN mAudioEngine *pAudioEng
     }
     else if ((*_item)->sampleRate != pAudioEngine->sampleRate)
     {
-      // TODO: This is terrible but works for now. -> Implement resampling.
-
-      const float_t sampleRateFactor = (float_t)(*_item)->sampleRate / (float_t)pAudioEngine->sampleRate;
-
       if ((*_item)->channelCount >= pAudioEngine->channelCount)
       {
         for (size_t channel = 0; channel < pAudioEngine->channelCount; channel++)
-          for (size_t i = 0; i < perChannelLength; i++)
-            pStream[i * pAudioEngine->channelCount + channel] += pAudioEngine->audioCallbackBuffer[mClamp((size_t)roundf(i * sampleRateFactor), 0ULL, bufferLength) + bufferLength * channel] * volume;
+          mERROR_CHECK(mAudio_AddResampleToInterleavedFromChannelWithVolume(pStream, pAudioEngine->audioCallbackBuffer + channel * bufferLength, channel, pAudioEngine->channelCount, perChannelLength, bufferLength, volume));
       }
       else if ((*_item)->channelCount == 1)
       {
-        for (size_t channel = 0; channel < pAudioEngine->channelCount; channel++)
-          for (size_t i = 0; i < perChannelLength; i++)
-            pStream[i * pAudioEngine->channelCount + channel] += pAudioEngine->audioCallbackBuffer[mClamp((size_t)roundf(i * sampleRateFactor), 0ULL, bufferLength)] * volume;
+        mERROR_CHECK(mAudio_AddResampleMonoToInterleavedFromChannelWithVolume(pStream, pAudioEngine->audioCallbackBuffer, pAudioEngine->channelCount, perChannelLength, bufferLength, volume));
       }
       else
       {
