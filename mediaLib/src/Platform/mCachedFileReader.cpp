@@ -73,8 +73,8 @@ mFUNCTION(mCachedFileReader_ReadAt, mPtr<mCachedFileReader> &cachedFileReader, c
   mFUNCTION_SETUP();
 
   mERROR_IF(cachedFileReader == nullptr || pBuffer == nullptr, mR_ArgumentNull);
-  mERROR_IF(location >= cachedFileReader->fileSize, mR_IndexOutOfBounds);
-  mERROR_IF(location + size > cachedFileReader->fileSize, mR_ArgumentOutOfBounds);
+  mERROR_IF(location >= cachedFileReader->fileSize, mR_EndOfStream);
+  mERROR_IF(location + size > cachedFileReader->fileSize, mR_EndOfStream);
 
   size_t readSize = 0;
   size_t currentLocation = location;
@@ -130,8 +130,8 @@ mFUNCTION(mCachedFileReader_PointerAt, mPtr<mCachedFileReader> &cachedFileReader
   mFUNCTION_SETUP();
 
   mERROR_IF(cachedFileReader == nullptr || ppBuffer == nullptr, mR_ArgumentNull);
-  mERROR_IF(location >= cachedFileReader->fileSize, mR_IndexOutOfBounds);
-  mERROR_IF(location + size > cachedFileReader->fileSize, mR_ArgumentOutOfBounds);
+  mERROR_IF(location >= cachedFileReader->fileSize, mR_EndOfStream);
+  mERROR_IF(location + size > cachedFileReader->fileSize, mR_EndOfStream);
   mERROR_IF(size > cachedFileReader->maxCacheSize, mR_ArgumentOutOfBounds);
   mERROR_IF(size == 0, mR_Success);
 
@@ -169,7 +169,7 @@ mFUNCTION(mCachedFileReader_ReadFrom_Internal, mPtr<mCachedFileReader> &cachedFi
 {
   mFUNCTION_SETUP();
 
-  mERROR_IF(location >= cachedFileReader->fileSize, mR_IndexOutOfBounds);
+  mERROR_IF(location >= cachedFileReader->fileSize, mR_EndOfStream);
 
   if (cachedFileReader->pCache == nullptr)
     mERROR_CHECK(mAllocator_AllocateZero(cachedFileReader->pAllocator, &cachedFileReader->pCache, cachedFileReader->maxCacheSize));

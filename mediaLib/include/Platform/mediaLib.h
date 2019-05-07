@@ -246,4 +246,19 @@ enum mConsoleColour
 void mResetConsoleColour();
 void mSetConsoleColour(const mConsoleColour foregroundColour, const mConsoleColour backgroundColour);
 
+namespace mCpuExtensions
+{
+  extern bool sseSupported;
+  extern bool sse2Supported;
+  extern bool sse3Supported;
+  extern bool ssse3Supported;
+  extern bool sse41Supported;
+  extern bool sse42Supported;
+  extern bool avxSupported;
+  extern bool avx2Supported;
+  extern bool fma3Supported;
+
+  void Detect();
+};
+
 #endif // mediaLib_h__

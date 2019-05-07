@@ -99,6 +99,9 @@ void mTest_PrintTestFailure(const char *text);
 #endif
 
 #define mTEST_STATIC_ASSERT(x) static_assert(x, "ASSERTION FAILED: " #x)
+#define mTEST_FLOAT_IN_RANGE(expected, value, variance) ((variance) >= mAbs((value) - (expected)))
+#define mTEST_FLOAT_EQUALS(expected, value) mTEST_FLOAT_IN_RANGE(expected, value, mSmallest<decltype(value)>(expected))
+#define mTEST_ASSERT_FLOAT_EQUALS(expected, value) mTEST_ASSERT_TRUE(mTEST_FLOAT_EQUALS(expected, value))
 
 extern size_t mTestDestructible_Count;
 

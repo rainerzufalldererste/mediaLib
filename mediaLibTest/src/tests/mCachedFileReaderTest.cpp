@@ -100,8 +100,8 @@ mTEST(mCachedFileReader, TestRead)
   mPtr<mCachedFileReader> nullFileReader = nullptr;
   mDEFER_CALL(&nullFileReader, mSharedPointer_Destroy);
 
-  mTEST_ASSERT_EQUAL(mR_IndexOutOfBounds, mCachedFileReader_ReadAt(fileReader, fileSize * sizeof(size_t), 1, &unusedValue));
-  mTEST_ASSERT_EQUAL(mR_IndexOutOfBounds, mCachedFileReader_PointerAt(fileReader, fileSize * sizeof(size_t), 1, &pBuffer));
+  mTEST_ASSERT_EQUAL(mR_EndOfStream, mCachedFileReader_ReadAt(fileReader, fileSize * sizeof(size_t), 1, &unusedValue));
+  mTEST_ASSERT_EQUAL(mR_EndOfStream, mCachedFileReader_PointerAt(fileReader, fileSize * sizeof(size_t), 1, &pBuffer));
   mTEST_ASSERT_EQUAL(mR_ArgumentNull, mCachedFileReader_ReadAt(fileReader, 0, 1, nullptr));
   mTEST_ASSERT_EQUAL(mR_ArgumentNull, mCachedFileReader_ReadAt(nullFileReader, 0, 1, &unusedValue));
   mTEST_ASSERT_EQUAL(mR_ArgumentNull, mCachedFileReader_PointerAt(fileReader, 0, 1, nullptr));

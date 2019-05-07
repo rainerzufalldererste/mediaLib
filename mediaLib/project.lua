@@ -51,6 +51,9 @@ project(ProjectName)
   includedirs { "3rdParty/glew/include" }
   includedirs { "3rdParty/utf8proc/include" }
   includedirs { "3rdParty/imgui" }
+  includedirs { "3rdParty/ogg/include" }
+  includedirs { "3rdParty/opus/include" }
+  includedirs { "3rdParty/libsamplerate/include" }
 
   filter { "configurations:Debug", "system:Windows" }
     ignoredefaultlibraries { "libcmt" }
@@ -75,6 +78,11 @@ linkoptions { "3rdParty/SDL2/lib/SDL2.lib" }
 linkoptions { "3rdParty/SDL2/lib/SDL2main.lib" }
 linkoptions { "3rdParty/freetype-gl/lib/freetype-gl.lib" }
 linkoptions { "3rdParty/freetype/lib/freetype.lib" }
+linkoptions { "3rdParty/ogg/lib/libogg_static.lib" }
+linkoptions { "3rdParty/opus/lib/opus.lib" }
+linkoptions { "3rdParty/opus/lib/opusfile.lib" }
+linkoptions { "3rdParty/opus/lib/opusenc.lib" }
+linkoptions { "3rdParty/libsamplerate/lib/samplerate.lib" }
 linkoptions { "Shlwapi.lib" }
 
 warnings "Extra"

@@ -1,8 +1,6 @@
 #include "mTestLib.h"
 #include "mObjReader.h"
 
-#define mTEST_ASSERT_FLOAT_EQUALS(expected, value) mTEST_ASSERT_TRUE(mSmallest<decltype(value)>(expected) >= mAbs((value) - (expected)))
-
 mTEST(mObjReader, ReadObjString)
 {
   mTEST_ALLOCATOR_SETUP();
