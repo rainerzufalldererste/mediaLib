@@ -8,8 +8,10 @@
 
 #if defined(mRENDERER_OPENGL)
 #include "GL/glew.h"
+#define DECLSPEC
 #include "SDL.h"
 #include "SDL_opengl.h"
+#undef DECLSPEC
 #endif
 
 extern mVec2s mRenderParams_CurrentRenderResolution;
