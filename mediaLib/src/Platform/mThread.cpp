@@ -22,7 +22,8 @@ mFUNCTION(mThread_Join, IN mThread *pThread)
   mFUNCTION_SETUP();
 
   mERROR_IF(pThread == nullptr, mR_ArgumentNull);
-  mERROR_IF(pThread->handle.joinable() == false, mR_OperationNotSupported);
+  mERROR_IF(pThread->handle.native_handle() == nullptr, mR_Success);
+  mERROR_IF(!pThread->handle.joinable(), mR_OperationNotSupported);
 
   pThread->handle.join();
 

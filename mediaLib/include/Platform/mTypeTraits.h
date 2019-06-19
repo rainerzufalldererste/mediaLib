@@ -17,4 +17,13 @@ void mMoveConstructMultiple(T *pDestination, T *pSource, const size_t count)
     new (&pDestination[i]) T(std::move(pSource[i]));
 }
 
+template <typename T, typename T2 = T>
+struct mEquals
+{
+  bool operator ()(const T &a, const T2 &b)
+  {
+    return a == b;
+  }
+};
+
 #endif // mTypeTraits_h__

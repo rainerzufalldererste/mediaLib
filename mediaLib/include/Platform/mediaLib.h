@@ -76,6 +76,14 @@
 #define OPTIONAL
 #endif // !OPTIONAL
 
+#ifndef CONST_FIELD
+#define CONST_FIELD
+#endif // !CONST_FIELD
+
+#ifndef PUBLIC_FIELD
+#define PUBLIC_FIELD
+#endif // !PUBLIC_FIELD
+
 #define mVECTORCALL __vectorcall
 #define mINLINE __forceinline
 #define mALIGN(x) __declspec(align(x))
@@ -161,6 +169,7 @@ void mPrintPrepare(mPrintCallbackFunc *pFunc, const char *format, ...);
 #define mCONCAT_LITERALS_INTERNAL(x, y) x ## y
 #define mCONCAT_LITERALS(x, y) mCONCAT_LITERALS_INTERNAL(x, y)
 #define mSTRINGIFY(x) #x
+#define mSTRINGIFY_VALUE(x) mSTRINGIFY(x)
 
 #ifdef mPLATFORM_WINDOWS
 #define mDLL_FUNC_PREFIX __dll__
@@ -260,5 +269,12 @@ namespace mCpuExtensions
 
   void Detect();
 };
+
+inline int64_t mParseInt(IN const char *start, OUT const char **end)
+{
+  return strtoll(start, (char **)end, 10);
+}
+
+double_t mParseFloat(IN const char *start, OUT const char **end);
 
 #endif // mediaLib_h__

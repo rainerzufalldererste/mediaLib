@@ -1,11 +1,35 @@
 #include "mAudioEngine.h"
 
+#include "mThreading.h"
+#include "mPool.h"
+#include "mQueue.h"
+
 #include "SDL.h"
 #include "SDL_audio.h"
+
+constexpr size_t mAudioEngine_BufferNotReadyTries = 3;
+
+struct mAudioEngine
+{
+  mMutex *pMutex;
+  size_t sampleRate;
+  size_t channelCount;
+  size_t bufferSize;
+  mPtr<mPool<mPtr<mAudioSource>>> audioSources;
+  mPtr<mQueue<size_t>> unusedAudioSources;
+  uint32_t deviceId;
+  float_t audioCallbackBuffer[(size_t)mAudioEngine_MaxSupportedChannelCount * (size_t)mAudioEngine_MaxSupportedAudioSourceSamepleRate * (size_t)mAudioEngine_MaxSupportedAudioSourceSamepleRate / (size_t)mAudioEngine_PreferredSampleRate];
+  float_t buffer[mAudioEngine_BufferSize * mAudioEngine_MaxSupportedChannelCount];
+  mAllocator *pAllocator;
+  mThread *pUpdateThread;
+  volatile bool bufferReady;
+  volatile bool keepRunning;
+};
 
 mFUNCTION(mAudioEngine_Destroy_Internal, IN_OUT mAudioEngine *pAudioEngine);
 void SDLCALL mAudioEngine_AudioCallback_Internal(IN void *pUserData, OUT uint8_t *pStream, const int32_t length);
 mFUNCTION(mAudioEngine_ManagedAudioCallback_Internal, IN mAudioEngine *pAudioEngine, OUT float_t *pStream, const size_t length);
+mFUNCTION(mAudioEngine_PrepareNextAudioBuffer_Internal, IN mAudioEngine *pAudioEngine);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -23,7 +47,7 @@ mFUNCTION(mAudioEngine_Create, OUT mPtr<mAudioEngine> *pAudioEngine, IN mAllocat
 
   SDL_AudioSpec want = { 0 };
   want.freq = mAudioEngine_PreferredSampleRate;
-  want.format = AUDIO_F32;
+  want.format = AUDIO_S16;
   want.channels = mAudioEngine_MaxSupportedChannelCount;
   want.samples = mAudioEngine_BufferSize;
   want.callback = mAudioEngine_AudioCallback_Internal;
@@ -34,6 +58,7 @@ mFUNCTION(mAudioEngine_Create, OUT mPtr<mAudioEngine> *pAudioEngine, IN mAllocat
   const SDL_AudioDeviceID deviceId = SDL_OpenAudioDevice(nullptr, SDL_FALSE, &want, &have, SDL_AUDIO_ALLOW_CHANNELS_CHANGE);
 
   mERROR_IF(deviceId == 0, mR_NotSupported);
+  mERROR_IF(have.samples != mAudioEngine_BufferSize, mR_ResourceIncompatible);
   (*pAudioEngine)->deviceId = deviceId;
 
   mERROR_CHECK(mPool_Create(&(*pAudioEngine)->audioSources, pAllocator));
@@ -44,7 +69,9 @@ mFUNCTION(mAudioEngine_Create, OUT mPtr<mAudioEngine> *pAudioEngine, IN mAllocat
   (*pAudioEngine)->channelCount = have.channels;
   (*pAudioEngine)->sampleRate = have.freq;
   (*pAudioEngine)->pAllocator = pAllocator;
+  (*pAudioEngine)->keepRunning = true;
 
+  mERROR_CHECK(mThread_Create(&(*pAudioEngine)->pUpdateThread, pAllocator, mAudioEngine_PrepareNextAudioBuffer_Internal, pAudioEngine->GetPointer()));
   mERROR_CHECK(mAudioEngine_SetPaused(*pAudioEngine, false));
 
   mRETURN_SUCCESS();
@@ -103,9 +130,85 @@ void SDLCALL mAudioEngine_AudioCallback_Internal(IN void *pUserData, OUT uint8_t
 {
   mAudioEngine *pAudioEngine = (mAudioEngine *)pUserData;
 
-  const mResult result = mAudioEngine_ManagedAudioCallback_Internal(pAudioEngine, (float_t *)pStream, length * sizeof(uint8_t) / sizeof(float_t));
+  mFUNCTION_SETUP();
 
-  mASSERT_DEBUG(mSUCCEEDED(result), "Audio Engine Callback failed with error code %" PRIx64 ".", (uint64_t)result);
+  mERROR_IF_GOTO(length / sizeof(int16_t) != pAudioEngine->bufferSize * pAudioEngine->channelCount, mR_ResourceIncompatible, mSTDRESULT, epilogue);
+  
+  size_t i = 0;
+
+  for (; i < mAudioEngine_BufferNotReadyTries; i++)
+  {
+    {
+      mERROR_CHECK_GOTO(mMutex_Lock(pAudioEngine->pMutex), mSTDRESULT, epilogue);
+      mDEFER_CALL(pAudioEngine->pMutex, mMutex_Unlock);
+
+      if (pAudioEngine->bufferReady)
+      {
+        mERROR_CHECK_GOTO(mAudio_ConvertFloatToInt16WithDithering(reinterpret_cast<int16_t *>(pStream), pAudioEngine->buffer, pAudioEngine->bufferSize * pAudioEngine->channelCount), mSTDRESULT, epilogue);
+        pAudioEngine->bufferReady = false;
+        break;
+      }
+    }
+
+    mSleep(1); // Give the PreparationThread sufficient time to acquire the mutex.
+  }
+
+#if !defined(GIT_BUILD)
+  if (i >= mAudioEngine_BufferNotReadyTries)
+    mDebugOut("! [AUDIO_ERROR]  AudioEngine callback could not be retrieved in time. (%" PRIu64 " tries)\n", i);
+#endif
+
+epilogue:
+  mASSERT_DEBUG(mSUCCEEDED(mSTDRESULT), "Audio Engine Callback failed with error code %" PRIx64 ".", (uint64_t)mSTDRESULT);
+}
+
+mFUNCTION(mAudioEngine_PrepareNextAudioBuffer_Internal, IN mAudioEngine *pAudioEngine)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pAudioEngine == nullptr, mR_ArgumentNull);
+
+  while (pAudioEngine->keepRunning)
+  {
+    bool ready;
+
+    {
+      mERROR_CHECK(mMutex_Lock(pAudioEngine->pMutex));
+      mDEFER_CALL(pAudioEngine->pMutex, mMutex_Unlock);
+
+      ready = pAudioEngine->bufferReady;
+
+      if (!ready)
+      {
+        const mResult result = mAudioEngine_ManagedAudioCallback_Internal(pAudioEngine, reinterpret_cast<float_t *>(pAudioEngine->buffer), pAudioEngine->bufferSize * pAudioEngine->channelCount);
+
+        mASSERT_DEBUG(mSUCCEEDED(result), "Audio Engine Prepare Next Audio Buffer failed with error code %" PRIx64 ".", (uint64_t)result);
+
+        pAudioEngine->bufferReady = true;
+        continue;
+      }
+    }
+    
+    // Broadcast delay.
+    {
+      mERROR_CHECK(mMutex_Lock(pAudioEngine->pMutex));
+      mDEFER_CALL(pAudioEngine->pMutex, mMutex_Unlock);
+
+      for (auto &&_item : pAudioEngine->audioSources->Iterate())
+      {
+        if ((*_item)->pBroadcastDelayFunc != nullptr)
+        {
+          const mResult result = (*_item)->pBroadcastDelayFunc((*_item), mAudioEngine_BufferSize);
+
+          mASSERT_DEBUG(mSUCCEEDED(result), "Failed to broadcast audio delay to audio source with error code %" PRIx64 ".", (uint64_t)result);
+        }
+      }
+    }
+    
+    mSleep(1);
+  }
+
+  mRETURN_SUCCESS();
 }
 
 mFUNCTION(mAudioEngine_ManagedAudioCallback_Internal, IN mAudioEngine *pAudioEngine, OUT float_t *pStream, const size_t length)
@@ -115,9 +218,6 @@ mFUNCTION(mAudioEngine_ManagedAudioCallback_Internal, IN mAudioEngine *pAudioEng
   mERROR_IF(pAudioEngine == nullptr || pStream == nullptr, mR_ArgumentNull);
 
   const size_t perChannelLength = length / pAudioEngine->channelCount;
-
-  mERROR_CHECK(mMutex_Lock(pAudioEngine->pMutex));
-  mDEFER_CALL(pAudioEngine->pMutex, mMutex_Unlock);
 
   mDEFER(mQueue_Clear(pAudioEngine->unusedAudioSources));
 
@@ -132,32 +232,37 @@ mFUNCTION(mAudioEngine_ManagedAudioCallback_Internal, IN mAudioEngine *pAudioEng
     }
 
     const size_t bufferLength = pAudioEngine->bufferSize * (*_item)->sampleRate / pAudioEngine->sampleRate;
+    bool continueOuter = false;
 
     for (size_t channel = 0; channel < mMin(pAudioEngine->channelCount, (*_item)->channelCount); channel++)
     {
       size_t bufferCount;
 
-      const mResult result = (*(*_item)->pGetBufferFunc)(*_item, pAudioEngine->audioCallbackBuffer + bufferLength * channel, bufferLength, channel, &bufferCount);
+      const mResult result = mSILENCE_ERROR((*(*_item)->pGetBufferFunc)(*_item, pAudioEngine->audioCallbackBuffer + bufferLength * channel, bufferLength, channel, &bufferCount));
 
       if (mFAILED(result))
       {
         if (result != mR_EndOfStream)
-          mPRINT_ERROR("Audio Source failed with error code 0x%" PRIx64 " in pGetBufferFunc.\n", (uint64_t)result);
+          mPRINT_ERROR("Audio Source failed with error code 0x%" PRIx64 " in pGetBufferFunc. (%s: %" PRIu64 ")\n", (uint64_t)result, g_mResult_lastErrorFile, g_mResult_lastErrorLine);
 
         (*_item)->hasBeenConsumed = true;
         mERROR_CHECK(mQueue_PushBack(pAudioEngine->unusedAudioSources, _item.index));
+        continueOuter = true;
         continue;
       }
     }
 
+    if (continueOuter)
+      continue;
+
     if (!(*_item)->stopPlayback && (*_item)->pMoveToNextBufferFunc != nullptr)
     {
-      const mResult result = (*(*_item)->pMoveToNextBufferFunc)(*_item, bufferLength);
+      const mResult result = mSILENCE_ERROR((*(*_item)->pMoveToNextBufferFunc)(*_item, bufferLength));
 
       if (mFAILED(result))
       {
         if (result != mR_EndOfStream)
-          mPRINT_ERROR("Audio Source failed with error code 0x%" PRIx64 " in pMoveToNextBufferFunc.\n", (uint64_t)result);
+          mPRINT_ERROR("Audio Source failed with error code 0x%" PRIx64 " in pMoveToNextBufferFunc. (%s: %" PRIu64 ")\n", (uint64_t)result, g_mResult_lastErrorFile, g_mResult_lastErrorLine);
 
         (*_item)->hasBeenConsumed = true;
         mERROR_CHECK(mQueue_PushBack(pAudioEngine->unusedAudioSources, _item.index));
@@ -217,10 +322,16 @@ mFUNCTION(mAudioEngine_Destroy_Internal, IN_OUT mAudioEngine *pAudioEngine)
 
   mERROR_IF(pAudioEngine == nullptr, mR_ArgumentNull);
 
+  pAudioEngine->keepRunning = false;
+  mERROR_CHECK(mThread_Join(pAudioEngine->pUpdateThread));
+  mERROR_CHECK(mThread_Destroy(&pAudioEngine->pUpdateThread));
+
   SDL_CloseAudioDevice(pAudioEngine->deviceId);
 
   mERROR_CHECK(mPool_Destroy(&pAudioEngine->audioSources));
   mERROR_CHECK(mMutex_Destroy(&pAudioEngine->pMutex));
+
+  mERROR_CHECK(mQueue_Destroy(&pAudioEngine->unusedAudioSources));
 
   mRETURN_SUCCESS();
 }

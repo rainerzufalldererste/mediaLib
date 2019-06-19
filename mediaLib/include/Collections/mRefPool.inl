@@ -201,7 +201,15 @@ inline mFUNCTION(mRefPool_KeepIfTrue, mPtr<mRefPool<T>> &refPool, const std::fun
   {
     bool keep = true;
 
-    mERROR_CHECK(function(_item.pData->ptr, &keep));
+    const mResult result = function(_item.pData->ptr, &keep);
+
+    if (mFAILED(result))
+    {
+      if (result == mR_Break)
+        break;
+      else
+        mRETURN_RESULT(result);
+    }
 
     if (!keep)
       mERROR_CHECK(mQueue_PushBack(removeIndexes, _item.index));

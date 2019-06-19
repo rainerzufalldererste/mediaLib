@@ -950,7 +950,7 @@ mFUNCTION(mAudioStreamType_Create, IN IMFMediaType *pMediaType, IN IMFMediaType 
 
   mERROR_IF(pMediaType == nullptr || pMediaTypeLookup == nullptr || pAudioStreamType == nullptr, mR_ArgumentNull);
 
-  uint32_t samplesPerSecond, bitsPerSample = 16, channelCount;
+  uint32_t samplesPerSecond, bitsPerSample, channelCount;
   HRESULT hr = S_OK;
   mUnused(hr);
 
@@ -1282,6 +1282,7 @@ mFUNCTION(mMediaFileInputAudioSource_GetBuffer_Internal, mPtr<mAudioSource> &aud
 
   mERROR_IF(audioSource == nullptr || pBuffer == nullptr || pBufferCount == nullptr, mR_ArgumentNull);
   mERROR_IF(channelIndex >= audioSource->channelCount, mR_InvalidParameter);
+  mERROR_IF(audioSource->pGetBufferFunc != mMediaFileInputAudioSource_GetBuffer_Internal, mR_ResourceIncompatible);
 
   mMediaFileInputAudioSource *pAudioSource = static_cast<mMediaFileInputAudioSource *>(audioSource.GetPointer());
 
@@ -1303,7 +1304,7 @@ mFUNCTION(mMediaFileInputAudioSource_GetBuffer_Internal, mPtr<mAudioSource> &aud
 
   mERROR_CHECK(mAudio_ExtractFloatChannelFromInterleavedFloat(pBuffer, channelIndex, pAudioSource->pData, pAudioSource->channelCount, *pBufferCount));
 
-  pAudioSource->lastConsumedSamples += bufferLength;
+  pAudioSource->lastConsumedSamples = bufferLength;
 
   mRETURN_SUCCESS();
 }
@@ -1313,12 +1314,13 @@ mFUNCTION(mMediaFileInputAudioSource_MoveToNextBuffer_Internal, mPtr<mAudioSourc
   mFUNCTION_SETUP();
 
   mERROR_IF(audioSource == nullptr, mR_ArgumentNull);
+  mERROR_IF(audioSource->pMoveToNextBufferFunc != mMediaFileInputAudioSource_MoveToNextBuffer_Internal, mR_ResourceIncompatible);
 
   mMediaFileInputAudioSource *pAudioSource = static_cast<mMediaFileInputAudioSource *>(audioSource.GetPointer());
 
   mERROR_IF(pAudioSource->endReached, mR_EndOfStream);
 
-  mERROR_CHECK(mMediaFileInputAudioSource_ConsumeBuffer_Internal(pAudioSource, pAudioSource->lastConsumedSamples));
+  mERROR_CHECK(mMediaFileInputAudioSource_ConsumeBuffer_Internal(pAudioSource, pAudioSource->lastConsumedSamples * pAudioSource->channelCount));
 
   pAudioSource->lastConsumedSamples = 0;
 
@@ -1341,6 +1343,7 @@ mFUNCTION(mMediaFileInputAudioSource_SeekSample_Internal, mPtr<mAudioSource> &au
   mFUNCTION_SETUP();
 
   mERROR_IF(audioSource == nullptr, mR_ArgumentNull);
+  mERROR_IF(audioSource->pSeekSampleFunc != mMediaFileInputAudioSource_SeekSample_Internal, mR_ResourceIncompatible);
 
   mMediaFileInputAudioSource *pAudioSource = static_cast<mMediaFileInputAudioSource *>(audioSource.GetPointer());
 

@@ -2,71 +2,6 @@
 
 #include "mFile.h"
 
-double_t ParseFloat(const char *start, const char **end)
-{
-  double_t sign = 1;
-  
-  if (*start == '-')
-  {
-    sign = -1;
-    ++start;
-  }
-  
-  char *_end = (char *)start;
-  const int64_t left = strtoll(start, &_end, 10);
-  double_t ret = (double_t)left;
-
-  if (*_end == '.')
-  {
-    start = _end + 1;
-    const int64_t right = strtoll(start, &_end, 10);
-
-    const double_t fracMult[] = { 0.0, 1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7, 1e-8, 1e-9, 1e-10, 1e-11, 1e-12, 1e-13 };
-
-    if (_end - start < mARRAYSIZE(fracMult))
-      ret = sign * (ret + right * fracMult[_end - start]);
-    else
-      ret = sign * (ret + right * mPow(10, _end - start));
-
-    *end = _end;
-
-    if (*_end == 'e' || *_end == 'E')
-    {
-      start = ++_end;
-
-      if ((*start >= '0' && *start <= '9') || *start == '-')
-      {
-        ret *= mPow(10, strtoll(start, &_end, 10));
-
-        *end = _end;
-      }
-    }
-  }
-  else
-  {
-    ret *= sign;
-
-    if (*_end == 'e' || *_end == 'E')
-    {
-      start = ++_end;
-
-      if ((*start >= '0' && *start <= '9') || *start == '-')
-        ret *= mPow(10, strtoll(start, &_end, 10));
-    }
-
-    *end = _end;
-  }
-
-  return ret;
-}
-
-inline int64_t ParseInt(const char *start, const char **end)
-{
-  return strtoll(start, (char **)end, 10);
-}
-
-//////////////////////////////////////////////////////////////////////////
-
 mFUNCTION(mObjInfo_Destroy, IN_OUT mObjInfo *pObjInfo)
 {
   mFUNCTION_SETUP();
@@ -161,7 +96,7 @@ mFUNCTION(mObjReader_Parse, const char *contents, const size_t size, IN mAllocat
           if ((*text < '0' || *text > '9') && *text != '-' && *text != '.')
             break;
 
-          floats[index] = (float_t)ParseFloat(text, &text);
+          floats[index] = (float_t)mParseFloat(text, &text);
 
           while (*text == ' ')
             ++text;
@@ -232,7 +167,7 @@ mFUNCTION(mObjReader_Parse, const char *contents, const size_t size, IN mAllocat
           if ((*text < '0' || *text > '9') && *text != '-' && *text != '.')
             break;
 
-          floats[index] = (float_t)ParseFloat(text, &text);
+          floats[index] = (float_t)mParseFloat(text, &text);
 
           while (*text == ' ')
             ++text;
@@ -268,7 +203,7 @@ mFUNCTION(mObjReader_Parse, const char *contents, const size_t size, IN mAllocat
           if ((*text < '0' || *text > '9') && *text != '-' && *text != '.')
             break;
 
-          floats[index] = (float_t)ParseFloat(text, &text);
+          floats[index] = (float_t)mParseFloat(text, &text);
 
           while (*text == ' ')
             ++text;
@@ -309,7 +244,7 @@ mFUNCTION(mObjReader_Parse, const char *contents, const size_t size, IN mAllocat
 
       mERROR_IF((*text < '0' || *text > '9') && *text != '-' && *text != '.', mR_ResourceInvalid);
 
-      int64_t index = ParseInt(text, &text);
+      int64_t index = mParseInt(text, &text);
       mObjVertexInfo lastVertex;
       mObjVertexInfo currentVertex;
 
@@ -327,7 +262,7 @@ mFUNCTION(mObjReader_Parse, const char *contents, const size_t size, IN mAllocat
           break;
 
         lastVertex = currentVertex;
-        index = ParseInt(text, &text);
+        index = mParseInt(text, &text);
 
         if (index < 0)
           mERROR_CHECK(mQueue_PeekAt(vertices, (size_t)((int64_t)count + index), &currentVertex));
@@ -383,7 +318,7 @@ mFUNCTION(mObjReader_Parse, const char *contents, const size_t size, IN mAllocat
         previousVertex = currentVertex;
         mERROR_CHECK(mZeroMemory(&currentVertex));
 
-        const int64_t vertexIndex = ParseInt(text, &text);
+        const int64_t vertexIndex = mParseInt(text, &text);
 
         if (vertexIndex < 0)
           mERROR_CHECK(mQueue_PeekAt(vertices, (size_t)((int64_t)vertexCount + vertexIndex), &vertex));
@@ -405,7 +340,7 @@ mFUNCTION(mObjReader_Parse, const char *contents, const size_t size, IN mAllocat
         {
           mERROR_IF((*text < '0' || *text > '9') && *text != '-' && *text != '.', mR_ResourceInvalid);
 
-          const int64_t texCoordIndex = ParseInt(text, &text);
+          const int64_t texCoordIndex = mParseInt(text, &text);
 
           if (texCoordIndex < 0)
             mERROR_CHECK(mQueue_PeekAt(textureCoordinates, (size_t)((int64_t)texCoordCount + texCoordIndex), &currentVertex.textureCoord));
@@ -424,7 +359,7 @@ mFUNCTION(mObjReader_Parse, const char *contents, const size_t size, IN mAllocat
 
         mERROR_IF((*text < '0' || *text > '9') && *text != '-' && *text != '.', mR_ResourceInvalid);
 
-        const int64_t normalIndex = ParseInt(text, &text);
+        const int64_t normalIndex = mParseInt(text, &text);
 
         if (normalIndex < 0)
           mERROR_CHECK(mQueue_PeekAt(normals, (size_t)((int64_t)normalCount + normalIndex), &currentVertex.normal));

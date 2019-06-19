@@ -54,6 +54,9 @@ auto mPow(const T value, const U value2) -> typename std::enable_if_t<!std::is_s
   return pow(value, value2);
 }
 
+template <typename T> constexpr auto mLog(const T value) -> decltype(log(value)) { return log(value); }
+template <typename T> constexpr auto mLog10(const T value) -> decltype(log10(value)) { return log10(value); }
+
 template <typename T> constexpr T mMax(const T a, const T b) { return (a >= b) ? a : b; }
 template <typename T> constexpr T mMin(const T a, const T b) { return (a <= b) ? a : b; }
 

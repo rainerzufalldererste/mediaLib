@@ -17,6 +17,7 @@ mTest_TestInit mTest_CreateTestInit(const char *component, const char *testCase,
 
   return mTest_TestInit();
 }
+#endif
 
 void mTest_PrintTestFailure(const char *text)
 {
@@ -27,7 +28,6 @@ void mTest_PrintTestFailure(const char *text)
   fputs(text, stdout);
   mResetConsoleColour();
 }
-#endif
 
 void _CallCouninitialize()
 {
@@ -145,6 +145,11 @@ const size_t mTestAllocator_EndOffset = 16;
 const uint8_t mTestAllocator_TestFlag = 0xCE;
 uint8_t mTestAllocator_TestFlagChunk[mTestAllocator_EndOffset];
 
+struct mTestAllocatorUserData
+{
+  mAllocator *pSelf;
+  volatile size_t allocationCount;
+};
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -153,7 +158,7 @@ mFUNCTION(mTestAllocator_Alloc, OUT uint8_t **ppData, const size_t size, const s
   mFUNCTION_SETUP();
 
   mERROR_CHECK(mAlloc(ppData, size * count + mTestAllocator_BeginOffset + mTestAllocator_EndOffset));
-  ++(*(volatile size_t *)pUserData);
+  ++(reinterpret_cast<mTestAllocatorUserData *>(pUserData))->allocationCount;
 
   *(size_t *)*ppData = size * count;
   *ppData += mTestAllocator_BeginOffset;
@@ -168,7 +173,7 @@ mFUNCTION(mTestAllocator_AllocZero, OUT uint8_t **ppData, const size_t size, con
   mFUNCTION_SETUP();
 
   mERROR_CHECK(mAllocZero(ppData, size * count + mTestAllocator_BeginOffset + mTestAllocator_EndOffset));
-  ++(*(volatile size_t *)pUserData);
+  ++(reinterpret_cast<mTestAllocatorUserData *>(pUserData))->allocationCount;
 
   *(size_t *)*ppData = size * count;
   *ppData += mTestAllocator_BeginOffset;
@@ -184,11 +189,17 @@ mFUNCTION(mTestAllocator_Realloc, OUT uint8_t **ppData, const size_t size, const
 
   if (*ppData == nullptr)
   {
-    ++(*(volatile size_t *)pUserData);
+    ++(reinterpret_cast<mTestAllocatorUserData *>(pUserData))->allocationCount;
   }
   else
   {
     const size_t oldSize = *(size_t *)(*ppData - mTestAllocator_BeginOffset);
+
+#ifdef mDEBUG_MEMORY_ALLOCATIONS
+    if (memcmp(mTestAllocator_TestFlagChunk, *ppData + oldSize, mTestAllocator_EndOffset) != 0)
+      mAllocatorDebugging_PrintMemoryAllocationInfo((reinterpret_cast<mTestAllocatorUserData *>(pUserData))->pSelf, *ppData);
+#endif
+
     mASSERT(memcmp(mTestAllocator_TestFlagChunk, *ppData + oldSize, mTestAllocator_EndOffset) == 0, "Memory override detected");
 
     *ppData -= mTestAllocator_BeginOffset;
@@ -211,6 +222,12 @@ mFUNCTION(mTestAllocator_Free, OUT uint8_t *pData, IN void *pUserData)
   if (pData != nullptr)
   {
     const size_t oldSize = *(size_t *)(pData - mTestAllocator_BeginOffset);
+
+#ifdef mDEBUG_MEMORY_ALLOCATIONS
+    if (memcmp(mTestAllocator_TestFlagChunk, pData + oldSize, mTestAllocator_EndOffset) != 0)
+      mAllocatorDebugging_PrintMemoryAllocationInfo((reinterpret_cast<mTestAllocatorUserData *>(pUserData))->pSelf, pData);
+#endif
+
     mASSERT(memcmp(mTestAllocator_TestFlagChunk, pData + oldSize, mTestAllocator_EndOffset) == 0, "Memory override detected");
   }
 
@@ -218,7 +235,7 @@ mFUNCTION(mTestAllocator_Free, OUT uint8_t *pData, IN void *pUserData)
   mERROR_CHECK(mFree(pData));
 
   if(pData != nullptr)
-    --(*(volatile size_t *)pUserData);
+    --(reinterpret_cast<mTestAllocatorUserData *>(pUserData))->allocationCount;
 
   mRETURN_SUCCESS();
 }
@@ -229,17 +246,15 @@ mFUNCTION(mTestAllocator_Destroy, IN mAllocator *pAllocator, IN void *pUserData)
 
   mERROR_IF(pUserData == nullptr, mR_ArgumentNull);
 
-#ifdef mDEBUG_TESTS
-  mASSERT(*(volatile size_t *)pUserData == 0, "Not all memory allocated by this allocator has been released.");
-
 #ifdef mDEBUG_MEMORY_ALLOCATIONS
-  mAllocatorDebugging_PrintRemainingMemoryAllocations(pAllocator);
+  if ((reinterpret_cast<mTestAllocatorUserData *>(pUserData))->allocationCount != 0)
+  {
+    mAllocatorDebugging_PrintRemainingMemoryAllocations(pAllocator);
+    mFAIL("Memory leak detected: not all memory allocated by this allocator has been released (%" PRIu64 " Allocations).", (reinterpret_cast<mTestAllocatorUserData *>(pUserData))->allocationCount);
+  }
 #else
   mUnused(pAllocator);
-#endif
-
-#else
-  mUnused(pAllocator);
+  mASSERT((reinterpret_cast<mTestAllocatorUserData *>(pUserData))->allocationCount == 0, "Memory leak detected: not all memory allocated by this allocator has been released (%" PRIu64 " Allocations).", (reinterpret_cast<mTestAllocatorUserData *>(pUserData))->allocationCount);
 #endif
 
   mERROR_CHECK(mFree(pUserData));
@@ -255,8 +270,9 @@ mFUNCTION(mTestAllocator_Create, mAllocator *pTestAllocator)
 
   mERROR_CHECK(mMemset(mTestAllocator_TestFlagChunk, mTestAllocator_EndOffset, mTestAllocator_TestFlag));
 
-  size_t *pUserData = nullptr;
+  mTestAllocatorUserData *pUserData = nullptr;
   mERROR_CHECK(mAllocZero(&pUserData, 1));
+  pUserData->pSelf = pTestAllocator;
 
   mERROR_CHECK(mAllocator_Create(pTestAllocator, &mTestAllocator_Alloc, &mTestAllocator_Realloc, &mTestAllocator_Free, nullptr, nullptr, &mTestAllocator_AllocZero, &mTestAllocator_Destroy, pUserData));
 
@@ -269,7 +285,7 @@ mFUNCTION(mTestAllocator_GetCount, mAllocator *pAllocator, size_t *pCount)
 
   mERROR_IF(pAllocator == nullptr || pAllocator->pUserData == nullptr || pCount == nullptr, mR_ArgumentNull);
 
-  *pCount = *(volatile size_t *)pAllocator->pUserData;
+  *pCount = (reinterpret_cast<mTestAllocatorUserData *>(pAllocator->pUserData))->allocationCount;
 
   mRETURN_SUCCESS();
 }

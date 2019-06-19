@@ -206,7 +206,7 @@ mTEST(mUniqueContainer, TestCreateCleanup)
 
     {
       mPtr<size_t> ptr = container.ToPtr();
-      mTEST_ASSERT_EQUAL(ptr.GetPointer(), &container.m_value);
+      mTEST_ASSERT_EQUAL(ptr.GetPointer(), reinterpret_cast<decltype(container.GetPointer())>(container.m_value));
     }
   }
 
@@ -214,7 +214,7 @@ mTEST(mUniqueContainer, TestCreateCleanup)
     mUniqueContainer<size_t> container(1);
 
     mTEST_ASSERT_EQUAL(*container, 1);
-    mTEST_ASSERT_EQUAL(container.GetPointer(), &container.m_value);
+    mTEST_ASSERT_EQUAL(container.GetPointer(), reinterpret_cast<decltype(container.GetPointer())>(container.m_value));
     mTEST_ASSERT_EQUAL(container.GetReferenceCount(), 1);
 
     *container = 5;
@@ -226,7 +226,7 @@ mTEST(mUniqueContainer, TestCreateCleanup)
     mUniqueContainer<size_t> container = mUniqueContainer<size_t>(1);
 
     mTEST_ASSERT_EQUAL(*container, 1);
-    mTEST_ASSERT_EQUAL(container.GetPointer(), &container.m_value);
+    mTEST_ASSERT_EQUAL(container.GetPointer(), reinterpret_cast<decltype(container.GetPointer())>(container.m_value));
     mTEST_ASSERT_EQUAL(container.GetReferenceCount(), 1);
 
     *container = 5;
@@ -238,7 +238,7 @@ mTEST(mUniqueContainer, TestCreateCleanup)
     mUniqueContainer<size_t> container = std::move(mUniqueContainer<size_t>(1));
 
     mTEST_ASSERT_EQUAL(*container, 1);
-    mTEST_ASSERT_EQUAL(container.GetPointer(), &container.m_value);
+    mTEST_ASSERT_EQUAL(container.GetPointer(), reinterpret_cast<decltype(container.GetPointer())>(container.m_value));
     mTEST_ASSERT_EQUAL(container.GetReferenceCount(), 1);
 
     *container = 5;
@@ -250,7 +250,7 @@ mTEST(mUniqueContainer, TestCreateCleanup)
     mUniqueContainer<size_t> container(std::move(mUniqueContainer<size_t>(1)));
 
     mTEST_ASSERT_EQUAL(*container, 1);
-    mTEST_ASSERT_EQUAL(container.GetPointer(), &container.m_value);
+    mTEST_ASSERT_EQUAL(container.GetPointer(), reinterpret_cast<decltype(container.GetPointer())>(container.m_value));
     mTEST_ASSERT_EQUAL(container.GetReferenceCount(), 1);
 
     *container = 5;
@@ -262,10 +262,11 @@ mTEST(mUniqueContainer, TestCreateCleanup)
     size_t value = 1;
 
     {
-      mUniqueContainer<size_t *> container = mUniqueContainer<size_t *>::CreateWithCleanupFunction([](size_t **ppData) { **ppData += 10; }, &value);
+      mUniqueContainer<size_t *> container;
+      mUniqueContainer<size_t *>::ConstructWithCleanupFunction(&container, [](size_t **ppData) { **ppData += 10; }, &value);
 
       mTEST_ASSERT_EQUAL(*(*container), 1);
-      mTEST_ASSERT_EQUAL(container.GetPointer(), &container.m_value);
+      mTEST_ASSERT_EQUAL(container.GetPointer(), reinterpret_cast<decltype(container.GetPointer())>(container.m_value));
       mTEST_ASSERT_EQUAL(*container.GetPointer(), &value);
       mTEST_ASSERT_EQUAL(container.GetReferenceCount(), 1);
 
@@ -292,7 +293,8 @@ mTEST(mUniqueContainer, TestCreateCleanup)
     size_t value = 1;
 
     {
-      mUniqueContainer<size_t *> container = mUniqueContainer<size_t *>::CreateWithCleanupFunction(std::move([](size_t **ppData) { **ppData += 10; }), &value);
+      mUniqueContainer<size_t *> container;
+      mUniqueContainer<size_t *>::ConstructWithCleanupFunction(&container, std::move([](size_t **ppData) { **ppData += 10; }), &value);
 
       mTEST_ASSERT_EQUAL(**container, 1);
       mTEST_ASSERT_EQUAL(*container.GetPointer(), &value);

@@ -1,5 +1,7 @@
 #include "mTestLib.h"
 
+#ifdef _DEBUG
+
 mTEST(mResult, TestToString)
 {
   mTEST_ALLOCATOR_SETUP();
@@ -33,17 +35,19 @@ mTEST(mResult, TestToString)
 
   const char invalidResult[] = "<Unknown mResult>";
 
-  mString resultString;
-  mTEST_ASSERT_SUCCESS(mString_Create(&resultString, (char *)nullptr, pAllocator));
-  
   for (size_t i = 0; i < mResult_Count; i++)
-  {
-    mTEST_ASSERT_SUCCESS(mResult_ToString((mResult)(i), &resultString));
-    mTEST_ASSERT_EQUAL(resultString, resultNames[i]);
-  }
+    mTEST_ASSERT_EQUAL(0, strcmp(mResult_ToString((mResult)i), resultNames[i]));
 
-  mTEST_ASSERT_SUCCESS(mResult_ToString((mResult)(mResult_Count), &resultString));
-  mTEST_ASSERT_EQUAL(resultString, invalidResult);
+  mTEST_ASSERT_EQUAL(0, strcmp(mResult_ToString((mResult)mResult_Count), invalidResult));
 
   mTEST_ALLOCATOR_ZERO_CHECK();
 }
+
+#else
+
+void UNUSED_FILE_MRESULT_TEST_CPP(void)
+{
+  return;
+}
+
+#endif
