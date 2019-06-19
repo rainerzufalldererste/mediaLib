@@ -4,6 +4,8 @@
 #include "opusfile.h"
 #include "opusenc.h"
 
+#include "mMutex.h"
+
 constexpr size_t mOpusEncoder_MaxChannelCount = 2;
 constexpr size_t mOpusEncoder_ChannelBufferSize = 1024;
 
@@ -14,13 +16,14 @@ struct mOpusEncoder
   OggOpusComments *pComments;
   OggOpusEnc *pEncoder;
   mPtr<mAudioSource> audioSource;
+  bool addedSamples;
 };
 
 mFUNCTION(mOpusEncoder_Destroy_Internal, IN_OUT mOpusEncoder *pEncoder);
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mOpusEncoder_CreateFromAudioSource, OUT mPtr<mOpusEncoder> *pEncoder, IN mAllocator *pAllocator, const mString &filename, mPtr<mAudioSource> &&audioSource, const size_t bitrate /* = 320 * 1024 */)
+mFUNCTION(mOpusEncoder_Create, OUT mPtr<mOpusEncoder> *pEncoder, IN mAllocator *pAllocator, const mString &filename, mPtr<mAudioSource> &audioSource, const size_t bitrate /* = 320 * 1024 */)
 {
   mFUNCTION_SETUP();
 
@@ -32,7 +35,7 @@ mFUNCTION(mOpusEncoder_CreateFromAudioSource, OUT mPtr<mOpusEncoder> *pEncoder, 
 
   mERROR_CHECK(mSharedPointer_Allocate<mOpusEncoder>(pEncoder, pAllocator, [](mOpusEncoder *pData) { mOpusEncoder_Destroy_Internal(pData); }, 1));
 
-  (*pEncoder)->audioSource = std::move(audioSource);
+  (*pEncoder)->audioSource = audioSource;
 
   (*pEncoder)->pComments = ope_comments_create();
   mERROR_IF((*pEncoder)->pComments == nullptr, mR_InternalError);
@@ -81,9 +84,11 @@ mFUNCTION(mOpusEncoder_Run, mPtr<mOpusEncoder> &encoder)
 
     mERROR_CHECK(mAudio_ApplyVolumeFloat(buffer, encoder->audioSource->volume, bufferCount));
 
-    const int error = ope_encoder_write_float(encoder->pEncoder, buffer, (int)bufferCount);
+    const int error = ope_encoder_write_float(encoder->pEncoder, buffer, (int32_t)bufferCount);
 
     mERROR_IF(error != OPE_OK, mR_InternalError);
+
+    encoder->addedSamples = true;
 
     if (endOfStream)
       break;
@@ -100,8 +105,11 @@ mFUNCTION(mOpusEncoder_Run, mPtr<mOpusEncoder> &encoder)
     }
   }
 
-  const int error = ope_encoder_drain(encoder->pEncoder);
-  mERROR_IF(error != OPE_OK, mR_InternalError);
+  if (encoder->addedSamples)
+  {
+    const int error = ope_encoder_drain(encoder->pEncoder);
+    mERROR_IF(error != OPE_OK, mR_InternalError);
+  }
 
   mRETURN_SUCCESS();
 }
@@ -127,7 +135,9 @@ mFUNCTION(mOpusEncoder_Destroy_Internal, IN_OUT mOpusEncoder *pEncoder)
 
   if (pEncoder->pEncoder != nullptr)
   {
-    /* int error = */ope_encoder_drain(pEncoder->pEncoder);
+    if (pEncoder->addedSamples)
+      /* int error = */ope_encoder_drain(pEncoder->pEncoder);
+
     ope_encoder_destroy(pEncoder->pEncoder);
     pEncoder->pEncoder = nullptr;
   }
@@ -145,6 +155,105 @@ mFUNCTION(mOpusEncoder_Destroy_Internal, IN_OUT mOpusEncoder *pEncoder)
 
 //////////////////////////////////////////////////////////////////////////
 
+struct mOpusEncoderPassive
+{
+  OggOpusComments *pComments;
+  OggOpusEnc *pEncoder;
+  bool addedSamples;
+};
+
+mFUNCTION(mOpusEncoderPassive_Destroy_Internal, IN_OUT mOpusEncoderPassive *pEncoder);
+
+//////////////////////////////////////////////////////////////////////////
+
+mFUNCTION(mOpusEncoderPassive_Create, OUT mPtr<mOpusEncoderPassive> *pEncoder, IN mAllocator *pAllocator, const mString &filename, const size_t channelCount, const size_t sampleRate, const size_t bitrate /* = 320 * 1024 */)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pEncoder == nullptr, mR_ArgumentNull);
+  mERROR_IF(filename.bytes <= 1 || filename.hasFailed, mR_InvalidParameter);
+
+  mERROR_CHECK(mSharedPointer_Allocate<mOpusEncoderPassive>(pEncoder, pAllocator, [](mOpusEncoderPassive *pData) { mOpusEncoderPassive_Destroy_Internal(pData); }, 1));
+
+  (*pEncoder)->pComments = ope_comments_create();
+  mERROR_IF((*pEncoder)->pComments == nullptr, mR_InternalError);
+
+  int32_t error = 0;
+
+  (*pEncoder)->pEncoder = ope_encoder_create_file(filename.c_str(), (*pEncoder)->pComments, (int32_t)sampleRate, (int32_t)channelCount, 0, &error);
+  mERROR_IF((*pEncoder)->pEncoder == nullptr || error != OPE_OK, mR_InternalError);
+
+  error = ope_encoder_ctl((*pEncoder)->pEncoder, OPUS_SET_BITRATE((int32_t)bitrate));
+  mERROR_IF(error != OPE_OK, mR_InvalidParameter);
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mOpusEncoderPassive_AddSamples, mPtr<mOpusEncoderPassive> &encoder, IN const float_t *pChannelInterleavedData, const size_t sampleCountPerChannel)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(encoder == nullptr || pChannelInterleavedData == nullptr, mR_ArgumentNull);
+  mERROR_IF(sampleCountPerChannel == 0, mR_InvalidParameter);
+
+  size_t samplesRemaining = sampleCountPerChannel;
+  size_t samplesConsumed = 0;
+
+  while (samplesRemaining)
+  {
+    const size_t samplesThisTime = mMin(samplesRemaining, (size_t)1024);
+
+    const int error = ope_encoder_write_float(encoder->pEncoder, pChannelInterleavedData + samplesConsumed, (int32_t)samplesThisTime);
+    mERROR_IF(error != OPE_OK, mR_InternalError);
+
+    samplesRemaining -= samplesThisTime;
+    samplesConsumed += samplesThisTime;
+
+    encoder->addedSamples = true;
+  }
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mOpusEncoderPassive_Destroy, IN_OUT mPtr<mOpusEncoderPassive> *pEncoder)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pEncoder == nullptr, mR_ArgumentNull);
+
+  mERROR_CHECK(mSharedPointer_Destroy(pEncoder));
+
+  mRETURN_SUCCESS();
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+mFUNCTION(mOpusEncoderPassive_Destroy_Internal, IN_OUT mOpusEncoderPassive *pEncoder)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pEncoder == nullptr, mR_ArgumentNull);
+
+  if (pEncoder->pEncoder != nullptr)
+  {
+    if (pEncoder->addedSamples)
+      /* int error = */ope_encoder_drain(pEncoder->pEncoder);
+    
+    ope_encoder_destroy(pEncoder->pEncoder);
+    pEncoder->pEncoder = nullptr;
+  }
+
+  if (pEncoder->pComments != nullptr)
+  {
+    ope_comments_destroy(pEncoder->pComments);
+    pEncoder->pComments = nullptr;
+  }
+
+  mRETURN_SUCCESS();
+}
+
+//////////////////////////////////////////////////////////////////////////
+
 struct mOpusFileAudioSource : mAudioSource
 {
   OggOpusFile *pFile;
@@ -152,6 +261,8 @@ struct mOpusFileAudioSource : mAudioSource
   float_t *pData;
   size_t dataSize, dataCapacity, lastConsumedSamples;
   bool endReached;
+  mMutex *pMutex;
+  volatile bool paused, nextPaused, startedPlaying;
 };
 
 mFUNCTION(mOpusFileAudioSource_Destroy_Internal, mOpusFileAudioSource *pAudioSource);
@@ -186,6 +297,8 @@ mFUNCTION(mOpusFileAudioSource_Create, OUT mPtr<mAudioSource> *pAudioSource, IN 
   pInstance->sampleRate = 48000;
   pInstance->volume = 1.f;
 
+  mERROR_CHECK(mMutex_Create(&pInstance->pMutex, pAllocator));
+
   pInstance->pGetBufferFunc = mOpusFileAudioSource_GetBuffer_Internal;
   pInstance->pMoveToNextBufferFunc = mOpusFileAudioSource_MoveToNextBuffer_Internal;
   
@@ -206,6 +319,73 @@ mFUNCTION(mOpusFileAudioSource_Destroy, OUT mPtr<mAudioSource> *pAudioSource)
   mRETURN_SUCCESS();
 }
 
+mFUNCTION(mOpusFileAudioSource_GetSampleCount, OUT mPtr<mAudioSource> &audioSource, OUT size_t *pSampleCount)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(audioSource == nullptr || pSampleCount == nullptr, mR_ArgumentNull);
+
+  mOpusFileAudioSource *pAudioSource = static_cast<mOpusFileAudioSource *>(audioSource.GetPointer());
+
+  mERROR_CHECK(mMutex_Lock(pAudioSource->pMutex));
+  mDEFER_CALL(pAudioSource->pMutex, mMutex_Unlock);
+
+  const int64_t samples = op_pcm_total(pAudioSource->pFile, 0);
+  mERROR_IF(samples < 0, mR_InternalError);
+
+  *pSampleCount = (size_t)samples;
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mOpusFileAudioSource_GetSamplePosition, OUT mPtr<mAudioSource> &audioSource, OUT size_t *pSamplePosition)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(audioSource == nullptr || pSamplePosition == nullptr, mR_ArgumentNull);
+
+  mOpusFileAudioSource *pAudioSource = static_cast<mOpusFileAudioSource *>(audioSource.GetPointer());
+
+  mERROR_CHECK(mMutex_Lock(pAudioSource->pMutex));
+  mDEFER_CALL(pAudioSource->pMutex, mMutex_Unlock);
+
+  const int64_t sampleIndex = op_pcm_tell(pAudioSource->pFile);
+  mERROR_IF(sampleIndex < 0, mR_InternalError);
+
+  *pSamplePosition = (size_t)mMax((int64_t)sampleIndex - (int64_t)pAudioSource->dataSize / (int64_t)audioSource->channelCount, (int64_t)0);
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mOpusFileAudioSource_SetPaused, OUT mPtr<mAudioSource> &audioSource, OUT bool paused)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(audioSource == nullptr, mR_ArgumentNull);
+
+  mOpusFileAudioSource *pAudioSource = static_cast<mOpusFileAudioSource *>(audioSource.GetPointer());
+
+  pAudioSource->nextPaused = paused;
+
+  if (!pAudioSource->startedPlaying)
+    pAudioSource->paused = paused;
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mOpusFileAudioSource_IsPaused, OUT mPtr<mAudioSource> &audioSource, OUT bool *pIsPaused)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(audioSource == nullptr || pIsPaused == nullptr, mR_ArgumentNull);
+
+  mOpusFileAudioSource *pAudioSource = static_cast<mOpusFileAudioSource *>(audioSource.GetPointer());
+
+  *pIsPaused = pAudioSource->paused;
+
+  mRETURN_SUCCESS();
+}
+
 //////////////////////////////////////////////////////////////////////////
 
 mFUNCTION(mOpusFileAudioSource_Destroy_Internal, mOpusFileAudioSource *pAudioSource)
@@ -214,17 +394,25 @@ mFUNCTION(mOpusFileAudioSource_Destroy_Internal, mOpusFileAudioSource *pAudioSou
 
   mERROR_IF(pAudioSource == nullptr, mR_ArgumentNull);
 
+  if (pAudioSource->pMutex != nullptr)
+    mERROR_CHECK(mMutex_Lock(pAudioSource->pMutex));
+
   if (pAudioSource->pFile != nullptr)
   {
     op_free(pAudioSource->pFile);
     pAudioSource->pFile = nullptr;
   }
 
+  if (pAudioSource->pMutex != nullptr)
+    mERROR_CHECK(mMutex_Unlock(pAudioSource->pMutex));
+
   if (pAudioSource->pData != nullptr)
   {
     mERROR_CHECK(mAllocator_FreePtr(pAudioSource->pAllocator, &pAudioSource->pData));
     pAudioSource->dataSize = 0;
   }
+
+  mERROR_CHECK(mMutex_Destroy(&pAudioSource->pMutex));
 
   mRETURN_SUCCESS();
 }
@@ -235,8 +423,22 @@ mFUNCTION(mOpusFileAudioSource_GetBuffer_Internal, mPtr<mAudioSource> &audioSour
 
   mERROR_IF(audioSource == nullptr || pBuffer == nullptr || pBufferCount == nullptr, mR_ArgumentNull);
   mERROR_IF(channelIndex >= audioSource->channelCount, mR_InvalidParameter);
+  mERROR_IF(audioSource->pGetBufferFunc != mOpusFileAudioSource_GetBuffer_Internal, mR_ResourceIncompatible);
 
   mOpusFileAudioSource *pAudioSource = static_cast<mOpusFileAudioSource *>(audioSource.GetPointer());
+
+  pAudioSource->startedPlaying = true;
+
+  if (pAudioSource->paused)
+  {
+    mERROR_CHECK(mZeroMemory(pBuffer, bufferLength));
+    *pBufferCount = bufferLength;
+
+    mRETURN_SUCCESS();
+  }
+
+  mERROR_CHECK(mMutex_Lock(pAudioSource->pMutex));
+  mDEFER_CALL(pAudioSource->pMutex, mMutex_Unlock);
 
   if (pAudioSource->dataSize < bufferLength * pAudioSource->channelCount)
   {
@@ -249,11 +451,11 @@ mFUNCTION(mOpusFileAudioSource_GetBuffer_Internal, mPtr<mAudioSource> &audioSour
     }
   }
 
-  *pBufferCount = mMin(bufferLength, pAudioSource->dataSize);
+  *pBufferCount = mMin(bufferLength, pAudioSource->dataSize / pAudioSource->channelCount);
 
   mERROR_CHECK(mAudio_ExtractFloatChannelFromInterleavedFloat(pBuffer, channelIndex, pAudioSource->pData, pAudioSource->channelCount, *pBufferCount));
 
-  pAudioSource->lastConsumedSamples += bufferLength;
+  pAudioSource->lastConsumedSamples = *pBufferCount;
 
   mRETURN_SUCCESS();
 }
@@ -263,12 +465,18 @@ mFUNCTION(mOpusFileAudioSource_MoveToNextBuffer_Internal, mPtr<mAudioSource> &au
   mFUNCTION_SETUP();
 
   mERROR_IF(audioSource == nullptr, mR_ArgumentNull);
+  mERROR_IF(audioSource->pMoveToNextBufferFunc != mOpusFileAudioSource_MoveToNextBuffer_Internal, mR_ResourceIncompatible);
 
   mOpusFileAudioSource *pAudioSource = static_cast<mOpusFileAudioSource *>(audioSource.GetPointer());
 
+  mERROR_CHECK(mMutex_Lock(pAudioSource->pMutex));
+  mDEFER_CALL(pAudioSource->pMutex, mMutex_Unlock);
+
+  pAudioSource->paused = pAudioSource->nextPaused;
+
   mERROR_IF(pAudioSource->endReached, mR_EndOfStream);
 
-  mERROR_CHECK(mOpusFileAudioSource_ConsumeBuffer_Internal(pAudioSource, pAudioSource->lastConsumedSamples));
+  mERROR_CHECK(mOpusFileAudioSource_ConsumeBuffer_Internal(pAudioSource, pAudioSource->lastConsumedSamples * audioSource->channelCount));
 
   pAudioSource->lastConsumedSamples = 0;
 
@@ -291,10 +499,15 @@ mFUNCTION(mOpusFileAudioSource_SeekSample_Internal, mPtr<mAudioSource> &audioSou
   mFUNCTION_SETUP();
 
   mERROR_IF(audioSource == nullptr, mR_ArgumentNull);
+  mERROR_IF(audioSource->pSeekSampleFunc != mOpusFileAudioSource_SeekSample_Internal, mR_ResourceIncompatible);
 
   mOpusFileAudioSource *pAudioSource = static_cast<mOpusFileAudioSource *>(audioSource.GetPointer());
 
+  mERROR_CHECK(mMutex_Lock(pAudioSource->pMutex));
+  mDEFER_CALL(pAudioSource->pMutex, mMutex_Unlock);
+
   mERROR_IF(0 != op_pcm_seek(pAudioSource->pFile, (int64_t)sample), mR_InternalError);
+  pAudioSource->dataSize = 0;
 
   mRETURN_SUCCESS();
 }
@@ -303,8 +516,17 @@ mFUNCTION(mOpusFileAudioSource_ConsumeBuffer_Internal, IN mOpusFileAudioSource *
 {
   mFUNCTION_SETUP();
 
-  pAudioSource->dataSize -= samples;
-  mERROR_CHECK(mMemmove(pAudioSource->pData, pAudioSource->pData + samples, pAudioSource->dataSize));
+  mERROR_IF(samples == 0, mR_Success);
+
+  if (pAudioSource->dataSize >= samples)
+  {
+    pAudioSource->dataSize -= samples;
+    mERROR_CHECK(mMemmove(pAudioSource->pData, pAudioSource->pData + samples, pAudioSource->dataSize));
+  }
+  else
+  {
+    pAudioSource->dataSize = 0;
+  }
 
   mRETURN_SUCCESS();
 }
@@ -312,6 +534,8 @@ mFUNCTION(mOpusFileAudioSource_ConsumeBuffer_Internal, IN mOpusFileAudioSource *
 mFUNCTION(mOpusFileAudioSource_ReadBuffer_Internal, IN mOpusFileAudioSource *pAudioSource, const size_t samplesToLoad)
 {
   mFUNCTION_SETUP();
+
+  mERROR_IF(samplesToLoad == 0, mR_Success);
 
   if (pAudioSource->dataSize + samplesToLoad > pAudioSource->dataCapacity)
   {
@@ -328,7 +552,11 @@ mFUNCTION(mOpusFileAudioSource_ReadBuffer_Internal, IN mOpusFileAudioSource *pAu
     int32_t samplesLoaded = -1;
 
     while (streamIndex != 0)
+    {
       samplesLoaded = op_read_float(pAudioSource->pFile, pAudioSource->pData + pAudioSource->dataSize, (int32_t)samplesRemaining, &streamIndex);
+
+      mERROR_IF(streamIndex == -1, mR_InternalError);
+    }
 
     mERROR_IF(samplesLoaded == 0, mR_EndOfStream);
     mERROR_IF(samplesLoaded < 0, mR_InternalError);

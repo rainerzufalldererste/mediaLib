@@ -22,12 +22,15 @@
 #include <mutex>
 #include <atomic>
 
+#include "mDebugSymbolInfo.h"
+
 struct mAllocator;
 
 std::atomic<uint64_t> &mAllocatorDebugging_GetDebugMemoryAllocationCount();
 
 void mAllocatorDebugging_PrintRemainingMemoryAllocations(IN mAllocator *pAllocator);
 void mAllocatorDebugging_PrintAllRemainingMemoryAllocations();
+void mAllocatorDebugging_PrintMemoryAllocationInfo(IN mAllocator *pAllocator, IN const void *pAllocation);
 
 void mAllocatorDebugging_StoreAllocateCall(IN mAllocator *pAllocator, IN const void *pData, IN const char *information);
 void mAllocatorDebugging_StoreReallocateCall(IN mAllocator *pAllocator, const size_t originalPointer, IN const void *pData, IN const char *information);
@@ -142,8 +145,11 @@ mFUNCTION(mAllocator_Allocate, IN OPTIONAL mAllocator *pAllocator, OUT T **ppDat
     mERROR_CHECK(pAllocator->pAllocateZero((uint8_t **)ppData, sizeof(T), count, pAllocator->pUserData));
 
 #ifdef mDEBUG_MEMORY_ALLOCATIONS
-  char text[1024];
-  sprintf_s(text, "[#%" PRIu64 "] Type: %s, Count: %" PRIu64 ", Size: %" PRIu64 ".", mAllocatorDebugging_GetDebugMemoryAllocationCount()++, typeid(T).name(), count, count * sizeof(T));
+  char stacktrace[1024 * 15];
+  stacktrace[0] = '\0';
+  mDebugSymbolInfo_GetStackTrace(stacktrace, mARRAYSIZE(stacktrace));
+  char text[1024 * 16];
+  sprintf_s(text, "[#%" PRIu64 "] Type: %s, Count: %" PRIu64 ", Size: %" PRIu64 ".\n@ STACK TRACE:\n%s\n\n", mAllocatorDebugging_GetDebugMemoryAllocationCount()++, typeid(T).name(), count, count * sizeof(T), stacktrace);
 
   mAllocatorDebugging_StoreAllocateCall(pAllocator, *ppData, text);
 #endif
@@ -178,8 +184,11 @@ mFUNCTION(mAllocator_AllocateZero, IN OPTIONAL mAllocator *pAllocator, OUT T **p
   }
 
 #ifdef mDEBUG_MEMORY_ALLOCATIONS
-  char text[1024];
-  sprintf_s(text, "[#%" PRIu64 "] Type: %s, Count: %" PRIu64 ", Size: %" PRIu64 ".", mAllocatorDebugging_GetDebugMemoryAllocationCount()++, typeid(T).name(), count, count * sizeof(T));
+  char stacktrace[1024 * 15];
+  stacktrace[0] = '\0';
+  mDebugSymbolInfo_GetStackTrace(stacktrace, mARRAYSIZE(stacktrace));
+  char text[1024 * 16];
+  sprintf_s(text, "[#%" PRIu64 "] Type: %s, Count: %" PRIu64 ", Size: %" PRIu64 ".\n@ STACK TRACE:\n%s\n\n", mAllocatorDebugging_GetDebugMemoryAllocationCount()++, typeid(T).name(), count, count * sizeof(T), stacktrace);
 
   mAllocatorDebugging_StoreAllocateCall(pAllocator, *ppData, text);
 #endif
@@ -193,7 +202,7 @@ inline mFUNCTION(mAllocator_Reallocate, IN OPTIONAL mAllocator *pAllocator, OUT 
   mFUNCTION_SETUP();
 
 #ifdef mDEBUG_MEMORY_ALLOCATIONS
-  size_t originalPointer = (size_t)*ppData;
+  const size_t originalPointer = reinterpret_cast<size_t>(*ppData);
 #endif
 
 #ifdef mDEBUG_MEMORY_ALLOCATIONS_PRINT_ALLOCATIONS
@@ -208,8 +217,11 @@ inline mFUNCTION(mAllocator_Reallocate, IN OPTIONAL mAllocator *pAllocator, OUT 
     mERROR_CHECK(pAllocator->pReallocate((uint8_t **)ppData, sizeof(T), count, pAllocator->pUserData));
 
 #ifdef mDEBUG_MEMORY_ALLOCATIONS
-  char text[1024];
-  sprintf_s(text, "[#%" PRIu64 "] Type: %s, Count: %" PRIu64 ", Size: %" PRIu64 ".", mAllocatorDebugging_GetDebugMemoryAllocationCount()++, typeid(T).name(), count, count * sizeof(T));
+  char stacktrace[1024 * 15];
+  stacktrace[0] = '\0';
+  mDebugSymbolInfo_GetStackTrace(stacktrace, mARRAYSIZE(stacktrace));
+  char text[1024 * 16];
+  sprintf_s(text, "[#%" PRIu64 "] Type: %s, Count: %" PRIu64 ", Size: %" PRIu64 ".\n@ STACK TRACE:\n%s\n\n", mAllocatorDebugging_GetDebugMemoryAllocationCount()++, typeid(T).name(), count, count * sizeof(T), stacktrace);
 
   mAllocatorDebugging_StoreReallocateCall(pAllocator, originalPointer, *ppData, text);
 #endif
@@ -225,7 +237,7 @@ inline mFUNCTION(mAllocator_FreePtr, IN OPTIONAL mAllocator *pAllocator, IN_OUT 
   mERROR_IF(ppData == nullptr, mR_ArgumentNull);
 
 #ifdef mDEBUG_MEMORY_ALLOCATIONS
-  size_t originalPointer = (size_t)*ppData;
+  const size_t originalPointer = reinterpret_cast<size_t>(*ppData);
 #endif
 
   mDEFER_CALL(ppData, mSetToNullptr);
@@ -258,7 +270,7 @@ inline mFUNCTION(mAllocator_Free, IN OPTIONAL mAllocator *pAllocator, IN T *pDat
     mRETURN_SUCCESS();
 
 #ifdef mDEBUG_MEMORY_ALLOCATIONS
-  size_t originalPointer = (size_t)*ppData;
+  const size_t originalPointer = reinterpret_cast<size_t>(pData);
 #endif
 
 #ifdef mDEBUG_MEMORY_ALLOCATIONS_PRINT_ALLOCATIONS

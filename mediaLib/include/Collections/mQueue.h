@@ -196,11 +196,11 @@ mFUNCTION(mQueue_Max, const mPtr<mQueue<T>> &queue, const std::function<mCompari
 template <typename T, typename comparison = std::greater<T>>
 mFUNCTION(mQueue_Max, const mPtr<mQueue<T>> &queue, OUT T *pMax, comparison _comparison = comparison());
 
-template <typename T>
-mFUNCTION(mQueue_Contains, const mPtr<mQueue<T>> &queue, const T &value, const std::function<bool(const T &a, const T &b)> &equalityComparer, OUT bool *pContained);
+template <typename T, typename T2>
+mFUNCTION(mQueue_Contains, const mPtr<mQueue<T>> &queue, const T2 &value, const std::function<bool(const T &a, const T2 &b)> &equalityComparer, OUT bool *pContained, OUT OPTIONAL size_t *pIndex = nullptr);
 
-template <typename T, typename comparison = std::equal_to<T>>
-mFUNCTION(mQueue_Contains, const mPtr<mQueue<T>> &queue, const T &value, OUT bool *pContained, comparison _comparison = comparison());
+template <typename T, typename T2, typename comparison = mEquals<T, T2>>
+mFUNCTION(mQueue_Contains, const mPtr<mQueue<T>> &queue, const T2 &value, OUT bool *pContained, OUT OPTIONAL size_t *pIndex = nullptr, comparison _comparison = comparison());
 
 template <typename T>
 mFUNCTION(mQueue_RemoveDuplicates, const mPtr<mQueue<T>> &source, OUT mPtr<mQueue<T>> *pTarget, IN mAllocator *pAllocator, const std::function<bool(const T &a, const T &b)> &equalityComparer);
@@ -260,7 +260,7 @@ inline mFUNCTION(mQueue_Create, OUT mUniqueContainer<mQueue<T>> *pQueue, IN OPTI
 
   mERROR_IF(pQueue == nullptr, mR_ArgumentNull);
 
-  *pQueue = mUniqueContainer<mQueue<T>>::CreateWithCleanupFunction([](mQueue<T> *pData) { mQueue_Destroy_Internal<T>(pData); });
+  mUniqueContainer<mQueue<T>>::ConstructWithCleanupFunction(pQueue, [](mQueue<T> *pData) { mQueue_Destroy_Internal<T>(pData); });
 
   (*pQueue)->pAllocator = pAllocator;
 
@@ -934,20 +934,28 @@ inline mFUNCTION(mQueue_Max, const mPtr<mQueue<T>> &queue, OUT T *pMax, comparis
   mRETURN_SUCCESS();
 }
 
-template<typename T>
-inline mFUNCTION(mQueue_Contains, const mPtr<mQueue<T>> &queue, const T &value, const std::function<bool(const T &a, const T &b)> &equalityComparer, OUT bool *pContained)
+template<typename T, typename T2>
+inline mFUNCTION(mQueue_Contains, const mPtr<mQueue<T>> &queue, const T2 &value, const std::function<bool(const T &a, const T2 &b)> &equalityComparer, OUT bool *pContained, OUT OPTIONAL size_t *pIndex)
 {
   mFUNCTION_SETUP();
 
   mERROR_IF(queue == nullptr || equalityComparer == nullptr || pContained == nullptr, mR_ArgumentNull);
 
+  size_t index = (size_t)-1;
+
   *pContained = false;
 
   for (const auto &_item : queue->Iterate())
   {
-    if (equalityComparer(value, _item))
+    ++index;
+
+    if (equalityComparer(_item, value))
     {
       *pContained = true;
+
+      if (pIndex != nullptr)
+        *pIndex = index;
+
       break;
     }
   }
@@ -955,20 +963,28 @@ inline mFUNCTION(mQueue_Contains, const mPtr<mQueue<T>> &queue, const T &value, 
   mRETURN_SUCCESS();
 }
 
-template<typename T, typename comparison>
-inline mFUNCTION(mQueue_Contains, const mPtr<mQueue<T>> &queue, const T &value, OUT bool *pContained, comparison _comparison)
+template<typename T, typename T2, typename comparison>
+inline mFUNCTION(mQueue_Contains, const mPtr<mQueue<T>> &queue, const T2 &value, OUT bool *pContained, OUT OPTIONAL size_t *pIndex, comparison _comparison)
 {
   mFUNCTION_SETUP();
 
   mERROR_IF(queue == nullptr || pContained == nullptr, mR_ArgumentNull);
 
+  size_t index = (size_t)-1;
+
   *pContained = false;
 
   for (const auto &_item : queue->Iterate())
   {
-    if (_comparison(value, _item))
+    ++index;
+
+    if (_comparison(_item, value))
     {
       *pContained = true;
+
+      if (pIndex != nullptr)
+        *pIndex = index;
+
       break;
     }
   }
@@ -1015,7 +1031,7 @@ inline mFUNCTION(mQueue_RemoveDuplicates, const mPtr<mQueue<T>> &source, OUT mPt
   for (const auto &_item : source->Iterate())
   {
     bool contained;
-    mERROR_CHECK((mQueue_Contains<T, comparison>(*pTarget, _item, &contained)));
+    mERROR_CHECK((mQueue_Contains<T, T, comparison>(*pTarget, _item, &contained)));
 
     if (!contained)
       mERROR_CHECK(mQueue_PushBack(*pTarget, _item));

@@ -531,3 +531,275 @@ mTEST(mAudio, ConvertInt16ToFloat)
 
   mTEST_RETURN_SUCCESS();
 }
+
+mTEST(mAudio, InplaceDecodeMidSideToStereo)
+{
+  constexpr size_t sampleCount = 1023;
+
+  float_t left[sampleCount];
+  float_t right[sampleCount];
+
+  for (size_t i = 0; i < sampleCount; i++)
+  {
+    left[i] = (float_t)i;
+    right[i] = mSin(-(float_t)i * .25f);
+  }
+
+  mTEST_ASSERT_SUCCESS(mAudio_InplaceMidSideToStereo(left, right, sampleCount));
+
+  for (size_t i = 0; i < sampleCount; i++)
+  {
+    const float_t mid = (float_t)i;
+    const float_t side = mSin(-(float_t)i * .25f) * .5f;
+
+    mTEST_ASSERT_EQUAL(mid + side, left[i]);
+    mTEST_ASSERT_EQUAL(mid - side, right[i]);
+  }
+
+  if (mCpuExtensions::avxSupported)
+  {
+    for (size_t i = 0; i < sampleCount; i++)
+    {
+      left[i] = (float_t)i;
+      right[i] = mSin(-(float_t)i * .25f);
+    }
+
+    mResult result;
+
+    {
+      mDEFER(mCpuExtensions::avxSupported = true);
+      mCpuExtensions::avxSupported = false;
+
+      result = mAudio_InplaceMidSideToStereo(left, right, sampleCount);
+    }
+
+    mTEST_ASSERT_SUCCESS(result);
+
+    for (size_t i = 0; i < sampleCount; i++)
+    {
+      const float_t mid = (float_t)i;
+      const float_t side = mSin(-(float_t)i * .25f) * .5f;
+
+      mTEST_ASSERT_EQUAL(mid + side, left[i]);
+      mTEST_ASSERT_EQUAL(mid - side, right[i]);
+    }
+  }
+
+  mTEST_RETURN_SUCCESS();
+}
+
+mTEST(mAudio, InplaceMidLateralLongitudinalToQuadro)
+{
+  constexpr size_t sampleCount = 1023;
+
+  float_t frontLeft[sampleCount];
+  float_t frontRight[sampleCount];
+  float_t backLeft[sampleCount];
+  float_t backRight[sampleCount];
+
+  for (size_t i = 0; i < sampleCount; i++)
+  {
+    frontLeft[i] = (float_t)i;
+    frontRight[i] = mSin(-(float_t)i * .25f);
+    backLeft[i] = mSin((float_t)i * .125f);
+  }
+
+  mTEST_ASSERT_SUCCESS(mAudio_InplaceMidLateralLongitudinalToQuadro(frontLeft, frontRight, backLeft, backRight, sampleCount));
+
+  for (size_t i = 0; i < sampleCount; i++)
+  {
+    const float_t mid = (float_t)i;
+    const float_t sideA = mSin(-(float_t)i * .25f) * .5f;
+    const float_t sideB = mSin((float_t)i * .125f) * .5f;
+
+    mTEST_ASSERT_EQUAL(mid + sideA + sideB, frontLeft[i]);
+    mTEST_ASSERT_EQUAL(mid - sideA + sideB, frontRight[i]);
+    mTEST_ASSERT_EQUAL(mid + sideA - sideB, backLeft[i]);
+    mTEST_ASSERT_EQUAL(mid - sideA - sideB, backRight[i]);
+  }
+
+  if (mCpuExtensions::avxSupported)
+  {
+    for (size_t i = 0; i < sampleCount; i++)
+    {
+      frontLeft[i] = (float_t)i;
+      frontRight[i] = mSin(-(float_t)i * .25f);
+      backLeft[i] = mSin((float_t)i * .125f);
+    }
+
+    mResult result;
+
+    {
+      mDEFER(mCpuExtensions::avxSupported = true);
+      mCpuExtensions::avxSupported = false;
+
+      result = mAudio_InplaceMidLateralLongitudinalToQuadro(frontLeft, frontRight, backLeft, backRight, sampleCount);
+    }
+
+    mTEST_ASSERT_SUCCESS(result);
+
+    for (size_t i = 0; i < sampleCount; i++)
+    {
+      const float_t mid = (float_t)i;
+      const float_t sideA = mSin(-(float_t)i * .25f) * .5f;
+      const float_t sideB = mSin((float_t)i * .125f) * .5f;
+
+      mTEST_ASSERT_EQUAL(mid + sideA + sideB, frontLeft[i]);
+      mTEST_ASSERT_EQUAL(mid - sideA + sideB, frontRight[i]);
+      mTEST_ASSERT_EQUAL(mid + sideA - sideB, backLeft[i]);
+      mTEST_ASSERT_EQUAL(mid - sideA - sideB, backRight[i]);
+    }
+  }
+
+  mTEST_RETURN_SUCCESS();
+}
+
+mTEST(mAudio, AddWithVolumeFloat)
+{
+  constexpr size_t sampleCount = 1023;
+  const float_t volume = 0.125f;
+
+  float_t src[sampleCount];
+  float_t dst[sampleCount];
+
+  for (size_t i = 0; i < sampleCount; i++)
+  {
+    dst[i] = mSin(i * 0.1f);
+    src[i] = mSin(-(float_t)i * 0.25f);
+  }
+
+  mTEST_ASSERT_SUCCESS(mAudio_AddWithVolumeFloat(dst, src, volume, sampleCount));
+
+  for (size_t i = 0; i < sampleCount; i++)
+    mTEST_ASSERT_EQUAL(dst[i], mSin(i * 0.1f) + volume * mSin(-(float_t)i * 0.25f));
+  
+  if (mCpuExtensions::avxSupported)
+  {
+    for (size_t i = 0; i < sampleCount; i++)
+      dst[i] = mSin(i * 0.1f);
+
+    mResult result;
+
+    {
+      mDEFER(mCpuExtensions::avxSupported = true);
+      mCpuExtensions::avxSupported = false;
+
+      result = mAudio_AddWithVolumeFloat(dst, src, volume, sampleCount);
+    }
+
+    mTEST_ASSERT_SUCCESS(result);
+
+    for (size_t i = 0; i < sampleCount; i++)
+      mTEST_ASSERT_EQUAL(dst[i], mSin(i * 0.1f) + volume * mSin(-(float_t)i * 0.25f));
+
+  }
+
+  mTEST_RETURN_SUCCESS();
+}
+
+mTEST(mAudio, ConvertFloatToInt16)
+{
+  constexpr size_t sampleCount = 1023;
+  const float_t volume = 0.125f;
+
+  float_t src[sampleCount];
+  int16_t dst[sampleCount];
+
+  for (size_t i = 0; i < sampleCount; i++)
+    src[i] = mSin(i * 0.01f);
+
+  mTEST_ASSERT_SUCCESS(mAudio_ConvertFloatToInt16WithDithering(dst, src, sampleCount));
+
+  for (size_t i = 0; i < sampleCount; i++)
+  {
+    mTEST_ASSERT_EQUAL(src[i], mSin(i * 0.01f));
+    mTEST_ASSERT_TRUE(mAbs(dst[i] - mClamp((int16_t)roundf(src[i] * mMaxValue<int16_t>()), mMinValue<int16_t>(), mMaxValue<int16_t>())) <= 1);
+  }
+
+  if (mCpuExtensions::avx2Supported)
+  {
+    mTEST_ASSERT_SUCCESS(mZeroMemory(dst, mARRAYSIZE(dst)));
+
+    mResult result;
+
+    {
+      mDEFER(mCpuExtensions::avx2Supported = true);
+      mCpuExtensions::avx2Supported = false;
+
+      result = mAudio_ConvertFloatToInt16WithDithering(dst, src, sampleCount);
+    }
+
+    mTEST_ASSERT_SUCCESS(result);
+
+    for (size_t i = 0; i < sampleCount; i++)
+    {
+      mTEST_ASSERT_EQUAL(src[i], mSin(i * 0.01f));
+      mTEST_ASSERT_TRUE(mAbs(dst[i] - (int16_t)roundf(mSin(i * 0.01f) * mMaxValue<int16_t>())) <= 1);
+    }
+  }
+  
+  if (mCpuExtensions::sse41Supported)
+  {
+    mTEST_ASSERT_SUCCESS(mZeroMemory(dst, mARRAYSIZE(dst)));
+
+    mResult result;
+
+    {
+      mDEFER(mCpuExtensions::avx2Supported = true);
+      mDEFER(mCpuExtensions::sse41Supported = true);
+      mCpuExtensions::avx2Supported = false;
+      mCpuExtensions::sse41Supported = false;
+
+      result = mAudio_ConvertFloatToInt16WithDithering(dst, src, sampleCount);
+    }
+
+    mTEST_ASSERT_SUCCESS(result);
+
+    for (size_t i = 0; i < sampleCount; i++)
+    {
+      mTEST_ASSERT_EQUAL(src[i], mSin(i * 0.01f));
+      mTEST_ASSERT_TRUE(mAbs(dst[i] - (int16_t)roundf(mSin(i * 0.01f) * mMaxValue<int16_t>())) <= 1);
+    }
+  }
+
+  mTEST_RETURN_SUCCESS();
+}
+
+mTEST(mAudio, InterleavedQuadroMidLateralLFELongitudinalToDualInterleavedStereo)
+{
+  constexpr size_t sampleCount = 1023;
+
+  float_t inSamples[sampleCount * 4];
+  float_t front[sampleCount * 2];
+  float_t back[sampleCount * 2];
+
+  for (size_t i = 0; i < sampleCount; i++)
+  {
+    inSamples[i * 4 + 0] = mSin(0.00101f * i);
+    inSamples[i * 4 + 1] = mCos(0.00142f * i);
+    inSamples[i * 4 + 2] = mSin(0.00321f * i);
+    inSamples[i * 4 + 3] = mCos(0.00462f * i);
+  }
+
+  mTEST_ASSERT_SUCCESS(mAudio_InterleavedQuadroMidLateralLFELongitudinalToDualInterleavedStereo(inSamples, front, back, sampleCount));
+
+  for (size_t i = 0; i < sampleCount; i++)
+  {
+    const float_t mid = inSamples[i * 4 + 0];
+    const float_t lat = inSamples[i * 4 + 1];
+    const float_t lfe = inSamples[i * 4 + 2];
+    const float_t longd = inSamples[i * 4 + 3];
+
+    mTEST_ASSERT_EQUAL(mid, mSin(0.00101f * i));
+    mTEST_ASSERT_EQUAL(lat, mCos(0.00142f * i));
+    mTEST_ASSERT_EQUAL(lfe, mSin(0.00321f * i));
+    mTEST_ASSERT_EQUAL(longd, mCos(0.00462f * i));
+
+    mTEST_ASSERT_EQUAL(front[i * 2 + 0], mid + lfe + lat * .5f + longd * .5f);
+    mTEST_ASSERT_EQUAL(front[i * 2 + 1], mid + lfe - lat * .5f + longd * .5f);
+    mTEST_ASSERT_EQUAL(back[i * 2 + 0], mid + lfe + lat * .5f - longd * .5f);
+    mTEST_ASSERT_EQUAL(back[i * 2 + 1], mid + lfe - lat * .5f - longd * .5f);
+  }
+
+  mTEST_RETURN_SUCCESS();
+}

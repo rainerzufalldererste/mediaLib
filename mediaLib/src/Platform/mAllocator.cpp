@@ -83,6 +83,35 @@ void mAllocatorDebugging_PrintAllRemainingMemoryAllocations()
   mAllocatorDebugging_GetDebugMemoryAllocationMutex().unlock();
 }
 
+void mAllocatorDebugging_PrintMemoryAllocationInfo(IN mAllocator *pAllocator, IN const void *pAllocation)
+{
+  mAllocatorDebugging_GetDebugMemoryAllocationMutex().lock();
+
+  auto item = mAllocatorDebugging_GetDebugMemoryAllocationMap().find(pAllocator);
+
+  if (item == mAllocatorDebugging_GetDebugMemoryAllocationMap().end())
+  {
+    mLOG("ERROR: Allocator not found.\n");
+    mAllocatorDebugging_GetDebugMemoryAllocationMutex().unlock();
+    return;
+  }
+
+  auto allocatedMemory = item->second;
+
+  auto allocation = allocatedMemory.find(reinterpret_cast<size_t>(pAllocation));
+
+  if (allocation == allocatedMemory.end())
+  {
+    mLOG("ERROR: Allocation not found in this allocator.\n");
+    mAllocatorDebugging_GetDebugMemoryAllocationMutex().unlock();
+    return;
+  }
+
+  mLOG("[Memory Allocation at 0x%" PRIx64 "]: %s\n", (uint64_t)(*allocation).first, (*allocation).second.c_str());
+
+  mAllocatorDebugging_GetDebugMemoryAllocationMutex().unlock();
+}
+
 void mAllocatorDebugging_StoreAllocateCall(IN mAllocator *pAllocator, IN const void *pData, IN const char *information)
 {
   mAllocatorDebugging_GetDebugMemoryAllocationMutex().lock();

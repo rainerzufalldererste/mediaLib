@@ -2167,10 +2167,20 @@ bool ImGui::SliderScalar(const char* label, ImGuiDataType data_type, void* v, co
       char value_buf[64];
       const char* value_buf_end = value_buf + DataTypeFormatString(value_buf, IM_ARRAYSIZE(value_buf), data_type, v, format);
       const ImVec2 valueSize = CalcTextSize(value_buf);
-      const ImVec2 textCenter = grab_bb.GetCenter() - ImVec2(0, valueSize.y + style.ItemInnerSpacing.y * 2.f);
-      window->DrawList->AddRectFilled(textCenter - valueSize * .5f - style.ItemInnerSpacing, textCenter + valueSize * .5f + style.ItemInnerSpacing, GetColorU32(ImGuiCol_FrameBg));
-      RenderText(textCenter - valueSize * .5f, value_buf, value_buf_end);
+      ImVec2 textCenter = grab_bb.GetCenter() - ImVec2(0, valueSize.y + style.ItemInnerSpacing.y * 2.f);
+      
       window->DrawList->AddTriangleFilled(textCenter + ImVec2(-style.ItemInnerSpacing.y, style.ItemInnerSpacing.y + valueSize.y * .5f), textCenter + ImVec2(style.ItemInnerSpacing.y, style.ItemInnerSpacing.y + valueSize.y * .5f), textCenter + ImVec2(0, style.ItemInnerSpacing.y * 2.f + valueSize.y * .5f), GetColorU32(ImGuiCol_FrameBg));
+
+      const ImVec2 halfValueSize = valueSize * .5f;
+      const ImVec2 halfValueSizeBg = halfValueSize + style.ItemInnerSpacing;
+
+      if (textCenter.x + halfValueSizeBg.x > total_bb.Max.x)
+        textCenter.x = total_bb.Max.x - halfValueSizeBg.x;
+      else if (textCenter.x - halfValueSizeBg.x < total_bb.Min.x)
+        textCenter.x = total_bb.Min.x + halfValueSizeBg.x;
+
+      window->DrawList->AddRectFilled(textCenter - halfValueSizeBg, textCenter + halfValueSizeBg, GetColorU32(ImGuiCol_FrameBg));
+      RenderText(textCenter - halfValueSize, value_buf, value_buf_end);
     }
 
     if (label_size.x > 0.0f)

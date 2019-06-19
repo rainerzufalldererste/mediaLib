@@ -7,33 +7,38 @@
 #include <debugapi.h>
 #include <stdarg.h>
 
+#define mRESULT_X_MACRO(XX) \
+  XX(mR_Success) \
+     \
+  XX(mR_Break) \
+     \
+  XX(mR_InvalidParameter) \
+  XX(mR_ArgumentNull) \
+  XX(mR_InternalError) \
+  XX(mR_MemoryAllocationFailure) \
+  XX(mR_NotImplemented) \
+  XX(mR_NotInitialized) \
+  XX(mR_IndexOutOfBounds) \
+  XX(mR_ArgumentOutOfBounds) \
+  XX(mR_Timeout) \
+  XX(mR_OperationNotSupported) \
+  XX(mR_ResourceNotFound) \
+  XX(mR_ResourceInvalid) \
+  XX(mR_ResourceStateInvalid) \
+  XX(mR_ResourceIncompatible) \
+  XX(mR_EndOfStream) \
+  XX(mR_RenderingError) \
+  XX(mR_Failure) \
+  XX(mR_NotSupported) \
+  XX(mR_ResourceAlreadyExists) \
+  XX(mR_IOFailure) \
+  XX(mR_InsufficientPrivileges)
+
+#define mRESULT_SEPARATE_WITH_COMMA(A) A ,
+
 enum mResult
 {
-  mR_Success,
-
-  mR_Break,
-
-  mR_InvalidParameter,
-  mR_ArgumentNull,
-  mR_InternalError,
-  mR_MemoryAllocationFailure,
-  mR_NotImplemented,
-  mR_NotInitialized,
-  mR_IndexOutOfBounds,
-  mR_ArgumentOutOfBounds,
-  mR_Timeout,
-  mR_OperationNotSupported,
-  mR_ResourceNotFound,
-  mR_ResourceInvalid,
-  mR_ResourceStateInvalid,
-  mR_ResourceIncompatible,
-  mR_EndOfStream,
-  mR_RenderingError,
-  mR_Failure,
-  mR_NotSupported,
-  mR_ResourceAlreadyExists,
-  mR_IOFailure,
-  mR_InsufficientPrivileges,
+  mRESULT_X_MACRO(mRESULT_SEPARATE_WITH_COMMA)
 
   mResult_Count
 };
@@ -89,22 +94,19 @@ extern thread_local bool g_mResult_silent;
 #endif
 
 void mDebugOut(const char *format, ...);
+void mPrintError(char *function, char *file, const int32_t line, const mResult error, const char *expression);
 
 #ifdef GIT_BUILD
-void mPrintError(char *function, char *file, const int32_t line, const mResult error, const char *expression, const char *commitSHA = GIT_REF);
-
 #define mRESULT_PRINT_FUNCTION_TITLE nullptr
 #define mRESULT_PRINT_DEBUG_STRINGIFY(x) nullptr
 #define mRESULT_PRINT_DEBUG_STRINGIFY_RETURN_RESULT(result) nullptr
 #else
-void mPrintError(char *function, char *file, const int32_t line, const mResult error, const char *expression, const char *commitSHA = nullptr);
-
 #define mRESULT_PRINT_FUNCTION_TITLE __FUNCTION__
 #define mRESULT_PRINT_DEBUG_STRINGIFY(x) #x
 #define mRESULT_PRINT_DEBUG_STRINGIFY_RETURN_RESULT(result) "mRETURN_RESULT(" #result ")"
 #endif
 
-mFUNCTION(mResult_ToString, const mResult result, OUT struct mString *pString);
+const char * mResult_ToString(const mResult result);
 
 void mDeinit();
 void mDeinit(const std::function<void(void)> &param);

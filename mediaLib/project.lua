@@ -54,6 +54,7 @@ project(ProjectName)
   includedirs { "3rdParty/ogg/include" }
   includedirs { "3rdParty/opus/include" }
   includedirs { "3rdParty/libsamplerate/include" }
+  includedirs { "3rdParty/StackWalker/include" }
 
   filter { "configurations:Debug", "system:Windows" }
     ignoredefaultlibraries { "libcmt" }

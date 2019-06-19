@@ -120,8 +120,35 @@ mFUNCTION(mFile_CreateDirectory, const mString &folderPath)
   mString path;
   mERROR_CHECK(mFile_GetAbsoluteDirectoryPath(&path, folderPath));
 
-  mString pathWithoutLastSlash;
-  mERROR_CHECK(mString_Substring(path, &pathWithoutLastSlash, 0, path.Count() - 2));
+  bool hasSpaceOrPeriodInCurrentPath = false;
+  bool hasNonSpaceOrPeriodInCurrentPath = false;
+
+  bool lastWasSpaceOrDot = false;
+
+  const mchar_t space = mToChar<2>(" ");
+  const mchar_t period = mToChar<2>(".");
+  const mchar_t backslash = mToChar<2>("\\");
+
+  for (auto _char : path)
+  {
+    if (_char.codePoint == space || _char.codePoint == period)
+    {
+      hasSpaceOrPeriodInCurrentPath = true;
+      lastWasSpaceOrDot = true;
+    }
+    else if (_char.codePoint == backslash)
+    {
+      mERROR_IF(hasSpaceOrPeriodInCurrentPath && !hasNonSpaceOrPeriodInCurrentPath && lastWasSpaceOrDot, mR_InvalidParameter);
+      hasSpaceOrPeriodInCurrentPath = false;
+      hasNonSpaceOrPeriodInCurrentPath = false;
+      lastWasSpaceOrDot = false;
+    }
+    else
+    {
+      hasNonSpaceOrPeriodInCurrentPath = true;
+      lastWasSpaceOrDot = false;
+    }
+  }
 
   wchar_t wdirectoryName[MAX_PATH];
   mERROR_CHECK(mString_ToWideString(path, wdirectoryName, mARRAYSIZE(wdirectoryName)));

@@ -313,6 +313,32 @@ mFUNCTION(mThreadPool_Destroy, IN_OUT mPtr<mThreadPool> *pThreadPool)
   mRETURN_SUCCESS();
 }
 
+mFUNCTION(mThreadPool_Clear, mPtr<mThreadPool> &asyncTaskHandler)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(asyncTaskHandler == nullptr, mR_ArgumentNull);
+
+  // Remove all tasks.
+  {
+    mERROR_CHECK(mSemaphore_Lock(asyncTaskHandler->pSemaphore));
+    mDEFER_CALL(asyncTaskHandler->pSemaphore, mSemaphore_Unlock);
+
+    size_t count = 0;
+    mERROR_CHECK(mQueue_GetCount(asyncTaskHandler->queue, &count));
+
+    for (size_t i = 0; i < count; ++i)
+    {
+      mTask *pTask = nullptr;
+
+      mERROR_CHECK(mQueue_PopFront(asyncTaskHandler->queue, &pTask));
+      mERROR_CHECK(mTask_Destroy(&pTask));
+    }
+  }
+
+  mRETURN_SUCCESS();
+}
+
 mFUNCTION(mThreadPool_EnqueueTask, mPtr<mThreadPool> &asyncTaskHandler, IN mTask *pTask)
 {
   mFUNCTION_SETUP();

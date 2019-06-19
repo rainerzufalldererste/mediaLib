@@ -10,6 +10,9 @@
 static_assert(false, "mDEBUG_TESTS has to be turned off for Buildserver builds.");
 #endif
 
+void mTest_PrintTestFailure(const char *text);
+#define mTEST_PRINT_FAILURE(...) mPrintPrepare(&mTest_PrintTestFailure, __VA_ARGS__)
+
 #ifdef mDEBUG_TESTS
 
 #include <vector>
@@ -30,9 +33,6 @@ mTest_TestInit mTest_CreateTestInit(const char *component, const char *testCase,
 
 #define mTEST_RETURN_SUCCESS() return mR_Success;
 #define mTEST_RETURN_FAILURE() return mR_Failure;
-
-void mTest_PrintTestFailure(const char *text);
-#define mTEST_PRINT_FAILURE(...) mPrintPrepare(&mTest_PrintTestFailure, __VA_ARGS__)
 
 #define mTEST_FAIL() \
   do \

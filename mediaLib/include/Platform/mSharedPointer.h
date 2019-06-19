@@ -28,6 +28,24 @@ struct mIsSharedPointer<mSharedPointer<T>>
 };
 
 template <typename T>
+class mReferencePack;
+
+template <typename T>
+struct mIsSharedPointer<mReferencePack<T>>
+{
+  static constexpr bool value = true;
+};
+
+template <typename T>
+class mUniqueContainer;
+
+template <typename T>
+struct mIsSharedPointer<mUniqueContainer<T>>
+{
+  static constexpr bool value = true;
+};
+
+template <typename T>
 class mSharedPointer
 {
 public:
@@ -206,11 +224,11 @@ private:
   {
     new (&m_pointerParams) mSharedPointer<T>::PointerParams(std::move(pMove->m_pointerParams));
     mSharedPointer<T>::m_pParams = &m_pointerParams;
-    mSharedPointer<T>::m_pData = &m_value;
+    mSharedPointer<T>::m_pData = reinterpret_cast<T *>(m_value);
 
-    mASSERT_DEBUG(m_pointerParams.referenceCount == 1, "Not all references of the mUniqueContainer<%s> have been returned.", typeid(T).name());
+    mASSERT_DEBUG(m_pointerParams.referenceCount <= 1, "Not all references of the mUniqueContainer<%s> have been returned.", typeid(T).name());
 
-    memmove(&m_value, &pMove->m_value, sizeof(T));
+    mMemmove(reinterpret_cast<T *>(m_value), reinterpret_cast<T *>(pMove->m_value), 1);
     pMove->m_pData = nullptr;
     pMove->m_pParams = nullptr;
   }
@@ -221,10 +239,10 @@ private:
   {
     new (&m_pointerParams) mSharedPointer<T>::PointerParams(std::move(pMove->m_pointerParams));
     mSharedPointer<T>::m_pParams = &m_pointerParams;
-    new (&m_value) T(std::move(pMove->m_value));
-    mSharedPointer<T>::m_pData = &m_value;
+    new (reinterpret_cast<T *>(m_value)) T(std::move(*reinterpret_cast<T *>(pMove->m_value)));
+    mSharedPointer<T>::m_pData = reinterpret_cast<T *>(m_value);
 
-    mASSERT_DEBUG(m_pointerParams.referenceCount == 1, "Not all references of the mUniqueContainer<%s> have been returned.", typeid(T).name());
+    mASSERT_DEBUG(m_pointerParams.referenceCount <= 1, "Not all references of the mUniqueContainer<%s> have been returned.", typeid(T).name());
 
     pMove->m_pData = nullptr;
     pMove->m_pParams = nullptr;
@@ -234,7 +252,7 @@ private:
   typename std::enable_if<(std::is_move_assignable<T>::value || std::is_arithmetic<T>::value) && mIsTriviallyMemoryMovable<T>::value>::type
     MoveAssignFunc(IN mUniqueContainer<T> *pMove)
   {
-    mASSERT_DEBUG(m_pointerParams.referenceCount == 1, "Not all references of the mUniqueContainer<%s> have been returned.", typeid(T).name());
+    mASSERT_DEBUG(m_pointerParams.referenceCount <= 1, "Not all references of the mUniqueContainer<%s> have been returned.", typeid(T).name());
     mASSERT_DEBUG(pMove->m_pointerParams.referenceCount == 1, "Not all references of the mUniqueContainer<%s> have been returned.", typeid(T).name());
 
     // Cleanup
@@ -245,8 +263,8 @@ private:
 
     m_pointerParams = std::move(pMove->m_pointerParams);
     mSharedPointer<T>::m_pParams = &m_pointerParams;
-    memmove(&m_value, &pMove->m_value, sizeof(T));
-    mSharedPointer<T>::m_pData = &m_value;
+    mMemmove(reinterpret_cast<T *>(m_value), reinterpret_cast<T *>(pMove->m_value), 1);
+    mSharedPointer<T>::m_pData = reinterpret_cast<T *>(m_value);
 
     pMove->m_pData = nullptr;
     pMove->m_pParams = nullptr;
@@ -256,7 +274,7 @@ private:
   typename std::enable_if<(std::is_move_assignable<T>::value || std::is_arithmetic<T>::value) && !mIsTriviallyMemoryMovable<T>::value>::type
     MoveAssignFunc(IN mUniqueContainer<T> *pMove)
   {
-    mASSERT_DEBUG(m_pointerParams.referenceCount == 1, "Not all references of the mUniqueContainer<%s> have been returned.", typeid(T).name());
+    mASSERT_DEBUG(m_pointerParams.referenceCount <= 1, "Not all references of the mUniqueContainer<%s> have been returned.", typeid(T).name());
     mASSERT_DEBUG(pMove->m_pointerParams.referenceCount == 1, "Not all references of the mUniqueContainer<%s> have been returned.", typeid(T).name());
 
     // Cleanup
@@ -267,8 +285,8 @@ private:
 
     m_pointerParams = std::move(pMove->m_pointerParams);
     mSharedPointer<T>::m_pParams = &m_pointerParams;
-    m_value = std::move(pMove->m_value);
-    mSharedPointer<T>::m_pData = &m_value;
+    *reinterpret_cast<T *>(m_value) = std::move(*reinterpret_cast<T *>(pMove->m_value));
+    mSharedPointer<T>::m_pData = reinterpret_cast<T *>(m_value);
 
     pMove->m_pData = nullptr;
     pMove->m_pParams = nullptr;
@@ -276,35 +294,66 @@ private:
 
 public:
   typename mSharedPointer<T>::PointerParams m_pointerParams;
-  T m_value;
+  uint8_t m_value[sizeof(T)]; // to not accidentally initialize a value here that has a default constructor.
+
+  mUniqueContainer(nullptr_t /* null */)
+  {
+    mZeroMemory(m_value, ARRAYSIZE(m_value));
+    m_pointerParams.referenceCount = 1;
+  }
 
   template <typename... Args>
-  mUniqueContainer(Args &&...args)
+  mUniqueContainer(Args ...args)
   {
-    new (&m_value) T(std::forward<Args>(args)...);
-    mSharedPointer<T>::m_pData = &m_value;
+    mZeroMemory(m_value, ARRAYSIZE(m_value));
+    new (m_value) T(args...);
+    mSharedPointer<T>::m_pData = reinterpret_cast<T *>(m_value);
     mSharedPointer<T>::m_pParams = &m_pointerParams;
     m_pointerParams.referenceCount = 1;
   }
 
   template <typename... Args>
-  static mUniqueContainer CreateWithCleanupFunction(const std::function<void(T *)> &cleanupFunc, Args &&...args)
+  static void ConstructWithCleanupFunction(mUniqueContainer<T> *pTarget, const std::function<void(T *)> &cleanupFunc, Args &&...args)
   {
-    uint8_t ret[sizeof(mUniqueContainer<T>)];
-    mUniqueContainer<T> *pRet = reinterpret_cast<mUniqueContainer<T> *>(ret);
-    new (pRet) mUniqueContainer<T>(std::forward<Args>(args)...);
-    pRet->m_pointerParams.cleanupFunction = cleanupFunc;
-    return std::move(*pRet);
+    pTarget->~mUniqueContainer();
+    mZeroMemory(pTarget->m_value, ARRAYSIZE(pTarget->m_value));
+    new (pTarget->m_value) T(std::forward<Args>(args)...);
+    pTarget->m_pointerParams.cleanupFunction = cleanupFunc;
+    pTarget->mSharedPointer<T>::m_pData = reinterpret_cast<T *>(pTarget->m_value);
+    pTarget->mSharedPointer<T>::m_pParams = &pTarget->m_pointerParams;
+    pTarget->m_pointerParams.referenceCount = 1;
   }
 
   template <typename... Args>
-  static mUniqueContainer CreateWithCleanupFunction(std::function<void(T *)> &&cleanupFunc, Args &&...args)
+  static void ConstructWithCleanupFunction(mUniqueContainer<T> *pTarget, std::function<void(T *)> &&cleanupFunc, Args &&...args)
   {
-    uint8_t ret[sizeof(mUniqueContainer<T>)];
-    mUniqueContainer<T> *pRet = reinterpret_cast<mUniqueContainer<T> *>(ret);
-    new (pRet) mUniqueContainer<T>(std::forward<Args>(args)...);
-    pRet->m_pointerParams.cleanupFunction = std::move(cleanupFunc);
-    return std::move(*pRet);
+    pTarget->~mUniqueContainer();
+    mZeroMemory(pTarget->m_value, ARRAYSIZE(pTarget->m_value));
+    new (pTarget->m_value) T(std::forward<Args>(args)...);
+    pTarget->m_pointerParams.cleanupFunction = std::move(cleanupFunc);
+    pTarget->mSharedPointer<T>::m_pData = reinterpret_cast<T *>(pTarget->m_value);
+    pTarget->mSharedPointer<T>::m_pParams = &pTarget->m_pointerParams;
+    pTarget->m_pointerParams.referenceCount = 1;
+  }
+
+  static void CreateWithCleanupFunction(mUniqueContainer<T> *pTarget, const std::function<void(T *)> &cleanupFunc)
+  {
+    pTarget->~mUniqueContainer();
+    mZeroMemory(pTarget->m_value, ARRAYSIZE(pTarget->m_value));
+    pTarget->m_pointerParams.cleanupFunction = cleanupFunc;
+    pTarget->mSharedPointer<T>::m_pData = reinterpret_cast<T *>(pTarget->m_value);
+    pTarget->mSharedPointer<T>::m_pParams = &pTarget->m_pointerParams;
+    pTarget->m_pointerParams.referenceCount = 1;
+  }
+
+  static void CreateWithCleanupFunction(mUniqueContainer<T> *pTarget, std::function<void(T *)> &&cleanupFunc)
+  {
+    pTarget->~mUniqueContainer();
+    mZeroMemory(pTarget->m_value, ARRAYSIZE(pTarget->m_value));
+    pTarget->m_pointerParams.cleanupFunction = std::move(cleanupFunc);
+    pTarget->mSharedPointer<T>::m_pData = reinterpret_cast<T *>(pTarget->m_value);
+    pTarget->mSharedPointer<T>::m_pParams = &pTarget->m_pointerParams;
+    pTarget->m_pointerParams.referenceCount = 1;
   }
 
   mUniqueContainer(mUniqueContainer<T> &&move)
@@ -315,6 +364,7 @@ public:
   mUniqueContainer<T> & operator=(mUniqueContainer<T> &&move)
   {
     MoveAssignFunc(&move);
+    return *this;
   }
 
   mUniqueContainer(const mUniqueContainer<T> &copy) = delete;
@@ -342,10 +392,10 @@ public:
 
   ~mUniqueContainer<T>()
   {
-    mASSERT_DEBUG(m_pointerParams.referenceCount == 1, "Not all references of the mUniqueContainer<%s> have been returned.", typeid(T).name());
+    mASSERT_DEBUG(m_pointerParams.referenceCount <= 1, "Not all references of the mUniqueContainer<%s> have been returned.", typeid(T).name());
 
     if (mSharedPointer<T>::m_pData != nullptr && m_pointerParams.cleanupFunction)
-      m_pointerParams.cleanupFunction(&m_value);
+      m_pointerParams.cleanupFunction(reinterpret_cast<T *>(m_value));
 
     mSharedPointer<T>::m_pData = nullptr;
     mSharedPointer<T>::m_pParams = nullptr;
@@ -432,7 +482,25 @@ inline mFUNCTION(mSharedPointer_Allocate, OUT mSharedPointer<T> *pOutSharedPoint
   mRETURN_SUCCESS();
 }
 
-template <typename T, typename TInherited, typename std::enable_if<std::is_base_of<T *, TInherited *>::value>* = nullptr>
+template <typename T, typename TFlexArrayType>
+inline mFUNCTION(mSharedPointer_AllocateWithFlexArray, OUT mSharedPointer<T> *pOutSharedPointer, IN mAllocator *pAllocator, const size_t flexArrayCount, const std::function<void(T *)> &function)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pOutSharedPointer == nullptr, mR_ArgumentNull);
+
+  uint8_t *pData = nullptr;
+  mDEFER(mAllocator_FreePtr(pAllocator, &pData));
+  mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &pData, sizeof(T) + sizeof(TFlexArrayType) * flexArrayCount));
+
+  mERROR_CHECK(mSharedPointer_Create(pOutSharedPointer, reinterpret_cast<T *>(pData), function, pAllocator));
+
+  pData = nullptr; // to not get released on destruction.
+
+  mRETURN_SUCCESS();
+}
+
+template <typename T, typename TInherited, typename std::enable_if<std::is_base_of<T, TInherited>::value>* = nullptr>
 inline mFUNCTION(mSharedPointer_AllocateInherited, OUT mSharedPointer<T> *pOutSharedPointer, IN mAllocator *pAllocator, const std::function<void(TInherited *)> &function, OUT OPTIONAL TInherited **ppInherited)
 {
   mFUNCTION_SETUP();
@@ -443,10 +511,42 @@ inline mFUNCTION(mSharedPointer_AllocateInherited, OUT mSharedPointer<T> *pOutSh
   mDEFER(mAllocator_FreePtr(pAllocator, &pData));
   mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &pData, 1));
 
-  mERROR_CHECK(mSharedPointer_Create(pOutSharedPointer, (T *)pData, (std::function<void(T *)>)[function](T *pDestructData) { function((TInherited *)pDestructData); }, pAllocator));
-  
+  if (function != nullptr)
+    mERROR_CHECK(mSharedPointer_Create(pOutSharedPointer, static_cast<T *>(pData), (std::function<void(T *)>)[function](T *pDestructData) { function(static_cast<TInherited *>(pDestructData)); }, pAllocator));
+  else
+    mERROR_CHECK(mSharedPointer_Create<T>(pOutSharedPointer, static_cast<T *>(pData), nullptr, pAllocator));
+
+
   if (ppInherited != nullptr)
     *ppInherited = pData;
+
+  pData = nullptr; // to not get released on destruction.
+
+#ifdef mSHARED_POINTER_DEBUG_OUTPUT
+  mLOG(" [was inherited from %s]\n", typeid(TInherited).name());
+#endif
+
+  mRETURN_SUCCESS();
+}
+
+template <typename T, typename TInherited, typename TFlexArrayType, typename std::enable_if<std::is_base_of<T, TInherited>::value>* = nullptr>
+inline mFUNCTION(mSharedPointer_AllocateInheritedWithFlexArray, OUT mSharedPointer<T> *pOutSharedPointer, IN mAllocator *pAllocator, const size_t flexArrayCount, const std::function<void(TInherited *)> &function, OUT OPTIONAL TInherited **ppInherited)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pOutSharedPointer == nullptr, mR_ArgumentNull);
+
+  uint8_t *pData = nullptr;
+  mDEFER(mAllocator_FreePtr(pAllocator, &pData));
+  mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &pData, sizeof(TInherited) + sizeof(TFlexArrayType) * flexArrayCount));
+
+  if (function != nullptr)
+    mERROR_CHECK(mSharedPointer_Create(pOutSharedPointer, reinterpret_cast<T *>(pData), (std::function<void(T *)>)[function](T *pDestructData) { function(static_cast<TInherited *>(pDestructData)); }, pAllocator));
+  else
+    mERROR_CHECK(mSharedPointer_Create<T>(pOutSharedPointer, reinterpret_cast<T *>(pData), nullptr, pAllocator));
+  
+  if (ppInherited != nullptr)
+    *ppInherited = reinterpret_cast<TInherited *>(pData);
 
   pData = nullptr; // to not get released on destruction.
 
