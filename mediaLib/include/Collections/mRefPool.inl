@@ -167,6 +167,9 @@ inline mFUNCTION(mRefPool_ForEach, mPtr<mRefPool<T>> &refPool, const std::functi
 
   mERROR_IF(refPool == nullptr || function == nullptr, mR_ArgumentNull);
 
+  mERROR_CHECK(mRecursiveMutex_Lock(refPool->pMutex));
+  mDEFER_CALL(refPool->pMutex, mRecursiveMutex_Unlock);
+
   for (auto _item : refPool->ptrs->Iterate())
   {
     mERROR_IF(_item.pData->ptr == nullptr, mR_Success);
@@ -196,6 +199,9 @@ inline mFUNCTION(mRefPool_KeepIfTrue, mPtr<mRefPool<T>> &refPool, const std::fun
   mPtr<mQueue<size_t>> removeIndexes;
   mDEFER_CALL(&removeIndexes, mQueue_Destroy);
   mERROR_CHECK(mQueue_Create(&removeIndexes, &mDefaultTempAllocator));
+
+  mERROR_CHECK(mRecursiveMutex_Lock(refPool->pMutex));
+  mDEFER_CALL(refPool->pMutex, mRecursiveMutex_Unlock);
 
   for (auto _item : refPool->ptrs->Iterate())
   {
@@ -297,6 +303,21 @@ inline mFUNCTION(mRefPool_GetPointerIndex, const mPtr<T> &ptr, size_t *pIndex)
   mERROR_IF(ptr.m_pParams->pUserData == nullptr, mR_ResourceStateInvalid);
 
   *pIndex = *(size_t *)ptr.m_pParams->pUserData;
+
+  mRETURN_SUCCESS();
+}
+
+template <typename T>
+mFUNCTION(mRefPool_ContainsIndex, mPtr<mRefPool<T>> &refPool, const size_t index, OUT bool *pIsContained)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(refPool == nullptr || pIsContained == nullptr, mR_ArgumentNull);
+
+  mERROR_CHECK(mRecursiveMutex_Lock(refPool->pMutex));
+  mDEFER_CALL(refPool->pMutex, mRecursiveMutex_Unlock);
+
+  mERROR_CHECK(mPool_ContainsIndex(refPool->ptrs, index, pIsContained));
 
   mRETURN_SUCCESS();
 }

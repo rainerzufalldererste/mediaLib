@@ -98,6 +98,9 @@ mFUNCTION(mRefPool_RemoveOwnReference, mPtr<mRefPool<T>> &refPool);
 template <typename T>
 mFUNCTION(mRefPool_GetPointerIndex, const mPtr<T> &ptr, size_t *pIndex);
 
+template <typename T>
+mFUNCTION(mRefPool_ContainsIndex, mPtr<mRefPool<T>> &refPool, const size_t index, OUT bool *pIsContained);
+
 // would be handled by cpp but still nicer if explicitly defined.
 template <typename T>
 mFUNCTION(mDestruct, IN struct mRefPool_SharedPointerContainer_Internal<T> *pData);
