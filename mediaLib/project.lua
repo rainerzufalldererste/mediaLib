@@ -56,6 +56,7 @@ project(ProjectName)
   includedirs { "3rdParty/libsamplerate/include" }
   includedirs { "3rdParty/StackWalker/include" }
   includedirs { "3rdParty/expat/include" }
+  includedirs { "3rdParty/turbojpeg/include" }
 
   filter { "configurations:Debug", "system:Windows" }
     ignoredefaultlibraries { "libcmt" }
@@ -86,6 +87,7 @@ linkoptions { "3rdParty/opus/lib/opusfile.lib" }
 linkoptions { "3rdParty/opus/lib/opusenc.lib" }
 linkoptions { "3rdParty/libsamplerate/lib/samplerate.lib" }
 linkoptions { "3rdParty/expat/lib/expat.lib" }
+linkoptions { "3rdParty/turbojpeg/lib/turbojpeg-static.lib" }
 linkoptions { "Shlwapi.lib" }
 
 warnings "Extra"
