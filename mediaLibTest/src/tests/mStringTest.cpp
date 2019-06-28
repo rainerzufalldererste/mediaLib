@@ -276,6 +276,52 @@ mTEST(mString, TestCreateMixed)
   mTEST_ALLOCATOR_ZERO_CHECK();
 }
 
+mTEST(mString, TestCreateLength)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  const char text[] = "test123";
+
+  mString string;
+  mDEFER_CALL(&string, mString_Destroy);
+  mTEST_ASSERT_SUCCESS(mString_Create(&string, text, 4, pAllocator));
+
+  size_t count;
+  mTEST_ASSERT_SUCCESS(mString_GetCount(string, &count));
+  mTEST_ASSERT_EQUAL(count, 5);
+
+  size_t size;
+  mTEST_ASSERT_SUCCESS(mString_GetByteSize(string, &size));
+  mTEST_ASSERT_EQUAL(size, 5);
+
+  mTEST_ASSERT_EQUAL('\0', string.c_str()[string.Size() - 1]);
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}
+
+mTEST(mString, TestCreateWideLength)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  const wchar_t text[] = L"test123";
+
+  mString string;
+  mDEFER_CALL(&string, mString_Destroy);
+  mTEST_ASSERT_SUCCESS(mString_Create(&string, text, 4, pAllocator));
+
+  size_t count;
+  mTEST_ASSERT_SUCCESS(mString_GetCount(string, &count));
+  mTEST_ASSERT_EQUAL(count, 5);
+
+  size_t size;
+  mTEST_ASSERT_SUCCESS(mString_GetByteSize(string, &size));
+  mTEST_ASSERT_EQUAL(size, 5);
+
+  mTEST_ASSERT_EQUAL('\0', string.c_str()[string.Size() - 1]);
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}
+
 mTEST(mString, TestCreateFromWchar)
 {
   mTEST_ALLOCATOR_SETUP();

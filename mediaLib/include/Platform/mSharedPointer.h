@@ -207,7 +207,12 @@ public:
     mASSERT_DEBUG(m_pointerParams.referenceCount == 1, "Not all references of the mReferencePack<%s> have been returned.", typeid(T).name());
 
     if (mSharedPointer<T>::m_pData != nullptr && m_pointerParams.cleanupFunction && m_pointerParams.referenceCount == 1)
+    {
+#ifdef mSHARED_POINTER_DEBUG_OUTPUT
+      mLOG("Destroying mReferencePack<%s>. (0x%" PRIx64 ")\n", typeid(T).name(), (uint64_t)m_pData);
+#endif
       m_pointerParams.cleanupFunction(mSharedPointer<T>::m_pData);
+    }
 
     mSharedPointer<T>::m_pData = nullptr;
     mSharedPointer<T>::m_pParams = nullptr;
@@ -222,30 +227,36 @@ private:
   typename std::enable_if<(std::is_move_constructible<T>::value || std::is_arithmetic<T>::value) && mIsTriviallyMemoryMovable<T>::value>::type
     MoveConstructFunc(IN mUniqueContainer<T> *pMove)
   {
-    new (&m_pointerParams) mSharedPointer<T>::PointerParams(std::move(pMove->m_pointerParams));
-    mSharedPointer<T>::m_pParams = &m_pointerParams;
-    mSharedPointer<T>::m_pData = reinterpret_cast<T *>(m_value);
+    if (*pMove != nullptr)
+    {
+      new (&m_pointerParams) mSharedPointer<T>::PointerParams(std::move(pMove->m_pointerParams));
+      mSharedPointer<T>::m_pParams = &m_pointerParams;
+      mSharedPointer<T>::m_pData = reinterpret_cast<T *>(m_value);
 
-    mASSERT_DEBUG(m_pointerParams.referenceCount <= 1, "Not all references of the mUniqueContainer<%s> have been returned.", typeid(T).name());
+      mASSERT_DEBUG(m_pointerParams.referenceCount <= 1, "Not all references of the mUniqueContainer<%s> have been returned.", typeid(T).name());
 
-    mMemmove(reinterpret_cast<T *>(m_value), reinterpret_cast<T *>(pMove->m_value), 1);
-    pMove->m_pData = nullptr;
-    pMove->m_pParams = nullptr;
+      mMemmove(reinterpret_cast<T *>(m_value), reinterpret_cast<T *>(pMove->m_value), 1);
+      pMove->m_pData = nullptr;
+      pMove->m_pParams = nullptr;
+    }
   }
 
   template <typename T = T>
   typename std::enable_if<(std::is_move_constructible<T>::value || std::is_arithmetic<T>::value) && !mIsTriviallyMemoryMovable<T>::value>::type
     MoveConstructFunc(IN mUniqueContainer<T> *pMove)
   {
-    new (&m_pointerParams) mSharedPointer<T>::PointerParams(std::move(pMove->m_pointerParams));
-    mSharedPointer<T>::m_pParams = &m_pointerParams;
-    new (reinterpret_cast<T *>(m_value)) T(std::move(*reinterpret_cast<T *>(pMove->m_value)));
-    mSharedPointer<T>::m_pData = reinterpret_cast<T *>(m_value);
+    if (*pMove != nullptr)
+    {
+      new (&m_pointerParams) mSharedPointer<T>::PointerParams(std::move(pMove->m_pointerParams));
+      mSharedPointer<T>::m_pParams = &m_pointerParams;
+      new (reinterpret_cast<T *>(m_value)) T(std::move(*reinterpret_cast<T *>(pMove->m_value)));
+      mSharedPointer<T>::m_pData = reinterpret_cast<T *>(m_value);
 
-    mASSERT_DEBUG(m_pointerParams.referenceCount <= 1, "Not all references of the mUniqueContainer<%s> have been returned.", typeid(T).name());
+      mASSERT_DEBUG(m_pointerParams.referenceCount <= 1, "Not all references of the mUniqueContainer<%s> have been returned.", typeid(T).name());
 
-    pMove->m_pData = nullptr;
-    pMove->m_pParams = nullptr;
+      pMove->m_pData = nullptr;
+      pMove->m_pParams = nullptr;
+    }
   }
 
   template <typename T = T>
@@ -261,13 +272,21 @@ private:
         m_pointerParams.cleanupFunction(mSharedPointer<T>::m_pData);
     }
 
-    m_pointerParams = std::move(pMove->m_pointerParams);
-    mSharedPointer<T>::m_pParams = &m_pointerParams;
-    mMemmove(reinterpret_cast<T *>(m_value), reinterpret_cast<T *>(pMove->m_value), 1);
-    mSharedPointer<T>::m_pData = reinterpret_cast<T *>(m_value);
+    if (*pMove != nullptr)
+    {
+      m_pointerParams = std::move(pMove->m_pointerParams);
+      mSharedPointer<T>::m_pParams = &m_pointerParams;
+      mMemmove(reinterpret_cast<T *>(m_value), reinterpret_cast<T *>(pMove->m_value), 1);
+      mSharedPointer<T>::m_pData = reinterpret_cast<T *>(m_value);
 
-    pMove->m_pData = nullptr;
-    pMove->m_pParams = nullptr;
+      pMove->m_pData = nullptr;
+      pMove->m_pParams = nullptr;
+    }
+    else
+    {
+      mSharedPointer<T>::m_pData = nullptr;
+      mSharedPointer<T>::m_pParams = nullptr;
+    }
   }
 
   template <typename T = T>
@@ -283,18 +302,32 @@ private:
         m_pointerParams.cleanupFunction(mSharedPointer<T>::m_pData);
     }
 
-    m_pointerParams = std::move(pMove->m_pointerParams);
-    mSharedPointer<T>::m_pParams = &m_pointerParams;
-    *reinterpret_cast<T *>(m_value) = std::move(*reinterpret_cast<T *>(pMove->m_value));
-    mSharedPointer<T>::m_pData = reinterpret_cast<T *>(m_value);
+    if (*pMove != nullptr)
+    {
+      m_pointerParams = std::move(pMove->m_pointerParams);
+      mSharedPointer<T>::m_pParams = &m_pointerParams;
+      *reinterpret_cast<T *>(m_value) = std::move(*reinterpret_cast<T *>(pMove->m_value));
+      mSharedPointer<T>::m_pData = reinterpret_cast<T *>(m_value);
 
-    pMove->m_pData = nullptr;
-    pMove->m_pParams = nullptr;
+      pMove->m_pData = nullptr;
+      pMove->m_pParams = nullptr;
+    }
+    else
+    {
+      mSharedPointer<T>::m_pData = nullptr;
+      mSharedPointer<T>::m_pParams = nullptr;
+    }
   }
 
 public:
   typename mSharedPointer<T>::PointerParams m_pointerParams;
   uint8_t m_value[sizeof(T)]; // to not accidentally initialize a value here that has a default constructor.
+  
+  mUniqueContainer()
+  {
+    mZeroMemory(m_value, ARRAYSIZE(m_value));
+    m_pointerParams.referenceCount = 1;
+  }
 
   mUniqueContainer(nullptr_t /* null */)
   {
@@ -395,7 +428,12 @@ public:
     mASSERT_DEBUG(m_pointerParams.referenceCount <= 1, "Not all references of the mUniqueContainer<%s> have been returned.", typeid(T).name());
 
     if (mSharedPointer<T>::m_pData != nullptr && m_pointerParams.cleanupFunction)
+    {
+#ifdef mSHARED_POINTER_DEBUG_OUTPUT
+      mLOG("Destroying mUniqueContainer<%s>. (0x%" PRIx64 ")\n", typeid(T).name(), (uint64_t)m_pData);
+#endif
       m_pointerParams.cleanupFunction(reinterpret_cast<T *>(m_value));
+    }
 
     mSharedPointer<T>::m_pData = nullptr;
     mSharedPointer<T>::m_pParams = nullptr;
@@ -685,7 +723,7 @@ inline mSharedPointer<T>::~mSharedPointer()
   if (referenceCount == 0)
   {
 #ifdef mSHARED_POINTER_DEBUG_OUTPUT
-    mPRINT_DEBUG("Destroying mSharedPointer<%s>. (0x%" PRIx64 ")\n", typeid(T).name(), (uint64_t)m_pData);
+    mLOG("Destroying mSharedPointer<%s>. (0x%" PRIx64 ")\n", typeid(T).name(), (uint64_t)m_pData);
 #endif
 
     if (m_pParams->cleanupFunction)
@@ -910,6 +948,18 @@ template <typename T>
 struct mIsTriviallyMemoryMovable<mPtr<T>>
 {
   static constexpr bool value = true;
+};
+
+template <typename T>
+struct mIsTriviallyMemoryMovable<mReferencePack<T>>
+{
+  static constexpr bool value = false;
+};
+
+template <typename T>
+struct mIsTriviallyMemoryMovable<mUniqueContainer<T>>
+{
+  static constexpr bool value = false;
 };
 
 #endif // mSharedPointer_h__

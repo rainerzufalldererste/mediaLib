@@ -129,14 +129,15 @@ inline void mDeinit(const std::function<void(void)> &param, Args && ...args)
 
 #define mRETURN_RESULT(result) \
   do \
-  { if (mFAILED(result) && result != mR_Break) \
-    { mSET_ERROR_RAW(result); \
-      mPrintError(mRESULT_PRINT_FUNCTION_TITLE, __FILE__, __LINE__, result, mRESULT_PRINT_DEBUG_STRINGIFY_RETURN_RESULT(result)); \
+  { const mResult _internal_result = (result); \
+    if (mFAILED(_internal_result) && _internal_result != mR_Break) \
+    { mSET_ERROR_RAW(_internal_result); \
+      mPrintError(mRESULT_PRINT_FUNCTION_TITLE, __FILE__, __LINE__, _internal_result, mRESULT_PRINT_DEBUG_STRINGIFY_RETURN_RESULT(result)); \
       if (g_mResult_breakOnError) \
       { mDEBUG_BREAK(); \
       } \
     } \
-    mRESULT_RETURN_RESULT_RAW(result); \
+    mRESULT_RETURN_RESULT_RAW(_internal_result); \
   } while (0)
 
 #define mERROR_CHECK(functionCall, ...) \
@@ -157,7 +158,7 @@ inline void mDeinit(const std::function<void(void)> &param, Args && ...args)
   do \
   { if (conditional) \
     { mSTDRESULT = (resultOnError); \
-      if (mFAILED(resultOnError)) \
+      if (mFAILED(mSTDRESULT)) \
       { mSET_ERROR_RAW(mSTDRESULT); \
         mPrintError(mRESULT_PRINT_FUNCTION_TITLE, __FILE__, __LINE__, mSTDRESULT, mRESULT_PRINT_DEBUG_STRINGIFY(conditional)); \
         mDeinit(__VA_ARGS__); \

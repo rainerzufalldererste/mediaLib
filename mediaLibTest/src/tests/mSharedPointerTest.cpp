@@ -199,10 +199,11 @@ mTEST(mUniqueContainer, TestCreateCleanup)
 
   {
     mUniqueContainer<size_t> container;
+    mTEST_ASSERT_EQUAL(container.GetPointer(), nullptr);
   }
 
   {
-    mUniqueContainer<size_t> container;
+    mUniqueContainer<size_t> container(1);
 
     {
       mPtr<size_t> ptr = container.ToPtr();

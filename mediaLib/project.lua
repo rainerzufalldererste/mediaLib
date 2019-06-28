@@ -55,6 +55,7 @@ project(ProjectName)
   includedirs { "3rdParty/opus/include" }
   includedirs { "3rdParty/libsamplerate/include" }
   includedirs { "3rdParty/StackWalker/include" }
+  includedirs { "3rdParty/expat/include" }
 
   filter { "configurations:Debug", "system:Windows" }
     ignoredefaultlibraries { "libcmt" }
@@ -84,6 +85,7 @@ linkoptions { "3rdParty/opus/lib/opus.lib" }
 linkoptions { "3rdParty/opus/lib/opusfile.lib" }
 linkoptions { "3rdParty/opus/lib/opusenc.lib" }
 linkoptions { "3rdParty/libsamplerate/lib/samplerate.lib" }
+linkoptions { "3rdParty/expat/lib/expat.lib" }
 linkoptions { "Shlwapi.lib" }
 
 warnings "Extra"

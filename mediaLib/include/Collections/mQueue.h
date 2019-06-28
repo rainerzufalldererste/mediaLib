@@ -151,6 +151,12 @@ mFUNCTION(mQueue_PopAt, mPtr<mQueue<T>> &queue, size_t index, OUT T *pItem);
 template <typename T>
 mFUNCTION(mQueue_PointerAt, mPtr<mQueue<T>> &queue, const size_t index, OUT T **ppItem);
 
+template <typename T, typename ...Args>
+mFUNCTION(mQueue_EmplaceBack, mPtr<mQueue<T>> &queue, Args && ...args);
+
+template <typename T, typename ...Args>
+mFUNCTION(mQueue_EmplaceFront, mPtr<mQueue<T>> &queue, Args && ...args);
+
 template <typename T>
 mFUNCTION(mQueue_GetCount, const mPtr<mQueue<T>> &queue, OUT size_t *pCount);
 
@@ -162,6 +168,9 @@ mFUNCTION(mQueue_Reserve, mPtr<mQueue<T>> &queue, const size_t count);
 
 template <typename T>
 mFUNCTION(mQueue_Clear, mPtr<mQueue<T>> &queue);
+
+template <typename T>
+mFUNCTION(mQueue_Clear, mQueue<T> &queue);
 
 template <typename T>
 mFUNCTION(mQueue_CopyTo, const mPtr<mQueue<T>> &source, OUT mPtr<mQueue<T>> *pTarget, IN mAllocator *pAllocator);
@@ -303,6 +312,27 @@ inline mFUNCTION(mQueue_PushBack, mPtr<mQueue<T>> &queue, IN T *pItem)
   mRETURN_SUCCESS();
 }
 
+template <typename T, typename ...Args>
+mFUNCTION(mQueue_EmplaceBack, mPtr<mQueue<T>> &queue, Args && ...args)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(queue == nullptr, mR_ArgumentNull);
+
+  if (queue->pData == nullptr)
+    mERROR_CHECK(mQueue_Reserve(queue, 1));
+  else if (queue->size == queue->count)
+    mERROR_CHECK(mQueue_Grow_Internal(queue));
+
+  const size_t index = (queue->startIndex + queue->count) % queue->size;
+  
+  new (&queue->pData[index]) T(std::forward<Args>(args)...);
+
+  ++queue->count;
+
+  mRETURN_SUCCESS();
+}
+
 template<typename T>
 inline mFUNCTION(mQueue_PushBack, mPtr<mQueue<T>> &queue, IN T item)
 {
@@ -336,6 +366,33 @@ inline mFUNCTION(mQueue_PushFront, mPtr<mQueue<T>> &queue, IN T *pItem)
     new (&queue->pData[index]) T(*pItem);
   else
     mERROR_CHECK(mAllocator_Copy(queue->pAllocator, &queue->pData[index], pItem, 1));
+
+  ++queue->count;
+  queue->startIndex = index;
+
+  mRETURN_SUCCESS();
+}
+
+template <typename T, typename ...Args>
+mFUNCTION(mQueue_EmplaceFront, mPtr<mQueue<T>> &queue, Args && ...args)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(queue == nullptr, mR_ArgumentNull);
+
+  if (queue->pData == nullptr)
+    mERROR_CHECK(mQueue_Reserve(queue, 1));
+  else if (queue->size == queue->count)
+    mERROR_CHECK(mQueue_Grow_Internal(queue));
+
+  size_t index;
+
+  if (queue->startIndex > 0)
+    index = queue->startIndex - 1;
+  else
+    index = queue->size - 1;
+
+  new (&queue->pData[index]) T(std::forward<Args>(args)...);
 
   ++queue->count;
   queue->startIndex = index;
@@ -559,19 +616,29 @@ inline mFUNCTION(mQueue_Clear, mPtr<mQueue<T>> &queue)
 
   mERROR_IF(queue == nullptr, mR_ArgumentNull);
 
-  if (queue->pData != nullptr)
+  mERROR_CHECK(mQueue_Clear(*queue));
+
+  mRETURN_SUCCESS();
+}
+
+template <typename T>
+mFUNCTION(mQueue_Clear, mQueue<T> &queue)
+{
+  mFUNCTION_SETUP();
+
+  if (queue.pData != nullptr)
   {
-    size_t index = queue->startIndex;
+    size_t index = queue.startIndex;
 
-    for (size_t i = 0; i < queue->count; ++i)
+    for (size_t i = 0; i < queue.count; ++i)
     {
-      mERROR_CHECK(mDestruct(queue->pData + index));
+      mERROR_CHECK(mDestruct(queue.pData + index));
 
-      index = (index + 1) % queue->size;
+      index = (index + 1) % queue.size;
     }
 
-    queue->startIndex = 0;
-    queue->count = 0;
+    queue.startIndex = 0;
+    queue.count = 0;
   }
 
   mRETURN_SUCCESS();
@@ -1063,14 +1130,7 @@ inline mFUNCTION(mQueue_Destroy_Internal, IN mQueue<T> *pQueue)
 
   if (pQueue->pData != nullptr)
   {
-    size_t index = pQueue->startIndex;
-
-    for (size_t i = 0; i < pQueue->count; ++i)
-    {
-      mERROR_CHECK(mDestruct(pQueue->pData + index));
-
-      index = (index + 1) % pQueue->size;
-    }
+    mERROR_CHECK(mQueue_Clear(*pQueue));
 
     mAllocator *pAllocator = pQueue->pAllocator;
     mERROR_CHECK(mAllocator_FreePtr(pAllocator, &pQueue->pData));

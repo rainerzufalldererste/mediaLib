@@ -271,6 +271,9 @@ template <size_t TCount>
 mFUNCTION(mString_Create, OUT mString *pString, const mInplaceString<TCount> &stackString, IN OPTIONAL mAllocator *pAllocator = nullptr);
 
 template <size_t TCount>
+mFUNCTION(mString_Append, mString &text, const mInplaceString<TCount> &appendedText);
+
+template <size_t TCount>
 mFUNCTION(mInplaceString_GetByteSize, const mInplaceString<TCount> &string, OUT size_t *pSize);
 
 template <size_t TCount>
@@ -450,6 +453,28 @@ inline mFUNCTION(mString_Create, OUT mString *pString, const mInplaceString<TCou
   mFUNCTION_SETUP();
 
   mERROR_CHECK(mString_Create(pString, stackString.text, stackString.bytes, pAllocator));
+
+  mRETURN_SUCCESS();
+}
+
+template<size_t TCount>
+inline mFUNCTION(mString_Append, mString &text, const mInplaceString<TCount> &appendedText)
+{
+  mFUNCTION_SETUP();
+
+  mString s;
+  s.capacity = s.bytes = appendedText.bytes;
+  s.count = appendedText.count;
+  s.hasFailed = false;
+  s.text = const_cast<char *>(appendedText.text);
+
+  // Prevent from attempting to free `s.text`;
+  mDEFER(
+    s.capacity = s.count = s.bytes = 0;
+    s.text = nullptr;
+  );
+
+  mERROR_CHECK(mString_Append(text, s));
 
   mRETURN_SUCCESS();
 }
