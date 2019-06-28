@@ -202,3 +202,27 @@ mTEST(mInplaceString, TestIterate)
 
   mTEST_ALLOCATOR_ZERO_CHECK();
 }
+
+mTEST(mString, TestAppendInplaceString)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  mString string;
+  mDEFER_CALL(&string, mString_Destroy);
+  mTEST_ASSERT_SUCCESS(mString_Create(&string, "🌵🦎🎅test", pAllocator));
+
+  mInplaceString<0xF> appended;
+  mTEST_ASSERT_SUCCESS(mInplaceString_Create(&appended, "🦎T"));
+
+  mTEST_ASSERT_SUCCESS(mString_Append(string, appended));
+
+  size_t count;
+  mTEST_ASSERT_SUCCESS(mString_GetCount(string, &count));
+  mTEST_ASSERT_EQUAL(count, 4 + 5 + 1);
+
+  size_t size;
+  mTEST_ASSERT_SUCCESS(mString_GetByteSize(string, &size));
+  mTEST_ASSERT_EQUAL(size, 16 + 5 + 1);
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}

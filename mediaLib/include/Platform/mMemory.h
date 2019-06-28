@@ -11,6 +11,16 @@ void mSetToNullptr(T **ppData)
 }
 
 template <typename T>
+class mSharedPointer;
+
+template <typename T>
+void mSetToNullptr(mSharedPointer<T> *pPtr)
+{
+  if(pPtr != nullptr)
+    *pPtr = nullptr;
+}
+
+template <typename T>
 mFUNCTION(mMemset, IN_OUT T *pData, size_t count, uint8_t data = 0)
 {
   mFUNCTION_SETUP();

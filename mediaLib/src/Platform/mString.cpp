@@ -143,8 +143,21 @@ epilogue:
 
 mString & mString::operator=(mString &&move)
 {
-  this->~mString();
-  new (this) mString(std::move(move));
+  if (move.text == nullptr)
+  {
+    this->bytes = 0;
+    this->count = 0;
+    this->hasFailed = false;
+
+    if (this->text != nullptr)
+      this->text[0] = '\0';
+  }
+  else
+  {
+    this->~mString();
+    new (this) mString(std::move(move));
+  }
+
   return *this;
 }
 
@@ -346,14 +359,14 @@ mFUNCTION(mString_Create, OUT mString *pString, IN const char *text, size_t size
 
   if (pString->pAllocator == pAllocator)
   {
-    *pString = mString();
-    pString->pAllocator = pAllocator;
-
     if (pString->capacity < size)
     {
       mERROR_CHECK(mAllocator_Reallocate(pString->pAllocator, &pString->text, size));
       pString->capacity = pString->bytes = size;
     }
+
+    pString->text[0] = '\0';
+    pString->bytes = size;
   }
   else
   {
@@ -366,7 +379,8 @@ mFUNCTION(mString_Create, OUT mString *pString, IN const char *text, size_t size
     pString->capacity = pString->bytes = size;
   }
 
-  mERROR_CHECK(mAllocator_Copy(pString->pAllocator, pString->text, text, pString->bytes));
+  mERROR_CHECK(mAllocator_Copy(pString->pAllocator, pString->text, text, pString->bytes - 1));
+  pString->text[pString->bytes - 1] = '\0';
 
   size_t offset = 0;
   pString->count = 0;
@@ -521,14 +535,17 @@ mFUNCTION(mString_Create, OUT mString *pString, const wchar_t *text, const size_
     mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &pString->text, size * sizeof(wchar_t) * 2));
     pString->capacity = size * sizeof(wchar_t) * 2;
   }
-  
-  if (0 == (pString->bytes = WideCharToMultiByte(CP_UTF8, 0, text, (int)size, pString->text, (int)pString->capacity, nullptr, false)))
+
+  if (0 == (pString->bytes = WideCharToMultiByte(CP_UTF8, 0, text, (int)(size - 1), pString->text, (int)pString->capacity, nullptr, false)))
   {
     DWORD error = GetLastError();
     mUnused(error);
 
     mRETURN_RESULT(mR_InvalidParameter);
   }
+
+  pString->text[pString->bytes] = '\0';
+  pString->bytes++;
 
   size_t offset = 0;
   pString->count = 0;
@@ -576,6 +593,10 @@ mFUNCTION(mString_Create, OUT mString *pString, const mString &from, IN OPTIONAL
     {
       mERROR_CHECK(mAllocator_Reallocate(pString->pAllocator, &pString->text, from.bytes));
       pString->capacity = pString->bytes = from.bytes;
+    }
+    else
+    {
+      pString->bytes = from.bytes;
     }
   }
   else
