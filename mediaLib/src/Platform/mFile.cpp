@@ -928,11 +928,8 @@ mFUNCTION(mFile_GetAbsoluteDirectoryPath, OUT mString *pAbsolutePath, const mStr
   mERROR_IF(pAbsolutePath == nullptr, mR_ArgumentNull);
   mERROR_IF(directoryPath.hasFailed, mR_InvalidParameter);
 
-  mString actualFolderPath;
-  mERROR_CHECK(mString_ToDirectoryPath(&actualFolderPath, directoryPath));
-
   wchar_t folderPath[MAX_PATH];
-  mERROR_CHECK(mString_ToWideString(actualFolderPath, folderPath, mARRAYSIZE(folderPath)));
+  mERROR_CHECK(mString_ToWideString(directoryPath, folderPath, mARRAYSIZE(folderPath)));
 
   wchar_t absolutePath[MAX_PATH];
   const DWORD length = GetFullPathNameW(folderPath, mARRAYSIZE(absolutePath), absolutePath, nullptr);

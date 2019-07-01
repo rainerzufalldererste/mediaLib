@@ -758,6 +758,11 @@ mTEST(mString, TestToDirectoryPath)
 
   mTEST_ASSERT_EQUAL(path, "test\\");
 
+  mTEST_ASSERT_SUCCESS(mString_Create(&string, "\\\\NetworkPath//Path/\\/p\\", pAllocator));
+  mTEST_ASSERT_SUCCESS(mString_ToDirectoryPath(&path, string));
+
+  mTEST_ASSERT_EQUAL(path, "\\\\NetworkPath\\Path\\p\\");
+
   mTEST_ALLOCATOR_ZERO_CHECK();
 }
 
@@ -789,6 +794,11 @@ mTEST(mString, TestToFilePath)
   mTEST_ASSERT_SUCCESS(mString_ToFilePath(&path, string));
 
   mTEST_ASSERT_EQUAL(path, "test");
+
+  mTEST_ASSERT_SUCCESS(mString_Create(&string, "\\\\NetworkPath//Path/\\/p", pAllocator));
+  mTEST_ASSERT_SUCCESS(mString_ToFilePath(&path, string));
+
+  mTEST_ASSERT_EQUAL(path, "\\\\NetworkPath\\Path\\p");
 
   mTEST_ALLOCATOR_ZERO_CHECK();
 }
