@@ -679,6 +679,8 @@ mFUNCTION(mFile_GetDirectoryContents, const mString &directoryPath, OUT mPtr<mQu
     switch (error)
     {
     case ERROR_FILE_NOT_FOUND:
+    case ERROR_PATH_NOT_FOUND:
+    case ERROR_BAD_NETPATH:
       mRETURN_RESULT(mR_ResourceNotFound);
 
     default:
