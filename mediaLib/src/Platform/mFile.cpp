@@ -120,46 +120,46 @@ mFUNCTION(mFile_CreateDirectory, const mString &folderPath)
   mString path;
   mERROR_CHECK(mFile_GetAbsoluteDirectoryPath(&path, folderPath));
 
-  bool hasSpaceOrPeriodInCurrentPath = false;
-  bool hasNonSpaceOrPeriodInCurrentPath = false;
-
-  bool lastWasSpaceOrDot = false;
-
-  const mchar_t space = mToChar<2>(" ");
-  const mchar_t period = mToChar<2>(".");
-  const mchar_t backslash = mToChar<2>("\\");
-
-  for (auto _char : path)
+  // Prevent user from creating a directory that windows explorer doesn't support.
   {
-    if (_char.codePoint == space || _char.codePoint == period)
+    bool hasSpaceOrPeriodInCurrentPath = false;
+    bool hasNonSpaceOrPeriodInCurrentPath = false;
+    bool lastWasSpaceOrDot = false;
+
+    const mchar_t space = mToChar<2>(" ");
+    const mchar_t period = mToChar<2>(".");
+    const mchar_t backslash = mToChar<2>("\\");
+
+    for (auto _char : path)
     {
-      hasSpaceOrPeriodInCurrentPath = true;
-      lastWasSpaceOrDot = true;
-    }
-    else if (_char.codePoint == backslash)
-    {
-      mERROR_IF(hasSpaceOrPeriodInCurrentPath && !hasNonSpaceOrPeriodInCurrentPath && lastWasSpaceOrDot, mR_InvalidParameter);
-      hasSpaceOrPeriodInCurrentPath = false;
-      hasNonSpaceOrPeriodInCurrentPath = false;
-      lastWasSpaceOrDot = false;
-    }
-    else
-    {
-      hasNonSpaceOrPeriodInCurrentPath = true;
-      lastWasSpaceOrDot = false;
+      if (_char.codePoint == space || _char.codePoint == period)
+      {
+        hasSpaceOrPeriodInCurrentPath = true;
+        lastWasSpaceOrDot = true;
+      }
+      else if (_char.codePoint == backslash)
+      {
+        mERROR_IF(hasSpaceOrPeriodInCurrentPath && !hasNonSpaceOrPeriodInCurrentPath && lastWasSpaceOrDot, mR_InvalidParameter);
+        hasSpaceOrPeriodInCurrentPath = false;
+        hasNonSpaceOrPeriodInCurrentPath = false;
+        lastWasSpaceOrDot = false;
+      }
+      else
+      {
+        hasNonSpaceOrPeriodInCurrentPath = true;
+        lastWasSpaceOrDot = false;
+      }
     }
   }
 
-  wchar_t wdirectoryName[MAX_PATH];
-  mERROR_CHECK(mString_ToWideString(path, wdirectoryName, mARRAYSIZE(wdirectoryName)));
+  wchar_t wDirectoryName[MAX_PATH];
+  mERROR_CHECK(mString_ToWideString(path, wDirectoryName, mARRAYSIZE(wDirectoryName)));
 
-  const int errorCode = SHCreateDirectoryExW(NULL, wdirectoryName, NULL);
+  const int errorCode = SHCreateDirectoryExW(NULL, wDirectoryName, NULL);
 
   switch (errorCode)
   {
   case ERROR_SUCCESS:
-    mRETURN_SUCCESS();
-
   case ERROR_ALREADY_EXISTS:
   case ERROR_FILE_EXISTS:
     break;
@@ -919,6 +919,32 @@ mFUNCTION(mFile_GetDrives, OUT mPtr<mQueue<mString>> *pDrives, IN mAllocator *pA
 
     nextDriveLabel = &nextDriveLabel[lstrlenW(nextDriveLabel) + 1];
   }
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mFile_GetFreeStorageSpace, const mString &path, OUT size_t *pSize)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pSize == nullptr, mR_ArgumentNull);
+  mERROR_IF(path.hasFailed || path.bytes <= 1, mR_InvalidParameter);
+
+  wchar_t wPath[MAX_PATH + 1];
+
+  mERROR_CHECK(mString_ToWideString(path, wPath, mARRAYSIZE(wPath)));
+
+  ULARGE_INTEGER freeBytesAvailableToCaller;
+
+  if (FALSE == GetDiskFreeSpaceExW(wPath, &freeBytesAvailableToCaller, nullptr, nullptr))
+  {
+    const DWORD error = GetLastError();
+    mUnused(error);
+
+    mRETURN_RESULT(mR_InternalError);
+  }
+
+  *pSize = freeBytesAvailableToCaller.QuadPart;
 
   mRETURN_SUCCESS();
 }

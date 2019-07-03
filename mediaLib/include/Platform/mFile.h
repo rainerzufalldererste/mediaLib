@@ -102,6 +102,8 @@ mFUNCTION(mFile_GetDrives, OUT mPtr<mQueue<mDriveInfo>> *pDrives, IN mAllocator 
 // If the queue is null, creates a queue, otherwise clears the queue.
 mFUNCTION(mFile_GetDrives, OUT mPtr<mQueue<mString>> *pDrives, IN mAllocator *pAllocator);
 
+mFUNCTION(mFile_GetFreeStorageSpace, const mString &path, OUT size_t *pSize);
+
 mFUNCTION(mFile_GetAbsoluteDirectoryPath, OUT mString *pAbsolutePath, const mString &directoryPath);
 mFUNCTION(mFile_GetAbsoluteFilePath, OUT mString *pAbsolutePath, const mString &filePath);
 
