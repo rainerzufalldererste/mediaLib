@@ -668,7 +668,7 @@ mFUNCTION(mFile_GetDirectoryContents, const mString &directoryPath, OUT mPtr<mQu
     mERROR_CHECK(mQueue_Create(pFiles, pAllocator));
   else
     mERROR_CHECK(mQueue_Clear(*pFiles));
-
+  
   WIN32_FIND_DATAW fileData;
   const HANDLE handle = FindFirstFileW(absolutePath, &fileData);
 
@@ -683,6 +683,7 @@ mFUNCTION(mFile_GetDirectoryContents, const mString &directoryPath, OUT mPtr<mQu
     case ERROR_BAD_NETPATH:
       mRETURN_RESULT(mR_ResourceNotFound);
 
+    case ERROR_DIRECTORY:
     default:
       mRETURN_RESULT(mR_InternalError);
     }
