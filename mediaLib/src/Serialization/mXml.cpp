@@ -477,6 +477,14 @@ inline bool mXmlWriter_StringNeedsEscaping(const mString &string)
   return false;
 }
 
+static mString mXmlWriter_OpeningTag = "<";
+static mString mXmlWriter_OpeningEndTag = "</";
+static mString mXmlWriter_ClosingTag = ">";
+static mString mXmlWriter_EmptyClosingTag = "/>";
+static mString mXmlWriter_Space = " ";
+static mString mXmlWriter_Equals = "=";
+static mString mXmlWriter_Quote = "\"";
+
 //////////////////////////////////////////////////////////////////////////
 
 mFUNCTION(mXmlWriter_Create, OUT mPtr<mXmlWriter> *pXmlWriter, IN mAllocator *pAllocator, const mString &rootElementTag)
@@ -517,10 +525,14 @@ mFUNCTION(mXmlWriter_ToString, mPtr<mXmlWriter> &xmlWriter, OUT mString *pXmlStr
 
   mERROR_IF(xmlWriter == nullptr || pXmlString == nullptr, mR_ArgumentNull);
 
-  const char header[] = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
+  const char header[] = "<?xml version=\"1.0\"?>\n";
 
   mERROR_CHECK(mString_Create(pXmlString, header, mARRAYSIZE(header), pAllocator));
   mERROR_CHECK(mXmlWriter_RecursiveSerializeNode_Internal(xmlWriter->rootNode, *pXmlString));
+
+  mInplaceString<2> newline;
+  mERROR_CHECK(mInplaceString_Create(&newline, "\n"));
+  mERROR_CHECK(mString_Append(*pXmlString, newline));
 
   mRETURN_SUCCESS();
 }
@@ -637,22 +649,9 @@ mFUNCTION(mXmlWriter_Destroy_Internal, IN_OUT mXmlWriter *pXmlWriter)
   mRETURN_SUCCESS();
 }
 
-static mString mXmlWriter_OpeningTag = "<";
-static mString mXmlWriter_OpeningEndTag = "</";
-static mString mXmlWriter_ClosingTag = ">";
-static mString mXmlWriter_EmptyClosingTag = "/>\n";
-static mString mXmlWriter_Space = " ";
-static mString mXmlWriter_Equals = "=";
-static mString mXmlWriter_Quote = "\"";
-static mString mXmlWriter_NewLine = "\n";
-static mString mXmlWriter_Ident = "\t";
-
 mFUNCTION(mXmlWriter_RecursiveSerializeNode_Internal, const mXmlNode &xmlNode, IN_OUT mString &string, const size_t depth /* = 0 */)
 {
   mFUNCTION_SETUP();
-
-  for (size_t i = 0; i < depth; i++)
-    mERROR_CHECK(mString_Append(string, mXmlWriter_Ident));
 
   mERROR_CHECK(mString_Append(string, mXmlWriter_OpeningTag));
   mERROR_CHECK(mString_Append(string, xmlNode.tag));
@@ -682,20 +681,12 @@ mFUNCTION(mXmlWriter_RecursiveSerializeNode_Internal, const mXmlNode &xmlNode, I
   mERROR_CHECK(mXmlWriter_AppendEscapedString_Internal(string, xmlNode.content));
 
   if (hasChildNodes)
-  {
-    mERROR_CHECK(mString_Append(string, mXmlWriter_NewLine));
-
     for (const auto &_childNode : xmlNode.childNodes->Iterate())
       mERROR_CHECK(mXmlWriter_RecursiveSerializeNode_Internal(_childNode, string, depth + 1));
-
-    for (size_t i = 0; i < depth; i++)
-      mERROR_CHECK(mString_Append(string, mXmlWriter_Ident));
-  }
 
   mERROR_CHECK(mString_Append(string, mXmlWriter_OpeningEndTag));
   mERROR_CHECK(mString_Append(string, xmlNode.tag));
   mERROR_CHECK(mString_Append(string, mXmlWriter_ClosingTag));
-  mERROR_CHECK(mString_Append(string, mXmlWriter_NewLine));
 
   mRETURN_SUCCESS();
 }
