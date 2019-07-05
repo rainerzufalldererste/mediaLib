@@ -645,7 +645,7 @@ mFUNCTION(mFile_ExtractFileNameFromPath, OUT mString *pFileName, const mString &
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mFile_GetDirectoryContents, const mString &directoryPath, OUT mPtr<mQueue<mFileInfo>> *pFiles, IN mAllocator *pAllocator)
+mFUNCTION(mFile_GetDirectoryContents, const mString &directoryPath, const mString &searchTerm, OUT mPtr<mQueue<mFileInfo>> *pFiles, IN mAllocator *pAllocator)
 {
   mFUNCTION_SETUP();
 
@@ -655,7 +655,7 @@ mFUNCTION(mFile_GetDirectoryContents, const mString &directoryPath, OUT mPtr<mQu
   mString actualFolderPath;
   mERROR_CHECK(mString_ToDirectoryPath(&actualFolderPath, directoryPath));
 
-  mERROR_CHECK(mString_Append(actualFolderPath, "*"));
+  mERROR_CHECK(mString_Append(actualFolderPath, searchTerm));
 
   wchar_t folderPath[MAX_PATH];
   mERROR_CHECK(mString_ToWideString(actualFolderPath, folderPath, mARRAYSIZE(folderPath)));
@@ -697,6 +697,31 @@ mFUNCTION(mFile_GetDirectoryContents, const mString &directoryPath, OUT mPtr<mQu
     mERROR_CHECK(mFileInfo_FromFindDataWStruct_Internal(&fileInfo, &fileData, pAllocator));
     mERROR_CHECK(mQueue_PushBack(*pFiles, fileInfo));
   } while (FindNextFileW(handle, &fileData));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mFile_GetDirectoryContents, const mString &directoryPath, const char *searchTerm, OUT mPtr<mQueue<mFileInfo>> *pFiles, IN mAllocator *pAllocator)
+{
+  return mFile_GetDirectoryContents(directoryPath, mString(searchTerm), pFiles, pAllocator);
+}
+
+mFUNCTION(mFile_GetDirectoryContents, const mString &directoryPath, const wchar_t *searchTerm, OUT mPtr<mQueue<mFileInfo>> *pFiles, IN mAllocator *pAllocator)
+{
+  return mFile_GetDirectoryContents(directoryPath, mString(searchTerm), pFiles, pAllocator);
+}
+
+mFUNCTION(mFile_GetDirectoryContents, const mString &directoryPath, OUT mPtr<mQueue<mFileInfo>> *pFiles, IN mAllocator *pAllocator)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pFiles == nullptr, mR_ArgumentNull);
+  mERROR_IF(directoryPath.hasFailed, mR_InvalidParameter);
+
+  mString searchTerm;
+  mERROR_CHECK(mString_Create(&searchTerm, "*", 2, &mDefaultTempAllocator));
+
+  mERROR_CHECK(mFile_GetDirectoryContents(directoryPath, searchTerm, pFiles, pAllocator));
 
   mRETURN_SUCCESS();
 }
@@ -963,6 +988,14 @@ mFUNCTION(mFile_GetAbsoluteDirectoryPath, OUT mString *pAbsolutePath, const mStr
   wchar_t absolutePath[MAX_PATH];
   const DWORD length = GetFullPathNameW(folderPath, mARRAYSIZE(absolutePath), absolutePath, nullptr);
 
+  if (length == 0)
+  {
+    const DWORD error = GetLastError();
+    mUnused(error);
+
+    mRETURN_RESULT(mR_InternalError);
+  }
+
   mERROR_CHECK(mString_Create(pAbsolutePath, absolutePath, length + 1, directoryPath.pAllocator));
 
   mRETURN_SUCCESS();
@@ -980,6 +1013,14 @@ mFUNCTION(mFile_GetAbsoluteFilePath, OUT mString *pAbsolutePath, const mString &
 
   wchar_t absolutePath[MAX_PATH];
   const DWORD length = GetFullPathNameW(wfilepath, mARRAYSIZE(absolutePath), absolutePath, nullptr);
+
+  if (length == 0)
+  {
+    const DWORD error = GetLastError();
+    mUnused(error);
+
+    mRETURN_RESULT(mR_InternalError);
+  }
 
   mERROR_CHECK(mString_Create(pAbsolutePath, absolutePath, length + 1, filePath.pAllocator));
 

@@ -63,6 +63,24 @@ mFUNCTION(mPipe_Read, mPtr<mPipe> &pipe, OUT uint8_t *pData, const size_t capaci
 
   mERROR_IF(pipe == nullptr || pData == nullptr || pLength == nullptr, mR_ArgumentNull);
 
+  DWORD bytesAvailable = 0;
+
+  if (FALSE == PeekNamedPipe(pipe->read, nullptr, 0, nullptr, &bytesAvailable, nullptr))
+  {
+    *pLength = 0;
+
+    const DWORD error = GetLastError();
+    mUnused(error);
+
+    mRETURN_RESULT(mR_InternalError);
+  }
+
+  if (bytesAvailable == 0)
+  {
+    *pLength = 0;
+    mRETURN_SUCCESS();
+  }
+
   DWORD bytesRead = 0;
 
   if (FALSE == ReadFile(pipe->read, pData, (DWORD)mMin(capacity, (size_t)MAXDWORD), &bytesRead, NULL))

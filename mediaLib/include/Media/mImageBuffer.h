@@ -41,6 +41,8 @@ mFUNCTION(mImageBuffer_SaveAsJpeg, mPtr<mImageBuffer> &imageBuffer, const mStrin
 mFUNCTION(mImageBuffer_SaveAsBmp, mPtr<mImageBuffer> &imageBuffer, const mString &filename);
 mFUNCTION(mImageBuffer_SaveAsTga, mPtr<mImageBuffer> &imageBuffer, const mString &filename);
 
+mFUNCTION(mImageBuffer_SetToFile, mPtr<mImageBuffer> &imageBuffer, const mString &filename, const mPixelFormat pixelFormat = mPF_B8G8R8A8);
+
 mFUNCTION(mImageBuffer_FlipY, mPtr<mImageBuffer> &imageBuffer);
 
 #endif // mImageBuffer_h__

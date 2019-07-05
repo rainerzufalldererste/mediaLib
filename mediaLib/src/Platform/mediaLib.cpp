@@ -230,6 +230,11 @@ namespace mCpuExtensions
 
 double_t mParseFloat(IN const char *start, OUT const char **end)
 {
+  const char *endIfNoEnd = nullptr;
+
+  if (end == nullptr)
+    end = &endIfNoEnd;
+
   double_t sign = 1;
 
   if (*start == '-')
