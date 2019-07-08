@@ -147,7 +147,7 @@ mString & mString::operator=(mString &&move)
   {
     this->bytes = 0;
     this->count = 0;
-    this->hasFailed = false;
+    this->hasFailed = move.hasFailed;
 
     if (this->text != nullptr)
       this->text[0] = '\0';
