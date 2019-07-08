@@ -295,6 +295,11 @@ mFUNCTION(mSprintf, OUT char *buffer, const size_t bufferLength, const char *for
 mFUNCTION(mSprintfWithLength, OUT char *buffer, const size_t bufferLength, const char *formatString, OUT size_t *pLength, ...);
 mFUNCTION(mStringCopy, OUT char *buffer, const size_t bufferLength, const char *source, const size_t sourceLength);
 
+mFUNCTION(mStringLength, const wchar_t *text, const size_t maxLength, OUT size_t *pLength);
+mFUNCTION(mSprintf, OUT wchar_t *buffer, const size_t bufferLength, const wchar_t *formatString, ...);
+mFUNCTION(mSprintfWithLength, OUT wchar_t *buffer, const size_t bufferLength, const wchar_t *formatString, OUT size_t *pLength, ...);
+mFUNCTION(mStringCopy, OUT wchar_t *buffer, const size_t bufferLength, const wchar_t *source, const size_t sourceLength);
+
 template <size_t TCount>
 mFUNCTION(mStringChar, const char text[TCount], const char character, OUT size_t *pLength)
 {

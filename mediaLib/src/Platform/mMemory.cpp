@@ -19,7 +19,7 @@ mFUNCTION(mSprintf, OUT char *buffer, const size_t bufferLength, const char *for
 
   va_list args;
   va_start(args, formatString);
-  int length = vsprintf_s(buffer, bufferLength, formatString, args);
+  const int length = vsprintf_s(buffer, bufferLength, formatString, args);
   va_end(args);
 
   mERROR_IF(length < 0, mR_ArgumentOutOfBounds);
@@ -37,7 +37,7 @@ mFUNCTION(mSprintfWithLength, OUT char *buffer, const size_t bufferLength, const
 
   va_list args;
   va_start(args, formatString);
-  int length = vsprintf_s(buffer, bufferLength, formatString, args);
+  const int length = vsprintf_s(buffer, bufferLength, formatString, args);
   va_end(args);
 
   mERROR_IF(length < 0, mR_ArgumentOutOfBounds);
@@ -54,6 +54,76 @@ mFUNCTION(mStringCopy, OUT char *buffer, const size_t bufferLength, const char *
   mERROR_IF(buffer == nullptr || source == nullptr, mR_ArgumentNull);
 
   const errno_t error = strncpy_s(buffer, bufferLength, source, sourceLength);
+
+  switch (error)
+  {
+  case 0:
+    mRETURN_SUCCESS();
+
+  case STRUNCATE:
+  case ERANGE:
+    mRETURN_RESULT(mR_ArgumentOutOfBounds);
+
+  case EINVAL:
+    mRETURN_RESULT(mR_InvalidParameter);
+
+  default:
+    mRETURN_RESULT(mR_InternalError);
+  }
+}
+
+mFUNCTION(mStringLength, const wchar_t *text, const size_t maxLength, OUT size_t *pLength)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(text == nullptr || pLength == nullptr, mR_ArgumentNull);
+
+  *pLength = wcsnlen_s(text, maxLength);
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mSprintf, OUT wchar_t *buffer, const size_t bufferLength, const wchar_t *formatString, ...)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(buffer == nullptr || formatString == nullptr, mR_ArgumentNull);
+
+  va_list args;
+  va_start(args, formatString);
+  const int result = vswprintf_s(buffer, bufferLength, formatString, args);
+  va_end(args);
+
+  mERROR_IF(result < 0, mR_ArgumentOutOfBounds);
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mSprintfWithLength, OUT wchar_t *buffer, const size_t bufferLength, const wchar_t *formatString, OUT size_t *pLength, ...)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(buffer == nullptr || formatString == nullptr || pLength == nullptr, mR_ArgumentNull);
+
+  va_list args;
+  va_start(args, formatString);
+  const int result = vswprintf_s(buffer, bufferLength, formatString, args);
+  va_end(args);
+
+  mERROR_IF(result < 0, mR_ArgumentOutOfBounds);
+
+  *pLength = (size_t)result;
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mStringCopy, OUT wchar_t *buffer, const size_t bufferLength, const wchar_t *source, const size_t sourceLength)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(buffer == nullptr || source == nullptr, mR_ArgumentNull);
+
+  const errno_t error = wcsncpy_s(buffer, bufferLength, source, sourceLength);
 
   switch (error)
   {

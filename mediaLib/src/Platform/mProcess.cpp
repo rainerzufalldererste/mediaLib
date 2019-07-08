@@ -7,11 +7,11 @@ struct mProcess
 };
 
 mFUNCTION(mProcess_Destroy_Internal, IN_OUT mProcess *pProcess);
-mFUNCTION(mProcess_Run_Internal, const mString &executable, const mString &workingDirectory, const mString &params, OPTIONAL mPtr<mPipe> stdinPipe, OPTIONAL mPtr<mPipe> stdoutPipe, OPTIONAL mPtr<mPipe> stderrPipe, OUT OPTIONAL HANDLE *pProcessHandle);
+mFUNCTION(mProcess_Run_Internal, const mString &executable, const mString &workingDirectory, const mString &params, OPTIONAL mPtr<mPipe> stdinPipe, OPTIONAL mPtr<mPipe> stdoutPipe, OPTIONAL mPtr<mPipe> stderrPipe, OUT OPTIONAL HANDLE *pProcessHandle, const mProcess_CreationFlags flags);
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mProcess_Create, OUT mPtr<mProcess> *pProcess, IN mAllocator *pAllocator, const mString &executable, const mString &workingDirectory, const mString &params, OPTIONAL mPtr<mPipe> &stdinPipe, OPTIONAL mPtr<mPipe> &stdoutPipe, OPTIONAL mPtr<mPipe> &stderrPipe)
+mFUNCTION(mProcess_Create, OUT mPtr<mProcess> *pProcess, IN mAllocator *pAllocator, const mString &executable, const mString &workingDirectory, const mString &params, OPTIONAL mPtr<mPipe> &stdinPipe, OPTIONAL mPtr<mPipe> &stdoutPipe, OPTIONAL mPtr<mPipe> &stderrPipe, const mProcess_CreationFlags flags /* = mP_CF_None */)
 {
   mFUNCTION_SETUP();
 
@@ -19,7 +19,7 @@ mFUNCTION(mProcess_Create, OUT mPtr<mProcess> *pProcess, IN mAllocator *pAllocat
 
   HANDLE processHandle = nullptr;
 
-  mERROR_CHECK(mProcess_Run_Internal(executable, workingDirectory, params, stdinPipe, stdoutPipe, stderrPipe, &processHandle));
+  mERROR_CHECK(mProcess_Run_Internal(executable, workingDirectory, params, stdinPipe, stdoutPipe, stderrPipe, &processHandle, flags));
 
   mDEFER_ON_ERROR(CloseHandle(processHandle));
 
@@ -119,20 +119,20 @@ mFUNCTION(mProcess_Terminate, mPtr<mProcess> &process, const uint32_t exitCode /
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mProcess_Run, const mString &executable, const mString &workingDirectory, const mString &params)
+mFUNCTION(mProcess_Run, const mString &executable, const mString &workingDirectory, const mString &params, const mProcess_CreationFlags flags /* = mP_CF_None */)
 {
   mFUNCTION_SETUP();
 
-  mERROR_CHECK(mProcess_Run_Internal(executable, workingDirectory, params, mPtr<mPipe>(nullptr), mPtr<mPipe>(nullptr), mPtr<mPipe>(nullptr), nullptr));
+  mERROR_CHECK(mProcess_Run_Internal(executable, workingDirectory, params, mPtr<mPipe>(nullptr), mPtr<mPipe>(nullptr), mPtr<mPipe>(nullptr), nullptr, flags));
 
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mProcess_Run, const mString &executable, const mString &workingDirectory, const mString &params, OPTIONAL mPtr<mPipe> stdinPipe, OPTIONAL mPtr<mPipe> stdoutPipe, OPTIONAL mPtr<mPipe> stderrPipe)
+mFUNCTION(mProcess_Run, const mString &executable, const mString &workingDirectory, const mString &params, OPTIONAL mPtr<mPipe> stdinPipe, OPTIONAL mPtr<mPipe> stdoutPipe, OPTIONAL mPtr<mPipe> stderrPipe, const mProcess_CreationFlags flags /* = mP_CF_None */)
 {
   mFUNCTION_SETUP();
   
-  mERROR_CHECK(mProcess_Run_Internal(executable, workingDirectory, params, stdinPipe, stdoutPipe, stderrPipe, nullptr));
+  mERROR_CHECK(mProcess_Run_Internal(executable, workingDirectory, params, stdinPipe, stdoutPipe, stderrPipe, nullptr, flags));
 
   mRETURN_SUCCESS();
 }
@@ -174,7 +174,7 @@ mFUNCTION(mProcess_Destroy_Internal, IN_OUT mProcess *pProcess)
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mProcess_Run_Internal, const mString &executable, const mString &workingDirectory, const mString &params, OPTIONAL mPtr<mPipe> stdinPipe, OPTIONAL mPtr<mPipe> stdoutPipe, OPTIONAL mPtr<mPipe> stderrPipe, OUT OPTIONAL HANDLE *pProcessHandle)
+mFUNCTION(mProcess_Run_Internal, const mString &executable, const mString &workingDirectory, const mString &params, OPTIONAL mPtr<mPipe> stdinPipe, OPTIONAL mPtr<mPipe> stdoutPipe, OPTIONAL mPtr<mPipe> stderrPipe, OUT OPTIONAL HANDLE *pProcessHandle, const mProcess_CreationFlags flags)
 {
   mFUNCTION_SETUP();
 
@@ -214,7 +214,7 @@ mFUNCTION(mProcess_Run_Internal, const mString &executable, const mString &worki
     CloseHandle(processInfo.hThread);
   );
 
-  if (FALSE == CreateProcessW(appName, commandLine, nullptr, nullptr, TRUE, 0, NULL, workingDir, &startInfo, &processInfo))
+  if (FALSE == CreateProcessW(appName, commandLine, nullptr, nullptr, TRUE, CREATE_NO_WINDOW * !!(flags & mP_CF_NoWindow), NULL, workingDir, &startInfo, &processInfo))
   {
     const DWORD error = GetLastError();
     mUnused(error);

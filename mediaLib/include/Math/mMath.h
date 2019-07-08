@@ -985,6 +985,16 @@ mINLINE bool mIntersects(const mTriangle3D<T> &triangle, const mLine3D<T> &line,
 
 //////////////////////////////////////////////////////////////////////////
 
+struct mFraction
+{
+  int64_t integralPart, numerator, denominator;
+};
+
+mFraction mToFraction(const double_t value, const int64_t precision = 1000000000);
+int64_t mGreatestCommonDivisor(const int64_t a, const int64_t b);
+
+//////////////////////////////////////////////////////////////////////////
+
 template<>
 constexpr int8_t mMinValue<int8_t>()
 {

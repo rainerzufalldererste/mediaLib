@@ -5,6 +5,8 @@ struct mPipe
   HANDLE read, write;
 };
 
+volatile int64_t PipeIndex = 0;
+
 mFUNCTION(mPipe_Destroy_Internal, IN_OUT mPipe *pPipe);
 
 //////////////////////////////////////////////////////////////////////////
@@ -27,12 +29,66 @@ mFUNCTION(mPipe_Create, OUT mPtr<mPipe> *pPipe, IN mAllocator *pAllocator)
     CloseHandle(read);
     CloseHandle(write);
   );
-
+  
   if (FALSE == CreatePipe(&read, &write, &securityAttrib, 0))
   {
     const DWORD error = GetLastError();
     mUnused(error);
 
+    mRETURN_RESULT(mR_InternalError);
+  }
+
+  mERROR_IF(FALSE == SetHandleInformation(read, HANDLE_FLAG_INHERIT, 0), mR_InternalError);
+
+  mERROR_CHECK(mSharedPointer_Allocate<mPipe>(pPipe, pAllocator, [](mPipe *pData) { mPipe_Destroy_Internal(pData); }, 1));
+
+  (*pPipe)->read = read;
+  (*pPipe)->write = write;
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mPipe_Create, OUT mPtr<mPipe> *pPipe, IN mAllocator *pAllocator, const size_t bufferSize, const size_t timeoutMs /* = 30 * 1000 */)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pPipe == nullptr, mR_ArgumentNull);
+  mERROR_IF(bufferSize > MAXDWORD || timeoutMs > MAXDWORD, mR_ArgumentOutOfBounds);
+
+  SECURITY_ATTRIBUTES securityAttrib;
+  securityAttrib.nLength = sizeof(SECURITY_ATTRIBUTES);
+  securityAttrib.bInheritHandle = TRUE;
+  securityAttrib.lpSecurityDescriptor = nullptr;
+
+  HANDLE read = nullptr;
+  HANDLE write = nullptr;
+
+  mDEFER_ON_ERROR(
+    CloseHandle(read);
+    CloseHandle(write);
+  );
+
+  wchar_t pipeName[0xFF];
+  mERROR_CHECK(mSprintf(pipeName, mARRAYSIZE(pipeName), TEXT("\\\\.\\Pipe\\RemoteExeAnon.%" PRIx32 ".%" PRIx64), GetCurrentProcessId(), InterlockedIncrement64(&PipeIndex)));
+
+  read = CreateNamedPipeW(pipeName, PIPE_ACCESS_INBOUND | FILE_FLAG_OVERLAPPED, PIPE_TYPE_BYTE | PIPE_WAIT, 1, (DWORD)bufferSize, (DWORD)bufferSize, (DWORD)timeoutMs, &securityAttrib);
+
+  if (read == nullptr)
+  {
+    const DWORD error = GetLastError();
+    mUnused(error);
+
+    mRETURN_RESULT(mR_InternalError);
+  }
+
+  write = CreateFileW(pipeName, GENERIC_WRITE, 0, &securityAttrib, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED, NULL);
+
+  if (write == INVALID_HANDLE_VALUE)
+  {
+    const DWORD error = GetLastError();
+    mUnused(error);
+
+    write = nullptr;
     mRETURN_RESULT(mR_InternalError);
   }
 

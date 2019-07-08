@@ -90,3 +90,28 @@ __host__ __device__ uint32_t mColor_PackVectorToBgra(const mVector rgbaVector)
   const mVector v0 = rgbaVector * v;
   return (mClamp((uint32_t)v0.x, 0u, 0xFFu) << 0x10) | (mClamp((uint32_t)v0.y, 0u, 0xFFu) << 0x8) | mClamp((uint32_t)v0.z, 0u, 0xFFu) | (mClamp((uint32_t)v0.w, 0u, 0xFFu) << 0x18);
 }
+
+//////////////////////////////////////////////////////////////////////////
+
+mFraction mToFraction(const double_t value, const int64_t precision /* = 1000000000 */)
+{
+  double_t integralPart;
+  const double_t fractionalPart = modf(value, &integralPart);
+  const int64_t fracPrec = (int64_t)round(fractionalPart * precision);
+  const int64_t gcd = mGreatestCommonDivisor(fracPrec, precision);
+
+  return { (int64_t)round(integralPart), fracPrec / gcd, precision / gcd };
+}
+
+int64_t mGreatestCommonDivisor(const int64_t a, const int64_t b)
+{
+  if (a == 0)
+    return b;
+  if (b == 0)
+    return a;
+
+  if (a < b)
+    return mGreatestCommonDivisor(a, b % a);
+
+  return mGreatestCommonDivisor(b, a % b);
+}

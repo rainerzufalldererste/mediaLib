@@ -139,7 +139,7 @@ mFUNCTION(mFile_CreateDirectory, const mString &folderPath)
       }
       else if (_char.codePoint == backslash)
       {
-        mERROR_IF(hasSpaceOrPeriodInCurrentPath && !hasNonSpaceOrPeriodInCurrentPath && lastWasSpaceOrDot, mR_InvalidParameter);
+        mERROR_IF(!hasNonSpaceOrPeriodInCurrentPath || lastWasSpaceOrDot, mR_InvalidParameter);
         hasSpaceOrPeriodInCurrentPath = false;
         hasNonSpaceOrPeriodInCurrentPath = false;
         lastWasSpaceOrDot = false;
@@ -150,6 +150,8 @@ mFUNCTION(mFile_CreateDirectory, const mString &folderPath)
         lastWasSpaceOrDot = false;
       }
     }
+
+    mERROR_IF(lastWasSpaceOrDot, mR_InvalidParameter);
   }
 
   wchar_t wDirectoryName[MAX_PATH];
@@ -346,9 +348,16 @@ mFUNCTION(mFile_Move, const mString &destinationFileName, const mString &sourceF
   mERROR_IF(succeeded, mR_Success);
 
   const DWORD errorCode = GetLastError();
-  mUnused(errorCode);
 
-  mRETURN_RESULT(mR_IOFailure);
+  switch (errorCode)
+  {
+  case ERROR_FILE_NOT_FOUND:
+  case ERROR_PATH_NOT_FOUND:
+    mRETURN_RESULT(mR_ResourceNotFound);
+
+  default:
+    mRETURN_RESULT(mR_IOFailure);
+  }
 }
 
 mFUNCTION(mFile_Move, const mString &destinationFileName, const mString &sourceFileName, const std::function<mResult(const double_t progress)> &progressCallback, const bool overrideFileIfExistent)
