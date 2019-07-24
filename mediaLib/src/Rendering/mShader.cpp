@@ -693,3 +693,24 @@ mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex
 
   mRETURN_SUCCESS();
 }
+
+mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex_t index, const mPtr<mFramebuffer> *pV, const size_t count)
+{
+  mFUNCTION_SETUP();
+  mERROR_CHECK(mShader_Bind(shader));
+
+#if defined (mRENDERER_OPENGL)
+  GLint *pValues;
+  mDEFER_CALL(&pValues, mFreePtrStack);
+  mERROR_CHECK(mAllocStackZero(&pValues, count));
+
+  for (size_t i = 0; i < count; ++i)
+    pValues[i] = (GLint)pV[i]->texColourBuffer;
+
+  glUniform1iv(index, (GLsizei)count, pValues);
+#else 
+  mRETURN_RESULT(mR_NotImplemented);
+#endif
+
+  mRETURN_SUCCESS();
+}
