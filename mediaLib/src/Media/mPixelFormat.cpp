@@ -1046,6 +1046,82 @@ namespace mPixelFormat_Transform
     mRETURN_SUCCESS();
   }
 
+  void mPixelFormat_Transform_RgbToBgrSameStrideSSSE3(const uint8_t *pSource, uint8_t *pTarget, const size_t index, OUT size_t *pIndex, const size_t size)
+  {
+    const __m128i shuffle = _mm_set_epi8(15, 12, 13, 14, 9, 10, 11, 6, 7, 8, 3, 4, 5, 0, 1, 2);
+    size_t i = index;
+
+    for (; i < size - (sizeof(__m128i) - 1); i += (sizeof(__m128i) - 1))
+    {
+      const __m128i src = _mm_loadu_si128(reinterpret_cast<const __m128i *>(pSource + i));
+      _mm_storeu_si128(reinterpret_cast<__m128i *>(pTarget + i), _mm_shuffle_epi8(src, shuffle));
+    }
+
+    *pIndex = i;
+  }
+
+  mFUNCTION(mPixelFormat_Transform_RgbToBgr, mPtr<mImageBuffer> &source, mPtr<mImageBuffer> &target, mPtr<mThreadPool> & /*asyncTaskHandler */)
+  {
+    mFUNCTION_SETUP();
+
+    if (source->lineStride == target->lineStride)
+    {
+      const size_t size = source->currentSize.y * source->lineStride * 3;
+
+      size_t i = 0;
+      const uint8_t *pSource = source->pPixels;
+      uint8_t *pTarget = target->pPixels;
+      
+      if (size > sizeof(__m128i))
+      {
+        mCpuExtensions::Detect();
+
+        if (mCpuExtensions::ssse3Supported)
+        {
+          mPixelFormat_Transform_RgbToBgrSameStrideSSSE3(pSource, pTarget, i, &i, size);
+        }
+        else
+        {
+          const __m128i maskG = _mm_set_epi8(-1, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 1);
+          const __m128i maskRB = _mm_set_epi8(0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0);
+          const __m128i maskBR = _mm_set_epi8(0, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1);
+
+          for (; i < size - (sizeof(__m128i) - 1); i += (sizeof(__m128i) - 1))
+          {
+            const __m128i src = _mm_loadu_si128(reinterpret_cast<const __m128i *>(pSource + i));
+            const __m128i g = _mm_and_si128(maskG, src);
+            const __m128i rb = _mm_and_si128(maskRB, _mm_slli_si128(src, 2));
+            const __m128i br = _mm_and_si128(maskBR, _mm_srli_si128(src, 2));
+
+            _mm_storeu_si128(reinterpret_cast<__m128i *>(pTarget + i), _mm_or_si128(g, _mm_or_si128(rb, br)));
+          }
+        }
+      }
+
+      for (; i < size; i += 3)
+      {
+        pTarget[i + 0] = pSource[i + 2];
+        pTarget[i + 1] = pSource[i + 1];
+        pTarget[i + 2] = pSource[i + 0];
+      }
+    }
+    else
+    {
+      mRETURN_RESULT(mR_NotImplemented);
+    }
+
+    mRETURN_SUCCESS();
+  }
+
+  mFUNCTION(mPixelFormat_Transform_BgrToRgb, mPtr<mImageBuffer> &source, mPtr<mImageBuffer> &target, mPtr<mThreadPool> &asyncTaskHandler)
+  {
+    mFUNCTION_SETUP();
+
+    mERROR_CHECK(mPixelFormat_Transform_RgbToBgr(source, target, asyncTaskHandler));
+
+    mRETURN_SUCCESS();
+  }
+
 } // end namespace mPixelFormat_Transform
 
 
@@ -1139,6 +1215,21 @@ mFUNCTION(mPixelFormat_TransformBuffer, mPtr<mImageBuffer> &source, mPtr<mImageB
 
   case mPF_B8G8R8:
   case mPF_R8G8B8:
+  {
+    switch (source->pixelFormat)
+    {
+    case mPF_B8G8R8:
+    case mPF_R8G8B8:
+      mERROR_CHECK(mPixelFormat_Transform_RgbToBgr(source, target, asyncTaskHandler));
+      break;
+
+    default:
+      mRETURN_RESULT(mR_NotImplemented);
+    }
+
+    break;
+  }
+
   case mPF_Monochrome8:
   case mPF_Monochrome16:
   case mPF_YUV422:

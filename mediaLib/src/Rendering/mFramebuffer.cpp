@@ -10,8 +10,12 @@ GLuint mFrameBuffer_ActiveFrameBufferHandle = 0;
 
 mPtr<mQueue<mPtr<mFramebuffer>>> mFramebuffer_Queue = nullptr;
 
-mFUNCTION(mFramebuffer_Create_Internal, OUT mFramebuffer *pFramebuffer, const mVec2s &size, const mTexture2DParams &params, const size_t sampleCount);
+mFUNCTION(mFramebuffer_Create_Internal, OUT mFramebuffer *pFramebuffer, const mVec2s &size, const mTexture2DParams &params, const size_t sampleCount, const mPixelFormat pixelFormat);
 mFUNCTION(mFramebuffer_Destroy_Internal, IN mFramebuffer *pFramebuffer);
+
+#ifdef mRENDERER_OPENGL
+mFUNCTION(mFramebuffer_PixelFormatToGLenum_Internal, const mPixelFormat pixelFormat, OUT GLenum *pPixelFormat);
+#endif
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -26,7 +30,23 @@ mFUNCTION(mFramebuffer_Create, OUT mPtr<mFramebuffer> *pFramebuffer, IN mAllocat
 
   mERROR_CHECK(mSharedPointer_Allocate(pFramebuffer, pAllocator, (std::function<void (mFramebuffer *)>)[](mFramebuffer *pData) { mFramebuffer_Destroy_Internal(pData); }, 1));
 
-  mERROR_CHECK(mFramebuffer_Create_Internal(pFramebuffer->GetPointer(), size, textureParams, sampleCount));
+  mERROR_CHECK(mFramebuffer_Create_Internal(pFramebuffer->GetPointer(), size, textureParams, sampleCount, mPF_R8G8B8A8));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mFramebuffer_Create, OUT mPtr<mFramebuffer> *pFramebuffer, IN mAllocator *pAllocator, const mVec2s &size, const mPixelFormat pixelFormat, const mTexture2DParams &textureParams /* = mTexture2DParams() */, const size_t sampleCount /* = 0 */)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pFramebuffer == nullptr, mR_ArgumentNull);
+
+  if (mFramebuffer_Queue == nullptr)
+    mERROR_CHECK(mQueue_Create(&mFramebuffer_Queue, pAllocator));
+
+  mERROR_CHECK(mSharedPointer_Allocate(pFramebuffer, pAllocator, (std::function<void (mFramebuffer *)>)[](mFramebuffer *pData) { mFramebuffer_Destroy_Internal(pData); }, 1));
+
+  mERROR_CHECK(mFramebuffer_Create_Internal(pFramebuffer->GetPointer(), size, textureParams, sampleCount, pixelFormat));
 
   mRETURN_SUCCESS();
 }
@@ -144,6 +164,9 @@ mFUNCTION(mFramebuffer_SetResolution, mPtr<mFramebuffer> &framebuffer, const mVe
   mERROR_IF(mFrameBuffer_ActiveFrameBufferHandle == framebuffer->frameBufferHandle, mR_ResourceStateInvalid);
   mERROR_IF(framebuffer->size == size, mR_Success);
 
+  GLenum glPixelFormat = GL_RGBA;
+  mERROR_CHECK(mFramebuffer_PixelFormatToGLenum_Internal(framebuffer->pixelFormat, &glPixelFormat));
+
   framebuffer->allocatedSize = framebuffer->size = size;
 
   mGL_DEBUG_ERROR_CHECK();
@@ -151,9 +174,9 @@ mFUNCTION(mFramebuffer_SetResolution, mPtr<mFramebuffer> &framebuffer, const mVe
   glBindTexture((framebuffer->sampleCount > 0) ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, framebuffer->texColourBuffer);
 
   if (framebuffer->sampleCount > 0)
-    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, (GLsizei)framebuffer->sampleCount, GL_RGBA, (GLsizei)size.x, (GLsizei)size.y, false);
+    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, (GLsizei)framebuffer->sampleCount, glPixelFormat, (GLsizei)size.x, (GLsizei)size.y, false);
   else
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)size.x, (GLsizei)size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+    glTexImage2D(GL_TEXTURE_2D, 0, glPixelFormat, (GLsizei)size.x, (GLsizei)size.y, 0, glPixelFormat, GL_UNSIGNED_BYTE, nullptr);
 
   mERROR_CHECK(mTexture2DParams_ApplyToBoundTexture(framebuffer->textureParams, framebuffer->sampleCount > 0));
 
@@ -190,6 +213,10 @@ mFUNCTION(mFramebuffer_Download, mPtr<mFramebuffer> &framebuffer, OUT mPtr<mImag
     glPixelFormat = GL_BGR;
     break;
 
+  case mPF_Monochrome8:
+    glPixelFormat = GL_RED;
+    break;
+
   default:
     mRETURN_RESULT(mR_NotSupported);
     break;
@@ -211,9 +238,12 @@ mFUNCTION(mFramebuffer_Download, mPtr<mFramebuffer> &framebuffer, OUT mPtr<mImag
     mERROR_CHECK(mImageBuffer_Create(pImageBuffer, pAllocator, framebuffer->size, pixelFormat));
 
     glBindTexture(GL_TEXTURE_2D, framebuffer->texColourBuffer);
+
+    mGL_ERROR_CHECK();
+
     glGetTexImage(GL_TEXTURE_2D, 0, glPixelFormat, GL_UNSIGNED_BYTE, (*pImageBuffer)->pPixels);
 
-    mGL_DEBUG_ERROR_CHECK();
+    mGL_ERROR_CHECK();
   }
 
   mERROR_CHECK(mImageBuffer_FlipY(*pImageBuffer));
@@ -380,7 +410,7 @@ mFUNCTION(mTexture_Copy, mTexture &destination, mPtr<mFramebuffer> &source)
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mFramebuffer_Create_Internal, mFramebuffer *pFramebuffer, const mVec2s &size, const mTexture2DParams &params, const size_t sampleCount)
+mFUNCTION(mFramebuffer_Create_Internal, mFramebuffer *pFramebuffer, const mVec2s &size, const mTexture2DParams &params, const size_t sampleCount, const mPixelFormat pixelFormat)
 {
   mFUNCTION_SETUP();
 
@@ -391,17 +421,21 @@ mFUNCTION(mFramebuffer_Create_Internal, mFramebuffer *pFramebuffer, const mVec2s
   pFramebuffer->textureUnit = (size_t)-1;
   pFramebuffer->sampleCount = sampleCount;
   pFramebuffer->textureParams = params;
+  pFramebuffer->pixelFormat = pixelFormat;
 
 #ifdef mRENDERER_OPENGL
+  GLenum glPixelFormat = GL_RGBA;
+  mERROR_CHECK(mFramebuffer_PixelFormatToGLenum_Internal(pixelFormat, &glPixelFormat));
+
   glGenFramebuffers(1, &pFramebuffer->frameBufferHandle);
   glBindFramebuffer(GL_FRAMEBUFFER, pFramebuffer->frameBufferHandle);
   glGenTextures(1, &pFramebuffer->texColourBuffer);
   glBindTexture((pFramebuffer->sampleCount > 0) ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, pFramebuffer->texColourBuffer);
 
   if (pFramebuffer->sampleCount > 0)
-    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, (GLsizei)sampleCount, GL_RGBA, (GLsizei)size.x, (GLsizei)size.y, false);
+    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, (GLsizei)sampleCount, glPixelFormat, (GLsizei)size.x, (GLsizei)size.y, false);
   else
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)size.x, (GLsizei)size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+    glTexImage2D(GL_TEXTURE_2D, 0, glPixelFormat, (GLsizei)size.x, (GLsizei)size.y, 0, glPixelFormat, GL_UNSIGNED_BYTE, nullptr);
 
   mERROR_CHECK(mTexture2DParams_ApplyToBoundTexture(params, pFramebuffer->sampleCount > 0));
   
@@ -466,3 +500,30 @@ mFUNCTION(mFramebuffer_Destroy_Internal, IN mFramebuffer *pFramebuffer)
 
   mRETURN_SUCCESS();
 }
+
+#ifdef mRENDERER_OPENGL
+mFUNCTION(mFramebuffer_PixelFormatToGLenum_Internal, const mPixelFormat pixelFormat, OUT GLenum *pPixelFormat)
+{
+  mFUNCTION_SETUP();
+
+  switch (pixelFormat)
+  {
+  case mPF_R8G8B8:
+    *pPixelFormat = GL_RGB;
+    break;
+
+  case mPF_R8G8B8A8:
+    *pPixelFormat = GL_RGBA;
+    break;
+
+  case mPF_Monochrome8:
+    *pPixelFormat = GL_RED;
+    break;
+
+  default:
+    mRETURN_RESULT(mR_InvalidParameter);
+  }
+
+  mRETURN_SUCCESS();
+}
+#endif

@@ -128,7 +128,7 @@ enum mRenderParams_DepthFunc
 mFUNCTION(mRenderParams_SetDepthFunc, const mRenderParams_DepthFunc depthFunc);
 
 #if defined(mRENDERER_OPENGL) && defined(_WIN32)
-mFUNCTION(mRenderParams_GetCurrentGLContext_WGLRC, HGLRC *pGLContext);
+mFUNCTION(mRenderParams_GetCurrentGLContext_HGLRC, HGLRC *pGLContext);
 mFUNCTION(mRenderParams_GetCurrentGLContext_HDC, HDC *pGLDrawable);
 mFUNCTION(mRenderParams_GetCurrentGLContext_HWND, HWND *pGLWindow);
 #endif
