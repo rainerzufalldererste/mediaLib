@@ -356,10 +356,13 @@ mFUNCTION(mTexture_SetTo, mTexture &texture, const uint8_t *pData, const mVec2s 
     }
     else
     {
+      mPtr<mImageBuffer> sourceImageBuffer;
+      mERROR_CHECK(mImageBuffer_Create(&sourceImageBuffer, &mDefaultTempAllocator, reinterpret_cast<const void *>(pData), size, pixelFormat));
+
       mPtr<mImageBuffer> imageBuffer;
       mDEFER_CALL(&imageBuffer, mImageBuffer_Destroy);
       mERROR_CHECK(mImageBuffer_Create(&imageBuffer, nullptr, size, mPF_R8G8B8A8));
-      mERROR_CHECK(mPixelFormat_TransformBuffer(texture.imageBuffer, imageBuffer));
+      mERROR_CHECK(mPixelFormat_TransformBuffer(sourceImageBuffer, imageBuffer));
 
       glTexImage2D(texture.sampleCount > 0 ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)imageBuffer->currentSize.x, (GLsizei)imageBuffer->currentSize.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, imageBuffer->pPixels);
     }

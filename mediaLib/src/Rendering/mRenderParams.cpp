@@ -502,7 +502,7 @@ mFUNCTION(mRenderParams_SetDepthFunc, const mRenderParams_DepthFunc depthFunc)
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mRenderParams_GetCurrentGLContext_WGLRC, HGLRC *pGLContext)
+mFUNCTION(mRenderParams_GetCurrentGLContext_HGLRC, HGLRC *pGLContext)
 {
   mFUNCTION_SETUP();
 
