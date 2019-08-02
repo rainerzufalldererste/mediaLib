@@ -128,7 +128,7 @@ enum mRenderParams_DepthFunc
 mFUNCTION(mRenderParams_SetDepthFunc, const mRenderParams_DepthFunc depthFunc);
 
 #if defined(mRENDERER_OPENGL) && defined(_WIN32)
-mFUNCTION(mRenderParams_GetCurrentGLContext_WGLRC, HGLRC *pGLContext);
+mFUNCTION(mRenderParams_GetCurrentGLContext_HGLRC, HGLRC *pGLContext);
 mFUNCTION(mRenderParams_GetCurrentGLContext_HDC, HDC *pGLDrawable);
 mFUNCTION(mRenderParams_GetCurrentGLContext_HWND, HWND *pGLWindow);
 #endif
@@ -184,6 +184,15 @@ struct mTexture2DParams
 };
 
 mFUNCTION(mTexture2DParams_ApplyToBoundTexture, const mTexture2DParams &params, const bool isMultisampleTexture = false);
+
+struct mTexture3DParams
+{
+  mRenderParams_TextureWrapMode wrapModeX = mRP_TWM_ClampToEdge, wrapModeY = mRP_TWM_ClampToEdge, wrapModeZ = mRP_TWM_ClampToEdge;
+  mRenderParams_TextureMagnificationFilteringMode magFilter = mRP_TMagFM_BilinearInterpolation;
+  mRenderParams_TextureMinificationFilteringMode minFilter = mRP_TMinFM_BilinearInterpolation;
+};
+
+mFUNCTION(mTexture3DParams_ApplyToBoundTexture, const mTexture3DParams &params, const bool isMultisampleTexture = false);
 
 mFUNCTION(mRenderParams_PrintRenderState, const bool onlyNewValues = false);
 

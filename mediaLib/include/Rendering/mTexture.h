@@ -44,5 +44,28 @@ mFUNCTION(mDestroyResource, IN_OUT mTexture *pTexture);
 
 mFUNCTION(mDestruct, IN_OUT mTexture *pTexture);
 
+//////////////////////////////////////////////////////////////////////////
+
+struct mTexture3D
+{
+  mVec3s resolution;
+  mVec3f resolutionF;
+  mRenderParams_UploadState uploadState = mRenderParams_UploadState::mRP_US_NotInitialized;
+
+#if defined(mRENDERER_OPENGL)
+  GLuint textureId;
+  GLuint textureUnit;
+#endif
+};
+
+mFUNCTION(mTexture3D_Create, OUT mTexture3D *pTexture, const uint8_t *pData, const mVec3s &size, const mPixelFormat pixelFormat = mPF_B8G8R8A8, const size_t textureUnit = 0, const mTexture3DParams &textureParams = mTexture3DParams());
+mFUNCTION(mTexture3D_Allocate, OUT mTexture3D *pTexture, const mVec3s &size, const mPixelFormat pixelFormat = mPF_B8G8R8A8, const size_t textureUnit = 0, const mTexture3DParams &textureParams = mTexture3DParams());
+mFUNCTION(mTexture3D_Destroy, IN_OUT mTexture3D *pTexture);
+
+mFUNCTION(mTexture3D_SetTo, mTexture3D &texture, const uint8_t *pData, const mVec3s &size, const mPixelFormat pixelFormat = mPF_B8G8R8A8);
+mFUNCTION(mTexture3D_Bind, mTexture3D &texture, const size_t textureUnit = 0);
+
+mFUNCTION(mDestruct, IN_OUT mTexture3D *pTexture);
+
 #endif // mTexture_h__
 

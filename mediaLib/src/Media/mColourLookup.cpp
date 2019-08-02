@@ -143,6 +143,39 @@ mFUNCTION(mColourLookup_LoadFromFile, mPtr<mColourLookup> &colourLookup, const m
   mRETURN_SUCCESS();
 }
 
+mFUNCTION(mColourLookup_At, mPtr<mColourLookup> &colourLookup, const mVec3f position, OUT mVec3f *pColour)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(colourLookup == nullptr || pColour == nullptr, mR_ArgumentNull);
+
+  mVec3f pos = mVec3f(mClamp(position.x, 0.f, 1.f), mClamp(position.y, 0.f, 1.f), mClamp(position.z, 0.f, 1.f)) * (mVec3f(colourLookup->resolution - mVec3s(1)) - mVec3f(mSmallest<float_t>((float_t)mMax(colourLookup->resolution))));
+
+  const float_t fracx = modf(pos.x, &pos.x);
+  const float_t fracy = modf(pos.y, &pos.y);
+  const float_t fracz = modf(pos.z, &pos.z);
+
+  const size_t x = (size_t)pos.x;
+  const size_t y = (size_t)pos.y;
+  const size_t z = (size_t)pos.z;
+
+  *pColour = mTriLerp(
+    colourLookup->pData[(x + 0) + ((y + 0) + ((z + 0) * colourLookup->resolution.y)) * colourLookup->resolution.x],
+    colourLookup->pData[(x + 1) + ((y + 0) + ((z + 0) * colourLookup->resolution.y)) * colourLookup->resolution.x],
+    colourLookup->pData[(x + 0) + ((y + 1) + ((z + 0) * colourLookup->resolution.y)) * colourLookup->resolution.x],
+    colourLookup->pData[(x + 1) + ((y + 1) + ((z + 0) * colourLookup->resolution.y)) * colourLookup->resolution.x],
+    colourLookup->pData[(x + 0) + ((y + 0) + ((z + 1) * colourLookup->resolution.y)) * colourLookup->resolution.x],
+    colourLookup->pData[(x + 1) + ((y + 0) + ((z + 1) * colourLookup->resolution.y)) * colourLookup->resolution.x],
+    colourLookup->pData[(x + 0) + ((y + 1) + ((z + 1) * colourLookup->resolution.y)) * colourLookup->resolution.x],
+    colourLookup->pData[(x + 1) + ((y + 1) + ((z + 1) * colourLookup->resolution.y)) * colourLookup->resolution.x],
+    fracx,
+    fracy,
+    fracz
+  );
+
+  mRETURN_SUCCESS();
+}
+
 //////////////////////////////////////////////////////////////////////////
 
 mFUNCTION(mColourLookup_Destroy_Internal, IN mColourLookup *pColourLookup)

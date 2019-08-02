@@ -502,7 +502,7 @@ mFUNCTION(mRenderParams_SetDepthFunc, const mRenderParams_DepthFunc depthFunc)
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mRenderParams_GetCurrentGLContext_WGLRC, HGLRC *pGLContext)
+mFUNCTION(mRenderParams_GetCurrentGLContext_HGLRC, HGLRC *pGLContext)
 {
   mFUNCTION_SETUP();
 
@@ -546,6 +546,28 @@ mFUNCTION(mTexture2DParams_ApplyToBoundTexture, const mTexture2DParams &params, 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, params.magFilter);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, params.wrapModeX);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, params.wrapModeY);
+
+    mGL_DEBUG_ERROR_CHECK();
+  }
+#else
+  mRETURN_RESULT(mR_NotImplemented);
+#endif
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mTexture3DParams_ApplyToBoundTexture, const mTexture3DParams &params, const bool isMultisampleTexture /* = false */)
+{
+  mFUNCTION_SETUP();
+
+#ifdef mRENDERER_OPENGL
+  if (!isMultisampleTexture)
+  {
+    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, params.minFilter);
+    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, params.magFilter);
+    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, params.wrapModeX);
+    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, params.wrapModeY);
+    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, params.wrapModeZ);
 
     mGL_DEBUG_ERROR_CHECK();
   }

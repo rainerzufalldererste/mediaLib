@@ -22,9 +22,11 @@ struct mFramebuffer
 
   size_t sampleCount;
   mTexture2DParams textureParams;
+  mPixelFormat pixelFormat;
 };
 
 mFUNCTION(mFramebuffer_Create, OUT mPtr<mFramebuffer> *pFramebuffer, IN mAllocator *pAllocator, const mVec2s &size, const mTexture2DParams &textureParams = mTexture2DParams(), const size_t sampleCount = 0);
+mFUNCTION(mFramebuffer_Create, OUT mPtr<mFramebuffer> *pFramebuffer, IN mAllocator *pAllocator, const mVec2s &size, const mPixelFormat pixelFormat, const mTexture2DParams &textureParams = mTexture2DParams(), const size_t sampleCount = 0);
 mFUNCTION(mFramebuffer_Destroy, IN_OUT mPtr<mFramebuffer> *pFramebuffer);
 mFUNCTION(mFramebuffer_Bind, mPtr<mFramebuffer> &framebuffer);
 mFUNCTION(mFramebuffer_Unbind);
