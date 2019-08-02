@@ -134,6 +134,11 @@ mFUNCTION(mString_Substring, const mString &text, OUT mString *pSubstring, const
 mFUNCTION(mString_Substring, const mString &text, OUT mString *pSubstring, const size_t startCharacter, const size_t length);
 
 mFUNCTION(mString_Append, mString &text, const mString &appendedText);
+mFUNCTION(mString_Append, mString &text, const char *appendedText);
+mFUNCTION(mString_Append, mString &text, const char *appendedText, const size_t size);
+
+template <typename ...Args>
+mFUNCTION(mString_AppendFormat, mString &text, const char *format, Args&&... args);
 
 mFUNCTION(mString_AppendUnsignedInteger, mString &text, const uint64_t value);
 mFUNCTION(mString_AppendInteger, mString &text, const int64_t value);
@@ -204,10 +209,23 @@ inline mFUNCTION(mString_CreateFormat, OUT mString *pString, IN OPTIONAL mAlloca
 {
   mFUNCTION_SETUP();
 
-  char text[2048];
+  char text[1024 * 8];
   mERROR_IF(0 > sprintf_s(text, formatString, std::forward<Args>(args)...), mR_InternalError);
 
   mERROR_CHECK(mString_Create(pString, text, pAllocator));
+
+  mRETURN_SUCCESS();
+}
+
+template <typename ...Args>
+mFUNCTION(mString_AppendFormat, mString &text, const char *format, Args&&... args)
+{
+  mFUNCTION_SETUP();
+
+  char appendedText[1024 * 8];
+  mERROR_IF(0 > sprintf_s(appendedText, format, std::forward<Args>(args)...), mR_InternalError);
+
+  mERROR_CHECK(mString_Append(text, appendedText, mARRAYSIZE(appendedText)));
 
   mRETURN_SUCCESS();
 }

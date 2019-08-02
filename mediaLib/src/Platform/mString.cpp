@@ -835,6 +835,56 @@ mFUNCTION(mString_Append, mString &text, const mString &appendedText)
   mRETURN_SUCCESS();
 }
 
+mFUNCTION(mString_Append, mString &text, const char *appendedText)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(appendedText == nullptr, mR_ArgumentNull);
+
+  mString s;
+
+  mERROR_CHECK(mInplaceString_GetCount_Internal(appendedText, (size_t)-1, &s.count, &s.bytes));
+
+  s.capacity = s.bytes;
+  s.hasFailed = false;
+  s.text = const_cast<char *>(appendedText);
+
+  // Prevent from attempting to free `s.text`;
+  mDEFER(
+    s.capacity = s.count = s.bytes = 0;
+    s.text = nullptr;
+  );
+
+  mERROR_CHECK(mString_Append(text, s));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mString_Append, mString &text, const char *appendedText, const size_t size)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(appendedText == nullptr, mR_ArgumentNull);
+
+  mString s;
+
+  mERROR_CHECK(mInplaceString_GetCount_Internal(appendedText, size, &s.count, &s.bytes));
+
+  s.capacity = s.bytes;
+  s.hasFailed = false;
+  s.text = const_cast<char *>(appendedText);
+
+  // Prevent from attempting to free `s.text`;
+  mDEFER(
+    s.capacity = s.count = s.bytes = 0;
+  s.text = nullptr;
+  );
+
+  mERROR_CHECK(mString_Append(text, s));
+
+  mRETURN_SUCCESS();
+}
+
 mFUNCTION(mString_AppendUnsignedInteger, mString &text, const uint64_t value)
 {
   mFUNCTION_SETUP();
