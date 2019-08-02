@@ -482,3 +482,162 @@ mFUNCTION(mDestruct, IN_OUT mTexture *pTexture)
 
   mRETURN_SUCCESS();
 }
+
+//////////////////////////////////////////////////////////////////////////
+
+mFUNCTION(mTexture3D_Create, OUT mTexture3D *pTexture, const uint8_t *pData, const mVec3s &size, const mPixelFormat pixelFormat /* = mPF_B8G8R8A8 */, const size_t textureUnit /* = 0 */, const mTexture3DParams &textureParams /* = mTexture3DParams() */)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pTexture == nullptr || pData == nullptr, mR_ArgumentNull);
+
+  pTexture->resolution = size;
+  pTexture->resolutionF = mVec3f(size);
+  pTexture->textureUnit = (GLuint)textureUnit;
+
+  glGenTextures(1, &pTexture->textureId);
+  glBindTexture(GL_TEXTURE_3D, pTexture->textureId);
+
+  mGL_DEBUG_ERROR_CHECK();
+
+  mERROR_CHECK(mTexture3DParams_ApplyToBoundTexture(textureParams, false));
+
+  switch (pixelFormat)
+  {
+  case mPF_R8G8B8A8:
+    glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA8, (GLsizei)size.x, (GLsizei)size.y, (GLsizei)size.z, 0, GL_RGBA, GL_UNSIGNED_BYTE, pData);
+    break;
+
+  case mPF_R8G8B8:
+    glTexImage3D(GL_TEXTURE_3D, 0, GL_RGB8, (GLsizei)size.x, (GLsizei)size.y, (GLsizei)size.z, 0, GL_RGB, GL_UNSIGNED_BYTE, pData);
+    break;
+
+  case mPF_Monochrome8:
+    glTexImage3D(GL_TEXTURE_3D, 0, GL_R8, (GLsizei)size.x, (GLsizei)size.y, (GLsizei)size.z, 0, GL_RED, GL_UNSIGNED_BYTE, pData);
+    break;
+
+  default:
+    mRETURN_RESULT(mR_NotSupported);
+  }
+
+  mGL_ERROR_CHECK();
+
+  pTexture->uploadState = mRP_US_Ready;
+
+  mRETURN_SUCCESS();
+};
+
+mFUNCTION(mTexture3D_Allocate, OUT mTexture3D *pTexture, const mVec3s &size, const mPixelFormat pixelFormat /* = mPF_B8G8R8A8 */, const size_t textureUnit /* = 0 */, const mTexture3DParams &textureParams /* = mTexture3DParams() */)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pTexture == nullptr, mR_ArgumentNull);
+
+  pTexture->resolution = size;
+  pTexture->resolutionF = mVec3f(size);
+  pTexture->textureUnit = (GLuint)textureUnit;
+
+  glGenTextures(1, &pTexture->textureId);
+  glBindTexture(GL_TEXTURE_3D, pTexture->textureId);
+
+  mGL_DEBUG_ERROR_CHECK();
+
+  mERROR_CHECK(mTexture3DParams_ApplyToBoundTexture(textureParams, false));
+
+  switch (pixelFormat)
+  {
+  case mPF_R8G8B8A8:
+    glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA8, (GLsizei)size.x, (GLsizei)size.y, (GLsizei)size.z, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+    break;
+
+  case mPF_R8G8B8:
+    glTexImage3D(GL_TEXTURE_3D, 0, GL_RGB8, (GLsizei)size.x, (GLsizei)size.y, (GLsizei)size.z, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+    break;
+
+  case mPF_Monochrome8:
+    glTexImage3D(GL_TEXTURE_3D, 0, GL_R8, (GLsizei)size.x, (GLsizei)size.y, (GLsizei)size.z, 0, GL_RED, GL_UNSIGNED_BYTE, nullptr);
+    break;
+
+  default:
+    mRETURN_RESULT(mR_NotSupported);
+  }
+
+  mGL_ERROR_CHECK();
+
+  pTexture->uploadState = mRP_US_Ready;
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mTexture3D_Destroy, IN_OUT mTexture3D *pTexture)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pTexture == nullptr, mR_ArgumentNull);
+  
+#if defined(mRENDERER_OPENGL)
+  if (pTexture->uploadState != mRP_US_NotInitialized)
+    glDeleteTextures(1, &pTexture->textureId);
+
+  pTexture->textureId = (GLuint)-1;
+#endif
+
+  mGL_DEBUG_ERROR_CHECK();
+
+  pTexture->uploadState = mRP_US_NotInitialized;
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mTexture3D_SetTo, mTexture3D &texture, const uint8_t *pData, const mVec3s &size, const mPixelFormat pixelFormat /* = mPF_B8G8R8A8 */)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pData == nullptr, mR_ArgumentNull);
+  mERROR_IF(texture.uploadState == mRP_US_NotInitialized, mR_ResourceStateInvalid);
+
+  glBindTexture(GL_TEXTURE_3D, texture.textureId);
+
+  switch (pixelFormat)
+  {
+  case mPF_R8G8B8A8:
+    glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA8, (GLsizei)size.x, (GLsizei)size.y, (GLsizei)size.z, 0, GL_RGBA, GL_UNSIGNED_BYTE, pData);
+    break;
+
+  case mPF_R8G8B8:
+    glTexImage3D(GL_TEXTURE_3D, 0, GL_RGB8, (GLsizei)size.x, (GLsizei)size.y, (GLsizei)size.z, 0, GL_RGB, GL_UNSIGNED_BYTE, pData);
+    break;
+
+  case mPF_Monochrome8:
+    glTexImage3D(GL_TEXTURE_3D, 0, GL_R8, (GLsizei)size.x, (GLsizei)size.y, (GLsizei)size.z, 0, GL_RED, GL_UNSIGNED_BYTE, pData);
+    break;
+
+  default:
+    mRETURN_RESULT(mR_NotSupported);
+  }
+
+  mGL_ERROR_CHECK();
+
+  texture.uploadState = mRP_US_Ready;
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mTexture3D_Bind, mTexture3D &texture, const size_t textureUnit /* = 0 */)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(texture.uploadState != mRP_US_Ready, mR_ResourceStateInvalid);
+
+  texture.textureUnit = (GLuint)textureUnit;
+
+  glActiveTexture(GL_TEXTURE0 + texture.textureUnit);
+  glBindTexture(GL_TEXTURE_3D, texture.textureId);
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mDestruct, IN_OUT mTexture3D *pTexture)
+{
+  return mTexture3D_Destroy(pTexture);
+}

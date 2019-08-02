@@ -83,7 +83,7 @@ T mTriLerp(const T a, const T b, const T c, const T d, const T e, const T f, con
   const T c0 = c00 * inverseFactor2 + c10 * factor2;
   const T c1 = c01 * inverseFactor2 + c11 * factor2;
 
-  return c0 * (1.0 - factor3) + c1 * factor3;
+  return c0 * ((U)1 - factor3) + c1 * factor3;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -773,6 +773,20 @@ __host__ __device__ inline mVec3f mColor_HueToVec3f(const float_t hue)
 __host__ __device__ inline uint32_t mColor_HueToBgra(const float_t hue)
 {
   return mColor_PackVec3fToBgra(mColor_HueToVec3f(hue));
+}
+
+__host__ __device__ inline mVec3f mColor_YuvToRgb(const mVec3f yuv)
+{
+  return mVec3f(mClamp(yuv.x + 1.370705f * (yuv.z - .5f), 0.f, 1.f),
+    mClamp(yuv.x - .698001f * (yuv.z - .5f) - 0.337633f * (yuv.y - .5f), 0.f, 1.f),
+    mClamp(yuv.x + 1.732446f * (yuv.y - .5f), 0.f, 1.f));
+}
+
+__host__ __device__ inline mVec3f mColor_RgbToYuv(const mVec3f rgb)
+{
+  return mVec3f(mClamp(.2988222643743755f * rgb.x + .5868145917975452f * rgb.y + .1143631438280793f * rgb.z, 0.f, 1.f),
+    mClamp(-(.1724857596567948f * rgb.x + .3387202786104417f * rgb.y - .5112060382672364f * rgb.z - .5f), 0.f, 1.f),
+    mClamp(.5115453256722814f * rgb.x - .4281115132705763f * rgb.y - .08343381240170515f * rgb.z + .5f, 0.f, 1.f));
 }
 
 template<typename T, typename U>

@@ -556,6 +556,28 @@ mFUNCTION(mTexture2DParams_ApplyToBoundTexture, const mTexture2DParams &params, 
   mRETURN_SUCCESS();
 }
 
+mFUNCTION(mTexture3DParams_ApplyToBoundTexture, const mTexture3DParams &params, const bool isMultisampleTexture /* = false */)
+{
+  mFUNCTION_SETUP();
+
+#ifdef mRENDERER_OPENGL
+  if (!isMultisampleTexture)
+  {
+    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, params.minFilter);
+    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, params.magFilter);
+    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, params.wrapModeX);
+    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, params.wrapModeY);
+    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, params.wrapModeZ);
+
+    mGL_DEBUG_ERROR_CHECK();
+  }
+#else
+  mRETURN_RESULT(mR_NotImplemented);
+#endif
+
+  mRETURN_SUCCESS();
+}
+
 mFUNCTION(mRenderParams_PrintRenderState, const bool onlyNewValues /* = false */)
 {
   mFUNCTION_SETUP();

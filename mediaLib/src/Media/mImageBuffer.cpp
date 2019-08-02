@@ -44,7 +44,7 @@ mFUNCTION(mImageBuffer_CreateFromFile, OUT mPtr<mImageBuffer> *pImageBuffer, IN 
   int components = 4;
   mPixelFormat readPixelFormat = mPF_R8G8B8A8;
 
-  const bool tryJpeg = (size > 4 && pData[0] == 0xFF && pData[1] == 0xD8 && pData[2] == 0xFF && (pData[3] == 0xE0 || pData[3] == 0xE1));
+  const bool tryJpeg = (size > 3 && pData[0] == 0xFF && pData[1] == 0xD8 && pData[2] == 0xFF);
 
   if (tryJpeg)
   {
