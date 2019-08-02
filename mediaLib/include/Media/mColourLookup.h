@@ -15,5 +15,6 @@ mFUNCTION(mColourLookup_CreateFromFile, OUT mPtr<mColourLookup> *pColourLookup, 
 mFUNCTION(mColourLookup_Destroy, IN_OUT mPtr<mColourLookup> *pColourLookup);
 
 mFUNCTION(mColourLookup_LoadFromFile, mPtr<mColourLookup> &colourLookup, const mString &filename);
+mFUNCTION(mColourLookup_At, mPtr<mColourLookup> &colourLookup, const mVec3f position, OUT mVec3f *pColour);
 
 #endif // mColourLookup_h__

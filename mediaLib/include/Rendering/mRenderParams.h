@@ -185,6 +185,15 @@ struct mTexture2DParams
 
 mFUNCTION(mTexture2DParams_ApplyToBoundTexture, const mTexture2DParams &params, const bool isMultisampleTexture = false);
 
+struct mTexture3DParams
+{
+  mRenderParams_TextureWrapMode wrapModeX = mRP_TWM_ClampToEdge, wrapModeY = mRP_TWM_ClampToEdge, wrapModeZ = mRP_TWM_ClampToEdge;
+  mRenderParams_TextureMagnificationFilteringMode magFilter = mRP_TMagFM_BilinearInterpolation;
+  mRenderParams_TextureMinificationFilteringMode minFilter = mRP_TMinFM_BilinearInterpolation;
+};
+
+mFUNCTION(mTexture3DParams_ApplyToBoundTexture, const mTexture3DParams &params, const bool isMultisampleTexture = false);
+
 mFUNCTION(mRenderParams_PrintRenderState, const bool onlyNewValues = false);
 
 #endif // mRenderParams_h__
