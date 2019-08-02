@@ -110,6 +110,8 @@ mFUNCTION(mFile_GetFreeStorageSpace, const mString &path, OUT size_t *pSize);
 mFUNCTION(mFile_GetAbsoluteDirectoryPath, OUT mString *pAbsolutePath, const mString &directoryPath);
 mFUNCTION(mFile_GetAbsoluteFilePath, OUT mString *pAbsolutePath, const mString &filePath);
 
+mFUNCTION(mFile_LaunchFile, const mString &filename);
+
 //////////////////////////////////////////////////////////////////////////
 
 template<typename T>

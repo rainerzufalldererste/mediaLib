@@ -1036,6 +1036,41 @@ mFUNCTION(mFile_GetAbsoluteFilePath, OUT mString *pAbsolutePath, const mString &
   mRETURN_SUCCESS();
 }
 
+mFUNCTION(mFile_LaunchFile, const mString &filename)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(filename.hasFailed || filename.bytes <= 1, mR_InvalidParameter);
+
+  wchar_t wfilename[MAX_PATH];
+  mERROR_CHECK(mString_ToWideString(filename, wfilename, mARRAYSIZE(wfilename)));
+
+  const size_t result = reinterpret_cast<size_t>(ShellExecuteW(nullptr, nullptr, wfilename, nullptr, nullptr, SW_SHOW));
+
+  if (result <= 32)
+  {
+    switch (result)
+    {
+    case ERROR_FILE_NOT_FOUND:
+    case ERROR_PATH_NOT_FOUND:
+    case SE_ERR_ASSOCINCOMPLETE:
+      mRETURN_RESULT(mR_ResourceNotFound);
+
+    case SE_ERR_NOASSOC:
+      mRETURN_RESULT(mR_NotSupported);
+
+    case SE_ERR_ACCESSDENIED:
+    case SE_ERR_SHARE:
+      mRETURN_RESULT(mR_InsufficientPrivileges);
+
+    default:
+      mRETURN_RESULT(mR_InternalError);
+    }
+  }
+
+  mRETURN_SUCCESS();
+}
+
 //////////////////////////////////////////////////////////////////////////
 
 HRESULT mFile_CreateAndInitializeFileOperation_Internal(REFIID riid, void **ppFileOperation)
