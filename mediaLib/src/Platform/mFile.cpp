@@ -1073,6 +1073,176 @@ mFUNCTION(mFile_LaunchFile, const mString &filename)
 
 //////////////////////////////////////////////////////////////////////////
 
+mFUNCTION(mFileWriter_Destroy_Internal, IN_OUT mFileWriter *pWriter);
+
+//////////////////////////////////////////////////////////////////////////
+
+mFUNCTION(mFileWriter_Create, OUT mPtr<mFileWriter> *pWriter, IN mAllocator *pAllocator, const mString &filename)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pWriter == nullptr, mR_ArgumentNull);
+  mERROR_IF(filename.hasFailed || filename.bytes <= 1, mR_InvalidParameter);
+
+#ifdef mPLATFORM_WINDOWS
+  wchar_t filenameW[MAX_PATH + 1];
+  mERROR_CHECK(mString_ToWideString(filename, filenameW, mARRAYSIZE(filenameW)));
+
+  HANDLE file = CreateFileW(filenameW, GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+
+  if (file == INVALID_HANDLE_VALUE)
+  {
+    const DWORD error = GetLastError();
+    mUnused(error);
+
+    mRETURN_RESULT(mR_IOFailure);
+  }
+
+  mDEFER(CloseHandle(file));
+#else
+  FILE *pFile = fopen(filename.c_str(), "wb");
+  
+  mERROR_IF(pFile == nullptr, mR_IOFailure);
+
+  mDEFER(fclose(pFile));
+#endif
+
+  mERROR_CHECK(mSharedPointer_Allocate<mFileWriter>(pWriter, pAllocator, [](mFileWriter *pData) { mFileWriter_Destroy_Internal(pData); }, 1));
+
+#ifdef mPLATFORM_WINDOWS
+  (*pWriter)->file = file;
+
+  file = INVALID_HANDLE_VALUE;
+#else
+  (*pWriter)->pFile = pFile;
+
+  pFile = nullptr;
+#endif
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mFileWriter_Create, OUT mUniqueContainer<mFileWriter> *pWriter, const mString &filename)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pWriter == nullptr, mR_ArgumentNull);
+  mERROR_IF(filename.hasFailed || filename.bytes <= 1, mR_InvalidParameter);
+
+#ifdef mPLATFORM_WINDOWS
+  wchar_t filenameW[MAX_PATH + 1];
+  mERROR_CHECK(mString_ToWideString(filename, filenameW, mARRAYSIZE(filenameW)));
+
+  HANDLE file = CreateFileW(filenameW, GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+
+  if (file == INVALID_HANDLE_VALUE)
+  {
+    const DWORD error = GetLastError();
+    mUnused(error);
+
+    mRETURN_RESULT(mR_IOFailure);
+  }
+#else
+  FILE *pFile = fopen(filename.c_str(), "wb");
+
+  mERROR_IF(pFile == nullptr, mR_IOFailure);
+#endif
+
+  mUniqueContainer<mFileWriter>::CreateWithCleanupFunction(pWriter, [](mFileWriter *pData) { mFileWriter_Destroy_Internal(pData); });
+
+#ifdef mPLATFORM_WINDOWS
+  (*pWriter)->file = file;
+
+  file = INVALID_HANDLE_VALUE;
+#else
+  (*pWriter)->pFile = pFile;
+
+  pFile = nullptr;
+#endif
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mFileWriter_Destroy, IN_OUT mPtr<mFileWriter> *pWriter)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pWriter == nullptr, mR_ArgumentNull);
+  
+  mERROR_CHECK(mSharedPointer_Destroy(pWriter));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mFileWriter_WriteRaw, mPtr<mFileWriter> &writer, const uint8_t *pData, const size_t size)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(writer == nullptr || pData == nullptr, mR_ArgumentNull);
+  mERROR_IF(size == 0, mR_Success);
+
+#ifdef mPLATFORM_WINDOWS
+  size_t sizeRemaining = size;
+  size_t offset = 0;
+
+  do
+  {
+    const size_t bytesToWrite = mMin(sizeRemaining, (size_t)MAXDWORD);
+    DWORD bytesWritten = 0;
+
+    if (FALSE == WriteFile(writer->file, reinterpret_cast<const void *>(pData + offset), (DWORD)bytesToWrite, &bytesWritten, nullptr))
+    {
+      writer->bytesWritten += bytesWritten;
+
+      const DWORD error = GetLastError();
+      mUnused(error);
+
+      mRETURN_RESULT(mR_IOFailure);
+    }
+
+    mERROR_IF(bytesWritten == 0, mR_IOFailure);
+
+    writer->bytesWritten += bytesWritten;
+    offset += bytesWritten;
+    sizeRemaining -= bytesWritten;
+
+  } while (sizeRemaining > 0);
+#else
+  const size_t bytesWritten = fwrite(pData, sizeof(uint8_t), size, pWriter->pFile);
+
+  writer->bytesWritten += bytesWritten;
+
+  mERROR_IF(size != bytesWritten, mR_IOFailure);
+#endif
+
+  mRETURN_SUCCESS();
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+mFUNCTION(mFileWriter_Destroy_Internal, IN_OUT mFileWriter *pWriter)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pWriter == nullptr, mR_ArgumentNull);
+
+#ifdef mPLATFORM_WINDOWS
+  if (pWriter->file != nullptr)
+    CloseHandle(pWriter->file);
+
+  pWriter->file = nullptr;
+#else
+  if (pWriter->pFile != nullptr)
+    fclose(pWriter->pFile);
+
+  pWriter->pFile = nullptr;
+#endif
+  
+  mRETURN_SUCCESS();
+}
+
+//////////////////////////////////////////////////////////////////////////
+
 HRESULT mFile_CreateAndInitializeFileOperation_Internal(REFIID riid, void **ppFileOperation)
 {
   *ppFileOperation = nullptr;

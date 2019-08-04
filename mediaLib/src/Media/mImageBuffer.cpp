@@ -12,6 +12,26 @@
 
 #include "turbojpeg.h"
 
+//////////////////////////////////////////////////////////////////////////
+
+struct WriteFuncData
+{
+  mUniqueContainer<mFileWriter> file;
+  mResult result = mR_Success;
+
+  static void Write(void *pWriteFuncData, void *pData, const int32_t size)
+  {
+    WriteFuncData *pSelf = static_cast<WriteFuncData *>(pWriteFuncData);
+
+    if (mFAILED(pSelf->result))
+      return;
+
+    pSelf->result = mFileWriter_WriteRaw(pSelf->file, reinterpret_cast<uint8_t *>(pData), (size_t)size);
+  }
+};
+
+//////////////////////////////////////////////////////////////////////////
+
 mFUNCTION(mImageBuffer_Create_Iternal, mPtr<mImageBuffer> *pImageBuffer, IN OPTIONAL mAllocator *pAllocator);
 mFUNCTION(mImageBuffer_Destroy_Iternal, mImageBuffer *pImageBuffer);
 
@@ -301,8 +321,12 @@ mFUNCTION(mImageBuffer_SaveAsPng, mPtr<mImageBuffer> &imageBuffer, const mString
     mRETURN_RESULT(mR_OperationNotSupported);
   }
 
-  int result = stbi_write_png(filename.c_str(), (int)imageBuffer->currentSize.x, (int)imageBuffer->currentSize.y, components, imageBuffer->pPixels, (int)(imageBuffer->lineStride * sizeof(uint8_t)) * components);
+  WriteFuncData fileWriteData;
+  mERROR_CHECK(mFileWriter_Create(&fileWriteData.file, filename));
 
+  const int result = stbi_write_png_to_func(WriteFuncData::Write, &fileWriteData, (int)imageBuffer->currentSize.x, (int)imageBuffer->currentSize.y, components, imageBuffer->pPixels, (int)(imageBuffer->lineStride * sizeof(uint8_t)) * components);
+
+  mERROR_IF(mFAILED(fileWriteData.result), fileWriteData.result);
   mERROR_IF(result == 0, mR_InternalError);
 
   mRETURN_SUCCESS();
@@ -335,8 +359,12 @@ mFUNCTION(mImageBuffer_SaveAsJpeg, mPtr<mImageBuffer> &imageBuffer, const mStrin
     mRETURN_RESULT(mR_OperationNotSupported);
   }
 
-  int result = stbi_write_jpg(filename.c_str(), (int)imageBuffer->currentSize.x, (int)imageBuffer->currentSize.y, components, imageBuffer->pPixels, 85);
+  WriteFuncData fileWriteData;
+  mERROR_CHECK(mFileWriter_Create(&fileWriteData.file, filename));
 
+  const int result = stbi_write_jpg_to_func(WriteFuncData::Write, &fileWriteData, (int)imageBuffer->currentSize.x, (int)imageBuffer->currentSize.y, components, imageBuffer->pPixels, 85);
+
+  mERROR_IF(mFAILED(fileWriteData.result), fileWriteData.result);
   mERROR_IF(result == 0, mR_InternalError);
 
   mRETURN_SUCCESS();
@@ -369,8 +397,12 @@ mFUNCTION(mImageBuffer_SaveAsBmp, mPtr<mImageBuffer> &imageBuffer, const mString
     mRETURN_RESULT(mR_OperationNotSupported);
   }
 
-  int result = stbi_write_bmp(filename.c_str(), (int)imageBuffer->currentSize.x, (int)imageBuffer->currentSize.y, components, imageBuffer->pPixels);
+  WriteFuncData fileWriteData;
+  mERROR_CHECK(mFileWriter_Create(&fileWriteData.file, filename));
 
+  const int result = stbi_write_bmp_to_func(WriteFuncData::Write, &fileWriteData, (int)imageBuffer->currentSize.x, (int)imageBuffer->currentSize.y, components, imageBuffer->pPixels);
+
+  mERROR_IF(mFAILED(fileWriteData.result), fileWriteData.result);
   mERROR_IF(result == 0, mR_InternalError);
 
   mRETURN_SUCCESS();
@@ -403,8 +435,12 @@ mFUNCTION(mImageBuffer_SaveAsTga, mPtr<mImageBuffer> &imageBuffer, const mString
     mRETURN_RESULT(mR_OperationNotSupported);
   }
 
-  int result = stbi_write_tga(filename.c_str(), (int)imageBuffer->currentSize.x, (int)imageBuffer->currentSize.y, components, imageBuffer->pPixels);
+  WriteFuncData fileWriteData;
+  mERROR_CHECK(mFileWriter_Create(&fileWriteData.file, filename));
 
+  const int result = stbi_write_tga_to_func(WriteFuncData::Write, &fileWriteData, (int)imageBuffer->currentSize.x, (int)imageBuffer->currentSize.y, components, imageBuffer->pPixels);
+
+  mERROR_IF(mFAILED(fileWriteData.result), fileWriteData.result);
   mERROR_IF(result == 0, mR_InternalError);
 
   mRETURN_SUCCESS();

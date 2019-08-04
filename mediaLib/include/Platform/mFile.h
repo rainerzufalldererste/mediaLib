@@ -112,6 +112,29 @@ mFUNCTION(mFile_GetAbsoluteFilePath, OUT mString *pAbsolutePath, const mString &
 
 mFUNCTION(mFile_LaunchFile, const mString &filename);
 
+struct mFileWriter
+{
+#ifdef mPLATFORM_WINDOWS
+  HANDLE file;
+#else
+  FILE *pFile;
+#endif
+  PUBLIC_FIELD size_t bytesWritten;
+};
+
+mFUNCTION(mFileWriter_Create, OUT mPtr<mFileWriter> *pWriter, IN mAllocator *pAllocator, const mString &filename);
+mFUNCTION(mFileWriter_Create, OUT mUniqueContainer<mFileWriter> *pWriter, const mString &filename);
+
+mFUNCTION(mFileWriter_Destroy, IN_OUT mPtr<mFileWriter> *pWriter);
+
+mFUNCTION(mFileWriter_WriteRaw, mPtr<mFileWriter> &writer, const uint8_t *pData, const size_t size);
+
+template <typename T>
+mFUNCTION(mFileWriter_Write, mPtr<mFileWriter> &writer, const T *pData, const size_t count)
+{
+  return mFileWriter_WriteRaw(writer, reinterpret_cast<const uint8_t *>(pData), sizeof(T) * count);
+}
+
 //////////////////////////////////////////////////////////////////////////
 
 template<typename T>
