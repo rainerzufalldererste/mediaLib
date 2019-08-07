@@ -7,24 +7,25 @@
 #include <shlobj.h>
 
 mFUNCTION(mSystemDialogue_GetWStringFromFileExtensionPairs, OUT wchar_t **ppString, IN mAllocator *pAllocator, mPtr<mQueue<mKeyValuePair<mString, mString>>> &fileTypeExtensionPairs);
-mFUNCTION(mSystemDialogue_OpenFile_Internal, HWND window, const mString &headlineString, mPtr<mQueue<mKeyValuePair<mString, mString>>> &fileTypeExtensionPairs, OUT bool *pCanceled, OUT mString *pFilename);
-mFUNCTION(mSystemDialogue_OpenFile_SdlWindowInternal, SDL_Window *pWindow, const mString &headlineString, mPtr<mQueue<mKeyValuePair<mString, mString>>> &fileTypeExtensionPairs, OUT bool *pCanceled, OUT mString *pFilename);
+mFUNCTION(mSystemDialogue_OpenFile_Internal, HWND window, const mString &headlineString, mPtr<mQueue<mKeyValuePair<mString, mString>>> &fileTypeExtensionPairs, OUT bool *pCanceled, OUT mString *pFilename, const mString &initialDirectory);
+mFUNCTION(mSystemDialogue_OpenFile_SdlWindowInternal, SDL_Window *pWindow, const mString &headlineString, mPtr<mQueue<mKeyValuePair<mString, mString>>> &fileTypeExtensionPairs, OUT bool *pCanceled, OUT mString *pFilename, const mString &initialDirectory);
 mFUNCTION(mSystemDialogue_SelectDirectory_SdlWindowInternal, SDL_Window *pWindow, const mString &headlineString, OUT OPTIONAL bool *pCanceled, OUT mString *pSelectedDirectory);
-mFUNCTION(mSystemDialogue_SaveFile_Internal, HWND window, const mString &headlineString, mPtr<mQueue<mKeyValuePair<mString, mString>>> &fileTypeExtensionPairs, OUT mString *pFilename, OUT OPTIONAL bool *pCanceled);
-mFUNCTION(mSystemDialogue_SaveFile_SdlWindowInternal, SDL_Window *pWindow, const mString &headlineString, mPtr<mQueue<mKeyValuePair<mString, mString>>> &fileTypeExtensionPairs, OUT mString *pFilename, OUT OPTIONAL bool *pCanceled);
+mFUNCTION(mSystemDialogue_SelectDirectory_Internal, HWND window, const mString &headlineString, OUT OPTIONAL bool *pCanceled, OUT mString *pSelectedDirectory);
+mFUNCTION(mSystemDialogue_SaveFile_Internal, HWND window, const mString &headlineString, mPtr<mQueue<mKeyValuePair<mString, mString>>> &fileTypeExtensionPairs, OUT mString *pFilename, OUT OPTIONAL bool *pCanceled, const mString &initialDirectory);
+mFUNCTION(mSystemDialogue_SaveFile_SdlWindowInternal, SDL_Window *pWindow, const mString &headlineString, mPtr<mQueue<mKeyValuePair<mString, mString>>> &fileTypeExtensionPairs, OUT mString *pFilename, OUT OPTIONAL bool *pCanceled, const mString &initialDirectory);
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mSystemDialogue_OpenFile, const mString &headlineString, mPtr<mQueue<mKeyValuePair<mString, mString>>> &fileTypeNameExtensionPairs, OUT mString *pOpenedFile, OUT bool *pCanceled)
+mFUNCTION(mSystemDialogue_OpenFile, const mString &headlineString, mPtr<mQueue<mKeyValuePair<mString, mString>>> &fileTypeNameExtensionPairs, OUT mString *pOpenedFile, OUT bool *pCanceled, const mString &initialDirectory /* = "" */)
 {
   mFUNCTION_SETUP();
 
-  mERROR_CHECK(mSystemDialogue_OpenFile_Internal(nullptr, headlineString, fileTypeNameExtensionPairs, pCanceled, pOpenedFile));
+  mERROR_CHECK(mSystemDialogue_OpenFile_Internal(nullptr, headlineString, fileTypeNameExtensionPairs, pCanceled, pOpenedFile, initialDirectory));
 
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mSystemDialogue_OpenFile, mPtr<mSoftwareWindow> &window, const mString &headlineString, mPtr<mQueue<mKeyValuePair<mString, mString>>> &fileTypeNameExtensionPairs, OUT mString *pOpenedFile, OUT bool *pCanceled)
+mFUNCTION(mSystemDialogue_OpenFile, mPtr<mSoftwareWindow> &window, const mString &headlineString, mPtr<mQueue<mKeyValuePair<mString, mString>>> &fileTypeNameExtensionPairs, OUT mString *pOpenedFile, OUT bool *pCanceled, const mString &initialDirectory /* = "" */)
 {
   mFUNCTION_SETUP();
 
@@ -33,12 +34,12 @@ mFUNCTION(mSystemDialogue_OpenFile, mPtr<mSoftwareWindow> &window, const mString
   SDL_Window *pSdlWindow;
   mERROR_CHECK(mSoftwareWindow_GetSdlWindowPtr(window, &pSdlWindow));
 
-  mERROR_CHECK(mSystemDialogue_OpenFile_SdlWindowInternal(pSdlWindow, headlineString, fileTypeNameExtensionPairs, pCanceled, pOpenedFile));
+  mERROR_CHECK(mSystemDialogue_OpenFile_SdlWindowInternal(pSdlWindow, headlineString, fileTypeNameExtensionPairs, pCanceled, pOpenedFile, initialDirectory));
 
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mSystemDialogue_OpenFile, mPtr<mHardwareWindow> &window, const mString &headlineString, mPtr<mQueue<mKeyValuePair<mString, mString>>> &fileTypeNameExtensionPairs, OUT mString *pOpenedFile, OUT bool *pCanceled)
+mFUNCTION(mSystemDialogue_OpenFile, mPtr<mHardwareWindow> &window, const mString &headlineString, mPtr<mQueue<mKeyValuePair<mString, mString>>> &fileTypeNameExtensionPairs, OUT mString *pOpenedFile, OUT bool *pCanceled, const mString &initialDirectory /* = "" */)
 {
   mFUNCTION_SETUP();
 
@@ -47,9 +48,14 @@ mFUNCTION(mSystemDialogue_OpenFile, mPtr<mHardwareWindow> &window, const mString
   SDL_Window *pSdlWindow;
   mERROR_CHECK(mHardwareWindow_GetSdlWindowPtr(window, &pSdlWindow));
 
-  mERROR_CHECK(mSystemDialogue_OpenFile_SdlWindowInternal(pSdlWindow, headlineString, fileTypeNameExtensionPairs, pCanceled, pOpenedFile));
+  mERROR_CHECK(mSystemDialogue_OpenFile_SdlWindowInternal(pSdlWindow, headlineString, fileTypeNameExtensionPairs, pCanceled, pOpenedFile, initialDirectory));
 
   mRETURN_SUCCESS();
+}
+
+mFUNCTION(mSystemDialogue_SelectDirectory, const mString &headlineString, OUT mString *pSelectedDirectory, OUT OPTIONAL bool *pCanceled)
+{
+  return mSystemDialogue_SelectDirectory_Internal(nullptr, headlineString, pCanceled, pSelectedDirectory);
 }
 
 mFUNCTION(mSystemDialogue_SelectDirectory, mPtr<mSoftwareWindow> &window, const mString &headlineString, OUT mString *pSelectedDirectory, OUT OPTIONAL bool *pCanceled)
@@ -80,12 +86,12 @@ mFUNCTION(mSystemDialogue_SelectDirectory, mPtr<mHardwareWindow> &window, const 
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mSystemDialogue_SaveFile, const mString &headlineString, mPtr<mQueue<mKeyValuePair<mString, mString>>> &fileTypeNameExtensionPairs, OUT mString *pFilename, OUT OPTIONAL bool *pCanceled)
+mFUNCTION(mSystemDialogue_SaveFile, const mString &headlineString, mPtr<mQueue<mKeyValuePair<mString, mString>>> &fileTypeNameExtensionPairs, OUT mString *pFilename, OUT OPTIONAL bool *pCanceled, const mString &initialDirectory /* = "" */)
 {
-  return mSystemDialogue_SaveFile_Internal(nullptr, headlineString, fileTypeNameExtensionPairs, pFilename, pCanceled);
+  return mSystemDialogue_SaveFile_Internal(nullptr, headlineString, fileTypeNameExtensionPairs, pFilename, pCanceled, initialDirectory);
 }
 
-mFUNCTION(mSystemDialogue_SaveFile, mPtr<mSoftwareWindow> &window, const mString &headlineString, mPtr<mQueue<mKeyValuePair<mString, mString>>> &fileTypeNameExtensionPairs, OUT mString *pFilename, OUT OPTIONAL bool *pCanceled)
+mFUNCTION(mSystemDialogue_SaveFile, mPtr<mSoftwareWindow> &window, const mString &headlineString, mPtr<mQueue<mKeyValuePair<mString, mString>>> &fileTypeNameExtensionPairs, OUT mString *pFilename, OUT OPTIONAL bool *pCanceled, const mString &initialDirectory /* = "" */)
 {
   mFUNCTION_SETUP();
 
@@ -94,12 +100,12 @@ mFUNCTION(mSystemDialogue_SaveFile, mPtr<mSoftwareWindow> &window, const mString
   SDL_Window *pSdlWindow;
   mERROR_CHECK(mSoftwareWindow_GetSdlWindowPtr(window, &pSdlWindow));
 
-  mERROR_CHECK(mSystemDialogue_SaveFile_SdlWindowInternal(pSdlWindow, headlineString, fileTypeNameExtensionPairs, pFilename, pCanceled));
+  mERROR_CHECK(mSystemDialogue_SaveFile_SdlWindowInternal(pSdlWindow, headlineString, fileTypeNameExtensionPairs, pFilename, pCanceled, initialDirectory));
 
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mSystemDialogue_SaveFile, mPtr<mHardwareWindow> &window, const mString &headlineString, mPtr<mQueue<mKeyValuePair<mString, mString>>> &fileTypeNameExtensionPairs, OUT mString *pFilename, OUT OPTIONAL bool *pCanceled)
+mFUNCTION(mSystemDialogue_SaveFile, mPtr<mHardwareWindow> &window, const mString &headlineString, mPtr<mQueue<mKeyValuePair<mString, mString>>> &fileTypeNameExtensionPairs, OUT mString *pFilename, OUT OPTIONAL bool *pCanceled, const mString &initialDirectory /* = "" */)
 {
   mFUNCTION_SETUP();
 
@@ -108,14 +114,14 @@ mFUNCTION(mSystemDialogue_SaveFile, mPtr<mHardwareWindow> &window, const mString
   SDL_Window *pSdlWindow;
   mERROR_CHECK(mHardwareWindow_GetSdlWindowPtr(window, &pSdlWindow));
 
-  mERROR_CHECK(mSystemDialogue_SaveFile_SdlWindowInternal(pSdlWindow, headlineString, fileTypeNameExtensionPairs, pFilename, pCanceled));
+  mERROR_CHECK(mSystemDialogue_SaveFile_SdlWindowInternal(pSdlWindow, headlineString, fileTypeNameExtensionPairs, pFilename, pCanceled, initialDirectory));
 
   mRETURN_SUCCESS();
 }
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mSystemDialogue_OpenFile_SdlWindowInternal, SDL_Window *pWindow, const mString &headlineString, mPtr<mQueue<mKeyValuePair<mString, mString>>> &fileTypeNameExtensionPairs, OUT bool *pCanceled, OUT mString *pOpenedFile)
+mFUNCTION(mSystemDialogue_OpenFile_SdlWindowInternal, SDL_Window *pWindow, const mString &headlineString, mPtr<mQueue<mKeyValuePair<mString, mString>>> &fileTypeNameExtensionPairs, OUT bool *pCanceled, OUT mString *pOpenedFile, const mString &initialDirectory)
 {
   mFUNCTION_SETUP();
 
@@ -126,7 +132,7 @@ mFUNCTION(mSystemDialogue_OpenFile_SdlWindowInternal, SDL_Window *pWindow, const
   HWND hwnd = wmInfo.info.win.window;
   mERROR_IF(hwnd == nullptr, mR_NotSupported);
 
-  mERROR_CHECK(mSystemDialogue_OpenFile_Internal(hwnd, headlineString, fileTypeNameExtensionPairs, pCanceled, pOpenedFile));
+  mERROR_CHECK(mSystemDialogue_OpenFile_Internal(hwnd, headlineString, fileTypeNameExtensionPairs, pCanceled, pOpenedFile, initialDirectory));
 
   mRETURN_SUCCESS();
 }
@@ -170,7 +176,7 @@ mFUNCTION(mSystemDialogue_GetWStringFromFileExtensionPairs, OUT wchar_t **ppStri
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mSystemDialogue_OpenFile_Internal, HWND window, const mString &headlineString, mPtr<mQueue<mKeyValuePair<mString, mString>>> &fileTypeExtensionPairs, OUT bool *pCanceled, OUT mString *pFilename)
+mFUNCTION(mSystemDialogue_OpenFile_Internal, HWND window, const mString &headlineString, mPtr<mQueue<mKeyValuePair<mString, mString>>> &fileTypeExtensionPairs, OUT bool *pCanceled, OUT mString *pFilename, const mString &initialDirectory)
 {
   mFUNCTION_SETUP();
 
@@ -182,7 +188,12 @@ mFUNCTION(mSystemDialogue_OpenFile_Internal, HWND window, const mString &headlin
   wchar_t headline[2048];
   mERROR_CHECK(mString_ToWideString(headlineString, headline, mARRAYSIZE(headline)));
 
-  wchar_t fileName[MAX_PATH] = { 0 };
+  wchar_t initialDirectoryW[MAX_PATH + 1];
+  
+  if (initialDirectory.bytes > 1)
+    mERROR_CHECK(mString_ToWideString(initialDirectory, initialDirectoryW, mARRAYSIZE(initialDirectoryW)));
+
+  wchar_t fileName[MAX_PATH + 1] = { 0 };
 
   OPENFILENAMEW dialogueOptions;
   mZeroMemory(&dialogueOptions, 1);
@@ -191,6 +202,7 @@ mFUNCTION(mSystemDialogue_OpenFile_Internal, HWND window, const mString &headlin
   dialogueOptions.hwndOwner = window;
   dialogueOptions.nMaxFile = mARRAYSIZE(fileName);
   dialogueOptions.lpstrFile = fileName;
+  dialogueOptions.lpstrInitialDir = initialDirectory.bytes <= 1 ? nullptr : initialDirectoryW;
   dialogueOptions.nFileExtension = 0;
   dialogueOptions.lpstrFilter = pExtensions;
   dialogueOptions.nFilterIndex = 1;
@@ -220,6 +232,15 @@ mFUNCTION(mSystemDialogue_SelectDirectory_SdlWindowInternal, SDL_Window *pWindow
 
   HWND hwnd = wmInfo.info.win.window;
   mERROR_IF(hwnd == nullptr, mR_NotSupported);
+  
+  mERROR_CHECK(mSystemDialogue_SelectDirectory_Internal(hwnd, headlineString, pCanceled, pSelectedDirectory));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mSystemDialogue_SelectDirectory_Internal, HWND window, const mString &headlineString, OUT OPTIONAL bool *pCanceled, OUT mString *pSelectedDirectory)
+{
+  mFUNCTION_SETUP();
 
   wchar_t headline[1024 * 4];
   mERROR_CHECK(mString_ToWideString(headlineString, headline, mARRAYSIZE(headline)));
@@ -229,13 +250,13 @@ mFUNCTION(mSystemDialogue_SelectDirectory_SdlWindowInternal, SDL_Window *pWindow
   BROWSEINFOW browseWindowOptions;
   mERROR_CHECK(mZeroMemory(&browseWindowOptions));
 
-  browseWindowOptions.hwndOwner = hwnd;
+  browseWindowOptions.hwndOwner = window;
   browseWindowOptions.lpszTitle = headline;
   browseWindowOptions.pszDisplayName = folderName;
   browseWindowOptions.ulFlags = BIF_VALIDATE | BIF_USENEWUI | BIF_RETURNONLYFSDIRS;
 
   const PIDLIST_ABSOLUTE result = SHBrowseForFolderW(&browseWindowOptions);
-  
+
   // Free memory used.
   mDEFER(
     if (result != nullptr)
@@ -257,7 +278,7 @@ mFUNCTION(mSystemDialogue_SelectDirectory_SdlWindowInternal, SDL_Window *pWindow
   if (pCanceled != nullptr)
     *pCanceled = (result == nullptr);
 
-  
+
   if (result != nullptr)
   {
     wchar_t path[MAX_PATH] = { 0 };
@@ -269,7 +290,7 @@ mFUNCTION(mSystemDialogue_SelectDirectory_SdlWindowInternal, SDL_Window *pWindow
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mSystemDialogue_SaveFile_Internal, HWND window, const mString &headlineString, mPtr<mQueue<mKeyValuePair<mString, mString>>> &fileTypeExtensionPairs, OUT mString *pFilename, OUT OPTIONAL bool *pCanceled)
+mFUNCTION(mSystemDialogue_SaveFile_Internal, HWND window, const mString &headlineString, mPtr<mQueue<mKeyValuePair<mString, mString>>> &fileTypeExtensionPairs, OUT mString *pFilename, OUT OPTIONAL bool *pCanceled, const mString &initialDirectory)
 {
   mFUNCTION_SETUP();
 
@@ -284,7 +305,12 @@ mFUNCTION(mSystemDialogue_SaveFile_Internal, HWND window, const mString &headlin
   wchar_t headline[2048];
   mERROR_CHECK(mString_ToWideString(headlineString, headline, mARRAYSIZE(headline)));
 
-  wchar_t fileName[MAX_PATH] = { 0 };
+  wchar_t initialDirectoryW[MAX_PATH + 1];
+
+  if (initialDirectory.bytes > 1)
+    mERROR_CHECK(mString_ToWideString(initialDirectory, initialDirectoryW, mARRAYSIZE(initialDirectoryW)));
+
+  wchar_t fileName[MAX_PATH + 1] = { 0 };
 
   OPENFILENAMEW dialogueOptions;
   mZeroMemory(&dialogueOptions, 1);
@@ -293,6 +319,7 @@ mFUNCTION(mSystemDialogue_SaveFile_Internal, HWND window, const mString &headlin
   dialogueOptions.hwndOwner = window;
   dialogueOptions.nMaxFile = mARRAYSIZE(fileName);
   dialogueOptions.lpstrFile = fileName;
+  dialogueOptions.lpstrInitialDir = initialDirectory.bytes <= 1 ? nullptr : initialDirectoryW;
   dialogueOptions.nFileExtension = 0;
   dialogueOptions.lpstrFilter = pExtensions;
   dialogueOptions.nFilterIndex = 1;
@@ -312,7 +339,7 @@ mFUNCTION(mSystemDialogue_SaveFile_Internal, HWND window, const mString &headlin
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mSystemDialogue_SaveFile_SdlWindowInternal, SDL_Window *pWindow, const mString &headlineString, mPtr<mQueue<mKeyValuePair<mString, mString>>> &fileTypeExtensionPairs, OUT mString *pFilename, OUT OPTIONAL bool *pCanceled)
+mFUNCTION(mSystemDialogue_SaveFile_SdlWindowInternal, SDL_Window *pWindow, const mString &headlineString, mPtr<mQueue<mKeyValuePair<mString, mString>>> &fileTypeExtensionPairs, OUT mString *pFilename, OUT OPTIONAL bool *pCanceled, const mString &initialDirectory)
 {
   mFUNCTION_SETUP();
 
@@ -323,7 +350,7 @@ mFUNCTION(mSystemDialogue_SaveFile_SdlWindowInternal, SDL_Window *pWindow, const
   HWND hwnd = wmInfo.info.win.window;
   mERROR_IF(hwnd == nullptr, mR_NotSupported);
 
-  mERROR_CHECK(mSystemDialogue_SaveFile_Internal(hwnd, headlineString, fileTypeExtensionPairs, pFilename, pCanceled));
+  mERROR_CHECK(mSystemDialogue_SaveFile_Internal(hwnd, headlineString, fileTypeExtensionPairs, pFilename, pCanceled, initialDirectory));
 
   mRETURN_SUCCESS();
 }

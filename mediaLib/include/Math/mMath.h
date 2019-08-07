@@ -69,21 +69,23 @@ constexpr U mInverseLerp(const T value, const T min, const T max) { return (U)(v
 template <typename T, typename U>
 auto mBiLerp(const T a, const T b, const T c, const T d, const U ratio1, const U ratio2) -> decltype(mLerp(mLerp(a, b, ratio1), mLerp(c, d, ratio1), ratio2)) { return mLerp(mLerp(a, b, ratio1), mLerp(c, d, ratio1), ratio2); }
 
+// Indices are: Z, Y, X.
 template <typename T, typename U>
-T mTriLerp(const T a, const T b, const T c, const T d, const T e, const T f, const T g, const T h, const U factor1, const U factor2, const U factor3) 
+T mTriLerp(const T v000, const T v001, const T v010, const T v011, const T v100, const T v101, const T v110, const T v111, const U factor_001, const U factor_010, const U factor_100)
 {
-  const U inverseFactor1 = (U)1 - factor1;
-  const U inverseFactor2 = (U)1 - factor2;
+  const U inverseFactor_001 = (U)1 - factor_001;
+  const U inverseFactor_010 = (U)1 - factor_010;
+  const U inverseFactor_100 = (U)1 - factor_100;
 
-  const T c00 = a * inverseFactor1 + e * factor1;
-  const T c01 = b * inverseFactor1 + f * factor1;
-  const T c10 = c * inverseFactor1 + g * factor1;
-  const T c11 = d * inverseFactor1 + h * factor1;
+  const T c00 = v000 * inverseFactor_100 + v100 * factor_100;
+  const T c01 = v001 * inverseFactor_100 + v101 * factor_100;
+  const T c10 = v010 * inverseFactor_100 + v110 * factor_100;
+  const T c11 = v011 * inverseFactor_100 + v111 * factor_100;
 
-  const T c0 = c00 * inverseFactor2 + c10 * factor2;
-  const T c1 = c01 * inverseFactor2 + c11 * factor2;
+  const T c0 = c00 * inverseFactor_010 + c10 * factor_010;
+  const T c1 = c01 * inverseFactor_010 + c11 * factor_010;
 
-  return c0 * ((U)1 - factor3) + c1 * factor3;
+  return c0 * inverseFactor_001 + c1 * factor_001;
 }
 
 //////////////////////////////////////////////////////////////////////////
