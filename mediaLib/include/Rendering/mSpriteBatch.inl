@@ -284,6 +284,7 @@ inline mFUNCTION(mSpriteBatch_End, mPtr<mSpriteBatch<Args...>> &spriteBatch)
 {
   mFUNCTION_SETUP();
 
+  mERROR_IF(spriteBatch == nullptr, mR_ArgumentNull);
   mERROR_IF(!spriteBatch->isStarted, mR_ResourceStateInvalid);
   spriteBatch->isStarted = false;
 
