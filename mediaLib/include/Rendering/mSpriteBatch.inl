@@ -135,6 +135,42 @@ inline mFUNCTION(mSpriteBatch_DrawWithDepth, mPtr<mSpriteBatch<Args...>> &sprite
 }
 
 template<typename ...Args>
+inline mFUNCTION(mSpriteBatch_DrawWithDepth, mPtr<mSpriteBatch<Args...>> &spriteBatch, mPtr<mFramebuffer> &framebuffer, const mVec2f &position, const float_t depth, Args &&...args)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(spriteBatch == nullptr || pTexture == nullptr, mR_ArgumentNull);
+  mERROR_IF(!spriteBatch->isStarted, mR_ResourceStateInvalid);
+
+  mPtr<mTexture> texture;
+  mDEFER_CALL(&texture, mSharedPointer_Destroy);
+  mERROR_CHECK(mSharedPointer_Allocate(&texture, &mDefaultTempAllocator, [](mTexture *pTexture) { mTexture_Destroy(pTexture); }, 1));
+  mERROR_CHECK(mTexture_CreateFromUnownedIndex(texture.GetPointer(), framebuffer->textureId));
+
+  mERROR_CHECK(mSpriteBatch_DrawWithDepth(spriteBatch, texture, position, depth, std::forward<Args>(args)...));
+
+  mRETURN_SUCCESS();
+}
+
+template<typename ...Args>
+inline mFUNCTION(mSpriteBatch_DrawWithDepth, mPtr<mSpriteBatch<Args...>> &spriteBatch, mPtr<mFramebuffer> &framebuffer, const mRectangle2D<float_t> &rect, const float_t depth, Args &&...args)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(spriteBatch == nullptr || pTexture == nullptr, mR_ArgumentNull);
+  mERROR_IF(!spriteBatch->isStarted, mR_ResourceStateInvalid);
+
+  mPtr<mTexture> texture;
+  mDEFER_CALL(&texture, mSharedPointer_Destroy);
+  mERROR_CHECK(mSharedPointer_Allocate(&texture, &mDefaultTempAllocator, [](mTexture *pTexture) { mTexture_Destroy(pTexture); }, 1));
+  mERROR_CHECK(mTexture_CreateFromUnownedIndex(texture.GetPointer(), framebuffer->textureId));
+
+  mERROR_CHECK(mSpriteBatch_DrawWithDepth(spriteBatch, texture, rect, depth, std::forward<Args>(args)...));
+
+  mRETURN_SUCCESS();
+}
+
+template<typename ...Args>
 inline mFUNCTION(mSpriteBatch_DrawWithDepth, mPtr<mSpriteBatch<Args...>> &spriteBatch, mTexture *pTexture, const mVec2f &position, const float_t depth, Args &&...args)
 {
   mFUNCTION_SETUP();
@@ -189,6 +225,26 @@ inline mFUNCTION(mSpriteBatch_Draw, mPtr<mSpriteBatch<Args...>> &spriteBatch, mP
 }
 
 template<typename ...Args>
+inline mFUNCTION(mSpriteBatch_Draw, mPtr<mSpriteBatch<Args...>> &spriteBatch, mPtr<mFramebuffer> &framebuffer, const mVec2f &position, Args &&...args)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_CHECK(mSpriteBatch_DrawWithDepth(spriteBatch, framebuffer, position, 0, std::forward<Args>(args)...));
+
+  mRETURN_SUCCESS();
+}
+
+template<typename ...Args>
+inline mFUNCTION(mSpriteBatch_Draw, mPtr<mSpriteBatch<Args...>> &spriteBatch, mPtr<mFramebuffer> &framebuffer, const mRectangle2D<float_t> &rect, Args &&...args)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_CHECK(mSpriteBatch_DrawWithDepth(spriteBatch, texture, framebuffer, 0, std::forward<Args>(args)...));
+
+  mRETURN_SUCCESS();
+}
+
+template<typename ...Args>
 inline mFUNCTION(mSpriteBatch_Draw, mPtr<mSpriteBatch<Args...>> &spriteBatch, mTexture *pTexture, const mVec2f &position, Args &&...args)
 {
   mFUNCTION_SETUP();
@@ -206,7 +262,7 @@ inline mFUNCTION(mSpriteBatch_Draw, mPtr<mSpriteBatch<Args...>> &spriteBatch, mT
 }
 
 template <typename ...Args>
-mFUNCTION(mSpriteBatch_QuickSortRenderObjects, mPtr<mQueue<mSpriteBatch_Internal_RenderObject<Args...>>> &queue, size_t left, size_t right)
+mFUNCTION(mSpriteBatch_QuickSortRenderObjects, mPtr<mQueue<mSpriteBatch_Internal_RenderObject<Args...>>> &queue, const size_t left, const size_t right)
 {
   mFUNCTION_SETUP();
 

@@ -90,6 +90,13 @@ template <typename ...Args>
 mFUNCTION(mSpriteBatch_DrawWithDepth, mPtr<mSpriteBatch<Args...>> &spriteBatch, mPtr<mTexture> &texture, const mRectangle2D<float_t> &rect, const float_t depth, Args&&... args);
 
 template <typename ...Args>
+mFUNCTION(mSpriteBatch_DrawWithDepth, mPtr<mSpriteBatch<Args...>> &spriteBatch, mPtr<mFramebuffer> &texture, const mVec2f &position, const float_t depth, Args&&... args);
+
+// @param `rect`: x, y, width, height
+template <typename ...Args>
+mFUNCTION(mSpriteBatch_DrawWithDepth, mPtr<mSpriteBatch<Args...>> &spriteBatch, mPtr<mFramebuffer> &texture, const mRectangle2D<float_t> &rect, const float_t depth, Args&&... args);
+
+template <typename ...Args>
 mFUNCTION(mSpriteBatch_DrawWithDepth, mPtr<mSpriteBatch<Args...>> &spriteBatch, mTexture *pTexture, const mVec2f &position, const float_t depth, Args&&... args);
 
 // @param `rect`: x, y, width, height
@@ -102,6 +109,13 @@ mFUNCTION(mSpriteBatch_Draw, mPtr<mSpriteBatch<Args...>> &spriteBatch, mPtr<mTex
 // @param `rect`: x, y, width, height
 template <typename ...Args>
 mFUNCTION(mSpriteBatch_Draw, mPtr<mSpriteBatch<Args...>> &spriteBatch, mPtr<mTexture> &texture, const mRectangle2D<float_t> &rect, Args&&... args);
+
+template <typename ...Args>
+mFUNCTION(mSpriteBatch_Draw, mPtr<mSpriteBatch<Args...>> &spriteBatch, mPtr<mFramebuffer> &texture, const mVec2f &position, Args&&... args);
+
+// @param `rect`: x, y, width, height
+template <typename ...Args>
+mFUNCTION(mSpriteBatch_Draw, mPtr<mSpriteBatch<Args...>> &spriteBatch, mPtr<mFramebuffer> &texture, const mRectangle2D<float_t> &rect, Args&&... args);
 
 template <typename ...Args>
 mFUNCTION(mSpriteBatch_Draw, mPtr<mSpriteBatch<Args...>> &spriteBatch, mTexture *pTexture, const mVec2f &position, Args&&... args);

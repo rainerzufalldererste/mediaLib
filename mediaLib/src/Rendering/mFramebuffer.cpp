@@ -429,8 +429,8 @@ mFUNCTION(mFramebuffer_Create_Internal, mFramebuffer *pFramebuffer, const mVec2s
 
   glGenFramebuffers(1, &pFramebuffer->frameBufferHandle);
   glBindFramebuffer(GL_FRAMEBUFFER, pFramebuffer->frameBufferHandle);
-  glGenTextures(1, &pFramebuffer->texColourBuffer);
-  glBindTexture((pFramebuffer->sampleCount > 0) ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, pFramebuffer->texColourBuffer);
+  glGenTextures(1, &pFramebuffer->textureId);
+  glBindTexture((pFramebuffer->sampleCount > 0) ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, pFramebuffer->textureId);
 
   if (pFramebuffer->sampleCount > 0)
     glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, (GLsizei)sampleCount, glPixelFormat, (GLsizei)size.x, (GLsizei)size.y, false);
@@ -439,7 +439,7 @@ mFUNCTION(mFramebuffer_Create_Internal, mFramebuffer *pFramebuffer, const mVec2s
 
   mERROR_CHECK(mTexture2DParams_ApplyToBoundTexture(params, pFramebuffer->sampleCount > 0));
   
-  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, (pFramebuffer->sampleCount > 0) ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, pFramebuffer->texColourBuffer, 0);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, (pFramebuffer->sampleCount > 0) ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, pFramebuffer->textureId, 0);
 
   glGenRenderbuffers(1, &pFramebuffer->rboDepthStencil);
   glBindRenderbuffer(GL_RENDERBUFFER, pFramebuffer->rboDepthStencil);
@@ -458,7 +458,7 @@ mFUNCTION(mFramebuffer_Create_Internal, mFramebuffer *pFramebuffer, const mVec2s
 #endif
 
 #ifdef DEBUG_FRAMBUFFER_CREATION
-  mPRINT_DEBUG("Created Framebuffer %" PRIu64 " with texture %" PRIu64 ".\n", (uint64_t)pFramebuffer->frameBufferHandle, (uint64_t)pFramebuffer->texColourBuffer);
+  mPRINT_DEBUG("Created Framebuffer %" PRIu64 " with texture %" PRIu64 ".\n", (uint64_t)pFramebuffer->frameBufferHandle, (uint64_t)pFramebuffer->textureId);
 #endif
 
   mGL_ERROR_CHECK();
@@ -492,10 +492,10 @@ mFUNCTION(mFramebuffer_Destroy_Internal, IN mFramebuffer *pFramebuffer)
 
   pFramebuffer->frameBufferHandle = 0;
 
-  if (pFramebuffer->texColourBuffer)
-    glDeleteTextures(0, &pFramebuffer->texColourBuffer);
+  if (pFramebuffer->textureId)
+    glDeleteTextures(0, &pFramebuffer->textureId);
 
-  pFramebuffer->texColourBuffer = 0;
+  pFramebuffer->textureId = 0;
 #endif
 
   mRETURN_SUCCESS();

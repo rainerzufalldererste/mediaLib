@@ -16,7 +16,7 @@ struct mFramebuffer
   size_t textureUnit;
 #if defined(mRENDERER_OPENGL)
   GLuint frameBufferHandle;
-  GLuint texColourBuffer;
+  GLuint textureId;
   GLuint rboDepthStencil;
 #endif
 
