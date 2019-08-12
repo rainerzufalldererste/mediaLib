@@ -408,7 +408,7 @@ mFUNCTION(mRenderParams_SetDepthPrecisionBits, const size_t bits)
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mRenderParams_SetAlphaBlendFunc, const mRenderParam_BlendFunc blendFunc)
+mFUNCTION(mRenderParams_SetBlendFunc, const mRenderParam_BlendFunc blendFunc)
 {
   mFUNCTION_SETUP();
 
@@ -421,21 +421,31 @@ mFUNCTION(mRenderParams_SetAlphaBlendFunc, const mRenderParam_BlendFunc blendFun
   case mRP_BF_Additive:
     mERROR_CHECK(mRenderParams_SetBlendingEnabled(true));
     glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+    glBlendEquation(GL_FUNC_ADD);
     break;
 
   case mRP_BF_AlphaBlend:
     mERROR_CHECK(mRenderParams_SetBlendingEnabled(true));
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glBlendEquation(GL_FUNC_ADD);
     break;
 
   case mRP_BF_Premultiplied:
     mERROR_CHECK(mRenderParams_SetBlendingEnabled(true));
     glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+    glBlendEquation(GL_FUNC_ADD);
     break;
 
   case mRP_BF_Override:
     mERROR_CHECK(mRenderParams_SetBlendingEnabled(true));
     glBlendFunc(GL_ONE, GL_ZERO);
+    glBlendEquation(GL_FUNC_ADD);
+    break;
+
+  case mRP_BF_AlphaMask:
+    mERROR_CHECK(mRenderParams_SetBlendingEnabled(true));
+    glBlendFuncSeparate(GL_ZERO, GL_DST_COLOR, GL_ZERO, GL_SRC_ALPHA);
+    glBlendEquation(GL_FUNC_ADD);
     break;
 
   default:
@@ -578,13 +588,19 @@ mFUNCTION(mTexture3DParams_ApplyToBoundTexture, const mTexture3DParams &params, 
   mRETURN_SUCCESS();
 }
 
+#ifdef _DEBUG
+#define mPRINT_FUNC mPRINT_DEBUG
+#else
+#define mPRINT_FUNC mPRINT
+#endif
+
 mFUNCTION(mRenderParams_PrintRenderState, const bool onlyNewValues /* = false */)
 {
   mFUNCTION_SETUP();
 
 #ifdef mRENDERER_OPENGL
 
-  mPRINT_DEBUG("GL STATE:\n================================================\n");
+  mPRINT_FUNC("GL STATE:\n================================================\n");
 
 #define mGL_PRINT_PARAM(func, param, paramString, var, format) \
   do { static var mCONCAT_LITERALS(_var_, param)[4]; \
@@ -593,11 +609,11 @@ mFUNCTION(mRenderParams_PrintRenderState, const bool onlyNewValues /* = false */
   { const bool valueIsNew = mCONCAT_LITERALS(_var_, param)[0] != mCONCAT_LITERALS(_local_var_, param)[0]; \
     if (onlyNewValues) \
     { if (valueIsNew) \
-      { mPRINT_DEBUG(paramString " = " format " [was " format "]\n", mCONCAT_LITERALS(_local_var_, param)[0], mCONCAT_LITERALS(_var_, param)[0]); \
+      { mPRINT_FUNC(paramString " = " format " [was " format "]\n", mCONCAT_LITERALS(_local_var_, param)[0], mCONCAT_LITERALS(_var_, param)[0]); \
       } \
     } \
     else \
-    { mPRINT_DEBUG("%s" paramString " = " format "\n", valueIsNew ? " * " : "   ", mCONCAT_LITERALS(_local_var_, param)[0]); \
+    { mPRINT_FUNC("%s" paramString " = " format "\n", valueIsNew ? " * " : "   ", mCONCAT_LITERALS(_local_var_, param)[0]); \
     } \
   } \
   mCONCAT_LITERALS(_var_, param)[0] = mCONCAT_LITERALS(_local_var_, param)[0]; } while (0)
@@ -609,11 +625,11 @@ mFUNCTION(mRenderParams_PrintRenderState, const bool onlyNewValues /* = false */
   { const bool valueIsNew = mCONCAT_LITERALS(_var_, param)[0] != mCONCAT_LITERALS(_local_var_, param)[0] || mCONCAT_LITERALS(_var_, param)[1] != mCONCAT_LITERALS(_local_var_, param)[1]; \
     if (onlyNewValues) \
     { if (valueIsNew) \
-      { mPRINT_DEBUG(paramString " = (" format ", " format ") [was (" format ", " format ")]\n", mCONCAT_LITERALS(_local_var_, param)[0], mCONCAT_LITERALS(_local_var_, param)[1], mCONCAT_LITERALS(_var_, param)[0], mCONCAT_LITERALS(_var_, param)[1]); \
+      { mPRINT_FUNC(paramString " = (" format ", " format ") [was (" format ", " format ")]\n", mCONCAT_LITERALS(_local_var_, param)[0], mCONCAT_LITERALS(_local_var_, param)[1], mCONCAT_LITERALS(_var_, param)[0], mCONCAT_LITERALS(_var_, param)[1]); \
       } \
     } \
     else \
-    { mPRINT_DEBUG("%s" paramString " = (" format ", " format ")\n", valueIsNew ? " * " : "   ", mCONCAT_LITERALS(_local_var_, param)[0], mCONCAT_LITERALS(_local_var_, param)[1]); \
+    { mPRINT_FUNC("%s" paramString " = (" format ", " format ")\n", valueIsNew ? " * " : "   ", mCONCAT_LITERALS(_local_var_, param)[0], mCONCAT_LITERALS(_local_var_, param)[1]); \
     } \
   } \
   mCONCAT_LITERALS(_var_, param)[0] = mCONCAT_LITERALS(_local_var_, param)[0]; \
@@ -626,11 +642,11 @@ mFUNCTION(mRenderParams_PrintRenderState, const bool onlyNewValues /* = false */
   { const bool valueIsNew = mCONCAT_LITERALS(_var_, param)[0] != mCONCAT_LITERALS(_local_var_, param)[0] || mCONCAT_LITERALS(_var_, param)[1] != mCONCAT_LITERALS(_local_var_, param)[1] || mCONCAT_LITERALS(_var_, param)[2] != mCONCAT_LITERALS(_local_var_, param)[2]; \
     if (onlyNewValues) \
     { if (valueIsNew) \
-      { mPRINT_DEBUG(paramString " = (" format ", " format ", " format ") [was (" format ", " format ", " format ")]\n", mCONCAT_LITERALS(_local_var_, param)[0], mCONCAT_LITERALS(_local_var_, param)[1], mCONCAT_LITERALS(_local_var_, param)[2], mCONCAT_LITERALS(_var_, param)[0], mCONCAT_LITERALS(_var_, param)[1], mCONCAT_LITERALS(_var_, param)[2]); \
+      { mPRINT_FUNC(paramString " = (" format ", " format ", " format ") [was (" format ", " format ", " format ")]\n", mCONCAT_LITERALS(_local_var_, param)[0], mCONCAT_LITERALS(_local_var_, param)[1], mCONCAT_LITERALS(_local_var_, param)[2], mCONCAT_LITERALS(_var_, param)[0], mCONCAT_LITERALS(_var_, param)[1], mCONCAT_LITERALS(_var_, param)[2]); \
       } \
     } \
     else \
-    {  mPRINT_DEBUG("%s" paramString " = (" format ", " format ", " format ")\n", valueIsNew ? " * " : "   ", mCONCAT_LITERALS(_local_var_, param)[0], mCONCAT_LITERALS(_local_var_, param)[1], mCONCAT_LITERALS(_local_var_, param)[2]); \
+    {  mPRINT_FUNC("%s" paramString " = (" format ", " format ", " format ")\n", valueIsNew ? " * " : "   ", mCONCAT_LITERALS(_local_var_, param)[0], mCONCAT_LITERALS(_local_var_, param)[1], mCONCAT_LITERALS(_local_var_, param)[2]); \
     } \
   } \
   mCONCAT_LITERALS(_var_, param)[0] = mCONCAT_LITERALS(_local_var_, param)[0]; \
@@ -644,11 +660,11 @@ mFUNCTION(mRenderParams_PrintRenderState, const bool onlyNewValues /* = false */
   { const bool valueIsNew = mCONCAT_LITERALS(_var_, param)[0] != mCONCAT_LITERALS(_local_var_, param)[0] || mCONCAT_LITERALS(_var_, param)[1] != mCONCAT_LITERALS(_local_var_, param)[1] || mCONCAT_LITERALS(_var_, param)[2] != mCONCAT_LITERALS(_local_var_, param)[2] || mCONCAT_LITERALS(_var_, param)[3] != mCONCAT_LITERALS(_local_var_, param)[3]; \
     if (onlyNewValues) \
     { if (valueIsNew) \
-      { mPRINT_DEBUG(paramString " = (" format ", " format ", " format ", " format ") [was (" format ", " format ", " format ", " format ")]\n", mCONCAT_LITERALS(_local_var_, param)[0], mCONCAT_LITERALS(_local_var_, param)[1], mCONCAT_LITERALS(_local_var_, param)[2], mCONCAT_LITERALS(_local_var_, param)[3], mCONCAT_LITERALS(_var_, param)[0], mCONCAT_LITERALS(_var_, param)[1], mCONCAT_LITERALS(_var_, param)[2], mCONCAT_LITERALS(_var_, param)[3]); \
+      { mPRINT_FUNC(paramString " = (" format ", " format ", " format ", " format ") [was (" format ", " format ", " format ", " format ")]\n", mCONCAT_LITERALS(_local_var_, param)[0], mCONCAT_LITERALS(_local_var_, param)[1], mCONCAT_LITERALS(_local_var_, param)[2], mCONCAT_LITERALS(_local_var_, param)[3], mCONCAT_LITERALS(_var_, param)[0], mCONCAT_LITERALS(_var_, param)[1], mCONCAT_LITERALS(_var_, param)[2], mCONCAT_LITERALS(_var_, param)[3]); \
       } \
     } \
     else \
-    {  mPRINT_DEBUG("%s" paramString " = (" format ", " format ", " format ", " format ")\n", valueIsNew ? " * " : "   ", mCONCAT_LITERALS(_local_var_, param)[0], mCONCAT_LITERALS(_local_var_, param)[1], mCONCAT_LITERALS(_local_var_, param)[2], mCONCAT_LITERALS(_local_var_, param)[3]); \
+    {  mPRINT_FUNC("%s" paramString " = (" format ", " format ", " format ", " format ")\n", valueIsNew ? " * " : "   ", mCONCAT_LITERALS(_local_var_, param)[0], mCONCAT_LITERALS(_local_var_, param)[1], mCONCAT_LITERALS(_local_var_, param)[2], mCONCAT_LITERALS(_local_var_, param)[3]); \
     } \
   } \
   mCONCAT_LITERALS(_var_, param)[0] = mCONCAT_LITERALS(_local_var_, param)[0]; \
@@ -981,11 +997,11 @@ mFUNCTION(mRenderParams_PrintRenderState, const bool onlyNewValues /* = false */
     const bool valueIsNew = __local_var != __var__; \
     if (onlyNewValues) \
     { if (valueIsNew) \
-      { mPRINT_DEBUG(#target ": " #attachment " (" #param ") = %" PRIi32 " [was %" PRIi32 "]\n", __local_var, __var__); \
+      { mPRINT_FUNC(#target ": " #attachment " (" #param ") = %" PRIi32 " [was %" PRIi32 "]\n", __local_var, __var__); \
       } \
     } \
     else \
-    { mPRINT_DEBUG("%s" #target ": " #attachment " (" #param ")" " = %" PRIi32 "\n", valueIsNew ? " * " : "   ", __local_var, __var__); \
+    { mPRINT_FUNC("%s" #target ": " #attachment " (" #param ")" " = %" PRIi32 "\n", valueIsNew ? " * " : "   ", __local_var, __var__); \
     } \
     __var__ = __local_var; \
   } while (0)

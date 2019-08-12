@@ -139,12 +139,12 @@ inline mFUNCTION(mSpriteBatch_DrawWithDepth, mPtr<mSpriteBatch<Args...>> &sprite
 {
   mFUNCTION_SETUP();
 
-  mERROR_IF(spriteBatch == nullptr || pTexture == nullptr, mR_ArgumentNull);
+  mERROR_IF(spriteBatch == nullptr || framebuffer == nullptr, mR_ArgumentNull);
   mERROR_IF(!spriteBatch->isStarted, mR_ResourceStateInvalid);
 
   mPtr<mTexture> texture;
   mDEFER_CALL(&texture, mSharedPointer_Destroy);
-  mERROR_CHECK(mSharedPointer_Allocate(&texture, &mDefaultTempAllocator, [](mTexture *pTexture) { mTexture_Destroy(pTexture); }, 1));
+  mERROR_CHECK(mSharedPointer_Allocate<mTexture>(&texture, &mDefaultTempAllocator, [](mTexture *pTexture) { mTexture_Destroy(pTexture); }, 1));
   mERROR_CHECK(mTexture_CreateFromUnownedIndex(texture.GetPointer(), framebuffer->textureId));
 
   mERROR_CHECK(mSpriteBatch_DrawWithDepth(spriteBatch, texture, position, depth, std::forward<Args>(args)...));
@@ -157,12 +157,12 @@ inline mFUNCTION(mSpriteBatch_DrawWithDepth, mPtr<mSpriteBatch<Args...>> &sprite
 {
   mFUNCTION_SETUP();
 
-  mERROR_IF(spriteBatch == nullptr || pTexture == nullptr, mR_ArgumentNull);
+  mERROR_IF(spriteBatch == nullptr || framebuffer == nullptr, mR_ArgumentNull);
   mERROR_IF(!spriteBatch->isStarted, mR_ResourceStateInvalid);
 
   mPtr<mTexture> texture;
   mDEFER_CALL(&texture, mSharedPointer_Destroy);
-  mERROR_CHECK(mSharedPointer_Allocate(&texture, &mDefaultTempAllocator, [](mTexture *pTexture) { mTexture_Destroy(pTexture); }, 1));
+  mERROR_CHECK(mSharedPointer_Allocate<mTexture>(&texture, &mDefaultTempAllocator, [](mTexture *pTexture) { mTexture_Destroy(pTexture); }, 1));
   mERROR_CHECK(mTexture_CreateFromUnownedIndex(texture.GetPointer(), framebuffer->textureId));
 
   mERROR_CHECK(mSpriteBatch_DrawWithDepth(spriteBatch, texture, rect, depth, std::forward<Args>(args)...));
@@ -239,7 +239,7 @@ inline mFUNCTION(mSpriteBatch_Draw, mPtr<mSpriteBatch<Args...>> &spriteBatch, mP
 {
   mFUNCTION_SETUP();
 
-  mERROR_CHECK(mSpriteBatch_DrawWithDepth(spriteBatch, texture, framebuffer, 0, std::forward<Args>(args)...));
+  mERROR_CHECK(mSpriteBatch_DrawWithDepth(spriteBatch, framebuffer, rect, 0, std::forward<Args>(args)...));
 
   mRETURN_SUCCESS();
 }
@@ -598,15 +598,15 @@ inline mFUNCTION(mSpriteBatch_Internal_SetAlphaBlending, mPtr<mSpriteBatch<Args.
     break;
 
   case mSB_AM_Additive:
-    mERROR_CHECK(mRenderParams_SetAlphaBlendFunc(mRP_BF_Additive));
+    mERROR_CHECK(mRenderParams_SetBlendFunc(mRP_BF_Additive));
     break;
 
   case mSB_AM_AlphaBlend:
-    mERROR_CHECK(mRenderParams_SetAlphaBlendFunc(mRP_BF_AlphaBlend));
+    mERROR_CHECK(mRenderParams_SetBlendFunc(mRP_BF_AlphaBlend));
     break;
 
   case mSB_AM_Premultiplied:
-    mERROR_CHECK(mRenderParams_SetAlphaBlendFunc(mRP_BF_Premultiplied));
+    mERROR_CHECK(mRenderParams_SetBlendFunc(mRP_BF_Premultiplied));
     break;
 
   default:

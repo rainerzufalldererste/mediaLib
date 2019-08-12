@@ -110,6 +110,15 @@ mFUNCTION(mTexture_CreateFromUnownedIndex, OUT mTexture *pTexture, int textureIn
   mERROR_IF(textureUnit >= 32, mR_IndexOutOfBounds);
   pTexture->textureUnit = (GLuint)textureUnit;
   pTexture->textureId = textureIndex;
+
+  mVec2t<GLint> resolution;
+
+  glBindTexture(pTexture->sampleCount > 0 ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, pTexture->textureId);
+  glGetTexLevelParameteriv(pTexture->sampleCount > 0 ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &resolution.x);
+  glGetTexLevelParameteriv(pTexture->sampleCount > 0 ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &resolution.y);
+
+  pTexture->resolution = (mVec2s)resolution;
+  pTexture->resolutionF = (mVec2f)resolution;
 #else
   mRETURN_RESULT(mR_NotImplemented);
 #endif

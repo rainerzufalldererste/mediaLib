@@ -151,7 +151,7 @@ mFUNCTION(mLineRenderer_End, mPtr<mLineRenderer> &lineRenderer)
     mERROR_CHECK(mRenderDataBuffer_SetVertexBuffer(lineRenderer->renderDataBuffer, (uint8_t *)lineRenderer->renderData->pData, bytes));
     mERROR_CHECK(mShader_Bind(*lineRenderer->renderDataBuffer.shader));
     mERROR_CHECK(mShader_SetUniform(lineRenderer->renderDataBuffer.shader, mLineRenderer_ScreenSizeUniformName, mRenderParams_CurrentRenderResolutionF));
-    mERROR_CHECK(mRenderParams_SetAlphaBlendFunc(mRP_BF_AlphaBlend));
+    mERROR_CHECK(mRenderParams_SetBlendFunc(mRP_BF_AlphaBlend));
     mERROR_CHECK(mRenderDataBuffer_Draw(lineRenderer->renderDataBuffer));
   }
 

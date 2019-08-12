@@ -775,7 +775,7 @@ mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex
   mERROR_CHECK(mAllocStackZero(&pValues, count));
 
   for (size_t i = 0; i < count; ++i)
-    pValues[i] = (GLint)pV[i]->texColourBuffer;
+    pValues[i] = (GLint)pV[i]->textureId;
 
   glUniform1iv(index, (GLsizei)count, pValues);
 #else 

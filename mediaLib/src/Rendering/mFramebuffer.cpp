@@ -26,7 +26,7 @@ mFUNCTION(mFramebuffer_Create, OUT mPtr<mFramebuffer> *pFramebuffer, IN mAllocat
   mERROR_IF(pFramebuffer == nullptr, mR_ArgumentNull);
 
   if (mFramebuffer_Queue == nullptr)
-    mERROR_CHECK(mQueue_Create(&mFramebuffer_Queue, pAllocator));
+    mERROR_CHECK(mQueue_Create(&mFramebuffer_Queue, &mDefaultAllocator));
 
   mERROR_CHECK(mSharedPointer_Allocate(pFramebuffer, pAllocator, (std::function<void (mFramebuffer *)>)[](mFramebuffer *pData) { mFramebuffer_Destroy_Internal(pData); }, 1));
 
@@ -42,7 +42,7 @@ mFUNCTION(mFramebuffer_Create, OUT mPtr<mFramebuffer> *pFramebuffer, IN mAllocat
   mERROR_IF(pFramebuffer == nullptr, mR_ArgumentNull);
 
   if (mFramebuffer_Queue == nullptr)
-    mERROR_CHECK(mQueue_Create(&mFramebuffer_Queue, pAllocator));
+    mERROR_CHECK(mQueue_Create(&mFramebuffer_Queue, &mDefaultAllocator));
 
   mERROR_CHECK(mSharedPointer_Allocate(pFramebuffer, pAllocator, (std::function<void (mFramebuffer *)>)[](mFramebuffer *pData) { mFramebuffer_Destroy_Internal(pData); }, 1));
 
@@ -113,6 +113,9 @@ mFUNCTION(mFramebuffer_Push, mPtr<mFramebuffer> &framebuffer)
 
   mERROR_CHECK(mFramebuffer_Bind(framebuffer));
 
+  if (mFramebuffer_Queue == nullptr)
+    mERROR_CHECK(mQueue_Create(&mFramebuffer_Queue, &mDefaultAllocator));
+
   mERROR_CHECK(mQueue_PushBack(mFramebuffer_Queue, framebuffer));
 
   mRETURN_SUCCESS();
@@ -171,7 +174,7 @@ mFUNCTION(mFramebuffer_SetResolution, mPtr<mFramebuffer> &framebuffer, const mVe
 
   mGL_DEBUG_ERROR_CHECK();
 
-  glBindTexture((framebuffer->sampleCount > 0) ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, framebuffer->texColourBuffer);
+  glBindTexture((framebuffer->sampleCount > 0) ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, framebuffer->textureId);
 
   if (framebuffer->sampleCount > 0)
     glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, (GLsizei)framebuffer->sampleCount, glPixelFormat, (GLsizei)size.x, (GLsizei)size.y, false);
@@ -237,7 +240,7 @@ mFUNCTION(mFramebuffer_Download, mPtr<mFramebuffer> &framebuffer, OUT mPtr<mImag
 
     mERROR_CHECK(mImageBuffer_Create(pImageBuffer, pAllocator, framebuffer->size, pixelFormat));
 
-    glBindTexture(GL_TEXTURE_2D, framebuffer->texColourBuffer);
+    glBindTexture(GL_TEXTURE_2D, framebuffer->textureId);
 
     mGL_ERROR_CHECK();
 
@@ -346,7 +349,7 @@ mFUNCTION(mTexture_Bind, mPtr<mFramebuffer> &framebuffer, const size_t textureUn
   mERROR_IF(mFrameBuffer_ActiveFrameBufferHandle == framebuffer->frameBufferHandle, mR_ResourceStateInvalid);
 
   glActiveTexture(GL_TEXTURE0 + (GLuint)framebuffer->textureUnit);
-  glBindTexture((framebuffer->sampleCount > 0) ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, framebuffer->texColourBuffer);
+  glBindTexture((framebuffer->sampleCount > 0) ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, framebuffer->textureId);
 
   mGL_DEBUG_ERROR_CHECK();
 #else

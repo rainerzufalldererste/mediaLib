@@ -9,6 +9,7 @@ struct mHardwareWindow
   mPtr<mQueue<std::function<mResult (IN SDL_Event *)>>> onEventCallbacks;
   mPtr<mQueue<std::function<mResult (void)>>> onExitCallbacks;
   mPtr<mQueue<std::function<mResult(const mVec2s &)>>> onResizeCallbacks;
+  mUniqueContainer<mFramebuffer> fakeFramebuffer;
 };
 
 mFUNCTION(mHardwareWindow_Create_Internal, IN_OUT mHardwareWindow *pWindow, IN mAllocator *pAllocator, const mString &title, const mVec2s &size, const mHardwareWindow_DisplayMode displaymode, const bool stereo3dIfAvailable);
@@ -29,6 +30,10 @@ mFUNCTION(mHardwareWindow_Create, OUT mPtr<mHardwareWindow> *pWindow, IN mAlloca
   mERROR_CHECK(mRenderParams_CreateRenderContext(&(*pWindow)->renderContextID, *pWindow));
 
   mGL_ERROR_CHECK();
+
+  mUniqueContainer<mFramebuffer>::CreateWithCleanupFunction(&(*pWindow)->fakeFramebuffer, nullptr);
+  (*pWindow)->fakeFramebuffer->pixelFormat = mPF_R8G8B8;
+  (*pWindow)->fakeFramebuffer->sampleCount = 1;
 
   mERROR_CHECK(mHardwareWindow_SetAsActiveRenderTarget(*pWindow));
 
@@ -171,9 +176,8 @@ mFUNCTION(mHardwareWindow_SetAsActiveRenderTarget, mPtr<mHardwareWindow> &window
   mERROR_CHECK(mFramebuffer_Unbind());
   mERROR_CHECK(mRenderParams_ActivateRenderContext(window, window->renderContextID));
 
-  mVec2s resolution;
-  mERROR_CHECK(mHardwareWindow_GetSize(window, &resolution));
-  mERROR_CHECK(mRenderParams_SetCurrentRenderResolution(resolution));
+  mERROR_CHECK(mHardwareWindow_GetSize(window, &window->fakeFramebuffer->size));
+  mERROR_CHECK(mFramebuffer_Push(window->fakeFramebuffer));
 
   mRETURN_SUCCESS();
 }
