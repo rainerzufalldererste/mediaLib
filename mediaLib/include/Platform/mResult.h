@@ -240,4 +240,10 @@ public:
 
 #define mSILENCE_ERROR(result) (mErrorPushSilent_Internal(), result)
 
+#ifdef _DEBUG
+#define mSILENCE_ERROR_DEBUG(result) mSILENCE_ERROR(result)
+#else
+#define mSILENCE_ERROR_DEBUG(result) (result)
+#endif
+
 #endif // mResult_h__
