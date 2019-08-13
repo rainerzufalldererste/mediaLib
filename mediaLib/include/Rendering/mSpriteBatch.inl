@@ -146,6 +146,7 @@ inline mFUNCTION(mSpriteBatch_DrawWithDepth, mPtr<mSpriteBatch<Args...>> &sprite
   mDEFER_CALL(&texture, mSharedPointer_Destroy);
   mERROR_CHECK(mSharedPointer_Allocate<mTexture>(&texture, &mDefaultTempAllocator, [](mTexture *pTexture) { mTexture_Destroy(pTexture); }, 1));
   mERROR_CHECK(mTexture_CreateFromUnownedIndex(texture.GetPointer(), framebuffer->textureId));
+  texture->sampleCount = framebuffer->sampleCount;
 
   mERROR_CHECK(mSpriteBatch_DrawWithDepth(spriteBatch, texture, position, depth, std::forward<Args>(args)...));
 
@@ -164,6 +165,7 @@ inline mFUNCTION(mSpriteBatch_DrawWithDepth, mPtr<mSpriteBatch<Args...>> &sprite
   mDEFER_CALL(&texture, mSharedPointer_Destroy);
   mERROR_CHECK(mSharedPointer_Allocate<mTexture>(&texture, &mDefaultTempAllocator, [](mTexture *pTexture) { mTexture_Destroy(pTexture); }, 1));
   mERROR_CHECK(mTexture_CreateFromUnownedIndex(texture.GetPointer(), framebuffer->textureId));
+  texture->sampleCount = framebuffer->sampleCount;
 
   mERROR_CHECK(mSpriteBatch_DrawWithDepth(spriteBatch, texture, rect, depth, std::forward<Args>(args)...));
 
