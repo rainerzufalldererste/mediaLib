@@ -9,7 +9,7 @@ struct mTexture
 {
   mVec2s resolution;
   mVec2f resolutionF;
-  mRenderParams_UploadState uploadState = mRenderParams_UploadState::mRP_US_NotInitialized;
+  mRenderParams_UploadState uploadState = mRP_US_NotInitialized;
   mPtr<mImageBuffer> imageBuffer;
 
 #if defined(mRENDERER_OPENGL)
@@ -50,7 +50,7 @@ struct mTexture3D
 {
   mVec3s resolution;
   mVec3f resolutionF;
-  mRenderParams_UploadState uploadState = mRenderParams_UploadState::mRP_US_NotInitialized;
+  mRenderParams_UploadState uploadState = mRP_US_NotInitialized;
 
 #if defined(mRENDERER_OPENGL)
   GLuint textureId;
