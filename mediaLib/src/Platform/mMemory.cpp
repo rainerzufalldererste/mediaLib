@@ -72,6 +72,31 @@ mFUNCTION(mStringCopy, OUT char *buffer, const size_t bufferLength, const char *
   }
 }
 
+mFUNCTION(mStringConcat, OUT char *buffer, const size_t bufferLength, const char *source, const size_t sourceLength)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(buffer == nullptr || source == nullptr, mR_ArgumentNull);
+
+  const errno_t error = strncat_s(buffer, bufferLength, source, sourceLength);
+
+  switch (error)
+  {
+  case 0:
+    mRETURN_SUCCESS();
+
+  case STRUNCATE:
+  case ERANGE:
+    mRETURN_RESULT(mR_ArgumentOutOfBounds);
+
+  case EINVAL:
+    mRETURN_RESULT(mR_InvalidParameter);
+
+  default:
+    mRETURN_RESULT(mR_InternalError);
+  }
+}
+
 mFUNCTION(mStringLength, const wchar_t *text, const size_t maxLength, OUT size_t *pLength)
 {
   mFUNCTION_SETUP();
@@ -124,6 +149,31 @@ mFUNCTION(mStringCopy, OUT wchar_t *buffer, const size_t bufferLength, const wch
   mERROR_IF(buffer == nullptr || source == nullptr, mR_ArgumentNull);
 
   const errno_t error = wcsncpy_s(buffer, bufferLength, source, sourceLength);
+
+  switch (error)
+  {
+  case 0:
+    mRETURN_SUCCESS();
+
+  case STRUNCATE:
+  case ERANGE:
+    mRETURN_RESULT(mR_ArgumentOutOfBounds);
+
+  case EINVAL:
+    mRETURN_RESULT(mR_InvalidParameter);
+
+  default:
+    mRETURN_RESULT(mR_InternalError);
+  }
+}
+
+mFUNCTION(mStringConcet, OUT wchar_t *buffer, const size_t bufferLength, const wchar_t *source, const size_t sourceLength)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(buffer == nullptr || source == nullptr, mR_ArgumentNull);
+
+  const errno_t error = wcsncat_s(buffer, bufferLength, source, sourceLength);
 
   switch (error)
   {

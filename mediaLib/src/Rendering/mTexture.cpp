@@ -93,7 +93,7 @@ mFUNCTION(mTexture_Create, OUT mTexture *pTexture, const uint8_t *pData, const m
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mTexture_CreateFromUnownedIndex, OUT mTexture *pTexture, int textureIndex, const size_t textureUnit /* = 0 */)
+mFUNCTION(mTexture_CreateFromUnownedIndex, OUT mTexture *pTexture, int textureIndex, const size_t textureUnit /* = 0 */, const size_t sampleCount /* = 0 */)
 {
   mFUNCTION_SETUP();
 
@@ -105,12 +105,12 @@ mFUNCTION(mTexture_CreateFromUnownedIndex, OUT mTexture *pTexture, int textureIn
   pTexture->foreignTexture = true;
 
 #if defined(mRENDERER_OPENGL)
-  pTexture->sampleCount = 0;
+  pTexture->sampleCount = sampleCount;
 
   mERROR_IF(textureUnit >= 32, mR_IndexOutOfBounds);
   pTexture->textureUnit = (GLuint)textureUnit;
   pTexture->textureId = textureIndex;
-
+  
   mVec2t<GLint> resolution;
 
   glBindTexture(pTexture->sampleCount > 0 ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, pTexture->textureId);
