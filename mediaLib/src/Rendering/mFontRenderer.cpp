@@ -638,10 +638,12 @@ mFUNCTION(mFontRenderer_Draw, mPtr<mFontRenderer> &fontRenderer, const mFontDesc
 
       fontRenderer->renderedArea.GrowToContain(glyphBounds);
 
+      const mVec2f halfPixel = mVec2f(1.f) / (fontRenderer->textureAtlas->texture.resolutionF * 2);
+
       const float_t s0 = pGlyph->s0;
       const float_t t0 = pGlyph->t0;
-      const float_t s1 = pGlyph->s1;
-      const float_t t1 = pGlyph->t1;
+      const float_t s1 = pGlyph->s1 - halfPixel.x;
+      const float_t t1 = pGlyph->t1 - halfPixel.y;
 
       mERROR_CHECK(mBinaryChunk_WriteData(fontRenderer->enqueuedText, x0 * fontRenderer->right + y0 * fontRenderer->up + fontRenderer->spacialOrigin));
       mERROR_CHECK(mBinaryChunk_WriteData(fontRenderer->enqueuedText, mVec2f(s0, t0)));
@@ -994,6 +996,46 @@ mFUNCTION(mFontRenderer_AddCharToFontDescription, mPtr<mFontRenderer> &fontRende
 
   mRETURN_SUCCESS();
 }
+
+mFUNCTION(mFontRenderer_SaveAtlasTo, mPtr<mFontRenderer> &fontRenderer, const mString &directory)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(fontRenderer == nullptr, mR_ArgumentNull);
+  mERROR_IF(directory.hasFailed, mR_InvalidParameter);
+
+  mPtr<mImageBuffer> imageBuffer;
+  mString filename;
+
+  if (fontRenderer->textureAtlas != nullptr)
+  {
+    mERROR_CHECK(mTexture_Download(fontRenderer->textureAtlas->texture, &imageBuffer, &mDefaultTempAllocator, mPF_Monochrome8));
+
+    mERROR_CHECK(mString_Create(&filename, directory, &mDefaultTempAllocator));
+    mERROR_CHECK(mString_Append(filename, "/atlas_active"));
+    mERROR_CHECK(mString_Append(filename, ".png"));
+
+    mERROR_CHECK(mImageBuffer_SaveAsPng(imageBuffer, filename));
+  }
+
+  size_t index = 0;
+
+  for (auto &_atlas : fontRenderer->currentFrameTextureAtlasses->Iterate())
+  {
+    mERROR_CHECK(mTexture_Download(_atlas->texture, &imageBuffer, &mDefaultTempAllocator, mPF_Monochrome8));
+
+    mERROR_CHECK(mString_Create(&filename, directory, &mDefaultTempAllocator));
+    mERROR_CHECK(mString_Append(filename, "/atlas"));
+    mERROR_CHECK(mString_AppendUnsignedInteger(filename, index++));
+    mERROR_CHECK(mString_Append(filename, ".png"));
+
+    mERROR_CHECK(mImageBuffer_SaveAsPng(imageBuffer, filename));
+  }
+
+  mRETURN_SUCCESS();
+}
+
+//////////////////////////////////////////////////////////////////////////
 
 mFUNCTION(mFontRenderer_LoadGlyphs_Internal, mPtr<mFontRenderer> &fontRenderer, mFontDescription_Internal *pFontDescription, const size_t queueFontIndex, const float_t originalFontSize, const mString &string, OUT bool *pFailedToLoadChars)
 {
