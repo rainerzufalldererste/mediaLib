@@ -638,7 +638,7 @@ mFUNCTION(mFontRenderer_Draw, mPtr<mFontRenderer> &fontRenderer, const mFontDesc
 
       fontRenderer->renderedArea.GrowToContain(glyphBounds);
 
-      const mVec2f halfPixel = mVec2f(1.f) / (fontRenderer->textureAtlas->texture.resolutionF * 2);
+      const mVec2f halfPixel = mVec2f(.5f) / fontRenderer->textureAtlas->texture.resolutionF;
 
       const float_t s0 = pGlyph->s0;
       const float_t t0 = pGlyph->t0;

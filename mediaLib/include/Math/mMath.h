@@ -791,10 +791,38 @@ __host__ __device__ inline mVec3f mColor_RgbToYuv(const mVec3f rgb)
     mClamp(.5115453256722814f * rgb.x - .4281115132705763f * rgb.y - .08343381240170515f * rgb.z + .5f, 0.f, 1.f));
 }
 
+__host__ __device__ inline mVec3f mColor_RgbToHcv(const mVec3f rgb)
+{
+  const mVec4f p = (rgb.y < rgb.z) ? mVec4f(rgb.z, rgb.y, -1.f, 2.f / 3.f) : mVec4f(rgb.y, rgb.z, 0.f, -1.f / 3.f);
+  const mVec4f q = (rgb.x < p.x) ? mVec4f(p.x, p.y, p.w, rgb.x) : mVec4f(rgb.x, p.y, p.z, p.x);
+  const float_t c = q.x - mMin(q.w, q.y);
+  const float_t h = abs((q.w - q.y) / (6.f * c + FLT_EPSILON) + q.z);
+
+  return mVec3f(h, c, q.x);
+}
+
+__host__ __device__ inline mVec3f mColor_HslToRgb(const mVec3f hsl)
+{
+  const mVec3f rgb = mColor_HueToVec3f(hsl.x);
+  const float_t c = (1.f - mAbs(2.f * hsl.z - 1.f)) * hsl.y;
+
+  return (rgb - mVec3f(.5f)) * c + mVec3f(hsl.z);
+}
+
+__host__ __device__ inline mVec3f mColor_RgbToHsl(const mVec3f rgb)
+{
+  const mVec3f hcv = mColor_RgbToHcv(rgb);
+  const float_t l = hcv.z - hcv.y * .5f;
+  const float_t s = hcv.y / (1.f - mAbs(l * 2.f - 1.f) + FLT_EPSILON);
+
+  return mVec3f(hcv.x, s, l);
+}
+
 template<typename T, typename U>
 inline mVec2t<U> mBarycentricInterpolationFactors(const T &p, const T &q, const U &x)
 {
   const U wp = (x - q) / (q - p);
+
   return mVec2t<U>(wp, 1 - wp);
 }
 
