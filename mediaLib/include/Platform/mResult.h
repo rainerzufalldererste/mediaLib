@@ -158,7 +158,7 @@ inline void mDeinit(const std::function<void(void)> &param, Args && ...args)
   do \
   { if (conditional) \
     { mSTDRESULT = (resultOnError); \
-      if (mFAILED(mSTDRESULT)) \
+      if (mFAILED(mSTDRESULT) && mSTDRESULT != mR_Break) \
       { mSET_ERROR_RAW(mSTDRESULT); \
         mPrintError(mRESULT_PRINT_FUNCTION_TITLE, __FILE__, __LINE__, mSTDRESULT, mRESULT_PRINT_DEBUG_STRINGIFY(conditional)); \
         mDeinit(__VA_ARGS__); \
@@ -188,7 +188,7 @@ inline void mDeinit(const std::function<void(void)> &param, Args && ...args)
   do \
   { if (conditional) \
     { result = (resultOnError); \
-      if (mFAILED(resultOnError)) \
+      if (mFAILED(result) && result != mR_Break) \
       { mSET_ERROR_RAW(result); \
         mPrintError(mRESULT_PRINT_FUNCTION_TITLE, __FILE__, __LINE__, result, mRESULT_PRINT_DEBUG_STRINGIFY(conditional)); \
         mDeinit(__VA_ARGS__); \
