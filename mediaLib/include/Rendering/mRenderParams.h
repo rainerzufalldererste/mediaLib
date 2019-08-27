@@ -176,6 +176,10 @@ enum mRenderParams_TextureMinificationFilteringMode
 {
   mRP_TMinFM_NearestNeighbor = GL_NEAREST,
   mRP_TMinFM_BilinearInterpolation = GL_LINEAR,
+  mRP_TMagFM_NearestNeighborNearestMipMap = GL_NEAREST_MIPMAP_NEAREST,
+  mRP_TMagFM_BilinearInterpolationNearestMipMap = GL_LINEAR_MIPMAP_NEAREST,
+  mRP_TMagFM_NearestNeighborBlendMipMap = GL_NEAREST_MIPMAP_LINEAR,
+  mRP_TMagFM_BilinearInterpolationBlendMipMap = GL_LINEAR_MIPMAP_LINEAR,
 };
 
 struct mTexture2DParams

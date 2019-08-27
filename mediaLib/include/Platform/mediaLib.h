@@ -270,11 +270,7 @@ namespace mCpuExtensions
   void Detect();
 };
 
-inline int64_t mParseInt(IN const char *start, OUT const char **end)
-{
-  return strtoll(start, (char **)end, 10);
-}
-
-double_t mParseFloat(IN const char *start, OUT const char **end);
+int64_t mParseInt(IN const char *start, OUT const char **pEnd);
+double_t mParseFloat(IN const char *start, OUT const char **pEnd);
 
 #endif // mediaLib_h__

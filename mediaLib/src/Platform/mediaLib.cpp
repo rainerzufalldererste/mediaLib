@@ -228,12 +228,44 @@ namespace mCpuExtensions
   }
 };
 
-double_t mParseFloat(IN const char *start, OUT const char **end)
+int64_t mParseInt(IN const char *start, OUT const char **pEnd)
 {
   const char *endIfNoEnd = nullptr;
 
-  if (end == nullptr)
-    end = &endIfNoEnd;
+  if (pEnd == nullptr)
+    pEnd = &endIfNoEnd;
+
+  int64_t ret = 0;
+  int64_t negativeBit = 0;
+
+  if (*start == '-')
+  {
+    negativeBit = (uint64_t)1 << 63;
+    start++;
+  }
+
+  while (true)
+  {
+    uint8_t digit = *start - '0';
+    
+    if (digit > 9)
+      break;
+
+    ret = (ret << 1) + (ret << 3) + digit;
+    start++;
+  }
+
+  *pEnd = start;
+
+  return ret | negativeBit;
+}
+
+double_t mParseFloat(IN const char *start, OUT const char **pEnd)
+{
+  const char *endIfNoEnd = nullptr;
+
+  if (pEnd == nullptr)
+    pEnd = &endIfNoEnd;
 
   double_t sign = 1;
 
@@ -243,14 +275,14 @@ double_t mParseFloat(IN const char *start, OUT const char **end)
     ++start;
   }
 
-  char *_end = (char *)start;
-  const int64_t left = strtoll(start, &_end, 10);
+  const char *_end = start;
+  const int64_t left = mParseInt(start, &_end);
   double_t ret = (double_t)left;
 
   if (*_end == '.')
   {
     start = _end + 1;
-    const int64_t right = strtoll(start, &_end, 10);
+    const int64_t right = mParseInt(start, &_end);
 
     const double_t fracMult[] = { 0.0, 1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7, 1e-8, 1e-9, 1e-10, 1e-11, 1e-12, 1e-13 };
 
@@ -259,7 +291,7 @@ double_t mParseFloat(IN const char *start, OUT const char **end)
     else
       ret = sign * (ret + right * mPow(10, _end - start));
 
-    *end = _end;
+    *pEnd = _end;
 
     if (*_end == 'e' || *_end == 'E')
     {
@@ -267,9 +299,9 @@ double_t mParseFloat(IN const char *start, OUT const char **end)
 
       if ((*start >= '0' && *start <= '9') || *start == '-')
       {
-        ret *= mPow(10, strtoll(start, &_end, 10));
+        ret *= mPow(10, mParseInt(start, &_end));
 
-        *end = _end;
+        *pEnd = _end;
       }
     }
   }
@@ -282,10 +314,10 @@ double_t mParseFloat(IN const char *start, OUT const char **end)
       start = ++_end;
 
       if ((*start >= '0' && *start <= '9') || *start == '-')
-        ret *= mPow(10, strtoll(start, &_end, 10));
+        ret *= mPow(10, mParseInt(start, &_end));
     }
 
-    *end = _end;
+    *pEnd = _end;
   }
 
   return ret;

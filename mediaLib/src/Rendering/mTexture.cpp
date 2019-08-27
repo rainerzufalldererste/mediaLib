@@ -23,6 +23,10 @@ mFUNCTION(mTexture_Create, OUT mTexture *pTexture, mPtr<mImageBuffer> &imageBuff
 
   glBindTexture(pTexture->sampleCount > 0 ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, pTexture->textureId);
   mERROR_CHECK(mTexture2DParams_ApplyToBoundTexture(textureParams, pTexture->sampleCount > 0));
+
+  if (textureParams.minFilter >= mRP_TMagFM_NearestNeighborNearestMipMap && textureParams.minFilter <= mRP_TMagFM_BilinearInterpolationBlendMipMap)
+    pTexture->isMipMapTexture = true;
+
 #else
   mRETURN_RESULT(mR_NotInitialized);
 #endif
@@ -44,7 +48,7 @@ mFUNCTION(mTexture_Create, OUT mTexture *pTexture, const mString &filename, cons
 
   mPtr<mImageBuffer> imageBuffer;
   mDEFER_CALL(&imageBuffer, mImageBuffer_Destroy);
-  mERROR_CHECK(mImageBuffer_CreateFromFile(&imageBuffer, nullptr, filename));
+  mERROR_CHECK(mImageBuffer_CreateFromFile(&imageBuffer, nullptr, filename, mPF_R8G8B8A8));
 
   mERROR_CHECK(mTexture_Create(pTexture, imageBuffer, upload, textureUnit, textureParams));
 
@@ -75,6 +79,10 @@ mFUNCTION(mTexture_Create, OUT mTexture *pTexture, const uint8_t *pData, const m
 
     glBindTexture(pTexture->sampleCount > 0 ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, pTexture->textureId);
     mERROR_CHECK(mTexture2DParams_ApplyToBoundTexture(textureParams, pTexture->sampleCount > 0));
+
+    if (textureParams.minFilter >= mRP_TMagFM_NearestNeighborNearestMipMap && textureParams.minFilter <= mRP_TMagFM_BilinearInterpolationBlendMipMap)
+      pTexture->isMipMapTexture = true;
+
 #else
     mRETURN_RESULT(mR_NotInitialized);
 #endif
@@ -164,6 +172,9 @@ mFUNCTION(mTexture_Allocate, OUT mTexture *pTexture, const mVec2s size, const mP
   mGL_DEBUG_ERROR_CHECK();
 
   mERROR_CHECK(mTexture2DParams_ApplyToBoundTexture(textureParams, pTexture->sampleCount > 0));
+
+  if (textureParams.minFilter >= mRP_TMagFM_NearestNeighborNearestMipMap && textureParams.minFilter <= mRP_TMagFM_BilinearInterpolationBlendMipMap)
+    pTexture->isMipMapTexture = true;
 #else
   mRETURN_RESULT(mR_NotImplemented);
 #endif
@@ -256,6 +267,9 @@ mFUNCTION(mTexture_Upload, mTexture &texture)
 
   texture.resolution = texture.imageBuffer->currentSize;
   texture.resolutionF = (mVec2f)texture.resolution;
+
+  if (texture.isMipMapTexture)
+    glGenerateMipmap(texture.sampleCount > 0 ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D);
 
   mGL_DEBUG_ERROR_CHECK();
 
