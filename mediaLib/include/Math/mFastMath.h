@@ -370,7 +370,7 @@ struct mMatrix
   mResult Decompose(OUT mVector *pOutScale, OUT mQuaternion *pOutRotQuat, OUT mVector *pOutTrans) const;
   
   mINLINE mVector Determinant() const { return mVector(DirectX::XMMatrixDeterminant(m)); }
-  mINLINE mMatrix Inverse(OUT OPTIONAL mVector *pDeterminant /* = nullptr */) const { return mMatrix(DirectX::XMMatrixInverse(&pDeterminant->v, m)); }
+  mINLINE mMatrix Inverse(OUT OPTIONAL mVector *pDeterminant = nullptr) const { return mMatrix(DirectX::XMMatrixInverse(pDeterminant == nullptr ? nullptr : &pDeterminant->v, m)); }
   
   mINLINE static mMatrix mVECTORCALL LookAtLH(const mVector &eyePosition, const mVector &focusPosition, const mVector &upDirection) { return mMatrix(DirectX::XMMatrixLookAtLH(eyePosition.v, focusPosition.v, upDirection.v)); }
   mINLINE static mMatrix mVECTORCALL LookAtRH(const mVector &eyePosition, const mVector &focusPosition, const mVector &upDirection) { return mMatrix(DirectX::XMMatrixLookAtRH(eyePosition.v, focusPosition.v, upDirection.v)); }
