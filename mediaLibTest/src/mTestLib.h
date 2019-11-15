@@ -70,15 +70,11 @@ mTest_TestInit mTest_CreateTestInit(const char *component, const char *testCase,
 
 #define mTEST_ASSERT_SUCCESS(functionCall) \
   do \
-  { mResult __result = (functionCall); \
+  { const mResult __result = (functionCall); \
     \
     if (mFAILED(__result)) \
-    { mString __resultString; \
-      if (mFAILED(mResult_ToString(__result, &__resultString))) \
-        mTEST_PRINT_FAILURE("Test Failed on 'mFAILED(%s)'\n with invalid result [0x%" PRIx64 "]\n at " __FUNCTION__ "\n in File '"  __FILE__ "' Line %" PRIi32 ".\n", #functionCall, (uint64_t)__result, __LINE__); \
-      else \
-        mTEST_PRINT_FAILURE("Test Failed on 'mFAILED(%s)'\n with Result '%s' [0x%" PRIx64 "]\n at " __FUNCTION__ "\n in File '" __FILE__ "' Line %" PRIi32 ".\n", #functionCall, __resultString.c_str(), (uint64_t)__result, __LINE__); \
-      __debugbreak(); \
+    { mTEST_PRINT_FAILURE("Test Failed on 'mFAILED(%s)'\n with Result '%s' [0x%" PRIx64 "]\n at " __FUNCTION__ "\n in File '" __FILE__ "' Line %" PRIi32 ".\n", #functionCall, mResult_ToString(__result), (uint64_t)__result, __LINE__); \
+      mDEBUG_BREAK(); \
       mTEST_RETURN_FAILURE(); \
     } \
   } while(0)

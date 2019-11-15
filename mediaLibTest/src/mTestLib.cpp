@@ -115,17 +115,11 @@ mFUNCTION(mTestLib_RunAllTests, int *pArgc, char **pArgv)
 
     for (const auto &failedTest : failedTests)
     {
-      mString resultAsString = "<invalid>";
-      const mResult result = mResult_ToString(std::get<2>(failedTest), &resultAsString);
-
       mSetConsoleColour(mCC_DarkGray, mCC_Black);
       fputs(" ## ", stdout);
       mResetConsoleColour();
 
-      if (mSUCCEEDED(result))
-        printf("%s : %s with %s (0x%" PRIx64 ")\n", std::get<0>(failedTest).c_str(), std::get<1>(failedTest).c_str(), resultAsString.c_str(), (uint64_t)std::get<2>(failedTest));
-      else
-        printf("%s : %s with error code 0x%" PRIx64 "\n", std::get<0>(failedTest).c_str(), std::get<1>(failedTest).c_str(), (uint64_t)std::get<2>(failedTest));
+      printf("%s : %s with %s (0x%" PRIx64 ")\n", std::get<0>(failedTest).c_str(), std::get<1>(failedTest).c_str(), mResult_ToString(std::get<2>(failedTest)), (uint64_t)std::get<2>(failedTest));
     }
 
     return mR_Failure;
