@@ -302,6 +302,23 @@ mFUNCTION(mPool_ContainsIndex, mPtr<mPool<T>> &pool, const size_t index, OUT boo
   mRETURN_SUCCESS();
 }
 
+template <typename T>
+mFUNCTION(mPool_Clear, mPtr<mPool<T>> &pool)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pool == nullptr, mR_ArgumentNull);
+
+  for (size_t i = 0; i < pool->size; i++)
+    pool->pIndexes[i] = 0;
+
+  pool->count = 0;
+
+  mERROR_CHECK(mChunkedArray_Clear(pool->data));
+
+  mRETURN_SUCCESS();
+}
+
 //////////////////////////////////////////////////////////////////////////
 
 template<typename T>

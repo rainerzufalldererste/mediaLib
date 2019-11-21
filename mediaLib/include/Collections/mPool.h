@@ -83,6 +83,9 @@ mFUNCTION(mPool_ForEach, mPtr<mPool<T>> &pool, const std::function<mResult (T *,
 template <typename T>
 mFUNCTION(mPool_ContainsIndex, mPtr<mPool<T>> &pool, const size_t index, OUT bool *pContained);
 
+template <typename T>
+mFUNCTION(mPool_Clear, mPtr<mPool<T>> &pool);
+
 #include "mPool.inl"
 
 #endif // mPool_h__

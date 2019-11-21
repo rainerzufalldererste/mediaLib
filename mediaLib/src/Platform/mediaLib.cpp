@@ -236,11 +236,13 @@ int64_t mParseInt(IN const char *start, OUT const char **pEnd)
     pEnd = &endIfNoEnd;
 
   int64_t ret = 0;
-  int64_t negativeBit = 0;
+
+  // See: https://graphics.stanford.edu/~seander/bithacks.html#ConditionalNegate
+  int64_t negate = 0;
 
   if (*start == '-')
   {
-    negativeBit = (uint64_t)1 << 63;
+    negate = 1;
     start++;
   }
 
@@ -257,7 +259,7 @@ int64_t mParseInt(IN const char *start, OUT const char **pEnd)
 
   *pEnd = start;
 
-  return ret | negativeBit;
+  return (ret ^ -negate) + negate;
 }
 
 double_t mParseFloat(IN const char *start, OUT const char **pEnd)
@@ -267,11 +269,11 @@ double_t mParseFloat(IN const char *start, OUT const char **pEnd)
   if (pEnd == nullptr)
     pEnd = &endIfNoEnd;
 
-  double_t sign = 1;
+  uint64_t sign = 0;
 
   if (*start == '-')
   {
-    sign = -1;
+    sign = (uint64_t)1 << 63; // IEEE floating point signed bit.
     ++start;
   }
 
@@ -287,9 +289,18 @@ double_t mParseFloat(IN const char *start, OUT const char **pEnd)
     const double_t fracMult[] = { 0.0, 1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7, 1e-8, 1e-9, 1e-10, 1e-11, 1e-12, 1e-13 };
 
     if (_end - start < mARRAYSIZE(fracMult))
-      ret = sign * (ret + right * fracMult[_end - start]);
+      ret = (ret + right * fracMult[_end - start]);
     else
-      ret = sign * (ret + right * mPow(10, _end - start));
+      ret = (ret + right * mPow(10, _end - start));
+
+    // Get Sign. (memcpy should get optimized away and is only there to prevent undefined behavior)
+    {
+      uint64_t data;
+      static_assert(sizeof(data) == sizeof(ret), "Platform not supported.");
+      memcpy(&data, &ret, sizeof(data));
+      data ^= sign;
+      memcpy(&ret, &data, sizeof(data));
+    }
 
     *pEnd = _end;
 
@@ -307,7 +318,14 @@ double_t mParseFloat(IN const char *start, OUT const char **pEnd)
   }
   else
   {
-    ret *= sign;
+    // Get Sign. (memcpy should get optimized away and is only there to prevent undefined behavior)
+    {
+      uint64_t data;
+      static_assert(sizeof(data) == sizeof(ret), "Platform not supported.");
+      memcpy(&data, &ret, sizeof(data));
+      data ^= sign;
+      memcpy(&ret, &data, sizeof(data));
+    }
 
     if (*_end == 'e' || *_end == 'E')
     {
