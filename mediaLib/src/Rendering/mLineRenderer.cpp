@@ -1,9 +1,21 @@
 #include "mLineRenderer.h"
 
-extern const char mLineRenderer_PositionAttribute[10] = "position0";
-extern const char mLineRenderer_ColourAttribute[8] = "colour0";
+#include "mRenderParams.h"
+#include "mRenderDataBuffer.h"
+#include "mBinaryChunk.h"
 
+extern const char mLineRenderer_PositionAttribute[] = "position0";
+extern const char mLineRenderer_ColourAttribute[] = "colour0";
 const char mLineRenderer_ScreenSizeUniformName[] = "screenSize";
+
+struct mLineRenderer
+{
+  float_t subdivisionFactor;
+  mPtr<mShader> shader;
+  mRenderDataBuffer<mRDB_FloatAttribute<2, mLineRenderer_PositionAttribute>, mRDB_FloatAttribute<4, mLineRenderer_ColourAttribute>> renderDataBuffer;
+  mPtr<mBinaryChunk> renderData;
+  bool started;
+};
 
 static const char mLineRenderer_VertexShader[] = mGLSL(
   attribute vec2 position0;
@@ -128,6 +140,61 @@ mFUNCTION(mLineRenderer_DrawStraightArrow, mPtr<mLineRenderer> &lineRenderer, co
   mERROR_CHECK(mBinaryChunk_WriteData(lineRenderer->renderData, endPoint.colour));
   mERROR_CHECK(mBinaryChunk_WriteData(lineRenderer->renderData, endPoint.position));
   mERROR_CHECK(mBinaryChunk_WriteData(lineRenderer->renderData, endPoint.colour));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mLineRenderer_DrawCubicBezierLine, mPtr<mLineRenderer> &lineRenderer, const mCubicBezierCurve<float_t> &curve, const mLineRenderer_Attribute &start, const mLineRenderer_Attribute &end)
+{
+  return mLineRenderer_DrawCubicBezierLineSegment(lineRenderer, curve, start, end, 0, 1);
+}
+
+mFUNCTION(mLineRenderer_DrawCubicBezierArrow, mPtr<mLineRenderer> &lineRenderer, const mCubicBezierCurve<float_t> &curve, const mLineRenderer_Attribute &start, const mLineRenderer_Attribute &end, const float_t arrowSize)
+{
+  mFUNCTION_SETUP();
+
+  mUnused(arrowSize);
+
+  mERROR_CHECK(mLineRenderer_DrawCubicBezierLineSegment(lineRenderer, curve, start, end, 0, 1));
+
+  const mVec2f direction = mInterpolate(curve, 1.f) - mInterpolate(curve, 1.f - (float_t)1e-3);
+  const float_t length = (float_t)direction.Length();
+  const mVec2f orthogonal = mVec2f(direction.y, -direction.x) / length;
+
+  mERROR_CHECK(mBinaryChunk_WriteData(lineRenderer->renderData, curve.endPoint - orthogonal * (end.thickness + arrowSize * 0.5f)));
+  mERROR_CHECK(mBinaryChunk_WriteData(lineRenderer->renderData, end.colour));
+  mERROR_CHECK(mBinaryChunk_WriteData(lineRenderer->renderData, curve.endPoint + orthogonal * (end.thickness + arrowSize * 0.5f)));
+  mERROR_CHECK(mBinaryChunk_WriteData(lineRenderer->renderData, end.colour));
+  mERROR_CHECK(mBinaryChunk_WriteData(lineRenderer->renderData, curve.endPoint + arrowSize * direction / length));
+  mERROR_CHECK(mBinaryChunk_WriteData(lineRenderer->renderData, end.colour));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mLineRenderer_DrawCubicBezierLineSegment, mPtr<mLineRenderer> &lineRenderer, const mCubicBezierCurve<float_t> &curve, const mLineRenderer_Attribute &start, const mLineRenderer_Attribute &end, const float_t startT, const float_t endT)
+{
+  mFUNCTION_SETUP();
+
+  // TODO: Move to adaptive recursive angle based method with no overlaps.
+
+  constexpr float_t stepSize = 1.0f / 32.0f;
+
+  mLineRenderer_Point lastPoint = mLineRenderer_Point(mInterpolate(curve, startT), mLerp(start.colour, end.colour, startT), mLerp(start.thickness, end.thickness, startT));
+  float_t lastT = startT;
+
+  while (true)
+  {
+    const float_t t = mClamp(lastT + stepSize, 0.f, 1.f);
+    const mLineRenderer_Point point = mLineRenderer_Point(mInterpolate(curve, t), mLerp(start.colour, end.colour, t), mLerp(start.thickness, end.thickness, t));
+
+    mERROR_CHECK(mLineRenderer_DrawStraightLine(lineRenderer, lastPoint, point));
+
+    if (mMin(endT, 1.f) - mSmallest<float_t>() < t)
+      break;
+
+    lastT = t;
+    lastPoint = point;
+  }
 
   mRETURN_SUCCESS();
 }
