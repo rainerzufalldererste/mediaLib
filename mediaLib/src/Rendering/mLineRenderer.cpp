@@ -176,9 +176,9 @@ mFUNCTION(mLineRenderer_DrawCubicBezierLineSegment, mPtr<mLineRenderer> &lineRen
   mERROR_IF(lineRenderer == nullptr, mR_ArgumentNull);
   mERROR_IF(!lineRenderer->started, mR_ResourceStateInvalid);
 
-  constexpr size_t MaxRecursionDepth = 10;
-  constexpr float_t MaxOrthogonalChangeLengthSquared = 0.025f;
-  constexpr float_t SegmentSize = 1.f / 16.f;
+  constexpr size_t MaxRecursionDepth = 9;
+  constexpr float_t MaxOrthogonalChangeLengthSquared = 0.125f;
+  constexpr float_t SegmentSize = 1.f / 10.f;
 
   struct _inner
   {
@@ -194,7 +194,7 @@ mFUNCTION(mLineRenderer_DrawCubicBezierLineSegment, mPtr<mLineRenderer> &lineRen
 
       bool draw = true;
 
-      if (recursionDepth < MaxRecursionDepth && (*pLastOrthogonal - orthogonal).LengthSquared() >= MaxOrthogonalChangeLengthSquared)
+      if (recursionDepth < MaxRecursionDepth && (*pLastOrthogonal - orthogonal).LengthSquared() * direction.LengthSquared() >= MaxOrthogonalChangeLengthSquared)
       {
         const float_t halfT = mLerp(startT, endT, 0.5f);
 
@@ -203,7 +203,7 @@ mFUNCTION(mLineRenderer_DrawCubicBezierLineSegment, mPtr<mLineRenderer> &lineRen
         direction = point.position - pLastPoint->position;
         orthogonal = mVec2f(direction.y, -direction.x).Normalize();
 
-        if (recursionDepth < MaxRecursionDepth && (*pLastOrthogonal - orthogonal).LengthSquared() >= MaxOrthogonalChangeLengthSquared)
+        if (recursionDepth < MaxRecursionDepth && (*pLastOrthogonal - orthogonal).LengthSquared() * direction.LengthSquared() >= MaxOrthogonalChangeLengthSquared)
         {
           mERROR_CHECK(DrawCurveAdaptive(lineRenderer, curve, start, end, halfT, endT, pLastPoint, pLastOrthogonal, recursionDepth + 1));
           
@@ -242,12 +242,33 @@ mFUNCTION(mLineRenderer_DrawCubicBezierLineSegment, mPtr<mLineRenderer> &lineRen
 
   while (true)
   {
-    const float_t t = mClamp(lastT + SegmentSize, startT, endT);
+    float_t t = mClamp(lastT + SegmentSize, startT, endT);
 
-    mERROR_CHECK(_inner::DrawCurveAdaptive(lineRenderer, curve, start, end, lastT, t, &lastPoint, &lastOrthogonal, 1));
+  reconsider_drawing:
 
-    if (mAbs(t - lastT) < mSmallest<float_t>())
+    if (mAbs(t - endT) < mSmallest<float_t>())
+    {
+      mERROR_CHECK(_inner::DrawCurveAdaptive(lineRenderer, curve, start, end, lastT, t, &lastPoint, &lastOrthogonal, 1));
+
       break;
+    }
+    else
+    {
+      const mVec2f point = mInterpolate(curve, t);
+      const mVec2f direction = point - lastPoint.position;
+      const mVec2f orthogonal = mVec2f(direction.y, -direction.x).Normalize();
+
+      if ((lastOrthogonal - orthogonal).LengthSquared() * direction.LengthSquared() <= MaxOrthogonalChangeLengthSquared)
+      {
+        t = mClamp(t + SegmentSize, startT, endT);
+        
+        goto reconsider_drawing;
+      }
+      else
+      {
+        mERROR_CHECK(_inner::DrawCurveAdaptive(lineRenderer, curve, start, end, lastT, t, &lastPoint, &lastOrthogonal, 1));
+      }
+    }
 
     lastT = t;
   }
