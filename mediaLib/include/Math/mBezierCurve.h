@@ -77,12 +77,16 @@ inline mCubicBezierCurve<T> mCubicBezierCurve_GetFromPoints(const mVec2t<T> &poi
   const T q1 = i1 * t1_2 * (T)3;
   const T q2 = i2 * t2_2 * (T)3;
 
-  // Solve for Control Point X and Y coordinates.
-  // TODO: Remove duplicate calculations.
-  const mVec2t<T> x12 = mSolveXY(p1, q1, pointB.x - (pointA.x * i1_3) - (pointD.x * t1_3), p2, q2, pointC.x - (pointA.x * i2_3) - (pointD.x * t2_3));
-  const mVec2t<T> y12 = mSolveXY(p1, q1, pointB.y - (pointA.y * i1_3) - (pointD.y * t1_3), p2, q2, pointC.y - (pointA.y * i2_3) - (pointD.y * t2_3));
+  // Solve for Control Points 1 and 2.
+  const mVec2f c = pointB - (pointA * i1_3) - (pointD * t1_3);
+  const mVec2f f = pointC - (pointA * i2_3) - (pointD * t2_3);
 
-  return mCubicBezierCurve<T>(pointA, pointD, mVec2t<T>(x12.x, y12.x), mVec2t<T>(x12.y, y12.y));
+  const float_t div2 = (q1 - p1 * q2 / p2);
+
+  const mVec2f cp2 = (c - mVec2f(p1 / p2) * f) / div2;
+  const mVec2f cp1 = (c - (q1 * cp2)) / p1;
+
+  return mCubicBezierCurve<T>(pointA, pointD, cp1, cp2);
 }
 
 #endif // mBezierCurve_h__
