@@ -153,8 +153,6 @@ mFUNCTION(mLineRenderer_DrawCubicBezierArrow, mPtr<mLineRenderer> &lineRenderer,
 {
   mFUNCTION_SETUP();
 
-  mUnused(arrowSize);
-
   mERROR_CHECK(mLineRenderer_DrawCubicBezierLineSegment(lineRenderer, curve, start, end, 0, 1));
 
   const mVec2f direction = mInterpolate(curve, 1.f) - mInterpolate(curve, 1.f - (float_t)1e-3);
@@ -175,11 +173,17 @@ mFUNCTION(mLineRenderer_DrawCubicBezierLineSegment, mPtr<mLineRenderer> &lineRen
 {
   mFUNCTION_SETUP();
 
+  mERROR_IF(lineRenderer == nullptr, mR_ArgumentNull);
+  mERROR_IF(!lineRenderer->started, mR_ResourceStateInvalid);
+
   // TODO: Move to adaptive recursive angle based method with no overlaps.
 
   constexpr float_t stepSize = 1.0f / 32.0f;
 
+  const mVec2f startDirection = mInterpolate(curve, startT + (float_t)1e-3) - mInterpolate(curve, startT);
+
   mLineRenderer_Point lastPoint = mLineRenderer_Point(mInterpolate(curve, startT), mLerp(start.colour, end.colour, startT), mLerp(start.thickness, end.thickness, startT));
+  mVec2f lastOrthogonal = mVec2f(startDirection.y, -startDirection.x).Normalize();
   float_t lastT = startT;
 
   while (true)
@@ -187,12 +191,27 @@ mFUNCTION(mLineRenderer_DrawCubicBezierLineSegment, mPtr<mLineRenderer> &lineRen
     const float_t t = mClamp(lastT + stepSize, 0.f, 1.f);
     const mLineRenderer_Point point = mLineRenderer_Point(mInterpolate(curve, t), mLerp(start.colour, end.colour, t), mLerp(start.thickness, end.thickness, t));
 
-    mERROR_CHECK(mLineRenderer_DrawStraightLine(lineRenderer, lastPoint, point));
+    const mVec2f direction = point.position - lastPoint.position;
+    const mVec2f orthogonal = mVec2f(direction.y, -direction.x).Normalize();
+
+    mERROR_CHECK(mBinaryChunk_WriteData(lineRenderer->renderData, lastPoint.position + lastOrthogonal * lastPoint.thickness));
+    mERROR_CHECK(mBinaryChunk_WriteData(lineRenderer->renderData, lastPoint.colour));
+    mERROR_CHECK(mBinaryChunk_WriteData(lineRenderer->renderData, point.position + orthogonal * point.thickness));
+    mERROR_CHECK(mBinaryChunk_WriteData(lineRenderer->renderData, point.colour));
+    mERROR_CHECK(mBinaryChunk_WriteData(lineRenderer->renderData, point.position - orthogonal * point.thickness));
+    mERROR_CHECK(mBinaryChunk_WriteData(lineRenderer->renderData, point.colour));
+    mERROR_CHECK(mBinaryChunk_WriteData(lineRenderer->renderData, lastPoint.position + lastOrthogonal * lastPoint.thickness));
+    mERROR_CHECK(mBinaryChunk_WriteData(lineRenderer->renderData, lastPoint.colour));
+    mERROR_CHECK(mBinaryChunk_WriteData(lineRenderer->renderData, lastPoint.position - lastOrthogonal * lastPoint.thickness));
+    mERROR_CHECK(mBinaryChunk_WriteData(lineRenderer->renderData, lastPoint.colour));
+    mERROR_CHECK(mBinaryChunk_WriteData(lineRenderer->renderData, point.position - orthogonal * point.thickness));
+    mERROR_CHECK(mBinaryChunk_WriteData(lineRenderer->renderData, point.colour));
 
     if (mMin(endT, 1.f) - mSmallest<float_t>() < t)
       break;
 
     lastT = t;
+    lastOrthogonal = orthogonal;
     lastPoint = point;
   }
 
