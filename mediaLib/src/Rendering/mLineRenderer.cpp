@@ -176,9 +176,63 @@ mFUNCTION(mLineRenderer_DrawCubicBezierLineSegment, mPtr<mLineRenderer> &lineRen
   mERROR_IF(lineRenderer == nullptr, mR_ArgumentNull);
   mERROR_IF(!lineRenderer->started, mR_ResourceStateInvalid);
 
-  // TODO: Move to adaptive recursive angle based method with no overlaps.
+  constexpr size_t MaxRecursionDepth = 10;
+  constexpr float_t MaxOrthogonalChangeLengthSquared = 0.025f;
+  constexpr float_t SegmentSize = 1.f / 16.f;
 
-  constexpr float_t stepSize = 1.0f / 32.0f;
+  struct _inner
+  {
+    static mFUNCTION(DrawCurveAdaptive, mPtr<mLineRenderer> &lineRenderer, const mCubicBezierCurve<float_t> &curve, const mLineRenderer_Attribute &start, const mLineRenderer_Attribute &end, const float_t startT, const float_t endT, IN_OUT mLineRenderer_Point *pLastPoint, IN_OUT mVec2f *pLastOrthogonal, const size_t recursionDepth)
+    {
+      mFUNCTION_SETUP();
+
+      const float_t t = endT;
+      const mLineRenderer_Point point = mLineRenderer_Point(mInterpolate(curve, t), mLerp(start.colour, end.colour, t), mLerp(start.thickness, end.thickness, t));
+
+      mVec2f direction = point.position - pLastPoint->position;
+      mVec2f orthogonal = mVec2f(direction.y, -direction.x).Normalize();
+
+      bool draw = true;
+
+      if (recursionDepth < MaxRecursionDepth && (*pLastOrthogonal - orthogonal).LengthSquared() >= MaxOrthogonalChangeLengthSquared)
+      {
+        const float_t halfT = mLerp(startT, endT, 0.5f);
+
+        mERROR_CHECK(DrawCurveAdaptive(lineRenderer, curve, start, end, startT, halfT, pLastPoint, pLastOrthogonal, recursionDepth + 1));
+
+        direction = point.position - pLastPoint->position;
+        orthogonal = mVec2f(direction.y, -direction.x).Normalize();
+
+        if (recursionDepth < MaxRecursionDepth && (*pLastOrthogonal - orthogonal).LengthSquared() >= MaxOrthogonalChangeLengthSquared)
+        {
+          mERROR_CHECK(DrawCurveAdaptive(lineRenderer, curve, start, end, halfT, endT, pLastPoint, pLastOrthogonal, recursionDepth + 1));
+          
+          draw = false;
+        }
+      }
+
+      if (draw)
+      {
+        mERROR_CHECK(mBinaryChunk_WriteData(lineRenderer->renderData, pLastPoint->position + *pLastOrthogonal * pLastPoint->thickness));
+        mERROR_CHECK(mBinaryChunk_WriteData(lineRenderer->renderData, pLastPoint->colour));
+        mERROR_CHECK(mBinaryChunk_WriteData(lineRenderer->renderData, point.position + orthogonal * point.thickness));
+        mERROR_CHECK(mBinaryChunk_WriteData(lineRenderer->renderData, point.colour));
+        mERROR_CHECK(mBinaryChunk_WriteData(lineRenderer->renderData, point.position - orthogonal * point.thickness));
+        mERROR_CHECK(mBinaryChunk_WriteData(lineRenderer->renderData, point.colour));
+        mERROR_CHECK(mBinaryChunk_WriteData(lineRenderer->renderData, pLastPoint->position + *pLastOrthogonal * pLastPoint->thickness));
+        mERROR_CHECK(mBinaryChunk_WriteData(lineRenderer->renderData, pLastPoint->colour));
+        mERROR_CHECK(mBinaryChunk_WriteData(lineRenderer->renderData, pLastPoint->position - *pLastOrthogonal * pLastPoint->thickness));
+        mERROR_CHECK(mBinaryChunk_WriteData(lineRenderer->renderData, pLastPoint->colour));
+        mERROR_CHECK(mBinaryChunk_WriteData(lineRenderer->renderData, point.position - orthogonal * point.thickness));
+        mERROR_CHECK(mBinaryChunk_WriteData(lineRenderer->renderData, point.colour));
+
+        *pLastOrthogonal = orthogonal;
+        *pLastPoint = point;
+      }
+
+      mRETURN_SUCCESS();
+    }
+  };
 
   const mVec2f startDirection = mInterpolate(curve, startT + (float_t)1e-3) - mInterpolate(curve, startT);
 
@@ -188,31 +242,14 @@ mFUNCTION(mLineRenderer_DrawCubicBezierLineSegment, mPtr<mLineRenderer> &lineRen
 
   while (true)
   {
-    const float_t t = mClamp(lastT + stepSize, 0.f, 1.f);
-    const mLineRenderer_Point point = mLineRenderer_Point(mInterpolate(curve, t), mLerp(start.colour, end.colour, t), mLerp(start.thickness, end.thickness, t));
+    const float_t t = mClamp(lastT + SegmentSize, startT, endT);
 
-    const mVec2f direction = point.position - lastPoint.position;
-    const mVec2f orthogonal = mVec2f(direction.y, -direction.x).Normalize();
+    mERROR_CHECK(_inner::DrawCurveAdaptive(lineRenderer, curve, start, end, lastT, t, &lastPoint, &lastOrthogonal, 1));
 
-    mERROR_CHECK(mBinaryChunk_WriteData(lineRenderer->renderData, lastPoint.position + lastOrthogonal * lastPoint.thickness));
-    mERROR_CHECK(mBinaryChunk_WriteData(lineRenderer->renderData, lastPoint.colour));
-    mERROR_CHECK(mBinaryChunk_WriteData(lineRenderer->renderData, point.position + orthogonal * point.thickness));
-    mERROR_CHECK(mBinaryChunk_WriteData(lineRenderer->renderData, point.colour));
-    mERROR_CHECK(mBinaryChunk_WriteData(lineRenderer->renderData, point.position - orthogonal * point.thickness));
-    mERROR_CHECK(mBinaryChunk_WriteData(lineRenderer->renderData, point.colour));
-    mERROR_CHECK(mBinaryChunk_WriteData(lineRenderer->renderData, lastPoint.position + lastOrthogonal * lastPoint.thickness));
-    mERROR_CHECK(mBinaryChunk_WriteData(lineRenderer->renderData, lastPoint.colour));
-    mERROR_CHECK(mBinaryChunk_WriteData(lineRenderer->renderData, lastPoint.position - lastOrthogonal * lastPoint.thickness));
-    mERROR_CHECK(mBinaryChunk_WriteData(lineRenderer->renderData, lastPoint.colour));
-    mERROR_CHECK(mBinaryChunk_WriteData(lineRenderer->renderData, point.position - orthogonal * point.thickness));
-    mERROR_CHECK(mBinaryChunk_WriteData(lineRenderer->renderData, point.colour));
-
-    if (mMin(endT, 1.f) - mSmallest<float_t>() < t)
+    if (mAbs(t - lastT) < mSmallest<float_t>())
       break;
 
     lastT = t;
-    lastOrthogonal = orthogonal;
-    lastPoint = point;
   }
 
   mRETURN_SUCCESS();

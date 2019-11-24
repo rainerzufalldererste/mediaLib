@@ -29,17 +29,6 @@ inline mVec2t<T> mInterpolate(const mCubicBezierCurve<T> &curve, const U positio
   return i3 * curve.startPoint + (U(3) * i2 * position) * curve.controlPoint1 + (U(3) * i * p2) * curve.controlPoint2 + p3 * curve.endPoint;
 }
 
-// Solve linear equation: a * x + b * y = c and d * x + e * y = f for x and y.
-// Returns mVec2t<T>(x, y).
-template <typename T>
-inline mVec2t<T> mSolveXY(const T a, const T b, const T c, const T d, const T e, const T f)
-{
-  const T y = (c - a / d * f) / (b - a * e / d);
-  const T x = (c - (b * y)) / a;
-
-  return mVec2t<T>(x, y);
-}
-
 template <typename T>
 inline mCubicBezierCurve<T> mCubicBezierCurve_GetFromPoints(const mVec2t<T> &pointA, const mVec2t<T> &pointB, const mVec2t<T> &pointC, const mVec2t<T> &pointD)
 {

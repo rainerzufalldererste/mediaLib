@@ -223,6 +223,8 @@ struct mVec2t
   __host__ __device__ inline T LengthSquared() const { return x * x + y * y; };
   __host__ __device__ inline mVec2t<T> Normalize() { return *this / (T)Length(); };
 
+  __host__ __device__ inline typename mMath_DistanceTypeOf<T>::type Angle() const { return mATan2(mMath_DistanceTypeOf<T>::type(y), mMath_DistanceTypeOf<T>::type(x)); };
+
   _mVECTOR_SUBSET_2(y, x);
 };
 
