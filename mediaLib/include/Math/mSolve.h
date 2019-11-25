@@ -14,4 +14,46 @@ inline mVec2t<T> mSolveXY(const T a, const T b, const T c, const T d, const T e,
   return mVec2t<T>(x, y);
 }
 
+template <typename TFunc, typename T, typename U, typename ...Args>
+inline T mNewtonSolve(const TFunc &func, const T tMin, const T tMax, const T tEpsilon, const U rEpsilon, const size_t maxSteps, OUT OPTIONAL U *pBestResult, Args... args)
+{
+  T tRange = mAbs(tMin - tMax) / (T)2;
+  T tBest = tMin + (tMax - tMin) / (T)2;
+  U rBest = func(tBest, args...);
+  size_t stepsRemaining = mMin(maxSteps, maxSteps - 1); // to deal with overflow.
+
+  tRange /= (T)2; // otherwise we'll be searching outside the specified range.
+
+  while (mAbs(tRange) > tEpsilon && stepsRemaining > 0 && rBest > rEpsilon)
+  {
+    const U rHigh = func(tBest + tRange, args...);
+    const U rLow = func(tBest - tRange, args...);
+
+    if (rHigh < rLow)
+    {
+      if (rHigh < rBest)
+      {
+        tBest += tRange;
+        rBest = rHigh;
+      }
+    }
+    else
+    {
+      if (rLow < rBest)
+      {
+        tBest -= tRange;
+        rBest = rLow;
+      }
+    }
+
+    tRange /= (T)2;
+    stepsRemaining--;
+  }
+
+  if (pBestResult)
+    *pBestResult = rBest;
+
+  return tBest;
+}
+
 #endif // mSolve_h__

@@ -3,6 +3,7 @@
 #include "mRenderParams.h"
 #include "mRenderDataBuffer.h"
 #include "mBinaryChunk.h"
+#include "mSolve.h"
 
 extern const char mLineRenderer_PositionAttribute[] = "position0";
 extern const char mLineRenderer_ColourAttribute[] = "colour0";
@@ -153,17 +154,27 @@ mFUNCTION(mLineRenderer_DrawCubicBezierArrow, mPtr<mLineRenderer> &lineRenderer,
 {
   mFUNCTION_SETUP();
 
-  mERROR_CHECK(mLineRenderer_DrawCubicBezierLineSegment(lineRenderer, curve, start, end, 0, 1));
+  struct _inner
+  {
+    static float_t DistanceToEndWithOffset(const float_t t, const mCubicBezierCurve<float_t> &curve, const float_t offsetSquared)
+    {
+      return mAbs((curve.endPoint - mInterpolate(curve, t)).LengthSquared() - offsetSquared);
+    }
+  };
 
-  const mVec2f direction = mInterpolate(curve, 1.f) - mInterpolate(curve, 1.f - (float_t)1e-3);
-  const float_t length = (float_t)direction.Length();
-  const mVec2f orthogonal = mVec2f(direction.y, -direction.x) / length;
+  const float_t tArrowStart = mNewtonSolve<decltype(_inner::DistanceToEndWithOffset), float_t, float_t>(_inner::DistanceToEndWithOffset, 0.9f, 1.f, mSmallest<float_t>(), 0.01f, 10, nullptr, curve, mPow(arrowSize, 2));
 
-  mERROR_CHECK(mBinaryChunk_WriteData(lineRenderer->renderData, curve.endPoint - orthogonal * (end.thickness + arrowSize * 0.5f)));
+  mERROR_CHECK(mLineRenderer_DrawCubicBezierLineSegment(lineRenderer, curve, start, end, 0, tArrowStart));
+
+  const mVec2f endPoint = mInterpolate(curve, tArrowStart);
+  const mVec2f direction = (curve.endPoint - endPoint).Normalize();
+  const mVec2f orthogonal = mVec2f(direction.y, -direction.x);
+
+  mERROR_CHECK(mBinaryChunk_WriteData(lineRenderer->renderData, endPoint - orthogonal * (end.thickness + arrowSize * 0.5f)));
   mERROR_CHECK(mBinaryChunk_WriteData(lineRenderer->renderData, end.colour));
-  mERROR_CHECK(mBinaryChunk_WriteData(lineRenderer->renderData, curve.endPoint + orthogonal * (end.thickness + arrowSize * 0.5f)));
+  mERROR_CHECK(mBinaryChunk_WriteData(lineRenderer->renderData, endPoint + orthogonal * (end.thickness + arrowSize * 0.5f)));
   mERROR_CHECK(mBinaryChunk_WriteData(lineRenderer->renderData, end.colour));
-  mERROR_CHECK(mBinaryChunk_WriteData(lineRenderer->renderData, curve.endPoint + arrowSize * direction / length));
+  mERROR_CHECK(mBinaryChunk_WriteData(lineRenderer->renderData, curve.endPoint));
   mERROR_CHECK(mBinaryChunk_WriteData(lineRenderer->renderData, end.colour));
 
   mRETURN_SUCCESS();
@@ -234,7 +245,7 @@ mFUNCTION(mLineRenderer_DrawCubicBezierLineSegment, mPtr<mLineRenderer> &lineRen
     }
   };
 
-  const mVec2f startDirection = mInterpolate(curve, startT + (float_t)1e-3) - mInterpolate(curve, startT);
+  const mVec2f startDirection = mInterpolate(curve, startT + 1e-3f) - mInterpolate(curve, startT);
 
   mLineRenderer_Point lastPoint = mLineRenderer_Point(mInterpolate(curve, startT), mLerp(start.colour, end.colour, startT), mLerp(start.thickness, end.thickness, startT));
   mVec2f lastOrthogonal = mVec2f(startDirection.y, -startDirection.x).Normalize();
