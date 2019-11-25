@@ -41,6 +41,7 @@ inline mCubicBezierCurve<T> mCubicBezierCurve_GetFromPoints(const mVec2t<T> &poi
   const T c2 = mSqrt(cmb.x * cmb.x + cmb.y * cmb.y);
   const T c3 = mSqrt(dmc.x * dmc.x + dmc.y * dmc.y);
   
+  // Guess best value for `t` at `pointB` and `pointC`.
   const T t1 = c1 / (c1 + c2 + c3);
   const T t2 = (c1 + c2) / (c1 + c2 + c3);
 
