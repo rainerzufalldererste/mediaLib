@@ -127,8 +127,9 @@ mFUNCTION(mString_Reserve, mString &string, const size_t size);
 mFUNCTION(mString_GetByteSize, const mString &string, OUT size_t *pSize);
 mFUNCTION(mString_GetCount, const mString &string, OUT size_t *pLength);
 
-mFUNCTION(mString_ToWideString, const mString &string, OUT wchar_t *pWideString, const size_t bufferSize);
-mFUNCTION(mString_ToWideString, const mString &string, OUT wchar_t *pWideString, const size_t bufferSize, OUT size_t *pWideStringLength);
+mFUNCTION(mString_ToWideString, const mString &string, OUT wchar_t *pWideString, const size_t bufferCount);
+mFUNCTION(mString_ToWideString, const mString &string, OUT wchar_t *pWideString, const size_t bufferCount, OUT size_t *pWideStringCount);
+mFUNCTION(mString_GetRequiredWideStringCount, const mString &string, OUT size_t *pWideStringCount);
 
 mFUNCTION(mString_Substring, const mString &text, OUT mString *pSubstring, const size_t startCharacter);
 mFUNCTION(mString_Substring, const mString &text, OUT mString *pSubstring, const size_t startCharacter, const size_t length);
