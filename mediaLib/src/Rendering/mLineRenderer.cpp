@@ -162,13 +162,23 @@ mFUNCTION(mLineRenderer_DrawCubicBezierArrow, mPtr<mLineRenderer> &lineRenderer,
     }
   };
 
-  const float_t tArrowStart = mNewtonSolve<decltype(_inner::DistanceToEndWithOffset), float_t, float_t>(_inner::DistanceToEndWithOffset, 0.9f, 1.f, mSmallest<float_t>(), 0.01f, 10, nullptr, curve, mPow(arrowSize, 2));
+  const float_t tArrowStart = mNewtonSolve<decltype(_inner::DistanceToEndWithOffset), float_t, float_t>(_inner::DistanceToEndWithOffset, .8f, 1.f, mSmallest<float_t>(), 0.01f, 10, nullptr, curve, mPow(arrowSize, 2));
 
-  mERROR_CHECK(mLineRenderer_DrawCubicBezierLineSegment(lineRenderer, curve, start, end, 0, tArrowStart));
+  constexpr float_t MaxEndPointArrowDiffSquared = 0.005f;
 
   const mVec2f endPoint = mInterpolate(curve, tArrowStart);
-  const mVec2f direction = (curve.endPoint - endPoint).Normalize();
-  const mVec2f orthogonal = mVec2f(direction.y, -direction.x);
+  const mVec2f endPointDirection = (endPoint - mInterpolate(curve, tArrowStart - 1e-3f)).Normalize();
+  const mVec2f arrowDirection = (curve.endPoint - endPoint).Normalize();
+
+  float_t tLineEnd = tArrowStart;
+
+  // In case the isArrow direction and the direction at the end of the drawn line differ too much (so that a gap would be visible): extend the line.
+  if ((endPointDirection - arrowDirection).LengthSquared() > MaxEndPointArrowDiffSquared)
+    tLineEnd = mLerp(tLineEnd, 1.f, .33f);
+
+  mERROR_CHECK(mLineRenderer_DrawCubicBezierLineSegment(lineRenderer, curve, start, end, 0, tLineEnd));
+
+  const mVec2f orthogonal = mVec2f(arrowDirection.y, -arrowDirection.x);
 
   mERROR_CHECK(mBinaryChunk_WriteData(lineRenderer->renderData, endPoint - orthogonal * (end.thickness + arrowSize * 0.5f)));
   mERROR_CHECK(mBinaryChunk_WriteData(lineRenderer->renderData, end.colour));
