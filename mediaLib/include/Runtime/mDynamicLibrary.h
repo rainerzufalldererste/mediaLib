@@ -5,7 +5,7 @@
 
 struct mDynamicLibrary;
 
-mFUNCTION(mDynamicLibrary_LoadFromMemory, const uint8_t *pData, const size_t size, OUT mDynamicLibrary *pHandle);
+mFUNCTION(mDynamicLibrary_LoadFromMemory, const uint8_t *pData, const size_t size, OUT mDynamicLibrary **ppHandle);
 mFUNCTION(mDynamicLibrary_Free, mDynamicLibrary **ppHandle);
 
 mFUNCTION(mDynamicLibrary_LoadFunction, mDynamicLibrary *pHandle, IN const char *name, OUT void **ppFunction);
