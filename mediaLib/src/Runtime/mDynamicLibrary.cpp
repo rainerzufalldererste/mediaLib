@@ -1,11 +1,14 @@
 #include "mDynamicLibrary.h"
 
 #ifdef mPLATFORM_WINDOWS
+#pragma warning (push)
+#pragma warning (disable: 4091)
 extern "C"
 {
   #include "MemoryModulePP/include/MemoryModulePP.h"
   #include "MemoryModulePP/src/MemoryModulePP.c"
 }
+#pragma warning (pop)
 #endif
 
 #ifdef mPLATFORM_WINDOWS
