@@ -19,6 +19,7 @@ mFUNCTION(mFile_Exists, const mString &filename, OUT bool *pExists)
   mFUNCTION_SETUP();
 
   mERROR_IF(pExists == nullptr, mR_ArgumentNull);
+  mERROR_IF(filename.c_str() == nullptr || filename.hasFailed, mR_InvalidParameter);
 
   wchar_t wfilename[MAX_PATH];
   mERROR_CHECK(mString_ToWideString(filename, wfilename, mARRAYSIZE(wfilename)));
@@ -32,9 +33,46 @@ mFUNCTION(mFile_Exists, IN const wchar_t *filename, OUT bool *pExists)
 {
   mFUNCTION_SETUP();
 
-  mERROR_IF(pExists == nullptr, mR_ArgumentNull);
+  mERROR_IF(pExists == nullptr || filename == nullptr, mR_ArgumentNull);
 
   *pExists = (PathFileExistsW(filename) != FALSE);
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mFile_DirectoryExists, const mString &path, OUT bool *pExists)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(path.c_str() == nullptr || path.hasFailed, mR_InvalidParameter);
+
+  wchar_t wpath[MAX_PATH];
+  mERROR_CHECK(mString_ToWideString(path, wpath, mARRAYSIZE(wpath)));
+
+  mERROR_CHECK(mFile_DirectoryExists(wpath, pExists));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mFile_DirectoryExists, IN const wchar_t *path, OUT bool *pExists)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pExists == nullptr || path == nullptr, mR_ArgumentNull);
+
+  const DWORD attributes = GetFileAttributesW(path);
+
+  if (attributes == INVALID_FILE_ATTRIBUTES)
+  {
+    const DWORD error = GetLastError();
+    mUnused(error);
+
+    *pExists = false;
+
+    mRETURN_SUCCESS();
+  }
+
+  *pExists = !!(attributes & FILE_ATTRIBUTE_DIRECTORY);
 
   mRETURN_SUCCESS();
 }

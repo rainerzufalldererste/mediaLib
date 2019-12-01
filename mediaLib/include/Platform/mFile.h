@@ -12,6 +12,8 @@ enum mFile_Encoding
 
 mFUNCTION(mFile_Exists, const mString &filename, OUT bool *pExists);
 mFUNCTION(mFile_Exists, IN const wchar_t *filename, OUT bool *pExists);
+mFUNCTION(mFile_DirectoryExists, const mString &path, OUT bool *pExists);
+mFUNCTION(mFile_DirectoryExists, IN const wchar_t *path, OUT bool *pExists);
 
 mFUNCTION(mFile_ReadAllBytes, const mString &filename, IN OPTIONAL mAllocator *pAllocator, OUT mArray<uint8_t> *pBytes);
 mFUNCTION(mFile_ReadAllBytes, IN const wchar_t *filename, IN OPTIONAL mAllocator *pAllocator, OUT mArray<uint8_t> *pBytes);
