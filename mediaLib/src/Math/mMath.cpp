@@ -26,6 +26,20 @@ static_assert(mMax(-1, 2) == 2, "Test Failed.");
 static_assert(mMax(2, -1) == 2, "Test Failed.");
 static_assert(mMax(1, 1) == 1, "Test Failed.");
 
+bool mIsPrime(const size_t n)
+{
+  if (n < 2)
+    return false;
+
+  const size_t max = (size_t)mSqrt(n);
+
+  for (size_t i = 2; i <= max; i++)
+    if (n % i == 0)
+      return false;
+  
+  return true;
+}
+
 __host__ __device__ mVec3f mColor_UnpackBgraToVec3f(const uint32_t bgraColor)
 {
   const float_t v(1.0f / 0xFF);
