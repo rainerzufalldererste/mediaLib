@@ -418,3 +418,74 @@ inline const T& mPoolIterator<T>::IteratorValue::operator*() const
 {
   return *pData;
 }
+
+//////////////////////////////////////////////////////////////////////////
+
+template<typename T>
+inline mConstPoolIterator<T>::mConstPoolIterator(const mPool<T> *pPool) :
+  index(0),
+  globalIndex(0),
+  blockIndex(0),
+  flag(1),
+  pData(nullptr),
+  pPool(pPool)
+{ }
+
+template<typename T>
+inline const typename mConstPoolIterator<T>::IteratorValue mConstPoolIterator<T>::operator*() const
+{
+  return mConstPoolIterator<T>::IteratorValue(pData, globalIndex - 1);
+}
+
+template<typename T>
+inline bool mConstPoolIterator<T>::operator != (const typename mConstPoolIterator<T> &)
+{
+  for (blockIndex; blockIndex < pPool->size; ++blockIndex)
+  {
+    for (; index < mBYTES_OF(pPool->pIndexes[0]); ++index)
+    {
+      if (pPool->pIndexes[blockIndex] & flag)
+      {
+        const mResult result = mChunkedArray_ConstPointerAt(pPool->data, globalIndex, &pData);
+
+        if (mFAILED(result))
+        {
+          mFAIL_DEBUG("mChunkedArray_ConstPointerAt failed in mConstPoolIterator::operator != with errorcode %" PRIu64 ".", (uint64_t)result);
+          return false;
+        }
+
+        flag <<= 1;
+        ++globalIndex;
+        ++index;
+
+        return true;
+      }
+
+      flag <<= 1;
+      ++globalIndex;
+    }
+
+    index = 0;
+    flag = 1;
+  }
+
+  return false;
+}
+
+template<typename T>
+inline typename mConstPoolIterator<T>& mConstPoolIterator<T>::operator++()
+{
+  return *this;
+}
+
+template<typename T>
+inline mConstPoolIterator<T>::IteratorValue::IteratorValue(const T *pData, const size_t index) :
+  pData(pData),
+  index(index)
+{ }
+
+template<typename T>
+inline const T& mConstPoolIterator<T>::IteratorValue::operator*() const
+{
+  return *pData;
+}

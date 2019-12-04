@@ -262,6 +262,35 @@ mFUNCTION(mChunkedArray_PointerAt, mPtr<mChunkedArray<T>> &chunkedArray, const s
   mRETURN_SUCCESS();
 }
 
+template <typename T>
+mFUNCTION(mChunkedArray_ConstPointerAt, const mPtr<mChunkedArray<T>> &chunkedArray, const size_t index, OUT const T **ppItem)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(chunkedArray == nullptr || ppItem == nullptr, mR_ArgumentNull);
+  mERROR_IF(chunkedArray->itemCount <= index, mR_IndexOutOfBounds);
+
+  size_t currentIndex = 0;
+
+  for (size_t blockIndex = 0; blockIndex < chunkedArray->blockCount; ++blockIndex)
+  {
+    const mChunkedArray<T>::mChunkedArrayBlock *pBlock = &chunkedArray->pBlocks[blockIndex];
+
+    const size_t blockSize = pBlock->blockEndIndex - pBlock->blockStartIndex;
+
+    if (currentIndex + blockSize <= index)
+    {
+      currentIndex += blockSize;
+      continue;
+    }
+
+    *ppItem = &pBlock->pData[pBlock->blockStartIndex + index - currentIndex];
+    break;
+  }
+
+  mRETURN_SUCCESS();
+}
+
 template<typename T>
 inline mFUNCTION(mChunkedArray_SetDestructionFunction, mPtr<mChunkedArray<T>> &chunkedArray, const std::function<mResult(T *)> &destructionFunction)
 {

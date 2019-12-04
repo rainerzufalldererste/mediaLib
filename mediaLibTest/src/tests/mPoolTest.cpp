@@ -133,9 +133,50 @@ mTEST(mPool, TestIterate)
 
   for (auto &&_index : pool->Iterate())
   {
-    mTEST_ASSERT_EQUAL(_index.index, (count << 1) + 1);
-    mTEST_ASSERT_EQUAL(*_index.pData, (count << 1) + 1);
-    mTEST_ASSERT_EQUAL(*_index, (count << 1) + 1);
+    mTEST_ASSERT_EQUAL(_index.index, count * 2 + 1);
+    mTEST_ASSERT_EQUAL(*_index.pData, count * 2 + 1);
+    mTEST_ASSERT_EQUAL(*_index, count * 2 + 1);
+    ++count;
+  }
+
+  mTEST_ASSERT_EQUAL(count, testSize / 2);
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}
+
+mTEST(mPool, TestIterateConstPool)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  mPtr<mPool<size_t>> pool;
+  mDEFER_CALL(&pool, mPool_Destroy);
+  mTEST_ASSERT_SUCCESS(mPool_Create(&pool, pAllocator));
+
+  const size_t testSize = 100;
+
+  for (size_t i = 0; i < testSize; i++)
+  {
+    size_t index = 0;
+    mTEST_ASSERT_SUCCESS(mPool_Add(pool, &i, &index));
+    mTEST_ASSERT_EQUAL(i, index);
+  }
+
+  for (size_t i = 0; i < testSize; i += 2)
+  {
+    size_t element;
+    mTEST_ASSERT_SUCCESS(mPool_RemoveAt(pool, i, &element));
+    mTEST_ASSERT_EQUAL(element, i);
+  }
+
+  size_t count = 0;
+
+  const mPtr<mPool<size_t>> constPool = pool;
+
+  for (const auto &&_index : constPool->Iterate())
+  {
+    mTEST_ASSERT_EQUAL(_index.index, count * 2 + 1);
+    mTEST_ASSERT_EQUAL(*_index.pData, count * 2 + 1);
+    mTEST_ASSERT_EQUAL(*_index, count * 2 + 1);
     ++count;
   }
 

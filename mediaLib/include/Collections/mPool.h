@@ -35,6 +35,31 @@ private:
 };
 
 template <typename T>
+struct mConstPoolIterator
+{
+  mConstPoolIterator(const mPool<T> *pPool);
+
+  struct IteratorValue
+  {
+    IteratorValue(const T *pData, const size_t index);
+
+    const T& operator *() const;
+
+    const T *pData;
+    size_t index;
+  };
+
+  const typename mConstPoolIterator<T>::IteratorValue operator *() const;
+  bool operator != (const typename mConstPoolIterator<T> &);
+  typename mConstPoolIterator<T>& operator++();
+
+private:
+  size_t index, blockIndex, flag, globalIndex;
+  const T *pData;
+  const mPool<T> *pPool;
+};
+
+template <typename T>
 struct mPool
 {
   size_t count;
@@ -50,7 +75,15 @@ struct mPool
     typename mPoolIterator<T> end() { return mPoolIterator<T>(pPool); };
 
     mPool<T> *pPool;
-  } Iterate() { return {this}; };
+  } Iterate() { return{ this }; };
+
+  struct
+  {
+    typename mConstPoolIterator<T> begin() { return mConstPoolIterator<T>(pPool); };
+    typename mConstPoolIterator<T> end() { return mConstPoolIterator<T>(pPool); };
+
+    const mPool<T> *pPool;
+  } Iterate() const { return {this}; };
 };
 
 template <typename T>
