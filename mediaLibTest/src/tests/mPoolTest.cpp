@@ -452,9 +452,9 @@ mTEST(mPool, TestEquals)
 
   struct _inner
   {
-    static bool IsNotZero(const size_t a)
+    static bool IsNotZero(const size_t *pA)
     {
-      return a != 0;
+      return *pA != 0;
     }
   };
 
@@ -488,8 +488,8 @@ mTEST(mPool, TestEquals)
       if (pB[i] == x)
         mASSERT(mSUCCEEDED(mPool_RemoveAt(b, i, &index)), "");
 
-    const bool ret = mPool_Equals<size_t, mEquals<size_t>, mFN_WRAPPER(_inner::IsNotZero)>(a, b);
-    mASSERT(ret == (mPool_Equals<size_t, mEquals<size_t>, mFN_WRAPPER(_inner::IsNotZero)>(b, a)), "");
+    const bool ret = mPool_Equals<size_t, mEqualsValue<size_t>, mFN_WRAPPER(_inner::IsNotZero)>(a, b);
+    mASSERT(ret == (mPool_Equals<size_t, mEqualsValue<size_t>, mFN_WRAPPER(_inner::IsNotZero)>(b, a)), "");
 
     return ret;
   };

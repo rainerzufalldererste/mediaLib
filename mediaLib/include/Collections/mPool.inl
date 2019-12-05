@@ -319,7 +319,7 @@ mFUNCTION(mPool_Clear, mPtr<mPool<T>> &pool)
   mRETURN_SUCCESS();
 }
 
-template <typename T, typename equals_func /* = mEquals<T> */, typename element_valid_func /* = mTrue */>
+template <typename T, typename equals_func /* = mEqualsValue<T> */, typename element_valid_func /* = mTrue */>
 bool mPool_Equals(const mPtr<mPool<T>> &a, const mPtr<mPool<T>> &b)
 {
   if (a == b)
@@ -345,7 +345,7 @@ bool mPool_Equals(const mPtr<mPool<T>> &a, const mPtr<mPool<T>> &b)
       {
         auto _b = *startB;
 
-        if ((bool)element_valid_func()(*_b))
+        if ((bool)element_valid_func()(_b.pData))
           return false;
 
         ++startB;
@@ -360,7 +360,7 @@ bool mPool_Equals(const mPtr<mPool<T>> &a, const mPtr<mPool<T>> &b)
       {
         auto _a = *startA;
 
-        if ((bool)element_valid_func()(*_a))
+        if ((bool)element_valid_func()(_a.pData))
           return false;
 
         ++startA;
@@ -372,7 +372,7 @@ bool mPool_Equals(const mPtr<mPool<T>> &a, const mPtr<mPool<T>> &b)
     auto _a = *startA;
     bool end = false;
 
-    while (!(bool)element_valid_func()(*_a))
+    while (!(bool)element_valid_func()(_a.pData))
     {
       ++startA;
 
@@ -384,7 +384,7 @@ bool mPool_Equals(const mPtr<mPool<T>> &a, const mPtr<mPool<T>> &b)
         {
           auto __b = *startB;
 
-          if ((bool)element_valid_func()(*__b))
+          if ((bool)element_valid_func()(__b.pData))
             return false;
 
           ++startB;
@@ -402,7 +402,7 @@ bool mPool_Equals(const mPtr<mPool<T>> &a, const mPtr<mPool<T>> &b)
 
     auto _b = *startB;
 
-    while (!(bool)element_valid_func()(*_b))
+    while (!(bool)element_valid_func()(_b.pData))
     {
       ++startB;
 
@@ -413,7 +413,7 @@ bool mPool_Equals(const mPtr<mPool<T>> &a, const mPtr<mPool<T>> &b)
       _b = *startB;
     }
 
-    if (_a.index != _b.index || !(bool)equals_func()(*_a, *_b))
+    if (_a.index != _b.index || !(bool)equals_func()(_a.pData, _b.pData))
       return false;
 
     ++startA;

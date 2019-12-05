@@ -26,6 +26,21 @@ struct mEquals
   }
 };
 
+template <typename T, typename T2 = T>
+struct mEqualsValue
+{
+  bool operator ()(const T *pA, const T2 *pB)
+  {
+    if (pA == pB)
+      return true;
+
+    if ((pA == nullptr) ^ (pB == nullptr))
+      return false;
+
+    return *pA == *pB;
+  }
+};
+
 struct mTrue
 {
   template <typename... TArgs>

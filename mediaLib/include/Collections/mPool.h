@@ -119,7 +119,7 @@ mFUNCTION(mPool_ContainsIndex, mPtr<mPool<T>> &pool, const size_t index, OUT boo
 template <typename T>
 mFUNCTION(mPool_Clear, mPtr<mPool<T>> &pool);
 
-template <typename T, typename equals_func = mEquals<T>, typename element_valid_func = mTrue>
+template <typename T, typename equals_func = mEqualsValue<T>, typename element_valid_func = mTrue>
 bool mPool_Equals(const mPtr<mPool<T>> &a, const mPtr<mPool<T>> &b);
 
 #include "mPool.inl"
