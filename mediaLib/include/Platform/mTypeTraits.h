@@ -26,4 +26,69 @@ struct mEquals
   }
 };
 
+struct mTrue
+{
+  template <typename... TArgs>
+  inline mTrue(TArgs ...) { }
+
+  inline operator bool() const
+  {
+    return true;
+  }
+
+  template <typename... TArgs>
+  inline bool operator ()(TArgs ...) const
+  {
+    return *this;
+  }
+};
+
+struct mFalse
+{
+  template <typename... TArgs>
+  inline mFalse(TArgs ...) { }
+
+  inline operator bool() const
+  {
+    return false;
+  }
+
+  template <typename... TArgs>
+  inline bool operator ()(TArgs ...) const
+  {
+    return *this;
+  }
+};
+
+template <typename T>
+struct mEqualTo
+{
+private:
+  bool equal;
+
+public:
+  inline mEqualTo(const T &a, const T &b) : 
+    equal(a == b)
+  { }
+
+  inline operator bool() const
+  {
+    return equal;
+  }
+};
+
+template <typename T, T TFunc>
+struct mFnWrapper
+{
+  inline mFnWrapper() { }
+
+  template<typename... Args>
+  auto operator ()(Args... args) -> decltype(TFunc(std::forward<Args>(args)...)) const
+  {
+    return TFunc(std::forward<Args>(args)...);
+  }
+};
+
+#define mFN_WRAPPER(fn) mFnWrapper<decltype((fn)), (fn)>
+
 #endif // mTypeTraits_h__

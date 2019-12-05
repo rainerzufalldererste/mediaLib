@@ -220,6 +220,9 @@ mFUNCTION(mQueue_RemoveDuplicates, const mPtr<mQueue<T>> &source, OUT mPtr<mQueu
 template <typename T>
 mFUNCTION(mQueue_Any, const mPtr<mQueue<T>> &queue, OUT bool *pAny);
 
+template <typename T, typename equals_func = mEquals<T>, typename element_valid_func = mTrue>
+bool mQueue_Equals(const mPtr<mQueue<T>> &a, const mPtr<mQueue<T>> &b);
+
 //////////////////////////////////////////////////////////////////////////
 
 template<typename T>
@@ -1226,6 +1229,110 @@ inline mFUNCTION(mQueue_PopAt_Internal, mPtr<mQueue<T>> &queue, const size_t ind
   *pItem = std::move(queue->pData[queueIndex]);
 
   mRETURN_SUCCESS();
+}
+
+template <typename T, typename equals_func /* = mEquals<T> */, typename element_valid_func /* = mTrue */>
+bool mQueue_Equals(const mPtr<mQueue<T>> &a, const mPtr<mQueue<T>> &b)
+{
+  if (a == b)
+    return true;
+
+  if ((a == nullptr) ^ (b == nullptr))
+    return false;
+
+  auto itA = a->Iterate();
+  auto startA = itA.begin();
+  auto endA = itA.end();
+
+  auto itB = b->Iterate();
+  auto startB = itB.begin();
+  auto endB = itB.end();
+
+  while (true)
+  {
+    if (!(startA != endA)) // no more values in a.
+    {
+      // if there's a value in `b` thats active: return false.
+      while (startB != endB)
+      {
+        auto _b = *startB;
+
+        if ((bool)element_valid_func()(_b))
+          return false;
+
+        ++startB;
+      }
+
+      break;
+    }
+    else if (!(startB != endB)) // no more values in b, but values in a.
+    {
+      // if there's a value in `a` thats active: return false.
+      do // do-while-loop, because we've already checked if (startA != endA) and an iterator might rely on that function only being called once.
+      {
+        auto _a = *startA;
+
+        if ((bool)element_valid_func()(_a))
+          return false;
+
+        ++startA;
+      } while (startA != endA);
+
+      break;
+    }
+
+    auto _a = *startA;
+    bool end = false;
+
+    while (!(bool)element_valid_func()(_a))
+    {
+      ++startA;
+
+      // if we've reached the end.
+      if (!(startA != endA))
+      {
+        // if there's a value in `b` thats active: return false.
+        while (startB != endB)
+        {
+          auto __b = *startB;
+
+          if ((bool)element_valid_func()(__b))
+            return false;
+
+          ++startB;
+        }
+
+        end = true;
+        break;
+      }
+
+      _a = *startA;
+    }
+
+    if (end)
+      break;
+
+    auto _b = *startB;
+
+    while (!(bool)element_valid_func()(_b))
+    {
+      ++startB;
+
+      // if we've reached the end.
+      if (!(startB != endB))
+        return false; // `a` is not at the end and valid.
+
+      _b = *startB;
+    }
+
+    if (!(bool)equals_func()(_a, _b))
+      return false;
+
+    ++startA;
+    ++startB;
+  }
+
+  return true;
 }
 
 //////////////////////////////////////////////////////////////////////////
