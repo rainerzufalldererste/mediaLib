@@ -40,6 +40,31 @@ private:
 };
 
 template <typename T>
+struct mRefPoolConstIterator
+{
+  mRefPoolConstIterator(const mPool<mRefPool_SharedPointerContainer_Internal<T>> *pPool);
+
+  struct IteratorValue
+  {
+    IteratorValue(const mPtr<T> &data, const size_t index);
+
+    const T& operator *() const;
+
+    const mPtr<T> data;
+    size_t index;
+  };
+
+  const typename mRefPoolConstIterator<T>::IteratorValue operator *() const;
+  bool operator != (const typename mRefPoolConstIterator<T> &);
+  typename mRefPoolConstIterator<T>& operator++();
+
+private:
+  size_t index, blockIndex, flag, globalIndex;
+  const mRefPool_SharedPointerContainer_Internal<T> *pData;
+  const mPool<mRefPool_SharedPointerContainer_Internal<T>> *pPool;
+};
+
+template <typename T>
 struct mRefPool
 {
   struct refPoolPtrData
@@ -62,6 +87,14 @@ struct mRefPool
 
     mPool<mRefPool_SharedPointerContainer_Internal<T>> *pPool;
   } Iterate() { return {this->ptrs.GetPointer()}; };
+
+  struct
+  {
+    typename mRefPoolConstIterator<T> begin() { return mRefPoolConstIterator<T>(pPool); };
+    typename mRefPoolConstIterator<T> end() { return mRefPoolConstIterator<T>(pPool); };
+
+    const mPool<mRefPool_SharedPointerContainer_Internal<T>> *pPool;
+  } Iterate() const { return {this->ptrs.GetPointer()}; };
 };
 
 template <typename T>
@@ -104,6 +137,9 @@ mFUNCTION(mRefPool_ContainsIndex, mPtr<mRefPool<T>> &refPool, const size_t index
 // would be handled by cpp but still nicer if explicitly defined.
 template <typename T>
 mFUNCTION(mDestruct, IN struct mRefPool_SharedPointerContainer_Internal<T> *pData);
+
+template <typename T, typename equals_func, typename element_valid_func = mTrue>
+bool mRefPool_Equals(const mPtr<mRefPool<T>> &a, const mPtr<mRefPool<T>> &b);
 
 #include "mRefPool.inl"
 

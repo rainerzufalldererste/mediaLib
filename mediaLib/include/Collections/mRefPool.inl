@@ -334,6 +334,110 @@ inline mFUNCTION(mDestruct, IN struct mRefPool_SharedPointerContainer_Internal<T
   mRETURN_SUCCESS();
 }
 
+template <typename T, typename equals_func, typename element_valid_func /* = mTrue */>
+bool mRefPool_Equals(const mPtr<mRefPool<T>> &a, const mPtr<mRefPool<T>> &b)
+{
+  if (a == b)
+    return true;
+
+  if ((a == nullptr) ^ (b == nullptr))
+    return false;
+
+  auto itA = a->Iterate();
+  auto startA = itA.begin();
+  auto endA = itA.end();
+
+  auto itB = b->Iterate();
+  auto startB = itB.begin();
+  auto endB = itB.end();
+
+  while (true)
+  {
+    if (!(startA != endA)) // no more values in a.
+    {
+      // if there's a value in `b` thats active: return false.
+      while (startB != endB)
+      {
+        auto _b = *startB;
+
+        if ((bool)element_valid_func()(_b.data))
+          return false;
+
+        ++startB;
+      }
+
+      break;
+    }
+    else if (!(startB != endB)) // no more values in b, but values in a.
+    {
+      // if there's a value in `a` thats active: return false.
+      do // do-while-loop, because we've already checked if (startA != endA) and an iterator might rely on that function only being called once.
+      {
+        auto _a = *startA;
+
+        if ((bool)element_valid_func()(_a.data))
+          return false;
+
+        ++startA;
+      } while (startA != endA);
+
+      break;
+    }
+
+    bool end = false;
+
+    while (!(bool)element_valid_func()((*startA).data))
+    {
+      ++startA;
+
+      // if we've reached the end.
+      if (!(startA != endA))
+      {
+        // if there's a value in `b` thats active: return false.
+        while (startB != endB)
+        {
+          auto __b = *startB;
+
+          if ((bool)element_valid_func()(__b.data))
+            return false;
+
+          ++startB;
+        }
+
+        end = true;
+        break;
+      }
+    }
+
+    auto _a = *startA;
+
+    if (end)
+      break;
+
+    while (!(bool)element_valid_func()((*startB).data))
+    {
+      ++startB;
+
+      // if we've reached the end.
+      if (!(startB != endB))
+        return false; // `a` is not at the end and valid.
+    }
+
+    auto _b = *startB;
+
+    if (_a.index != _b.index)
+      return false;
+      
+    if (!(bool)equals_func()(_a.data, _b.data))
+      return false;
+
+    ++startA;
+    ++startB;
+  }
+
+  return true;
+}
+
 //////////////////////////////////////////////////////////////////////////
 
 template<typename T>
@@ -440,6 +544,77 @@ inline T& mRefPoolIterator<T>::IteratorValue::operator*()
 
 template<typename T>
 inline const T& mRefPoolIterator<T>::IteratorValue::operator*() const
+{
+  return *data;
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+template<typename T>
+inline mRefPoolConstIterator<T>::mRefPoolConstIterator(const typename mPool<mRefPool_SharedPointerContainer_Internal<T>> *pPool) :
+  index(0),
+  globalIndex(0),
+  blockIndex(0),
+  flag(1),
+  pData(nullptr),
+  pPool(pPool)
+{ }
+
+template<typename T>
+inline const typename mRefPoolConstIterator<T>::IteratorValue mRefPoolConstIterator<T>::operator*() const
+{
+  return mRefPoolConstIterator<T>::IteratorValue(pData->ptr, globalIndex - 1);
+}
+
+template<typename T>
+inline bool mRefPoolConstIterator<T>::operator != (const typename mRefPoolConstIterator<T> &)
+{
+  for (blockIndex; blockIndex < pPool->size; ++blockIndex)
+  {
+    for (; index < mBYTES_OF(pPool->pIndexes[0]); ++index)
+    {
+      if (pPool->pIndexes[blockIndex] & flag)
+      {
+        const mResult result = mChunkedArray_ConstPointerAt(pPool->data, globalIndex, &pData);
+
+        if (mFAILED(result))
+        {
+          mFAIL_DEBUG("mChunkedArray_PointerAt failed in mRefPoolConstIterator::operator != with errorcode %" PRIu64 ".", (uint64_t)result);
+          return false;
+        }
+
+        flag <<= 1;
+        ++globalIndex;
+        ++index;
+
+        return true;
+      }
+
+      flag <<= 1;
+      ++globalIndex;
+    }
+
+    index = 0;
+    flag = 1;
+  }
+
+  return false;
+}
+
+template<typename T>
+inline typename mRefPoolConstIterator<T>& mRefPoolConstIterator<T>::operator++()
+{
+  return *this;
+}
+
+template<typename T>
+inline mRefPoolConstIterator<T>::IteratorValue::IteratorValue(const mPtr<T> &data, const size_t index) :
+  data(data),
+  index(index)
+{ }
+
+template<typename T>
+inline const T& mRefPoolConstIterator<T>::IteratorValue::operator*() const
 {
   return *data;
 }
