@@ -1113,6 +1113,12 @@ mFUNCTION(mString_Equals, const mString &stringA, const mString &stringB, bool *
 
   mERROR_IF(pAreEqual == nullptr, mR_ArgumentNull);
 
+  if ((stringA.bytes <= 1) && (stringB.bytes <= 1)) // "" should equal an uninitialized mString.
+  {
+    *pAreEqual = true;
+    mRETURN_SUCCESS();
+  }
+
   if (stringA.bytes != stringB.bytes || stringA.count != stringB.count)
   {
     *pAreEqual = false;
