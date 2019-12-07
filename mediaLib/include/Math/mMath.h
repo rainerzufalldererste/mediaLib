@@ -229,6 +229,9 @@ struct mVec2t
 
   __host__ __device__ inline typename mMath_DistanceTypeOf<T>::type Angle() const { return mATan2(mMath_DistanceTypeOf<T>::type(y), mMath_DistanceTypeOf<T>::type(x)); };
 
+  __host__ __device__ inline typename mMath_DistanceTypeOf<T>::type AspectRatio() const { return mMath_DistanceTypeOf<T>::type(x) / mMath_DistanceTypeOf<T>::type(y); };
+  __host__ __device__ inline typename mMath_DistanceTypeOf<T>::type InverseAspectRatio() const { return mMath_DistanceTypeOf<T>::type(y) / mMath_DistanceTypeOf<T>::type(x); };
+
   _mVECTOR_SUBSET_2(y, x);
 };
 
@@ -240,6 +243,9 @@ __host__ __device__ inline mVec2t<T>  operator /  (const T a, const mVec2t<T> b)
 
 template <typename T> T mMax(const mVec2t<T> &v) { return mMax(v.x, v.y); }
 template <typename T> T mMin(const mVec2t<T> &v) { return mMin(v.x, v.y); }
+
+template <typename T> mVec2t<T> mMax(const mVec2t<T> &a, const mVec2t<T> &b) { return mVec2t<T>(mMax(a.x, b.x), mMax(a.y, b.y)); }
+template <typename T> mVec2t<T> mMin(const mVec2t<T> &a, const mVec2t<T> &b) { return mVec2t<T>(mMin(a.x, b.x), mMin(a.y, b.y)); }
 
 typedef mVec2t<size_t> mVec2s;
 typedef mVec2t<int64_t> mVec2i;
@@ -374,6 +380,9 @@ __host__ __device__ inline mVec3t<T>  operator /  (const T a, const mVec3t<T> b)
 template <typename T> T mMax(const mVec3t<T> &v) { return mMax(mMax(v.x, v.y), v.z); }
 template <typename T> T mMin(const mVec3t<T> &v) { return mMin(mMin(v.x, v.y), v.z); }
 
+template <typename T> T mMax(const mVec3t<T> &a, const mVec3t<T> &b) { return mVec3t<T>(mMax(a.x, b.x), mMax(a.y, b.y), mMax(a.z, b.z)); }
+template <typename T> T mMin(const mVec3t<T> &a, const mVec3t<T> &b) { return mVec3t<T>(mMin(a.x, b.x), mMin(a.y, b.y), mMin(a.z, b.z)); }
+
 typedef mVec3t<size_t> mVec3s;
 typedef mVec3t<int64_t> mVec3i;
 typedef mVec3t<uint64_t> mVec3u;
@@ -503,6 +512,9 @@ __host__ __device__ inline mVec4t<T>  operator /  (const T a, const mVec4t<T> b)
 
 template <typename T> T mMax(const mVec4t<T> &v) { return mMax(mMax(v.x, v.y), mMax(v.z, v.w)); }
 template <typename T> T mMin(const mVec4t<T> &v) { return mMin(mMin(v.x, v.y), mMin(v.z, v.w)); }
+
+template <typename T> T mMax(const mVec4t<T> &a, const mVec4t<T> &b) { return mVec4t<T>(mMax(a.x, b.x), mMax(a.y, b.y), mMax(a.z, b.z), mMax(a.w, b.w)); }
+template <typename T> T mMin(const mVec4t<T> &a, const mVec4t<T> &b) { return mVec4t<T>(mMin(a.x, b.x), mMin(a.y, b.y), mMin(a.z, b.z), mMin(a.w, b.w)); }
 
 typedef mVec4t<size_t> mVec4s;
 typedef mVec4t<int64_t> mVec4i;

@@ -72,6 +72,7 @@ namespace ImGui
   bool BufferingBar(const char *label, float_t value, const ImVec2 &size_arg, const ImU32 &bg_col, const ImU32 &fg_col);
   bool Spinner(const char *label, float_t radius, float_t thickness, const ImU32 &color);
   size_t TabBar(const std::initializer_list<const char *> &names, const size_t activeBefore);
+  bool ImageButtonWithText(ImTextureID texId, const char *label, const ImVec2 &imageSize = ImVec2(0, 0), const ImVec2 &buttonSize = ImVec2(0, 0), const ImVec2 &uv0 = ImVec2(0, 0), const ImVec2 &uv1 = ImVec2(1, 1), const float_t frame_padding = -1, const ImVec4 &bg_col = ImVec4(0, 0, 0, 0), const ImVec4 &tint_col = ImVec4(1, 1, 1, 1));
 }
 
 #endif // mUI_h__

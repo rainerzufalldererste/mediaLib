@@ -354,7 +354,7 @@ namespace ImGui
 
     const ImVec2 centre = ImVec2(pos.x + radius, pos.y + radius + style.FramePadding.y);
 
-    for (int i = 0; i < num_segments; i++)
+    for (int32_t i = 0; i < num_segments; i++)
     {
       const float_t a = a_min + ((float_t)i / (float_t)num_segments) * (a_max - a_min);
 
@@ -398,5 +398,91 @@ namespace ImGui
     }
 
     return returnedIndex;
+  }
+
+  bool ImageButtonWithText(ImTextureID texId, const char *label, const ImVec2 &imageSize, const ImVec2 &buttonSize, const ImVec2 &uv0, const ImVec2 &uv1, const float_t frame_padding, const ImVec4 &bg_col, const ImVec4 &tint_col)
+  {
+    ImGuiWindow *pWindow = GetCurrentWindow();
+
+    if (pWindow->SkipItems)
+      return false;
+
+    ImVec2 size = imageSize;
+
+    if (size.x <= 0 && size.y <= 0)
+    {
+      size.x = size.y = ImGui::GetTextLineHeightWithSpacing();
+    }
+    else
+    {
+      if (size.x <= 0)
+        size.x = size.y;
+      else if (size.y <= 0)
+        size.y = size.x;
+
+      size *= pWindow->FontWindowScale * ImGui::GetIO().FontGlobalScale;
+    }
+
+    ImGuiContext &g = *GImGui;
+    const ImGuiStyle &style = g.Style;
+
+    const ImGuiID id = pWindow->GetID(label);
+    const ImVec2 textSize = ImGui::CalcTextSize(label, NULL, true);
+    const bool hasText = textSize.x > 0;
+
+    const float_t innerSpacing = hasText ? ((frame_padding >= 0) ? (float_t)frame_padding : (style.ItemInnerSpacing.x)) : 0.f;
+    const ImVec2 padding = (frame_padding >= 0) ? ImVec2((float_t)frame_padding, (float_t)frame_padding) : style.FramePadding;
+    const ImVec2 totalSizeWithoutPadding(size.x + innerSpacing + textSize.x, size.y > textSize.y ? size.y : textSize.y);
+    ImRect bb(pWindow->DC.CursorPos, pWindow->DC.CursorPos + totalSizeWithoutPadding + padding * 2);
+
+    if (buttonSize.x != 0)
+    {
+      if (buttonSize.x < 0)
+        bb.Max.x = bb.Min.x + GetContentRegionAvail().x + buttonSize.x;
+      else if (buttonSize.x < 1)
+        bb.Max.x = bb.Min.x + buttonSize.x * GetContentRegionAvail().x;
+      else
+        bb.Max.x = bb.Min.x + buttonSize.x;
+    }
+
+    if (buttonSize.y > 0)
+    {
+      if (buttonSize.y < 0)
+        bb.Max.y = bb.Min.y + GetContentRegionAvail().y + buttonSize.y;
+      else if (buttonSize.y < 1)
+        bb.Max.y = bb.Min.y + buttonSize.y * GetContentRegionAvail().y;
+      else
+        bb.Max.y = bb.Min.y + buttonSize.y;
+    }
+
+    ImVec2 start(0, 0);
+    start = pWindow->DC.CursorPos + padding;
+    
+    if (size.y < textSize.y)
+      start.y += (textSize.y - size.y) * .5f;
+
+    const ImRect image_bb(start, start + size);
+    start = pWindow->DC.CursorPos + padding;start.x += size.x + innerSpacing;if (size.y > textSize.y) start.y += (size.y - textSize.y)*.5f;
+    ItemSize(bb);
+
+    if (!ItemAdd(bb, id))
+      return false;
+
+    bool hovered = false, held = false;
+    bool pressed = ButtonBehavior(bb, id, &hovered, &held);
+
+    // Render
+    const ImU32 col = GetColorU32((hovered && held) ? ImGuiCol_ButtonActive : hovered ? ImGuiCol_ButtonHovered : ImGuiCol_Button);
+    RenderFrame(bb.Min, bb.Max, col, true, ImClamp((float_t)ImMin(padding.x, padding.y), 0.0f, style.FrameRounding));
+    
+    if (bg_col.w > 0.0f)
+      pWindow->DrawList->AddRectFilled(image_bb.Min, image_bb.Max, GetColorU32(bg_col));
+
+    pWindow->DrawList->AddImage(texId, image_bb.Min, image_bb.Max, uv0, uv1, GetColorU32(tint_col));
+
+    if (textSize.x > 0)
+      ImGui::RenderText(start, label);
+    
+    return pressed;
   }
 }
