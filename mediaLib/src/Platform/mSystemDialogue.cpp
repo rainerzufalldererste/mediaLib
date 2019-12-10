@@ -150,8 +150,12 @@ mFUNCTION(mSystemDialogue_GetWStringFromFileExtensionPairs, OUT wchar_t **ppStri
     mKeyValuePair<mString, mString> *pKVPair = nullptr;
     mERROR_CHECK(mQueue_PointerAt(fileTypeExtensionPairs, i, &pKVPair));
 
-    extentionDescriptorLength += pKVPair->key.bytes;
-    extentionDescriptorLength += pKVPair->value.bytes;
+    size_t size = 0;
+    mERROR_CHECK(mString_GetRequiredWideStringCount(pKVPair->key, &size));
+    extentionDescriptorLength += size + 1;
+
+    mERROR_CHECK(mString_GetRequiredWideStringCount(pKVPair->value, &size));
+    extentionDescriptorLength += size + 1;
   }
 
   mERROR_CHECK(mAllocator_AllocateZero(pAllocator, ppString, extentionDescriptorLength));
@@ -168,10 +172,12 @@ mFUNCTION(mSystemDialogue_GetWStringFromFileExtensionPairs, OUT wchar_t **ppStri
     mERROR_CHECK(mString_ToWideString(_kvpair.value, valuew, mARRAYSIZE(valuew), &valuewlength));
 
     mMemcpy(*ppString + offset, keyw, keywlength);
-    offset += keywlength + 1;
+    offset += keywlength;
     mMemcpy(*ppString + offset, valuew, valuewlength);
-    offset += valuewlength + 1;
+    offset += valuewlength;
   }
+
+  mASSERT_DEBUG(offset < extentionDescriptorLength, "Memory access out of bounds.");
 
   mRETURN_SUCCESS();
 }
