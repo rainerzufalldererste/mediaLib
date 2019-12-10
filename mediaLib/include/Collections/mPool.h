@@ -122,6 +122,9 @@ mFUNCTION(mPool_Clear, mPtr<mPool<T>> &pool);
 template <typename T, typename equals_func = mEqualsValue<T>, typename element_valid_func = mTrue>
 bool mPool_Equals(const mPtr<mPool<T>> &a, const mPtr<mPool<T>> &b);
 
+template <typename T, typename T2, typename comparison = mEquals<T, T2>>
+bool mPool_ContainsValue(const mPtr<mPool<T>> &pool, const T2 &value, OUT OPTIONAL size_t *pIndex = nullptr, comparison _comparison = comparison());
+
 #include "mPool.inl"
 
 #endif // mPool_h__

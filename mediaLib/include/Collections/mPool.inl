@@ -423,6 +423,26 @@ bool mPool_Equals(const mPtr<mPool<T>> &a, const mPtr<mPool<T>> &b)
   return true;
 }
 
+template<typename T, typename T2, typename comparison>
+inline bool mPool_ContainsValue(const mPtr<mPool<T>> &pool, const T2 &value, OUT OPTIONAL size_t *pIndex, comparison _comparison)
+{
+  if (pool == nullptr)
+    return false;
+
+  for (const auto &_item : queue->Iterate())
+  {
+    if (_comparison((*_item), value))
+    {
+      if (pIndex != nullptr)
+        *pIndex = _item.index;
+
+      return true;
+    }
+  }
+
+  return false;
+}
+
 //////////////////////////////////////////////////////////////////////////
 
 template<typename T>
