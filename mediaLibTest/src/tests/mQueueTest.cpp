@@ -1201,12 +1201,37 @@ mTEST(mQueue, TestOrderBy)
     {
       if (i % 4 < 2)
         mTEST_ASSERT_SUCCESS(mQueue_PushBack(numberQueue, i));
-      
+
       if (i % 3 > 1)
         mTEST_ASSERT_SUCCESS(mQueue_PushFront(numberQueue, i));
     }
 
     mTEST_ASSERT_SUCCESS(mQueue_OrderBy(numberQueue, (std::function<mComparisonResult(const int64_t &, const int64_t &)>)[](const int64_t &a, const int64_t &b) { return a > b ? mCR_Greater : (a < b ? mCR_Less : mCR_Equal); }));
+
+    int64_t first;
+    mTEST_ASSERT_SUCCESS(mQueue_PeekFront(numberQueue, &first));
+
+    for (size_t i = 1; i < numberQueue->count; i++)
+      mTEST_ASSERT_TRUE((*numberQueue)[i] >= first);
+  }
+
+  {
+    mPtr<mQueue<int64_t>> numberQueue = nullptr;
+    mDEFER_CALL(&numberQueue, mQueue_Destroy);
+    mTEST_ASSERT_SUCCESS(mQueue_Create(&numberQueue, pAllocator));
+
+    constexpr size_t targetValue = 1024;
+
+    for (int64_t i = 0; i < targetValue; i++)
+    {
+      if (i % 4 < 2)
+        mTEST_ASSERT_SUCCESS(mQueue_PushBack(numberQueue, i));
+      
+      if (i % 3 > 1)
+        mTEST_ASSERT_SUCCESS(mQueue_PushFront(numberQueue, i));
+    }
+
+    mTEST_ASSERT_SUCCESS(mQueue_OrderBy(numberQueue, (std::function<double_t (const int64_t &)>)[](const int64_t &a) { return (double_t)a; }));
 
     int64_t first;
     mTEST_ASSERT_SUCCESS(mQueue_PeekFront(numberQueue, &first));

@@ -181,6 +181,9 @@ mFUNCTION(mQueue_OrderBy, mPtr<mQueue<T>> &queue, const std::function<mCompariso
 template <typename T, typename TLessFunc = std::less<T>, typename TGreaterFunc = std::greater<T>>
 mFUNCTION(mQueue_OrderBy, mPtr<mQueue<T>> &queue);
 
+template <typename T, typename U>
+mFUNCTION(mQueue_OrderBy, mPtr<mQueue<T>> &queue, const std::function<U (const T &v)> &valueFunc);
+
 template <typename T>
 mFUNCTION(mQueue_Select, const mPtr<mQueue<T>> &source, OUT mPtr<mQueue<T>> *pTarget, IN mAllocator *pAllocator, const std::function<bool(const T &a)> &selectFunc);
 
@@ -656,6 +659,7 @@ inline mFUNCTION(mQueue_CopyTo, const mPtr<mQueue<T>> &source, OUT mPtr<mQueue<T
   mFUNCTION_SETUP();
 
   mERROR_IF(source == nullptr || pTarget == nullptr, mR_ArgumentNull);
+  mERROR_IF(source == *pTarget, mR_Success);
 
   if (*pTarget == nullptr)
     mERROR_CHECK(mQueue_Create(pTarget, pAllocator));
@@ -847,12 +851,100 @@ inline mFUNCTION(mQueue_OrderBy, mPtr<mQueue<T>> &queue)
   mRETURN_SUCCESS();
 }
 
+template <typename T, typename U>
+mFUNCTION(mQueue_OrderBy, mPtr<mQueue<T>> &queue, const std::function<U(const T &v)> &valueFunc)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(queue == nullptr, mR_ArgumentNull);
+
+  struct
+  {
+    mQueue<T> *pQueue;
+
+    void DualPivotQuickSort_Partition(const int64_t low, const int64_t high, int64_t *pRightPivot, int64_t *pLeftPivot, const std::function<U(const T &v)> &valueFunc)
+    {
+      if (valueFunc((*pQueue)[low]) > valueFunc((*pQueue)[high]))
+        std::swap((*pQueue)[low], (*pQueue)[high]);
+
+      int64_t j = low + 1;
+      int64_t g = high - 1;
+      int64_t k = low + 1;
+
+      T *pP = &(*pQueue)[low];
+      T *pQ = &(*pQueue)[high];
+
+      while (k <= g)
+      {
+        if (valueFunc((*pQueue)[k]) < valueFunc(*pP))
+        {
+          std::swap((*pQueue)[k], (*pQueue)[j]);
+          j++;
+        }
+
+        else if (!(valueFunc((*pQueue)[k]) < valueFunc(*pQ)))
+        {
+          while (valueFunc((*pQueue)[g]) > valueFunc(*pQ) && k < g)
+            g--;
+
+          std::swap((*pQueue)[k], (*pQueue)[g]);
+          g--;
+
+          if (valueFunc((*pQueue)[k]) < valueFunc(*pP))
+          {
+            std::swap((*pQueue)[k], (*pQueue)[j]);
+            j++;
+          }
+        }
+
+        k++;
+      }
+
+      j--;
+      g++;
+
+      std::swap((*pQueue)[low], (*pQueue)[j]);
+      std::swap((*pQueue)[high], (*pQueue)[g]);
+
+      *pLeftPivot = j;
+      *pRightPivot = g;
+    }
+
+    void QuickSort(const int64_t start, const int64_t end, const std::function<U(const T &v)> &valueFunc)
+    {
+      if (start < end)
+      {
+        int64_t leftPivot, rightPivot;
+
+        DualPivotQuickSort_Partition(start, end, &rightPivot, &leftPivot, valueFunc);
+
+        QuickSort(start, leftPivot - 1, valueFunc);
+        QuickSort(leftPivot + 1, rightPivot - 1, valueFunc);
+        QuickSort(rightPivot + 1, end, valueFunc);
+      }
+    }
+
+    void OrderBy(const std::function<U(const T &v)> &valueFunc)
+    {
+      QuickSort(0, (int64_t)pQueue->count - 1, valueFunc);
+    }
+
+  } _internal;
+
+  _internal.pQueue = queue.GetPointer();
+
+  _internal.OrderBy(valueFunc);
+
+  mRETURN_SUCCESS();
+}
+
 template<typename T>
 inline mFUNCTION(mQueue_Select, const mPtr<mQueue<T>> &source, OUT mPtr<mQueue<T>> *pTarget, IN mAllocator *pAllocator, const std::function<bool(const T &a)> &selectFunc)
 {
   mFUNCTION_SETUP();
 
   mERROR_IF(source == nullptr || pTarget == nullptr || selectFunc == nullptr, mR_ArgumentNull);
+  mERROR_IF(source == *pTarget, mR_InvalidParameter);
 
   if (*pTarget == nullptr)
     mERROR_CHECK(mQueue_Create(pTarget, pAllocator));
@@ -874,6 +966,7 @@ inline mFUNCTION(mQueue_Select, const mPtr<mQueue<T>> &source, OUT mPtr<mQueue<T
   mFUNCTION_SETUP();
 
   mERROR_IF(source == nullptr || pTarget == nullptr, mR_ArgumentNull);
+  mERROR_IF(source == *pTarget, mR_InvalidParameter);
 
   if (*pTarget == nullptr)
     mERROR_CHECK(mQueue_Create(pTarget, pAllocator));
@@ -1095,6 +1188,7 @@ inline mFUNCTION(mQueue_RemoveDuplicates, const mPtr<mQueue<T>> &source, OUT mPt
   mFUNCTION_SETUP();
 
   mERROR_IF(source == nullptr || pTarget == nullptr || equalityComparer == nullptr, mR_ArgumentNull);
+  mERROR_IF(source == *pTarget, mR_InvalidParameter);
 
   if (*pTarget == nullptr)
     mERROR_CHECK(mQueue_Create(pTarget, pAllocator));
@@ -1119,6 +1213,7 @@ inline mFUNCTION(mQueue_RemoveDuplicates, const mPtr<mQueue<T>> &source, OUT mPt
   mFUNCTION_SETUP();
 
   mERROR_IF(source == nullptr || pTarget == nullptr, mR_ArgumentNull);
+  mERROR_IF(source == *pTarget, mR_InvalidParameter);
 
   if (*pTarget == nullptr)
     mERROR_CHECK(mQueue_Create(pTarget, pAllocator));

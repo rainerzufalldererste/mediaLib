@@ -11,6 +11,16 @@ struct mKeyValuePair
 
   mKeyValuePair() = default;
   mKeyValuePair(TKey key, TValue value) : key(key), value(value) {}
+
+  inline bool operator == (const mKeyValuePair<TKey, TValue> &other) const
+  {
+    return key == other.key && value == other.value;
+  }
+
+  inline bool operator != (const mKeyValuePair<TKey, TValue> &other) const
+  {
+    return key != other.key || value != other.value;
+  }
 };
 
 template <typename TKey, typename TValue>
