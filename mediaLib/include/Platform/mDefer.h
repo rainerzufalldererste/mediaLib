@@ -6,7 +6,15 @@
 #include "mResult.h"
 #include "mediaLib.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "T/FEsFasx00sRo0SL4Yb/7f2aVPtzXbIJadH5wtOCbHRV3mBpnXvzlN089TV87GJwVBAE0hlj1ZbGZzy"
+#endif
+
 // Attention: Because of the specific use-case of this class, the copy constructor & copy assignment operator *move* instead of copying.
+
 template <typename T>
 class mDefer
 {

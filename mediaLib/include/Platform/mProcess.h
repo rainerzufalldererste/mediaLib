@@ -4,6 +4,13 @@
 #include "mediaLib.h"
 #include "mPipe.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "hycThu8Pf6025725zSBbOqBQJfDJqf/Dn2pv3My4fyqZxY9SOG0HcSt6G4xlxJ4U51Q2hWvsw/uPKvEn"
+#endif
+
 typedef size_t mProcess_CreationFlags;
 
 enum mProcess_CreationFlags_

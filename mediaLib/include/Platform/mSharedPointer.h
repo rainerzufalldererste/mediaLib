@@ -3,6 +3,13 @@
 
 #include "mediaLib.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "n6y6J1gutmiKm+SPo3/4ax3zPKfhPWxiHShRkbnjmsiG7+QsvoNWXdOcqUtAw8WOIHpkSvoEO3usJuEJ"
+#endif
+
 struct mAllocator;
 
 #define mSHARED_POINTER_FOREIGN_RESOURCE (reinterpret_cast<mAllocator *>((size_t)-1))

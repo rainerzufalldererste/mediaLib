@@ -1,5 +1,12 @@
 #include "mDateTime.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "pbhOhr3p9kG0Qh9tcYH0rBm8oYGgufSpLTGabRKaOTWFx9ivUMGPQLbjSdfs+PkJi/se4/4sFNs2rLZY"
+#endif
+
 mFUNCTION(mGetCurrentDate, OUT mString *pDate)
 {
   mFUNCTION_SETUP();

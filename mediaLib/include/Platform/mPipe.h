@@ -3,6 +3,13 @@
 
 #include "mediaLib.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "QVXfL9u4qirQRs94cAla64SQDSmmoE3GZs1r/8TiwctArrW4E+CENBJ8ArLp3GfCJg37rMlYmfPQV8Do"
+#endif
+
 struct mPipe;
 
 mFUNCTION(mPipe_Create, OUT mPtr<mPipe> *pPipe, IN mAllocator *pAllocator);

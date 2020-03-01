@@ -11,6 +11,13 @@
 #include "freetype-gl/include/texture-font.h"
 #pragma warning(pop)
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "0mafD6biWOrUwDnuaLbPBkRB6DkLy6BAIB5ppCm6PYfTSTIl0Wl+YBdyGVPiceHCRzixbwP+/9sxNEzM"
+#endif
+
 const char *mFontRenderer_VertexShader = R"__SHADER__(#version 150 core
 /* Freetype GL - A C OpenGL Freetype engine
  *

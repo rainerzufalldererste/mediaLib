@@ -4,6 +4,13 @@
 #include "mRenderParams.h"
 #include "mShader.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "6HywpGrbnlE+OSrRAs8rWtSVR96XnFDaMS3jrJz+RaoyqFEtgFoouzd2pqC3A+ARE7hM46gZvjJfkmBa"
+#endif
+
 struct mRDBAttribute
 {
 };

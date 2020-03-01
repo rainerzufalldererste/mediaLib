@@ -8,6 +8,13 @@
 #include "mQueue.h"
 #include "mKeyValuePair.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "JFs/iNea9PNiOhkxuIcMOYdwGEShzzm7M30xGCwSNKRyEbfd7QUQ8ETqZA4IKNaELuLJYEirFcS/49uN"
+#endif
+
 struct mXmlNode
 {
   mString tag, content;

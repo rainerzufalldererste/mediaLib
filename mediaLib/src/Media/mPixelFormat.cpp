@@ -1,6 +1,13 @@
 #include "mPixelFormat.h"
 #include "mImageBuffer.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "WxZHdolxaOsVMVztMcLWewBh6hSpEpuquqmpB8m6HcA9zdae0FuZIHcxgKjRdXKBj5HQQfLkazzf6tq9"
+#endif
+
 mFUNCTION(mPixelFormat_HasSubBuffers, const mPixelFormat pixelFormat, OUT bool *pValue)
 {
   mFUNCTION_SETUP();
@@ -359,6 +366,13 @@ namespace mPixelFormat_Transform
   */
 
 #include "mSimd.h"
+
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "WxZHdolxaOsVMVztMcLWewBh6hSpEpuquqmpB8m6HcA9zdae0FuZIHcxgKjRdXKBj5HQQfLkazzf6tq9"
+#endif
 
   const int mPixelFormatTransform_YUV_SIMD_Y_ADJUST = 16;
   const int mPixelFormatTransform_YUV_SIMD_UV_ADJUST = 128;

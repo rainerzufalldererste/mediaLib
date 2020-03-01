@@ -6,6 +6,13 @@
 #include "mTexture.h"
 
 #if defined (mRENDERER_OPENGL)
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "59KY3lHCw9BWZQbqjoOuIQPyT5r5Q/6NZ5R5q8rzNPRYrJeHN9UgEBfosKbnLgkWUK/cTaMSAQH+KFtU"
+#endif
+
 extern GLuint mFrameBuffer_ActiveFrameBufferHandle;
 #endif
 

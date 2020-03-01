@@ -3,6 +3,13 @@
 
 #include "mediaLib.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "38LlZaK67nGjK8C3zG2FSFwK33Bkf27LvLeKNe4NdP93egxNwyROpaEyw4DxtjcizpNMXQ0A8sG0WN7C"
+#endif
+
 template <typename T>
 struct mChunkedArray
 {

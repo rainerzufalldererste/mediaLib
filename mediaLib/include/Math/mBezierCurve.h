@@ -4,6 +4,13 @@
 #include "mediaLib.h"
 #include "mQueue.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "rMvi7SZKlnh3kPseVPJHbtBIZEhDCUn7WLB+SPVAR4YBJHpCgeic6iL/K6E3/1KG+yfk9v8rDtecMS2v"
+#endif
+
 template <typename T>
 struct mCubicBezierCurve
 {

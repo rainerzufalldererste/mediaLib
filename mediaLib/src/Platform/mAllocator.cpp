@@ -2,6 +2,13 @@
 #include "mHashMap.h"
 
 #ifdef mDEBUG_MEMORY_ALLOCATIONS
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "v2gunMP1J5R2IoC808eVXexsKTrWbDjb15HM94uWS4tnBkokiYN3TQ4Ld85efL9OD3sv0EQ2XeltNZtm"
+#endif
+
 void mAllocatorDebugging_PrintOnExit()
 {
   mPRINT("\nRemaining Memory Allocations:\n\n");

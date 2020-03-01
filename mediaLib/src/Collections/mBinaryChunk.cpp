@@ -1,5 +1,12 @@
 #include "mBinaryChunk.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "sFhKy5lOa3kejJouLspA0hEKRaJC3MjigM8ThoUO+aVIfM/UalYLAD37kAevPzxxncRJ7+tO2I2WpDby"
+#endif
+
 mFUNCTION(mBinaryChunk_Destroy_Internal, mBinaryChunk *pBinaryChunk);
 
 mFUNCTION(mBinaryChunk_Create, OUT mPtr<mBinaryChunk> *pBinaryChunk, IN mAllocator *pAllocator)

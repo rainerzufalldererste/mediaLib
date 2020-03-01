@@ -3,6 +3,13 @@
 
 #include "mediaLib.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "81rdu2mVYrIN/l7Ml2PWpagIRHeyH+jDjbvW49iOsuOemvOmpMbVDfpY0klyYhZX0pBceeSGsyhwK9h7"
+#endif
+
 struct mHardwareWindow;
 struct mSoftwareWindow;
 

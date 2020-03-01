@@ -5,6 +5,13 @@
 #include "mTexture.h"
 #include "mFramebuffer.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "m6zXzrHYpGnP1PcwHSP612cO34D06a/9f4WVFvg+f9ZFPndbd5bLL1LSRw5p+8w8UniYr3roqVRRTRso"
+#endif
+
 struct mShader
 {
   bool initialized = false;

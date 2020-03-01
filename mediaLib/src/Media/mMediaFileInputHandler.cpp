@@ -8,6 +8,13 @@
 #include "mMediaFoundation.h"
 #include "mAudioEngine.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "AQJBHkZgeNq6x/TP1wl2nC8IWdzglH5zkPc1I7rr0g+5cpDqA35ZsqV2S3GrCa1T8SkAAjBi2kkXMXjJ"
+#endif
+
 struct mMediaTypeLookup
 {
   size_t streamIndex;

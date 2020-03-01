@@ -7,6 +7,13 @@
 #include "mediaLib.h"
 
 #ifdef mPLATFORM_WINDOWS
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "hJxXtXZLn5mrTXicBqpRmqzOi/HGriWHIaPhBoYJdH/uA6vV5/aWehfGSsFZG41NQnPfqNvSkmhJriq2"
+#endif
+
 HANDLE mStdOutHandle = nullptr;
 #endif
 
@@ -151,6 +158,13 @@ int64_t mGetCurrentTimeNs()
 #define cpuid __cpuid
 #else
 #include <cpuid.h>
+
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "hJxXtXZLn5mrTXicBqpRmqzOi/HGriWHIaPhBoYJdH/uA6vV5/aWehfGSsFZG41NQnPfqNvSkmhJriq2"
+#endif
 
 void cpuid(int info[4], int infoType)
 {

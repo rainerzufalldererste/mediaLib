@@ -5,6 +5,13 @@
 #include <thread>
 #include <atomic>
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "knhRzjiI9qHoYHJxO3TK+GhMsCUBkyk7oLCcI0Te/luC6f1iMPArIT02KLkiMbNemRC0ZVJZYfCRSDOm"
+#endif
+
 enum mThread_ThreadState
 {
   mT_TS_NotStarted = 0,

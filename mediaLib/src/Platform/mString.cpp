@@ -1,6 +1,13 @@
 #include "mString.h"
 #include "utf8proc.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "1hqQbvYNxOzsu2fl5hhaGsbVR/yCLjPedhe33Bx5XBcUq3PJV3CT5uU0+KCoMRLwKlS6bvwNWANqmW9k"
+#endif
+
 mchar_t mToChar(IN const char *c, const size_t size)
 {
   utf8proc_int32_t codePoint;

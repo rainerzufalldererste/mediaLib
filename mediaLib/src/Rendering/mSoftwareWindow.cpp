@@ -1,5 +1,12 @@
 #include "mSoftwareWindow.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "JpqmGb49shQVGk07P9PO3bSxk270RBJCq3gdUJAuy/dSctxGkwd1ydrYVyqMI/XNT2u1MmVrGpdjWEVM"
+#endif
+
 struct mSoftwareWindow
 {
   SDL_Window *pWindow;

@@ -1,5 +1,12 @@
 #include "mediaLib.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "NqGDAw59sUxsxOtY8VxR3PAuvRnWsQlV14qGs1hgUIRrTgNYkHCuoCq6wS2qUoOeNxV5pf82Lnu7HMpr"
+#endif
+
 thread_local const char *g_mResult_lastErrorFile = "<>";
 thread_local size_t g_mResult_lastErrorLine = 0;
 thread_local mResult g_mResult_lastErrorResult = mR_Success;

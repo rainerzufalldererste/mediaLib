@@ -2,6 +2,13 @@
 
 #include "mFile.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "qC2lTh5gU/5wA9FgHf5UgnWsKTyzgu5xNQDp/ShSLOv90EpOnEZ2hKn72WkwwNwzXbnLw8VpEkb4WmQ3"
+#endif
+
 mFUNCTION(mObjInfo_Destroy, IN_OUT mObjInfo *pObjInfo)
 {
   mFUNCTION_SETUP();

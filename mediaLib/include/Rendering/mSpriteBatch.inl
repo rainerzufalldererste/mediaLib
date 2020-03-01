@@ -3,6 +3,13 @@
 
 #define mSB_MultisampleCountUniformName "sampleCount0"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "53ORK5GZrCgx9g+p1I5asOmL4y6LNRF/xvfm3mqU9obt1rkVxDsFhtyqActkc//c3IBGNy9dZOqSoL8F"
+#endif
+
 template <typename ...Args>
 mFUNCTION(mSpriteBatch_Create_Internal, IN_OUT mSpriteBatch<Args...> *pSpriteBatch);
 

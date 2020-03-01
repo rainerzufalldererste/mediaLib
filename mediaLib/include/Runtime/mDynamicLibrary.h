@@ -3,6 +3,13 @@
 
 #include "mediaLib.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "oRUErAWKKN4aNF6lZ2M/WvTGNZtnLnMzwrOfniFs7NMDk5K0n6bAP05Mgt4mdI/XFZ1/SdEsTfZvtfsa"
+#endif
+
 struct mDynamicLibrary;
 
 mFUNCTION(mDynamicLibrary_LoadFromMemory, const uint8_t *pData, const size_t size, OUT mDynamicLibrary **ppHandle);

@@ -4,6 +4,13 @@
 #include "mediaLib.h"
 #include "mQueue.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "OloMTykN5xrsAiyr71sF39+CGt9XxoIF9PLs8zVcHwt+rgb7ZB53n4pvBdAmGJvZxbBUhExHwJoZUoZ2"
+#endif
+
 enum m2DAH_KeyframeProperty
 {
   m2DAH_KP_Invalid,

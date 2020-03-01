@@ -12,6 +12,13 @@
 #include <emmintrin.h>
 #endif
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "X4NtBR3dKWq2XzVXE8rYx5E1GAjMa0vT/w9SFyCWAHVZLQU5WBK1O5zUSOpv4BYN/aNfmPnAzcu9VMjs"
+#endif
+
 /*
 * Simd Library (http://ermig1979.github.io/Simd).
 *

@@ -1,5 +1,12 @@
 #include "mProcess.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "T95CYLXKyn0HJFfznCqtXnVEVMQqgV2QCx2DMHfbOUp0JkZy1dUx9YspbezP2+U+G8QQbUUAQp61CzVt"
+#endif
+
 struct mProcess
 {
   mPtr<mPipe> _stdin, _stderr, _stdout;

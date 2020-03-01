@@ -30,6 +30,13 @@
 #define mRAD2DEG (180.0 / mPI)
 #define mRAD2DEGf (180.0f / mPIf)
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "wWI0Zp0/tScpuj08VZchnph9RQsErzPv9NdWnME87LWR+wcviEMJLzT9l2wjxVxyueINRHZOFGVQq0kE"
+#endif
+
 template <typename T> constexpr T mAbs(const T value) { return value >= 0 ? value : -value; }
 template <typename T, typename std::enable_if_t<!std::is_unsigned<T>::value, int>* = nullptr> constexpr T mSign(const T value) { return value > 0 ? (T)1 : (value < 0 ? (T)-1 : (T)0); }
 template <typename T, typename std::enable_if_t<std::is_unsigned<T>::value, int>* = nullptr> constexpr T mSign(const T value) { return value > 0 ? (T)1 : (T)0; }

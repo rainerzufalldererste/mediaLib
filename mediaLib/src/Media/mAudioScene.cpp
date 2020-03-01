@@ -6,6 +6,13 @@
 #pragma warning(push)
 #pragma warning(disable: 4200)
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "w1LT4GzeLk8uc+uQKJUQBZlJ7LugcQ2TT8HDS7OAefTje1amkpHKvkvvAYgf7cR4KYjeCeLx5a6WJ62P"
+#endif
+
 constexpr size_t mAudioScene_MaxAudioDelay = 1024;
 constexpr float_t mAudioScene_SpeedOfSoundInAirAtRoomTemperatureInMetersPerSecond = 343.f;
 constexpr size_t mAudioScene_AudioResampleFadeSamples = 8;

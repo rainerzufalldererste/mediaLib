@@ -1,6 +1,13 @@
 #include "mScreenQuad.h"
 #include "mFile.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "5d1lnZ43s32zNe4MCnudH9RQKWEIA4qdtHyil0o/LYyKKA0s6f7pRXWASgAmdq9IVNcsWmf8pmNHWIyU"
+#endif
+
 mFUNCTION(mScreenQuad_Destroy_Internal, IN mScreenQuad *pScreenQuad);
 
 //////////////////////////////////////////////////////////////////////////

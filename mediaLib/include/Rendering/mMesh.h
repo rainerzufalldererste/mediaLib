@@ -9,6 +9,13 @@
 #include <initializer_list>
 #include "mKeyValuePair.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "/+Me+ot7sZez8oj9vEmsK0z1uqgYT2gM1wZwbj9kgHBUVaJO3PVWMJo2qdFhWw5DTOYZCgOXHyVusQPQ"
+#endif
+
 enum mRenderObjectParamType
 {
   mROPT_Position,

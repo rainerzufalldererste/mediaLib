@@ -3,6 +3,13 @@
 
 #include "mediaLib.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "QlpJjQ2xYC58nDw/X1yN1LmXU7vVReW19HfIAzxlYE3W9rPtHEpUDwMzx/M56FJO0AebK0DN8U2w+8YG"
+#endif
+
 typedef int32_t mchar_t;
 
 template <size_t TCount>

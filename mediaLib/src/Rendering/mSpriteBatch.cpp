@@ -1,5 +1,12 @@
 #include "mSpriteBatch.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "X8t1b4BzVmjnPg939NGo082HyQ3n270FJ53L1bT8izkpWc/uLEfOjguuvqun7qvp6zX5G4vej4vXWDDC"
+#endif
+
 mSBETextureCrop::mSBETextureCrop() : textureStartEndPoint(0.0f, 0.0f, 1.0f, 1.0f)
 { }
 

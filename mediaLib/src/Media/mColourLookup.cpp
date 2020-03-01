@@ -2,6 +2,13 @@
 #include "mFile.h"
 #include "mQueue.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "7i1fMiMlihfUmO475fdfoo8P8x+ExWgNW3dx4SdnDn0TEzWzrVfbA8E939cVxWSuz39b+0HyBiB9gcq6"
+#endif
+
 mFUNCTION(mColourLookup_Destroy_Internal, IN mColourLookup *pColourLookup);
 
 //////////////////////////////////////////////////////////////////////////

@@ -4,6 +4,13 @@
 #include <stdint.h>
 #include <type_traits>
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "TR5gR65VlDVpUt04X9YEX1BI8PqeKp8AEBMnKZwxm7Ws60MZoo0BQytATfA63QZG6tmLYFAu9zSIvThz"
+#endif
+
 template <typename T>
 struct mIsTriviallyMemoryMovable
 {

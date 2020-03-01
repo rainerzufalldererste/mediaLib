@@ -14,6 +14,13 @@
 #include "imgui/imgui_internal.h"
 #endif
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "FwItiCW9M4ymsopGJPX/Jho263tGovZ5P67oWtztNtdM6FLCPBYXOciUDwgZ6OKErj+1WGdP5jWXBdur"
+#endif
+
 ImGuiIO *mUI_pImguiIO;
 ImFont *pFont = nullptr;
 ImFont *pHeadline = nullptr;

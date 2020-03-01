@@ -5,6 +5,13 @@
 #include "mPool.h"
 #include "mMutex.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "VDUnWw5Oa6IyfzA4A4LqgrxCxA+HrRsNKbVRqdHlmO1EtCUpzGIc7LVfyQuHBcLHO987drMzipRlUkT+"
+#endif
+
 template <typename T>
 struct mRefPool_SharedPointerContainer_Internal
 {

@@ -6,6 +6,13 @@
 #include <intsafe.h>
 #include "mMediaFoundation.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "NyI9wWp+Jn9NVNBDYME58LnmaxvEyB1Gm+pkdCERpBgV4shUcT2xcUm+uVzq/rwh72FSUdDCpPeKknQZ"
+#endif
+
 struct mMediaFileWriter
 {
   IMFSinkWriter *pSinkWriter;

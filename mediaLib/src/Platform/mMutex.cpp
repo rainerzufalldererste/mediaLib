@@ -1,6 +1,13 @@
 #include "mMutex.h"
 #include <mutex>
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "5hAQ/qRmTft9l2339rKOdVCCrnrJRHXyroLFjabrQU7GRFZcPwCmqAy+dQI5bCr7oJD0PX6cGFKTiblQ"
+#endif
+
 struct mMutex
 {
   std::mutex lock;

@@ -5,6 +5,13 @@
 #include "mBinaryChunk.h"
 #include "mSolve.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "qZk1M0q2oRT6QVLZBjqX/3LSpDVmPKlh+ZdjyNI3WxYtOetGvZaMjVfXke2R1SZba4HthR14dzCZ8wig"
+#endif
+
 extern const char mLineRenderer_PositionAttribute[] = "position0";
 extern const char mLineRenderer_ColourAttribute[] = "colour0";
 const char mLineRenderer_ScreenSizeUniformName[] = "screenSize";

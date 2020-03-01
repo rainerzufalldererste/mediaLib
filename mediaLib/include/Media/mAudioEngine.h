@@ -4,6 +4,13 @@
 #include "mediaLib.h"
 #include "mAudio.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "U6nU261yzgQqbyvV6YEVLoJNVUisYNFBtP8JtVJO2PTl1DvOWGviEdpVXWT3/udbo0lj/L9iM6EYUp+f"
+#endif
+
 constexpr size_t mAudioEngine_PreferredSampleRate = 44100;
 constexpr size_t mAudioEngine_MaxSupportedAudioSourceSamepleRate = 48000;
 constexpr size_t mAudioEngine_MaxSupportedChannelCount = 2;

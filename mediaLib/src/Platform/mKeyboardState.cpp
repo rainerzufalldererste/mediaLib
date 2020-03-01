@@ -2,6 +2,13 @@
 
 #include "SDL.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "ZIjugU+vLkNk33o9sG4iYi5pr+aYTbuVl2lf+HXkPtjrDgFltZQNrRPkoTQYonTmRgdqMqtx4xH00YRS"
+#endif
+
 mFUNCTION(mKeyboardState_Update, OUT mKeyboardState *pKeyboardState)
 {
   mFUNCTION_SETUP();

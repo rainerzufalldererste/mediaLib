@@ -3,6 +3,13 @@
 
 #include "mRenderParams.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "uoBFfquKF0Hpbql8Jw9HNO+Yf07zSigzDdXkcTyvPMi0RNgMxQrSzRRM484x2Bn4SisWt0xxJE/I33f6"
+#endif
+
 enum mHardwareWindow_DisplayMode
 {
   mHW_DM_Windowed = 0,

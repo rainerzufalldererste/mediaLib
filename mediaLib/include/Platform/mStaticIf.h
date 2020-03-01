@@ -3,6 +3,13 @@
 #ifndef mStaticIf_h__
 #define mStaticIf_h__
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "rRgedX5yIhMrCMBGJQKVIk+bNpsqwY/VN3Zl8Fa15AtCyYB9EBQCLGniofw8xEx2dsLUUQZsLCQspLKJ"
+#endif
+
 struct mStaticIfIdentity 
 {
   template<typename T>

@@ -6,6 +6,13 @@
 
 #include "../3rdParty/imgui/imgui.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "ni+7LtuBuidVXi1zTeZoQl05ZnxvKxiU4irKh3Y7ujekV3wpc490mR7HJgQ2uJ8tOwSDWr3HEdTRlETV"
+#endif
+
 mFUNCTION(mUI_Initilialize, mPtr<mHardwareWindow> &hardwareWindow, const bool addUpdateCallback = true);
 mFUNCTION(mUI_StartFrame, mPtr<mHardwareWindow> &hardwareWindow);
 mFUNCTION(mUI_Shutdown);

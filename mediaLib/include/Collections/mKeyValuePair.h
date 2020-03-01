@@ -3,6 +3,13 @@
 
 #include "mediaLib.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "yww9KcQ3rEC0b4VgphNtGXEJvPsEG9sNeFRZHC/xxyNzatzjmV17Z3wGu/CyNLRK+oNPJYfmfNB+xPOL"
+#endif
+
 template <typename TKey, typename TValue>
 struct mKeyValuePair
 {

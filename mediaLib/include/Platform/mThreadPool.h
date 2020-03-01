@@ -4,6 +4,13 @@
 #include "mediaLib.h"
 #include "mThreading.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "6JvMOAuXIp739fQr49g1bav087hKSpbsPiUkIUX2ZAimpzXy/DszXK+xyq0dEvTqznMYniI/7XKVEivM"
+#endif
+
 struct mTask;
 
 // Ordered so that every `mTask_State` >= `mT_S_Running` will not be executed and `mTask_State` >= `mT_S_Complete` is considered to be done.

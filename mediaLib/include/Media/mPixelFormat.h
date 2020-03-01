@@ -4,6 +4,13 @@
 #include "mediaLib.h"
 #include "mThreadPool.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "qN3buM09rfR4aXIp0+OMli5NtPtokbxdwmnOsji1Y2v9fYqBgleaaXc2D2tIx5Ycmg9HuyIEvurE9VK+"
+#endif
+
 struct mImageBuffer;
 
 enum mPixelFormat

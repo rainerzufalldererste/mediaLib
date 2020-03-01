@@ -1,6 +1,13 @@
 #include "mRenderParams.h"
 #include "mHardwareWindow.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "qgl523t3vQYdvPDcFGW8An9gs1fWNQGjMnAf2GapKD0ru9ZEb3bc8MpLfZdV2CJ8IQdzzsAZRoW4MvB4"
+#endif
+
 mVec2s mRenderParams_CurrentRenderResolution;
 mVec2f mRenderParams_CurrentRenderResolutionF;
 

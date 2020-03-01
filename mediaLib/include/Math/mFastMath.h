@@ -11,6 +11,13 @@
 
 #include "mMath.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "KyjP3bThBsKiTSp0OAwuTDMdJUGhuWbRwCmEMO+RwqfmnDjniYf0YdiasPk/hOw/sf1p/Nlc1qg3lLbN"
+#endif
+
 struct mMatrix;
 struct mQuaternion;
 

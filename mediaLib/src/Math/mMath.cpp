@@ -1,5 +1,12 @@
 #include "mediaLib.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "hUtGZWjbZNNzNag8i41uTW8LybEHgriSjm+4GeOEV3sWL4IRkCtdjsUmdK7Ff4ZKJZevCXNjcTMDkkxc"
+#endif
+
 static_assert(mAbs(1) == 1, "Test Failed.");
 static_assert(mAbs(0) == 0, "Test Failed.");
 static_assert(mAbs(-1) == 1, "Test Failed.");

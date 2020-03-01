@@ -4,6 +4,13 @@
 #include "mediaLib.h"
 #include "mImageBuffer.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "DQ789x1ww/PI/6pTIX+jg4feaWU7g7nxfirivysbzyWuVhKBvrXEONEsjO8PpO0L4Z87yuy5HJHSeUtu"
+#endif
+
 enum mMediaFileVideoFormat
 {
   mMFVF_H264,

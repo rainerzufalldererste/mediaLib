@@ -3,6 +3,13 @@
 
 #include "mRenderParams.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "7m5r60/H1FDWKf+WVAOlDflupcRZsl4XyDuxG+2pqv1SasfVJQZEKiT/4i0/mc6XJs4BSx16ZRZ4Rltz"
+#endif
+
 enum mFontDescription_BoundMode
 {
   mFD_BM_Stop,

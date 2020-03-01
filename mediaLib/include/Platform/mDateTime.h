@@ -3,6 +3,13 @@
 
 #include "mediaLib.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "HJUHDkY/ngmeEF3KaYp0TzirpndoEQOlTbnCjKThGbDPhnBT6+T0jjkg/K0OjdW1EVOt5Axa7UMCfWpm"
+#endif
+
 mFUNCTION(mGetCurrentDate, OUT mString *pDate);
 mFUNCTION(mGetCurrentDate, OUT OPTIONAL size_t *pYear, OUT OPTIONAL size_t *pMonth, OUT OPTIONAL size_t *pDay, OUT OPTIONAL size_t *pDayOfWeek);
 mFUNCTION(mGetCurrentTime, OUT mString *pTime);

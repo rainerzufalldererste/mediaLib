@@ -6,6 +6,13 @@
 
 #include "mMutex.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "po9hyjmrZ7aFoZtL/D0SAE4T1Sau+hbwufurBll6y3ykX/jK54K8291mJ1C6skm0wzTbWIqM/9oyVSIX"
+#endif
+
 constexpr size_t mOpusEncoder_MaxChannelCount = 2;
 constexpr size_t mOpusEncoder_ChannelBufferSize = 1024;
 

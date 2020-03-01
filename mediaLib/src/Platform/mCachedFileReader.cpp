@@ -4,6 +4,13 @@
 #include <io.h>
 #include <fcntl.h>
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "ioOl6vLwfcHaWvhWPPRUDTqP790J4x2+bly/0oxdIqcBttnfhibZOiM0F7O5DnXLiBb8Dt5KycTNTKJP"
+#endif
+
 mFUNCTION(mCachedFileReader_Destroy_Internal, mCachedFileReader *pCachedFileReader);
 mFUNCTION(mCachedFileReader_ReadFrom_Internal, mPtr<mCachedFileReader> &cachedFileReader, const size_t location, const size_t requestedSize);
 

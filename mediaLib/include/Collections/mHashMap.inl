@@ -1,6 +1,13 @@
 #include "mHashMap.h"
 #include "mHash.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "wE9lZfJZCShObTGm0Onq/sF2C97kpWqwUW/h00IgW6urtyOwi/4nSO+xc6ohKOUr+lI0TyJ523AkCbzr"
+#endif
+
 template <typename TKey, typename TValue>
 mFUNCTION(mHashMap_Destroy_Internal, IN mHashMap<TKey, TValue> *pHashMap);
 

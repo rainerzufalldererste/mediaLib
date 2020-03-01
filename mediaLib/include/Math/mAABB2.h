@@ -3,6 +3,13 @@
 
 #include "mediaLib.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "gfnL8axBpKOXND7jioe6bhlbfhrrhPRahwc5ZXPXOVPBPBXaUqACEBWqRcXNUCgFE3Eyj8KXA/Z+yrQ1"
+#endif
+
 template <typename T>
 struct mAABB2
 {

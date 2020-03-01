@@ -3,6 +3,13 @@
 #include "mMediaFileInputHandler.h"
 #include "mTimeStamp.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "wRlpx85LP9eBsllb3ZS5eG8IXG7Oyvo70iViC/PfqZY1+4rSG9DV3ThMIQf3FmSsmSLkNwD9mKmUmRc7"
+#endif
+
 struct mVideoPlaybackEngine
 {
   mThread *pPlaybackThread;

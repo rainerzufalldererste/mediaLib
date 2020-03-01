@@ -5,6 +5,13 @@
 #include "mImageBuffer.h"
 #include "mResourceManager.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "BU8yYy9xJysspta8eu64bE6XuHu3cuWvk0RFgXu9707c/w9RE7S+xIw10NlaQjkFn3E0QK1TezghS5e4"
+#endif
+
 struct mTexture
 {
   mVec2s resolution;

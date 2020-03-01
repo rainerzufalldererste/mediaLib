@@ -7,6 +7,13 @@
 #include <knownfolders.h>
 #include <Shlwapi.h>
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "SFo9prBt690qC0bDbPT05QaLU/H7Z7MJbc+QVmnEGYSYb72Yau3AznddRqFbpMzfsvluBUZPhqYFy894"
+#endif
+
 HRESULT mFile_CreateAndInitializeFileOperation_Internal(REFIID riid, void **ppFileOperation);
 mFUNCTION(mFile_GetKnownPath_Internal, OUT mString *pString, const GUID &guid);
 mFUNCTION(mFileInfo_FromFindDataWStruct_Internal, IN_OUT mFileInfo *pFileInfo, IN const WIN32_FIND_DATAW *pFileData, IN mAllocator *pAllocator);

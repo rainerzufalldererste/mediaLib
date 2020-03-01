@@ -7,6 +7,13 @@
 #include "SDL.h"
 #include "SDL_audio.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "aGIVr++X05W55RIB3uR2j2dEzsYnRANw7tYm89aUN1Yn0255o0csUlY1oBBwutQhaBbIv2NgHP1eHUQ2"
+#endif
+
 constexpr size_t mAudioEngine_BufferNotReadyTries = 3;
 
 struct mAudioEngine

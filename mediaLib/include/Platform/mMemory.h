@@ -3,6 +3,13 @@
 
 #include "mediaLib.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "P3JB0pUzZTg+eb+IdSGZnz8TN8sJqRCC9qLe1Omqih6yco2FCdh8WEwcmVwJmfKqJO8IsWftAeyLPyUe"
+#endif
+
 template <typename T>
 void mSetToNullptr(T **ppData)
 {

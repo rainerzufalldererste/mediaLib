@@ -5,6 +5,13 @@
 
 // Solve linear equation: a * x + b * y = c and d * x + e * y = f for x and y.
 // Returns mVec2t<T>(x, y).
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "8bA+FRmGLORsdKK9hyfF9i9/HEMDrU6oVZ1R4K+AyqUwxhFsU3V97xLLvJe269BoHCdG+PoRptGydoeC"
+#endif
+
 template <typename T>
 inline mVec2t<T> mSolveXY(const T a, const T b, const T c, const T d, const T e, const T f)
 {

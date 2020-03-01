@@ -3,6 +3,13 @@
 
 #include "mediaLib.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "068QWfVKDoNDX35/U6Bt6GEM7lzZ3rR0t9Squn0udUaHOn5RrNj8udDu9B+iCZ9dVLMljdGZssyV/WTE"
+#endif
+
 template <typename T>
 struct mQueueIterator
 {

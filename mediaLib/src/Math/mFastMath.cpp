@@ -3,6 +3,13 @@
 
 //////////////////////////////////////////////////////////////////////////
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "YOugLsA2pf+bvt2o9OdpJMpHtqbPkc1GbfgvGBqGvwyDX7xUO1J2tQ8kgQWyu/LiVcVK/zTRhkFz4lWs"
+#endif
+
 mResult mVECTORCALL mVector::TransformCoordStream2(OUT DirectX::XMFLOAT2 *pOutputData, const size_t outputStride, IN DirectX::XMFLOAT2 *pInputData, const size_t inputStride, const size_t inputLength, const mMatrix &matrix)
 {
   mFUNCTION_SETUP();

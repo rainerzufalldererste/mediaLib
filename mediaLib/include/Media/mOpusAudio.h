@@ -4,6 +4,13 @@
 #include "mediaLib.h"
 #include "mAudio.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "SZO7t9jaP+vTia89si9yUWtCiG9/eAYekjZ/rTXYJF+c3n2t87GdOMri3KuuotQKSOrGmyvtTy4WMo/l"
+#endif
+
 struct mOpusEncoder;
 
 mFUNCTION(mOpusEncoder_Create, OUT mPtr<mOpusEncoder> *pEncoder, IN mAllocator *pAllocator, const mString &filename, mPtr<mAudioSource> &audioSource, const size_t bitrate = 320 * 1024);

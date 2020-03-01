@@ -1,5 +1,12 @@
 #include "mPool.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "QbCK9wfNPslwGAxp4/ggb+L2RoE/pt3ikmEf0eISDuQuxOe84S8IuhG1E4466Pp6LT7dbEdLleYcK/hx"
+#endif
+
 template <typename T>
 mFUNCTION(mPool_Destroy_Internal, IN mPool<T> *pPool);
 

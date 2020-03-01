@@ -2,6 +2,13 @@
 #include "mFramebuffer.h"
 #include "mChunkedArray.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "uH9cesumuC4LRBXN9mdn+OhJb7RQbWTxufxBomi9I0ZjgSTunXjoEOf8H6Azc0p7O0xvz68h9B4SzPx6"
+#endif
+
 struct mHardwareWindow
 {
   SDL_Window *pWindow;

@@ -4,6 +4,13 @@
 #include "mediaLib.h"
 #include "mImageBuffer.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "uoBoq3ZYuoA980732ju9An92up+WPTb+hYyPC31m1q3u+c0bELJ2PTLYGFzKVjTtAA0WVisBLbpkaEXr"
+#endif
+
 struct mVideoPlaybackEngine;
 
 enum mVideoPlaybackEngine_PlaybackFlags : size_t

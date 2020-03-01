@@ -5,6 +5,13 @@
 #include "mArray.h"
 #include "mQueue.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "A+934z9PYhluwBWnEIhoe2p1q13IqcW4R6uOt5lbuTbxIrC3XjhrgWPOciisAzSUpD7SGPKFkcXc1tan"
+#endif
+
 enum mFile_Encoding
 {
   mF_E_UTF8,

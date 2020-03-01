@@ -7,6 +7,13 @@
 #include "mImageBuffer.h"
 #include "mTimeStamp.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "Oqz0dYQf9ugdrGOuwy0jG0JTAoq/Z8vFNH5D2vNZJixIy3RoW5QlQYKQY5fBlci7gciX7HxD8l0lKb4R"
+#endif
+
 struct mMediaFileInputHandler;
 
 enum mMediaMajorType

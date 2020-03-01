@@ -1,5 +1,12 @@
 #include "mHash.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "KnlobfSd7qBcpERcl7UJFSK/nldU8u7hvNu5EanriIv8hZKXWdW0M85EY2vJNZ49iFY4pUkDwLtGWnnp"
+#endif
+
 uint64_t MurmurHash64A(const void *pData, int length, uint64_t seed);
 
 //////////////////////////////////////////////////////////////////////////

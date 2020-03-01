@@ -24,6 +24,13 @@
 
 #include "mDebugSymbolInfo.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "ZGBcUKtRyNNbXwr0Bq0Tr1wN1cPTb8Tt22covdNAWifpg5JSinweE2CFb/XQl1mRCpGk7R8F14mir8aZ"
+#endif
+
 struct mAllocator;
 
 std::atomic<uint64_t> &mAllocatorDebugging_GetDebugMemoryAllocationCount();

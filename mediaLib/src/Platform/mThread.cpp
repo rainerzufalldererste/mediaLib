@@ -1,5 +1,12 @@
 #include "mThread.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "Hfwj2y5HffPq7tqTRppX4cjrh5tkCiuFftRWKArZIdsb8g/a2hVBypy8RnxHwnSE19MrRWEh4vEq5JeP"
+#endif
+
 mFUNCTION(mThread_Destroy_Internal, IN_OUT mThread *pThread);
 
 mFUNCTION(mThread_Destroy, IN_OUT mThread **ppThread)

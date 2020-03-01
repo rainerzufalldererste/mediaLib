@@ -1,5 +1,12 @@
 #include "mediaLib.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "Rx6R99ErVSc74oQfABhd3lN1Z/7LbxaWj5aofNcPw+3mWMReFYhCMscW350rxwq48gtWVS1+nWs+s8Dw"
+#endif
+
 mFUNCTION(mStringLength, const char *text, const size_t maxLength, OUT size_t *pLength)
 {
   mFUNCTION_SETUP();

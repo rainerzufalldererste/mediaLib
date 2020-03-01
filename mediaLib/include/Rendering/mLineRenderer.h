@@ -3,6 +3,13 @@
 
 #include "mBezierCurve.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "212C9ISIqsJaWMoNqMFGBf5mURpIsDVXxLOHImS3gU4WiNIQXG6grQCVesh3q7Z4q/uhGu9OMttTi7aT"
+#endif
+
 struct mLineRenderer;
 
 struct mLineRenderer_Attribute

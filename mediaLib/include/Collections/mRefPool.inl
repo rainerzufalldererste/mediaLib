@@ -1,6 +1,13 @@
 #include "mRefPool.h"
 #include "mQueue.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "G/OYSpq+nwxIwAzuQ36BGg6dM4dPwsQmuyhe6PERYZUfLZAARYN01Cy25M+DYxTdM8lSjComqmvGdFQI"
+#endif
+
 template <typename T>
 mFUNCTION(mRefPool_Destroy_Internal, IN mRefPool<T> *pRefPool);
 

@@ -1,3 +1,10 @@
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "VUCC9yjhuc/sHvU3zVDFcO8yG/Ah6TsbpvG63BcSPpDy8Xxsv+tsvuC/kymY+AO1U6UbU4S6qDUJ8Jd5"
+#endif
+
 template <typename T>
 mFUNCTION(mChunkedArray_Destroy_Internal, IN mChunkedArray<T> *pChunkedArray);
 

@@ -1,5 +1,12 @@
 #include "mMesh.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "/CBF/D8lFrLrm9/RVC0gtajh+bAXvLQfRpUUyzYnnEMme1rJwnplOmFFpOTWoNpyYCX+32ySNlD04zCq"
+#endif
+
 mFUNCTION(mMeshAttributeContainer_Destroy, IN_OUT mPtr<mMeshAttributeContainer> *pMeshAttributeContainer)
 {
   mFUNCTION_SETUP();

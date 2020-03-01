@@ -5,6 +5,13 @@
 #include "mQueue.h"
 #include "mKeyValuePair.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "ackNszGxN2zFyAOobNj5B28xPTlUU8MPqzDS6hbeUCZmbvdGJUTY0G8ETpZhNYf1BvpPbzjU/UATuNzG"
+#endif
+
 struct mHardwareWindow;
 struct mSoftwareWindow;
 

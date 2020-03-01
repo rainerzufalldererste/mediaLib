@@ -2,6 +2,13 @@
 
 #include "mJson.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "CR0Q11RLnclS8su1pRtRdhNk792HLTTqcL+dCO8vpmn26ry0x6sNgf4cgvN5KMShWDBEvupS7/qqduEd"
+#endif
+
 mFUNCTION(m2DAH_Keyframe_Serialize, IN const m2DAH_Keyframe *pKeyframe, mPtr<mJsonWriter> &jsonWriter);
 mFUNCTION(m2DAH_Keyframe_Deserialize, OUT m2DAH_Keyframe *pKeyframe, mPtr<mJsonReader> &jsonReader);
 float_t GetKeyframeInfluenceFactor(IN const m2DAH_Keyframe *pPrevious, IN const m2DAH_Keyframe *pNext, const float_t animationPosition);

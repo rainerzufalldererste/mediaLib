@@ -4,6 +4,13 @@
 #include "mediaLib.h"
 #include "mPixelFormat.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "tnnAGkeojpHNbyvX55Ucm+fYEnrzRXB1sgAsL1LIT0RGQoepVzttNxDJN982s3WZ0HzEeft8YW6aH0XV"
+#endif
+
 enum mImageBuffer_CopyFlags
 {
   mIB_CF_None = 0,

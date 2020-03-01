@@ -4,6 +4,13 @@
 #include "mRenderParams.h"
 #include "mMesh.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "AVd5S+d+Oyft5sOd0wK/BNtj6HFPRc5qRj2AANJ562uCnn+Zdk8tYaw13v+S7caQur1u1RBFWwoLGE6W"
+#endif
+
 enum mSpriteBatch_SpriteSortMode
 {
   mSB_SSM_None,

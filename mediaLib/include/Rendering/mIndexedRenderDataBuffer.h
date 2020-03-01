@@ -4,6 +4,13 @@
 #include "mRenderDataBuffer.h"
 
 // Template Parameters should be `mDRBAttribute`s like `mRDB_FloatAttribute`.
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "yHtqJ6HuV+9zl9900d7SUg8ypi41HzYFySTwZ4xypYFPPfLGwli9Adpj5totvTWNd3P82zhix6OdsWRQ"
+#endif
+
 template <typename... Args>
 struct mIndexedRenderDataBuffer : mRenderDataBuffer<Args...>
 {

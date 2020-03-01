@@ -1,6 +1,13 @@
 #include "mThreadPool.h"
 #include "mQueue.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "GpZR7lIVJraLZVrxePJ4x2f1wEbA2DaftVdVLhE6iuhe3LxcRDUIHEU0pvcIc9PAswU9VtmNONizhgPO"
+#endif
+
 struct mTask
 {
   std::function<mResult(void)> function;

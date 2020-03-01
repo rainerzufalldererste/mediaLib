@@ -3,6 +3,13 @@
 
 #include "mediaLib.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "De6gmXydgRjhIYW/hHVzSD/FImMHqkuUNobg+0CHS/89JmIJZILo2SZfWIiXlc8sxsmRzZFK1IjXpt5H"
+#endif
+
 struct mBinaryChunk
 {
   uint8_t *pData;

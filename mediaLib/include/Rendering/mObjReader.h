@@ -4,6 +4,13 @@
 #include "mediaLib.h"
 #include "mQueue.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "XN2nShS29YBk0Na+wPwsZWcUxaHnSiNk6JxnE9csHucEOVrAEGoYYN7ZMuXQMprRg8nrXGpARLF5bUfC"
+#endif
+
 struct mObjTriangleVertexInfo
 {
   mVec3f position;

@@ -10,6 +10,13 @@
 
 //////////////////////////////////////////////////////////////////////////
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "De0D1tAMyKnzTHdrG4KZ9p4Y2DjGMjOlCVpcZqqAJdRR23n2graeeTdVxjda7dN2dYL+UVG+YMXrnVHI"
+#endif
+
 mFUNCTION(mJson_CheckError_Internal, IN cJSON *pJson);
 
 //////////////////////////////////////////////////////////////////////////

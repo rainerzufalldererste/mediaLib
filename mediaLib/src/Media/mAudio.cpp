@@ -9,6 +9,13 @@
 #pragma warning(disable: 4752)
 #endif
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "YB7sS5KIxXOP9uQiEc357/Krmb8HcPP8fm5dXyPXgickcXLGZ6lez92bt71hXzGqP9KGuQ36EFUzh8Hq"
+#endif
+
 void mAudio_ExtractFloatChannelFromInterleavedFloat_AVX2(size_t &sampleIndex, const size_t sampleCount, OUT float_t *pChannel, const size_t channelIndex, IN float_t *pInterleaved)
 {
   for (; sampleIndex < sampleCount - 7; sampleIndex += 8)

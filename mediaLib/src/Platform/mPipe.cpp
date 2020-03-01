@@ -1,5 +1,12 @@
 #include "mPipe.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "IyV9FuLbEJ6+3oZh2NFWVVUvU23r9io42gN0jdgRQQGVXcx6B56EyUmvWcAflN2bnVb+UBLCayPSVBX2"
+#endif
+
 struct mPipe
 {
   HANDLE read, write;

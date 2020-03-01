@@ -14,6 +14,13 @@
 
 //////////////////////////////////////////////////////////////////////////
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "QgL/buye0i29ugNB9Gb1OObJgZCM5z3w1h8+qkQFX7BE67pbY5EwXZU9SdPR2evaOp1Y1qEZqrZ6b/OT"
+#endif
+
 struct WriteFuncData
 {
   mUniqueContainer<mFileWriter> file;

@@ -7,6 +7,13 @@
 // mScreenQuad.
 // Your fragment shader requires inputs for the amount of textures specified called `_texCoord%TextureIndex%` (`_texCoord0`, `_texCoord1`, ...).
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "3qJ1wCVEmddupAsjv9rYJvu/WdQsbycV1t2xTV4Ak1R9fAlXBIb2/b7J3qTFMRUSLiIlSjg5zpbUdAsY"
+#endif
+
 struct mScreenQuad
 {
   mPtr<mShader> shader;

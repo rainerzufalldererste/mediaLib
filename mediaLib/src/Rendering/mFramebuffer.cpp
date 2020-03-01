@@ -5,6 +5,13 @@
 //#define DEBUG_FRAMBUFFER_CREATION
 
 #if defined (mRENDERER_OPENGL)
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "1fNBDeKfYQkAJQSQhx6M314RdQis15VJ++OE3e/ZzoZ1izXkI8uLSr1ef2wIzw9teQ3VDdElhcuqYIOr"
+#endif
+
 GLuint mFrameBuffer_ActiveFrameBufferHandle = 0;
 #endif
 

@@ -1,6 +1,13 @@
 #include "mRenderParams.h"
 #include "mTexture.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "sCCZHpYtbeA7/BRwiLFUKpvYDoIRwlST01JVXGbKsRYc0GVHhCxSXpPO5CjBdZ5Fc933OCVeG39gHCKI"
+#endif
+
 mFUNCTION(mTexture_Create, OUT mTexture *pTexture, mPtr<mImageBuffer> &imageBuffer, const bool upload /* = true */, const size_t textureUnit /* = 0 */, const mTexture2DParams &textureParams /* = mTexture2DParams() */)
 {
   mFUNCTION_SETUP();
