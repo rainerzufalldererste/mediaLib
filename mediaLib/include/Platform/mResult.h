@@ -123,7 +123,7 @@ inline void mDeinit(const std::function<void(void)> &param, Args && ...args)
 #define mSET_ERROR_RAW(resultCode) \
   do \
   { g_mResult_lastErrorResult = resultCode; \
-    g_mResult_lastErrorFile = __FILE__; \
+    g_mResult_lastErrorFile = __M_FILE__; \
     g_mResult_lastErrorLine = __LINE__; \
   } while (0)
 
@@ -132,7 +132,7 @@ inline void mDeinit(const std::function<void(void)> &param, Args && ...args)
   { const mResult _internal_result = (result); \
     if (mFAILED(_internal_result) && _internal_result != mR_Break) \
     { mSET_ERROR_RAW(_internal_result); \
-      mPrintError(mRESULT_PRINT_FUNCTION_TITLE, __FILE__, __LINE__, _internal_result, mRESULT_PRINT_DEBUG_STRINGIFY_RETURN_RESULT(result)); \
+      mPrintError(mRESULT_PRINT_FUNCTION_TITLE, __M_FILE__, __LINE__, _internal_result, mRESULT_PRINT_DEBUG_STRINGIFY_RETURN_RESULT(result)); \
       if (g_mResult_breakOnError) \
       { mDEBUG_BREAK(); \
       } \
@@ -145,7 +145,7 @@ inline void mDeinit(const std::function<void(void)> &param, Args && ...args)
   { mSTDRESULT = (functionCall); \
     if (mFAILED(mSTDRESULT)) \
     { mSET_ERROR_RAW(mSTDRESULT); \
-      mPrintError(mRESULT_PRINT_FUNCTION_TITLE, __FILE__, __LINE__, mSTDRESULT, mRESULT_PRINT_DEBUG_STRINGIFY(functionCall)); \
+      mPrintError(mRESULT_PRINT_FUNCTION_TITLE, __M_FILE__, __LINE__, mSTDRESULT, mRESULT_PRINT_DEBUG_STRINGIFY(functionCall)); \
       mDeinit(__VA_ARGS__); \
       if (g_mResult_breakOnError) \
       { mDEBUG_BREAK(); \
@@ -160,7 +160,7 @@ inline void mDeinit(const std::function<void(void)> &param, Args && ...args)
     { mSTDRESULT = (resultOnError); \
       if (mFAILED(mSTDRESULT) && mSTDRESULT != mR_Break) \
       { mSET_ERROR_RAW(mSTDRESULT); \
-        mPrintError(mRESULT_PRINT_FUNCTION_TITLE, __FILE__, __LINE__, mSTDRESULT, mRESULT_PRINT_DEBUG_STRINGIFY(conditional)); \
+        mPrintError(mRESULT_PRINT_FUNCTION_TITLE, __M_FILE__, __LINE__, mSTDRESULT, mRESULT_PRINT_DEBUG_STRINGIFY(conditional)); \
         mDeinit(__VA_ARGS__); \
         if (g_mResult_breakOnError) \
         { mDEBUG_BREAK(); \
@@ -175,7 +175,7 @@ inline void mDeinit(const std::function<void(void)> &param, Args && ...args)
   { result = (functionCall); \
     if (mFAILED(result)) \
     { mSET_ERROR_RAW(result); \
-      mPrintError(mRESULT_PRINT_FUNCTION_TITLE, __FILE__, __LINE__, result, mRESULT_PRINT_DEBUG_STRINGIFY(functionCall)); \
+      mPrintError(mRESULT_PRINT_FUNCTION_TITLE, __M_FILE__, __LINE__, result, mRESULT_PRINT_DEBUG_STRINGIFY(functionCall)); \
       mDeinit(__VA_ARGS__); \
       if (g_mResult_breakOnError) \
       { mDEBUG_BREAK(); \
@@ -190,7 +190,7 @@ inline void mDeinit(const std::function<void(void)> &param, Args && ...args)
     { result = (resultOnError); \
       if (mFAILED(result) && result != mR_Break) \
       { mSET_ERROR_RAW(result); \
-        mPrintError(mRESULT_PRINT_FUNCTION_TITLE, __FILE__, __LINE__, result, mRESULT_PRINT_DEBUG_STRINGIFY(conditional)); \
+        mPrintError(mRESULT_PRINT_FUNCTION_TITLE, __M_FILE__, __LINE__, result, mRESULT_PRINT_DEBUG_STRINGIFY(conditional)); \
         mDeinit(__VA_ARGS__); \
         if (g_mResult_breakOnError) \
         { mDEBUG_BREAK(); \

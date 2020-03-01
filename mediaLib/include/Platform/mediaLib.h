@@ -91,14 +91,18 @@
 #define mARRAYSIZE(arrayName) (sizeof(arrayName) / sizeof(arrayName[0]))
 #define mBYTES_OF(type) (sizeof(type) << 3)
 
+#ifndef __M_FILE__
+#define __M_FILE__ __FILE__
+#endif
+
 #define mASSERT(expression, text, ...) \
   do \
   { if(!(expression)) \
     { char ___buffer___[1024 * 8]; \
       sprintf_s(___buffer___, text, __VA_ARGS__); \
       ___buffer___[mARRAYSIZE(___buffer___) - 1] = '\0'; \
-      mPRINT_ERROR("Assertion Failed: %s\n'%s'\n\nIn File '%s' : Line '%" PRIi32 "' (Function '%s')\n", #expression, ___buffer___, __FILE__, __LINE__, __FUNCTION__); \
-      mAssert_Internal(#expression, ___buffer___, __FUNCTION__, __FILE__, __LINE__); \
+      mPRINT_ERROR("Assertion Failed: %s\n'%s'\n\nIn File '%s' : Line '%" PRIi32 "' (Function '%s')\n", #expression, ___buffer___, __M_FILE__, __LINE__, __FUNCTION__); \
+      mAssert_Internal(#expression, ___buffer___, __FUNCTION__, __M_FILE__, __LINE__); \
     } \
   } while (0)
 
@@ -107,7 +111,7 @@
   { char ___buffer___[1024 * 8]; \
     sprintf_s(___buffer___, text, __VA_ARGS__); \
     ___buffer___[mARRAYSIZE(___buffer___) - 1] = '\0'; \
-    mPRINT_ERROR("Assertion Failed: '%s'\n\nIn File '%s' : Line '%" PRIi32 "' (Function '%s')\n", ___buffer___, __FILE__, __LINE__, __FUNCTION__); \
+    mPRINT_ERROR("Assertion Failed: '%s'\n\nIn File '%s' : Line '%" PRIi32 "' (Function '%s')\n", ___buffer___, __M_FILE__, __LINE__, __FUNCTION__); \
     __debugbreak(); \
   } while (0)
 

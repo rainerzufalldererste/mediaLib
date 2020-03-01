@@ -41,7 +41,7 @@ extern GLenum mRenderParams_GLError;
     if (mRenderParams_InitializedRenderContextCount > 0) { \
       mRenderParams_GLError = glGetError(); \
       if (mRenderParams_GLError != GL_NO_ERROR) { \
-        mPRINT_ERROR("Rendering Error in '%s': GLError Code %" PRIi32 " (%s) (File '" __FILE__ "'; Line %" PRIi32 ")\n", mRESULT_PRINT_FUNCTION_TITLE, mRenderParams_GLError, gluErrorString(mRenderParams_GLError), __LINE__); \
+        mPRINT_ERROR("Rendering Error in '%s': GLError Code %" PRIi32 " (%s) (File '" __M_FILE__ "'; Line %" PRIi32 ")\n", mRESULT_PRINT_FUNCTION_TITLE, mRenderParams_GLError, gluErrorString(mRenderParams_GLError), __LINE__); \
         mRenderParams_PrintRenderState(false); \
         mERROR_IF(mRenderParams_GLError != GL_NO_ERROR, mR_RenderingError); \
       } \
