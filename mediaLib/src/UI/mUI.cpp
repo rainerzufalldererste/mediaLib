@@ -5,6 +5,7 @@
 #include "imgui/examples/imgui_impl_sdl.h"
 //#include "imgui/examples/imgui_impl_opengl3.h"
 
+#define DECLSPEC
 #include "imgui/examples/imgui_impl_sdl.cpp"
 #include "imgui/examples/imgui_impl_opengl3.cpp"
 #include "imgui/imgui.cpp"
@@ -12,6 +13,7 @@
 #include "imgui/imgui_draw.cpp"
 #include "imgui/imgui_widgets.cpp"
 #include "imgui/imgui_internal.h"
+#undef DECLSPEC
 #endif
 
 #ifdef GIT_BUILD // Define __M_FILE__

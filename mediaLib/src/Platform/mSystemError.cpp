@@ -8,7 +8,9 @@
 #include <Dbghelp.h>
 #pragma warning(pop)
 
+#define DECLSPEC
 #include "SDL_syswm.h"
+#undef DECLSPEC
 
 #ifdef GIT_BUILD // Define __M_FILE__
   #ifdef __M_FILE__

@@ -2,7 +2,9 @@
 #include "mSoftwareWindow.h"
 #include "mHardwareWindow.h"
 
+#define DECLSPEC
 #include "SDL_syswm.h"
+#undef DECLSPEC
 
 #include <shlobj.h>
 

@@ -1,6 +1,8 @@
 #include "mKeyboardState.h"
 
+#define DECLSPEC
 #include "SDL.h"
+#undef DECLSPEC
 
 #ifdef GIT_BUILD // Define __M_FILE__
   #ifdef __M_FILE__

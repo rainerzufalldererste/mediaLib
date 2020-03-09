@@ -4,8 +4,10 @@
 #include "mPool.h"
 #include "mQueue.h"
 
+#define DECLSPEC
 #include "SDL.h"
 #include "SDL_audio.h"
+#undef DECLSPEC
 
 #ifdef GIT_BUILD // Define __M_FILE__
   #ifdef __M_FILE__
