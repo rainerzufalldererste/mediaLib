@@ -9,7 +9,7 @@ project(ProjectName)
   filter { "system:windows" }
     buildoptions { '/Gm-' }
     buildoptions { '/MP' }
-    disablewarnings  { '4127' } -- ignore conditional expression is constant
+    disablewarnings { '4127' } -- ignore conditional expression is constant
 
     ignoredefaultlibraries { "msvcrt" }
   
@@ -57,6 +57,7 @@ project(ProjectName)
   includedirs { "3rdParty/StackWalker/include" }
   includedirs { "3rdParty/expat/include" }
   includedirs { "3rdParty/turbojpeg/include" }
+  includedirs { "3rdParty/curl/include" }
 
   filter { "configurations:Debug", "system:Windows" }
     ignoredefaultlibraries { "libcmt" }
@@ -91,6 +92,7 @@ linkoptions { "3rdParty/turbojpeg/lib/turbojpeg-static.lib" }
 linkoptions { "3rdParty/mbedtls/lib/mbedcrypto.lib" }
 linkoptions { "3rdParty/mbedtls/lib/mbedtls.lib" }
 linkoptions { "3rdParty/mbedtls/lib/mbedx509.lib" }
+linkoptions { "3rdParty/curl/lib/libcurl.lib" }
 linkoptions { "Shlwapi.lib" }
 
 warnings "Extra"
