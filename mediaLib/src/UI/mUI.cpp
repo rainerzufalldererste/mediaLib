@@ -2,17 +2,17 @@
 
 #if defined(mRENDERER_OPENGL)
 #define IMGUI_IMPL_OPENGL_LOADER_GLEW
-#include "imgui/examples/imgui_impl_sdl.h"
-//#include "imgui/examples/imgui_impl_opengl3.h"
-
 #define DECLSPEC
-#include "imgui/examples/imgui_impl_sdl.cpp"
-#include "imgui/examples/imgui_impl_opengl3.cpp"
-#include "imgui/imgui.cpp"
-#include "imgui/imgui_demo.cpp"
-#include "imgui/imgui_draw.cpp"
-#include "imgui/imgui_widgets.cpp"
-#include "imgui/imgui_internal.h"
+#include "imgui/include/examples/imgui_impl_sdl.h"
+//#include "imgui/include/examples/imgui_impl_opengl3.h"
+
+#include "imgui/include/examples/imgui_impl_sdl.cpp"
+#include "imgui/include/examples/imgui_impl_opengl3.cpp"
+#include "imgui/include/imgui.cpp"
+#include "imgui/include/imgui_demo.cpp"
+#include "imgui/include/imgui_draw.cpp"
+#include "imgui/include/imgui_widgets.cpp"
+#include "imgui/include/imgui_internal.h"
 #undef DECLSPEC
 #endif
 

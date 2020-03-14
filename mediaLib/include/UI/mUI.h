@@ -4,7 +4,7 @@
 #include "mRenderParams.h"
 #include "mHardwareWindow.h"
 
-#include "../3rdParty/imgui/imgui.h"
+#include "../3rdParty/imgui/include/imgui.h"
 
 #ifdef GIT_BUILD // Define __M_FILE__
   #ifdef __M_FILE__

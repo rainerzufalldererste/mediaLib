@@ -50,7 +50,7 @@ project(ProjectName)
   includedirs { "3rdParty/SDL2/include" }
   includedirs { "3rdParty/glew/include" }
   includedirs { "3rdParty/utf8proc/include" }
-  includedirs { "3rdParty/imgui" }
+  includedirs { "3rdParty/imgui/include" }
   includedirs { "3rdParty/ogg/include" }
   includedirs { "3rdParty/opus/include" }
   includedirs { "3rdParty/libsamplerate/include" }
@@ -89,9 +89,6 @@ linkoptions { "3rdParty/opus/lib/opusenc.lib" }
 linkoptions { "3rdParty/libsamplerate/lib/samplerate.lib" }
 linkoptions { "3rdParty/expat/lib/expat.lib" }
 linkoptions { "3rdParty/turbojpeg/lib/turbojpeg-static.lib" }
-linkoptions { "3rdParty/mbedtls/lib/mbedcrypto.lib" }
-linkoptions { "3rdParty/mbedtls/lib/mbedtls.lib" }
-linkoptions { "3rdParty/mbedtls/lib/mbedx509.lib" }
 linkoptions { "3rdParty/curl/lib/libcurl.lib" }
 linkoptions { "Shlwapi.lib" }
 
