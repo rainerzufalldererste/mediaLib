@@ -3,7 +3,7 @@
 ## General
  * We use two spaces as indentation instead of tabs.
  * Files end with an empty line.
- * Avoid more than one empty line at any time in implementations. To distinguish between sections more clearly, use block comments.
+ * Avoid more than one empty line at any time in implementations. To distinguish between sections more clearly, use comments.
  * Avoid spurious free spaces. For example avoid `if (someVar == 0)...`, where the dots mark the spurious free spaces. Consider enabling "View White Space (Ctrl+E, S)" if using Visual Studio, to aid detection.
  * For non code files (like xml) our current best guidance is consistency. When editing files, keep new code and changes consistent with the style in the files. For new files, it should conform to the style for that component. Last, if there's a completely new component, anything that is reasonably broadly accepted is fine.
  * If a file happens to differ in style from these guidelines, the existing style in that file takes precedence.
@@ -12,7 +12,7 @@
  * We use the c-style naming convention rather than using member functions to improve readability. (This also has some advantages for templated code.)
  * Only data-only types (and some special types like `mString` or `mSharedPointer`) use constructors, operators or member functions because these heavily influence the possibility, ease and quality of error handling. (Even for strings not using operators & constructors is preferred.)
  * We use `mSharedPointer` (or its alias `mPtr`) to ensure reference counting for objects in single-threaded code.
- * We don't ever use exceptions because they compromise security & speed.
+ * We don't ever use native exceptions because it's incredibly difficuly to write code that handles exception states properly. They can also compromise application security & speed.
  * We avoid using STL functions & objects. Exceptions are `std::move`, `std::forward`, `std::swap`, `std::function`, `std::atomic` and objects used for template specialization.
  * Memory is always allocated through the provided allocators. Remember to placement `new` objects from other libraries that use constructors inside your objects because zeroed memory might not be a valid object state for them.
  * If a function takes pointers as a parameter mark them with `IN`, `OUT`, `IN_OUT` and `OPTIONAL` to clarify the interface.
@@ -37,9 +37,9 @@
  
 ## Variables
 Global variables:
- * Try to minimize use of any global variables.
+ * Try to minimize use of any global variables as their initialization order can cause horrible bugs that come down to order of compilation.
  * Declare global variables in source-files not in headers.
- * The `const` qualifier should be used wherever possible.
+ * The `constexpr` / `const` qualifier should be used wherever possible.
  
 Local variables:
  * Should be declared near first use for better readability.
@@ -82,7 +82,7 @@ inline mFUNCTION(mQueue_PopBack, mPtr<mQueue<T>> &queue, OUT T *pItem)
   bool hasInput = true;
 
   while (hasInput)
-  DecodeInput(&hasInput);
+    DecodeInput(&hasInput);
 }
 ```
 
@@ -92,7 +92,7 @@ inline mFUNCTION(mQueue_PopBack, mPtr<mQueue<T>> &queue, OUT T *pItem)
 Lambda Functions:
  * If no external variables or values are being used inside the lambda function, don't capture automatically or explicitly.
  * If external variables or values are being used inside the lambda, try simplifying the captures as much as possible.
- * If a lambda function executes multiple instruction it should have a multi line body.
+ * If a lambda function executes multiple operations it should have a multi line body.
 
 ```c++
   size_t a, b, c;
@@ -124,20 +124,20 @@ Lambda Functions:
 ```c++
   // Calculate the one-dimensional discrete cosine transform.
   {
-    float_t a07 = pBuffer[0] + pBuffer[7];
-    float_t a16 = pBuffer[1] + pBuffer[6];
-    float_t a25 = pBuffer[2] + pBuffer[5];
-    float_t a34 = pBuffer[3] + pBuffer[4];
+    const float_t a07 = pBuffer[0] + pBuffer[7];
+    const float_t a16 = pBuffer[1] + pBuffer[6];
+    const float_t a25 = pBuffer[2] + pBuffer[5];
+    const float_t a34 = pBuffer[3] + pBuffer[4];
     
-    float_t s07 = pBuffer[0] - pBuffer[7];
-    float_t s61 = pBuffer[6] - pBuffer[1];
-    float_t s25 = pBuffer[2] - pBuffer[5];
-    float_t s43 = pBuffer[4] - pBuffer[3];
+    const float_t s07 = pBuffer[0] - pBuffer[7];
+    const float_t s61 = pBuffer[6] - pBuffer[1];
+    const float_t s25 = pBuffer[2] - pBuffer[5];
+    const float_t s43 = pBuffer[4] - pBuffer[3];
     
-    float_t v0 = a07 + a34;
-    float_t v1 = a07 - a34;
-    float_t v2 = a16 + a25;
-    float_t v3 = a16 - a25;
+    const float_t v0 = a07 + a34;
+    const float_t v1 = a07 - a34;
+    const float_t v2 = a16 + a25;
+    const float_t v3 = a16 - a25;
 
     // ...
   }
@@ -161,15 +161,23 @@ mFUNCTION(mCollection_PopBack, mPtr<mCollection<T>> &collection, OUT T *pItem);
  * When string formatting integer values use the defines from `inttypes.h`. (like `printf("The value is %" PRIu64 ".\n", (uint64_t)value);`)
  
 Integer types:
- * Use unsigned types for bit manipulations, packed values & flags.
+ * Always use unsigned types for bit manipulations, packed values & flags.
  * The type `size_t` should not be serialized to binary data.
  * Use uppercase hexadecimal letters (like `0xFFFFFFFF`).
 
 Floating-point types:
  * Don't use floating-point numbers if integers would do the job just as well.
+
+Casting:
+ * Use c-style casts for integers values. (`(int32_t)value` instead of `int32_t(value)`)
+ * Use `static_cast` when casting to derived types.
+ * Use `reinterpret_cast` where applicable, consider using `mMemcpy` instead.
+ * Try to not use `const_cast` unless absolutely necessary.
  
 Type Punning:
- * Minimize usage of type punning since it's harder to maintain & debug.
+ * Minimize usage of type punning since it can be harder to maintain & debug if not used in obvious ways.
+ * When type punning use `reinterpret_cast`.
+ * Consider using `mMemcpy` instead.
 
 ## Pointers
  * When pointing to elements in containers keep in mind that the elements might be moved.
