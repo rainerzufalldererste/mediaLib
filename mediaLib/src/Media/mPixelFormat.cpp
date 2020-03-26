@@ -944,7 +944,7 @@ namespace mPixelFormat_Transform
     mRETURN_SUCCESS();
   }
 
-  mFUNCTION(mPixelFormat_Transform_RgbaToBgra_BgraToRgba, uint32_t *pSource, const size_t sourceStride, uint32_t *pTarget, const size_t targetStride, const mVec2s &size)
+  mFUNCTION(mPixelFormat_Transform_RgbaToBgra_BgraToRgba, const uint32_t *pSource, const size_t sourceStride, uint32_t *pTarget, const size_t targetStride, const mVec2s &size)
   {
     mFUNCTION_SETUP();
 
@@ -976,7 +976,7 @@ namespace mPixelFormat_Transform
 
       for (; x < maxX; x += 4)
       {
-        __m128i color = *(__m128i *)&pSource[x + ySourceOffset];
+        __m128i color = _mm_loadu_si128(reinterpret_cast<const __m128i *>(&pSource[x + ySourceOffset]));
         __m128i swap0 = _mm_slli_si128(color, 2);
         __m128i swap1 = _mm_srli_si128(color, 2);
 
@@ -986,7 +986,7 @@ namespace mPixelFormat_Transform
 
         color = _mm_or_si128(color, _mm_or_si128(swap0, swap1));
 
-        *(__m128i *)&pTarget[x + yTargetOffset] = color;
+        _mm_storeu_si128(reinterpret_cast<__m128i *>(&pTarget[x + yTargetOffset]), color);
       }
 #endif
 
