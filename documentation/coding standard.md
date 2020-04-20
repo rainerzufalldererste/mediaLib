@@ -88,6 +88,7 @@ inline mFUNCTION(mQueue_PopBack, mPtr<mQueue<T>> &queue, OUT T *pItem)
 
  * Function implementations should include all qualifiers for the parameters (e.g. `const`) and the default parameters (commented out from the equals sign: `void mSomeObject_SomeFunction(const size_t someVariable /* = defaultValue */)`).
  * Creation and destruction functions take double pointers to avoid copies and to clean up the actual object in question rather than a copy of it.
+ * When a function is only accessible inside one function and will not be of any use to other functions, turn them into a static function inside a struct called `_internal` that lives in the scope of the function that uses it.
 
 Lambda Functions:
  * If no external variables or values are being used inside the lambda function, don't capture automatically or explicitly.

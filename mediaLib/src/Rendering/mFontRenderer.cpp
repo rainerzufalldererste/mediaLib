@@ -158,7 +158,7 @@ mFUNCTION(mFontRenderer_Create, OUT mPtr<mFontRenderer> *pFontRenderer, IN mAllo
 {
   mFUNCTION_SETUP();
 
-  mERROR_IF(pFontRenderer == nullptr || pAllocator == nullptr, mR_ArgumentNull);
+  mERROR_IF(pFontRenderer == nullptr, mR_ArgumentNull);
 
   mDEFER_CALL_ON_ERROR(pFontRenderer, mFontRenderer_Destroy);
   mERROR_CHECK(mSharedPointer_Allocate(pFontRenderer, pAllocator, (std::function<void(mFontRenderer *)>)[](mFontRenderer *pData) {mFontRenderer_Destroy_Internal(pData);}, 1));

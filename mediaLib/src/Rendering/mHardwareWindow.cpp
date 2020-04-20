@@ -274,6 +274,17 @@ mFUNCTION(mHardwareWindow_ClearEventHandlers, mPtr<mHardwareWindow> &window)
   mRETURN_SUCCESS();
 }
 
+mFUNCTION(mHardwareWindow_SetActive, mPtr<mHardwareWindow> &window)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(window == nullptr, mR_ArgumentNull);
+
+  SDL_RaiseWindow(window->pWindow);
+
+  mRETURN_SUCCESS();
+}
+
 //////////////////////////////////////////////////////////////////////////
 
 mFUNCTION(mHardwareWindow_Create_Internal, IN_OUT mHardwareWindow *pWindow, IN mAllocator *pAllocator, const mString &title, const mVec2s &size, const mHardwareWindow_DisplayMode displaymode, const bool stereo3dIfAvailable)
@@ -282,6 +293,8 @@ mFUNCTION(mHardwareWindow_Create_Internal, IN_OUT mHardwareWindow *pWindow, IN m
   mUnused(displaymode);
 
   mERROR_IF(size.x > INT_MAX || size.y > INT_MAX, mR_ArgumentOutOfBounds);
+
+  const mHardwareWindow_DisplayMode innerDisplayMode = ((displaymode & SDL_WINDOW_FULLSCREEN_DESKTOP) == SDL_WINDOW_FULLSCREEN_DESKTOP) ? (mHardwareWindow_DisplayMode)((displaymode ^ SDL_WINDOW_FULLSCREEN_DESKTOP) | SDL_WINDOW_MAXIMIZED | SDL_WINDOW_BORDERLESS | SDL_WINDOW_RESIZABLE) : displaymode;
 
   bool try3d = stereo3dIfAvailable;
 retry_without_3d:
@@ -292,7 +305,7 @@ retry_without_3d:
 #if defined(mRENDERER_OPENGL)
     SDL_WINDOW_OPENGL |
 #endif
-    displaymode);
+    innerDisplayMode);
 
   if (pWindow->pWindow == nullptr && try3d)
   {
@@ -301,6 +314,17 @@ retry_without_3d:
   }
 
   mERROR_IF(pWindow->pWindow == nullptr, mR_InternalError);
+
+  if (displaymode != innerDisplayMode)
+  {
+    if ((displaymode & SDL_WINDOW_RESIZABLE) == 0)
+      SDL_SetWindowResizable(pWindow->pWindow, SDL_FALSE);
+
+    SDL_MaximizeWindow(pWindow->pWindow);
+  }
+
+  if ((displaymode & (SDL_WINDOW_FULLSCREEN | SDL_WINDOW_FULLSCREEN_DESKTOP)) != 0)
+    SDL_RaiseWindow(pWindow->pWindow);
 
   mERROR_CHECK(mQueue_Create(&pWindow->onEventCallbacks, pAllocator));
   mERROR_CHECK(mQueue_Create(&pWindow->onResizeCallbacks, pAllocator));

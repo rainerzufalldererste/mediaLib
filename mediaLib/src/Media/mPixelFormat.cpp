@@ -949,9 +949,9 @@ namespace mPixelFormat_Transform
     mFUNCTION_SETUP();
 
 #ifndef SSE2
-    const size_t maxX = size.x - 1;
+    const size_t maxX = size.x >= 1 ? size.x - 1 : 0;
 #else
-    const size_t maxX = size.x - 3;
+    const size_t maxX = size.x >= 3 ? size.x - 3 : 0;
 #endif
 
     for (size_t y = 0; y < size.y; ++y)

@@ -27,6 +27,7 @@ struct mTexture
   size_t sampleCount;
   bool foreignTexture;
   bool isMipMapTexture;
+  mTexture2DParams textureParams;
 };
 
 mFUNCTION(mTexture_Create, OUT mTexture *pTexture, mPtr<mImageBuffer> &imageBuffer, const bool upload = true, const size_t textureUnit = 0, const mTexture2DParams &textureParams = mTexture2DParams());

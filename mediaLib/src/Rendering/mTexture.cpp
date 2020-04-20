@@ -18,6 +18,7 @@ mFUNCTION(mTexture_Create, OUT mTexture *pTexture, mPtr<mImageBuffer> &imageBuff
   pTexture->resolution = imageBuffer->currentSize;
   pTexture->resolutionF = (mVec2f)pTexture->resolution;
   pTexture->foreignTexture = false;
+  pTexture->textureParams = textureParams;
 
 #if defined(mRENDERER_OPENGL)
   pTexture->sampleCount = 0;
@@ -74,6 +75,7 @@ mFUNCTION(mTexture_Create, OUT mTexture *pTexture, const uint8_t *pData, const m
     pTexture->resolution = size;
     pTexture->resolutionF = (mVec2f)pTexture->resolution;
     pTexture->foreignTexture = false;
+    pTexture->textureParams = textureParams;
 
 #if defined(mRENDERER_OPENGL)
     pTexture->sampleCount = 0;
@@ -154,6 +156,7 @@ mFUNCTION(mTexture_Allocate, OUT mTexture *pTexture, const mVec2s size, const mP
   pTexture->resolution = size;
   pTexture->resolutionF = (mVec2f)pTexture->resolution;
   pTexture->foreignTexture = false;
+  pTexture->textureParams = textureParams;
 
   mERROR_IF(!(pixelFormat == mPF_R8G8B8 || pixelFormat == mPF_R8G8B8A8 || pixelFormat == mPF_Monochrome8), mR_NotSupported);
 
@@ -255,6 +258,8 @@ mFUNCTION(mTexture_Upload, mTexture &texture)
   glBindTexture(texture.sampleCount > 0 ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, texture.textureId);
 
   mGL_DEBUG_ERROR_CHECK();
+
+  mERROR_CHECK(mTexture2DParams_ApplyToBoundTexture(texture.textureParams, texture.sampleCount > 0));
 
   if (texture.imageBuffer->pixelFormat == mPF_R8G8B8A8)
     glTexImage2D(texture.sampleCount > 0 ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)texture.imageBuffer->currentSize.x, (GLsizei)texture.imageBuffer->currentSize.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, texture.imageBuffer->pPixels);
