@@ -26,13 +26,16 @@ struct mFontDescription
   float_t scale = 1;
 
   bool hasBounds = false;
+
+  // WARNING: This is not in screen space. Use `mFontDescription_GetDisplayBounds`.
   mRectangle2D<float_t> bounds;
+  
   mFontDescription_BoundMode boundMode = mFD_BM_Stop;
 
   bool ignoreBackupFonts = false;
 };
 
-mRectangle2D<float_t> mFontDescrption_GetDisplayBounds(const mRectangle2D<float_t> &displayBounds);
+mRectangle2D<float_t> mFontDescription_GetDisplayBounds(const mRectangle2D<float_t> &displayBounds);
 
 struct mFontRenderer;
 struct mFontRenderable;

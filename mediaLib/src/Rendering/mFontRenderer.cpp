@@ -144,7 +144,7 @@ struct mFontRenderer
 
 //////////////////////////////////////////////////////////////////////////
 
-mRectangle2D<float_t> mFontDescrption_GetDisplayBounds(const mRectangle2D<float_t> &displayBounds)
+mRectangle2D<float_t> mFontDescription_GetDisplayBounds(const mRectangle2D<float_t> &displayBounds)
 {
   mVec2f position = displayBounds.position;
   position.y = mRenderParams_CurrentRenderResolutionF.y - displayBounds.position.y - displayBounds.h;
@@ -581,6 +581,7 @@ mFUNCTION(mFontRenderer_Draw, mPtr<mFontRenderer> &fontRenderer, const mFontDesc
       float kerning = 0.0f;
 
       const char *actualPreviousChar = previousChar;
+      bool charFailed = false;
 
     retry_render:
       if (index > 0)
@@ -612,11 +613,15 @@ mFUNCTION(mFontRenderer_Draw, mPtr<mFontRenderer> &fontRenderer, const mFontDesc
 
         case mFD_BM_BreakLineOnBound:
         {
+          if (charFailed)
+            mRETURN_SUCCESS();
+
           if (fontDescription.bounds.position.y + fontDescription.bounds.size.y > fontRenderer->position.y + fontDescription.lineHeightRatio * fontDescription.fontSize)
           {
-            previousChar = "\n";
+            actualPreviousChar = nullptr;
             fontRenderer->position.x = fontRenderer->resetPosition.x;
             fontRenderer->position.y -= fontDescription.lineHeightRatio * fontDescription.fontSize;
+            charFailed = true;
             
             goto retry_render;
           }
