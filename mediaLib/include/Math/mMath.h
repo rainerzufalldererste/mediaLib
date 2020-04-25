@@ -63,6 +63,8 @@ auto mPow(const T value, const U value2) -> typename std::enable_if_t<!std::is_s
 
 template <typename T> constexpr auto mLog(const T value) -> decltype(log(value)) { return log(value); }
 template <typename T> constexpr auto mLog10(const T value) -> decltype(log10(value)) { return log10(value); }
+template <typename T> constexpr auto mLog2(const T value) -> decltype(log2(value)) { return log2(value); }
+template <typename T> constexpr auto mLogN(const T logarithm, const T value) -> decltype(log(value)) { return log(value) / log(logarithm); }
 
 template <typename T> constexpr T mMax(const T a, const T b) { return (a >= b) ? a : b; }
 template <typename T> constexpr T mMin(const T a, const T b) { return (a <= b) ? a : b; }

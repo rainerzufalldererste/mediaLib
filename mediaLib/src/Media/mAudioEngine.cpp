@@ -33,6 +33,7 @@ struct mAudioEngine
   mThread *pUpdateThread;
   volatile bool bufferReady;
   volatile bool keepRunning;
+  volatile float_t masterVolume;
 };
 
 mFUNCTION(mAudioEngine_Destroy_Internal, IN_OUT mAudioEngine *pAudioEngine);
@@ -79,6 +80,7 @@ mFUNCTION(mAudioEngine_Create, OUT mPtr<mAudioEngine> *pAudioEngine, IN mAllocat
   (*pAudioEngine)->sampleRate = have.freq;
   (*pAudioEngine)->pAllocator = pAllocator;
   (*pAudioEngine)->keepRunning = true;
+  (*pAudioEngine)->masterVolume = 1.f;
 
   mERROR_CHECK(mThread_Create(&(*pAudioEngine)->pUpdateThread, pAllocator, mAudioEngine_PrepareNextAudioBuffer_Internal, pAudioEngine->GetPointer()));
   mERROR_CHECK(mAudioEngine_SetPaused(*pAudioEngine, false));
@@ -104,6 +106,28 @@ mFUNCTION(mAudioEngine_SetPaused, mPtr<mAudioEngine> &audioEngine, const bool pa
   mERROR_IF(audioEngine == nullptr, mR_ArgumentNull);
 
   SDL_PauseAudioDevice(audioEngine->deviceId, paused ? SDL_TRUE : SDL_FALSE);
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mAudioEngine_SetVolume, mPtr<mAudioEngine> &audioEngine, const float_t volume)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(audioEngine == nullptr, mR_ArgumentNull);
+
+  audioEngine->masterVolume = volume;
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mAudioEngine_GetVolume, mPtr<mAudioEngine> &audioEngine, OUT float_t *pVolume)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(audioEngine == nullptr, mR_ArgumentNull);
+
+  *pVolume = audioEngine->masterVolume;
 
   mRETURN_SUCCESS();
 }
@@ -153,7 +177,7 @@ void SDLCALL mAudioEngine_AudioCallback_Internal(IN void *pUserData, OUT uint8_t
 
       if (pAudioEngine->bufferReady)
       {
-        mERROR_CHECK_GOTO(mAudio_ConvertFloatToInt16WithDithering(reinterpret_cast<int16_t *>(pStream), pAudioEngine->buffer, pAudioEngine->bufferSize * pAudioEngine->channelCount), mSTDRESULT, epilogue);
+        mERROR_CHECK_GOTO(mAudio_ConvertFloatToInt16WithDitheringAndFactor(reinterpret_cast<int16_t *>(pStream), pAudioEngine->buffer, pAudioEngine->bufferSize * pAudioEngine->channelCount, pAudioEngine->masterVolume), mSTDRESULT, epilogue);
         pAudioEngine->bufferReady = false;
         break;
       }

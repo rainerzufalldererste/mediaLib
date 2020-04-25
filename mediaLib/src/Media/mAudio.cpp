@@ -320,6 +320,126 @@ mFUNCTION(mAudio_ConvertFloatToInt16WithDithering, IN int16_t *pDestination, OUT
   mRETURN_SUCCESS();
 }
 
+void mAudio_ConvertFloatToInt16WithDitheringAndFactor_AVX2(size_t &sampleIndex, IN int16_t *pDestination, OUT const float_t *pSource, const size_t sampleCount, const float_t factor)
+{
+  const float_t mul = mMaxValue<int16_t>() * factor;
+
+  typedef __m256 simd_t;
+  typedef __m256i isimd_t;
+
+  constexpr size_t loopSize = (sizeof(simd_t) * 2) / sizeof(float_t);
+  constexpr size_t loopSizeHalf = loopSize / 2;
+
+  const simd_t dither = _mm256_set_ps(.25f, -.25f, .25f, -.25f, .25f, -.25f, .25f, -.25f); // Fixed pattern dithering.
+  const simd_t mmmul = _mm256_set1_ps(mul);
+  const isimd_t min = _mm256_set1_epi32(mMinValue<int16_t>());
+  const isimd_t max = _mm256_set1_epi32(mMaxValue<int16_t>());
+
+  if (sampleCount >= loopSize)
+  {
+    for (; sampleIndex < sampleCount - (loopSize - 1); sampleIndex += loopSize)
+    {
+      const simd_t srcHi = _mm256_add_ps(dither, _mm256_mul_ps(_mm256_loadu_ps(pSource + sampleIndex), mmmul));
+      const simd_t srcLo = _mm256_add_ps(dither, _mm256_mul_ps(_mm256_loadu_ps(pSource + sampleIndex + loopSizeHalf), mmmul));
+      const isimd_t hi = _mm256_cvtps_epi32(srcHi);
+      const isimd_t lo = _mm256_cvtps_epi32(srcLo);
+      const isimd_t clampHi = _mm256_min_epi32(max, _mm256_max_epi32(min, hi));
+      const isimd_t clampLo = _mm256_min_epi32(max, _mm256_max_epi32(min, lo));
+      const isimd_t prePack = _mm256_packs_epi32(clampHi, clampLo);
+      const isimd_t pack = _mm256_permute4x64_epi64(prePack, _MM_SHUFFLE(3, 1, 2, 0));
+      _mm256_storeu_si256(reinterpret_cast<isimd_t *>(pDestination + sampleIndex), pack);
+    }
+  }
+
+  for (; sampleIndex < sampleCount; sampleIndex++)
+    pDestination[sampleIndex] = mClamp((int16_t)roundf(pSource[sampleIndex] * mul), mMinValue<int16_t>(), mMaxValue<int16_t>());
+}
+
+void mAudio_ConvertFloatToInt16WithDitheringAndFactor_SSE41(size_t &sampleIndex, IN int16_t *pDestination, OUT const float_t *pSource, const size_t sampleCount, const float_t factor)
+{
+  typedef __m128 simd_t;
+  typedef __m128i isimd_t;
+
+  constexpr size_t loopSize = (sizeof(simd_t) * 2) / sizeof(float_t);
+  constexpr size_t loopSizeHalf = loopSize / 2;
+
+  const float_t mul = mMaxValue<int16_t>() * factor;
+  const simd_t mmmul = _mm_set1_ps(mul);
+
+  const simd_t dither = _mm_set_ps(.25f, -.25f, .25f, -.25f); // Fixed pattern dithering.
+
+  const isimd_t min = _mm_set1_epi32(mMinValue<int16_t>());
+  const isimd_t max = _mm_set1_epi32(mMaxValue<int16_t>());
+
+  for (; sampleIndex < sampleCount - (loopSize - 1); sampleIndex += loopSize)
+  {
+    const simd_t srcHi = _mm_add_ps(dither, _mm_mul_ps(_mm_loadu_ps(pSource + sampleIndex), mmmul));
+    const simd_t srcLo = _mm_add_ps(dither, _mm_mul_ps(_mm_loadu_ps(pSource + sampleIndex + loopSizeHalf), mmmul));
+    const isimd_t hi = _mm_cvtps_epi32(srcHi);
+    const isimd_t lo = _mm_cvtps_epi32(srcLo);
+    const isimd_t clampHi = _mm_min_epi32(max, _mm_max_epi32(min, hi));
+    const isimd_t clampLo = _mm_min_epi32(max, _mm_max_epi32(min, lo));
+    const isimd_t pack = _mm_packs_epi32(clampHi, clampLo);
+    _mm_storeu_si128(reinterpret_cast<isimd_t *>(pDestination + sampleIndex), pack);
+  }
+}
+
+mFUNCTION(mAudio_ConvertFloatToInt16WithDitheringAndFactor, IN int16_t *pDestination, OUT const float_t *pSource, const size_t sampleCount, const float_t factor)
+{
+  mFUNCTION_SETUP();
+
+  mCpuExtensions::Detect();
+
+  size_t sampleIndex = 0;
+
+  if (mCpuExtensions::avx2Supported)
+  {
+    mAudio_ConvertFloatToInt16WithDitheringAndFactor_AVX2(sampleIndex, pDestination, pSource, sampleCount, factor);
+  }
+  else
+  {
+    typedef __m128 simd_t;
+    typedef __m128i isimd_t;
+
+    constexpr size_t loopSize = (sizeof(simd_t) * 2) / sizeof(float_t);
+    constexpr size_t loopSizeHalf = loopSize / 2;
+
+    const float_t mul = mMaxValue<int16_t>() * factor;
+
+    const isimd_t packhi = _mm_set_epi8(-1, -1, -1, -1, -1, -1, -1, -1, 13, 12, 9, 8, 5, 4, 1, 0);
+    const isimd_t packlo = _mm_set_epi8(13, 12, 9, 8, 5, 4, 1, 0, -1, -1, -1, -1, -1, -1, -1, -1);
+
+    if (sampleCount >= loopSize)
+    {
+      if (mCpuExtensions::sse41Supported)
+      {
+        mAudio_ConvertFloatToInt16WithDitheringAndFactor_SSE41(sampleIndex, pDestination, pSource, sampleCount, factor);
+      }
+      else
+      {
+        const simd_t mmmul = _mm_set1_ps(mul);
+        const simd_t dither = _mm_set_ps(.25f, -.25f, .25f, -.25f); // Fixed pattern dithering.
+
+        const simd_t min = _mm_set1_ps(-1);
+        const simd_t max = _mm_set1_ps(1);
+
+        for (; sampleIndex < sampleCount - (loopSize - 1); sampleIndex += loopSize)
+        {
+          const simd_t srcHi = _mm_add_ps(dither, _mm_mul_ps(_mm_min_ps(max, _mm_max_ps(min, _mm_loadu_ps(pSource + sampleIndex))), mmmul));
+          const simd_t srcLo = _mm_add_ps(dither, _mm_mul_ps(_mm_min_ps(max, _mm_max_ps(min, _mm_loadu_ps(pSource + sampleIndex + loopSizeHalf))), mmmul));
+          const isimd_t pack = _mm_packs_epi32(_mm_cvtps_epi32(srcHi), _mm_cvtps_epi32(srcLo));
+          _mm_storeu_si128(reinterpret_cast<isimd_t *>(pDestination + sampleIndex), pack);
+        }
+      }
+    }
+
+    for (; sampleIndex < sampleCount; sampleIndex++)
+      pDestination[sampleIndex] = mClamp((int16_t)roundf(pSource[sampleIndex] * mul), mMinValue<int16_t>(), mMaxValue<int16_t>());
+  }
+
+  mRETURN_SUCCESS();
+}
+
 mFUNCTION(mAudio_SetInterleavedChannelFloat, OUT float_t *pInterleaved, IN float_t *pChannel, const size_t channelIndex, const size_t channelCount, const size_t sampleCount)
 {
   mFUNCTION_SETUP();

@@ -23,6 +23,10 @@ mFUNCTION(mAudioEngine_Destroy, IN_OUT mPtr<mAudioEngine> *pAudioEngine);
 
 mFUNCTION(mAudioEngine_SetPaused, mPtr<mAudioEngine> &audioEngine, const bool paused);
 
+// `volume`: Factor that'll be applied to the final buffer.
+mFUNCTION(mAudioEngine_SetVolume, mPtr<mAudioEngine> &audioEngine, const float_t volume);
+mFUNCTION(mAudioEngine_GetVolume, mPtr<mAudioEngine> &audioEngine, OUT float_t *pVolume);
+
 mFUNCTION(mAudioEngine_AddAudioSource, mPtr<mAudioEngine> &audioEngine, mPtr<mAudioSource> &audioSource);
 
 #endif // mAudioEngine_h__

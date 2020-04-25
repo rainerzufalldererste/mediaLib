@@ -15,6 +15,7 @@ mFUNCTION(mAudio_ExtractFloatChannelFromInterleavedInt16, OUT float_t *pChannel,
 
 mFUNCTION(mAudio_ConvertInt16ToFloat, OUT float_t *pDestination, IN const int16_t *pSource, const size_t sampleCount);
 mFUNCTION(mAudio_ConvertFloatToInt16WithDithering, IN int16_t *pDestination, OUT const float_t *pSource, const size_t sampleCount);
+mFUNCTION(mAudio_ConvertFloatToInt16WithDitheringAndFactor, IN int16_t *pDestination, OUT const float_t *pSource, const size_t sampleCount, const float_t factor);
 
 mFUNCTION(mAudio_SetInterleavedChannelFloat, OUT float_t *pInterleaved, IN float_t *pChannel, const size_t channelIndex, const size_t channelCount, const size_t sampleCount);
 mFUNCTION(mAudio_AddToInterleavedFromChannelWithVolumeFloat, OUT float_t *pInterleaved, IN float_t *pChannel, const size_t channelIndex, const size_t channelCount, const size_t sampleCount, const float_t volume);
@@ -49,6 +50,27 @@ inline float_t mAudio_FactorToDecibel(const float_t factor)
 inline float_t mAudio_DecibelToFactor(const float_t decibel)
 {
   return mPow(10.f, decibel * 0.05f);
+}
+
+// See: http://www.sengpielaudio.com/calculator-levelchange.htm
+inline float_t mAudio_LoudnessFactorToDecibel(const float_t factor)
+{
+  return 10.f * mLog2(factor);
+}
+
+inline float_t mAudio_DecibelToLoudnessFactor(const float_t decibel)
+{
+  return mPow(2.f, decibel * 0.1f);
+}
+
+inline float_t mAudio_LoudnessFactorToFactor(const float_t factor)
+{
+  return mAudio_DecibelToFactor(mAudio_LoudnessFactorToDecibel(factor));
+}
+
+inline float_t mAudio_FactorToLoudnessFactor(const float_t factor)
+{
+  return mAudio_DecibelToLoudnessFactor(mAudio_FactorToDecibel(factor));
 }
 
 //////////////////////////////////////////////////////////////////////////
