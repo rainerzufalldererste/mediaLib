@@ -48,6 +48,15 @@ mFUNCTION(mHardwareWindow_Create, OUT mPtr<mHardwareWindow> *pWindow, IN mAlloca
 
   mGL_ERROR_CHECK();
 
+  // Update Back Buffer Resolution.
+  {
+    mVec2s _size;
+    mERROR_CHECK(mHardwareWindow_GetSize(*pWindow, &_size));
+
+    mRenderParams_BackBufferResolution = _size;
+    mRenderParams_BackBufferResolutionF = mVec2f(_size);
+  }
+
   mRETURN_SUCCESS();
 }
 
@@ -68,10 +77,10 @@ mFUNCTION(mHardwareWindow_GetSize, mPtr<mHardwareWindow> &window, OUT mVec2s *pS
 
   mERROR_IF(window == nullptr || pSize == nullptr, mR_ArgumentNull);
 
-  int w, h;
-  SDL_GetWindowSize(window->pWindow, &w, &h);
+  int32_t width, height;
+  SDL_GetWindowSize(window->pWindow, &width, &height);
 
-  *pSize = mVec2s(w, h);
+  *pSize = mVec2s(width, height);
 
   mRETURN_SUCCESS();
 }
@@ -136,6 +145,9 @@ mFUNCTION(mHardwareWindow_Swap, mPtr<mHardwareWindow> &window)
       mVec2s size;
       mERROR_CHECK(mHardwareWindow_GetSize(window, &size));
 
+      mRenderParams_BackBufferResolution = size;
+      mRenderParams_BackBufferResolutionF = mVec2f(size);
+
       mERROR_CHECK(mHardwareWindow_SetAsActiveRenderTarget(window));
 
       size_t onResizeCallbackCount = 0;
@@ -170,6 +182,15 @@ mFUNCTION(mHardwareWindow_SetSize, mPtr<mHardwareWindow> &window, const mVec2s &
   mERROR_IF(size.x > INT_MAX || size.y > INT_MAX, mR_ArgumentOutOfBounds);
 
   SDL_SetWindowSize(window->pWindow, (int)size.x, (int)size.y);
+
+  // Update Back Buffer Resolution.
+  {
+    mVec2s _size;
+    mERROR_CHECK(mHardwareWindow_GetSize(window, &_size));
+
+    mRenderParams_BackBufferResolution = _size;
+    mRenderParams_BackBufferResolutionF = mVec2f(_size);
+  }
 
   mRETURN_SUCCESS();
 }

@@ -11,6 +11,9 @@
 mVec2s mRenderParams_CurrentRenderResolution;
 mVec2f mRenderParams_CurrentRenderResolutionF;
 
+mVec2s mRenderParams_BackBufferResolution;
+mVec2f mRenderParams_BackBufferResolutionF;
+
 mRenderContextId mRenderParams_CurrentRenderContext;
 
 #if defined(mRENDERER_OPENGL)

@@ -80,6 +80,8 @@ mFUNCTION(mFramebuffer_Bind, mPtr<mFramebuffer> &framebuffer)
   mERROR_IF(framebuffer == nullptr, mR_ArgumentNull);
 
 #if defined(mRENDERER_OPENGL)
+  mGL_DEBUG_ERROR_CHECK();
+
   glBindFramebuffer(GL_FRAMEBUFFER, framebuffer->frameBufferHandle);
   mERROR_CHECK(mRenderParams_SetCurrentRenderResolution(framebuffer->size));
   mFrameBuffer_ActiveFrameBufferHandle = framebuffer->frameBufferHandle;
@@ -101,8 +103,11 @@ mFUNCTION(mFramebuffer_Unbind)
 
 #if defined(mRENDERER_OPENGL)
   mGL_DEBUG_ERROR_CHECK();
+  
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  mERROR_CHECK(mRenderParams_SetCurrentRenderResolution(mRenderParams_BackBufferResolution));
   mFrameBuffer_ActiveFrameBufferHandle = 0;
+  
   mGL_DEBUG_ERROR_CHECK();
 
 #else

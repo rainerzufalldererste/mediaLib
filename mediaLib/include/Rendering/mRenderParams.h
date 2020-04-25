@@ -16,6 +16,8 @@
 
 extern mVec2s mRenderParams_CurrentRenderResolution;
 extern mVec2f mRenderParams_CurrentRenderResolutionF;
+extern mVec2s mRenderParams_BackBufferResolution;
+extern mVec2f mRenderParams_BackBufferResolutionF;
 
 typedef size_t mRenderContextId;
 extern mRenderContextId mRenderParams_CurrentRenderContext;
