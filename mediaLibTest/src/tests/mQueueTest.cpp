@@ -1,5 +1,6 @@
 #include "mTestLib.h"
 #include "mQueue.h"
+#include "mKeyValuePair.h"
 
 mTEST(mQueue, TestCreate)
 {
@@ -464,6 +465,246 @@ mTEST(mQueue, TestPopAt)
   mTEST_ALLOCATOR_ZERO_CHECK();
 }
 
+mTEST(mQueue, TestPopAtCppClass)
+{
+  mTEST_ALLOCATOR_SETUP();
+  mTEST_ASSERT_EQUAL(0, mTestCppClass::GlobalCount());
+
+  {
+    size_t classIndex = 0x12345;
+
+    mPtr<mQueue<mTestCppClass>> queue;
+    mDEFER_CALL(&queue, mQueue_Destroy);
+
+    // Test for argument null error.
+    {
+      mTestCppClass unused;
+      mTEST_ASSERT_EQUAL(mR_ArgumentNull, mQueue_PopAt(queue, 0, &unused));
+    }
+
+    mTEST_ASSERT_SUCCESS(mQueue_Create(&queue, pAllocator));
+
+    std::vector<size_t> comparisonVector;
+
+    // Test for out of bounds error.
+    {
+      mTestCppClass unused;
+      mTEST_ASSERT_EQUAL(mR_IndexOutOfBounds, mQueue_PopAt(queue, 0, &unused));
+    }
+
+    const size_t maxCount = 128;
+    mTEST_ASSERT_SUCCESS(mQueue_Reserve(queue, maxCount));
+
+    int64_t number = 0;
+    size_t count = 0;
+
+    while (count++ < maxCount)
+    {
+      mTestCppClass dummy((size_t)(number + (int64_t)maxCount));
+
+      if (number > 0)
+      {
+        mTEST_ASSERT_SUCCESS(mQueue_PushBack(queue, &dummy));
+        comparisonVector.push_back(dummy.pData->data);
+      }
+      else
+      {
+        mTEST_ASSERT_SUCCESS(mQueue_PushFront(queue, &dummy));
+        comparisonVector.insert(comparisonVector.begin(), dummy.pData->data);
+      }
+
+      number = -number;
+
+      if (number >= 0)
+        ++number;
+    }
+
+    // Test for argument null value (for the parameter).
+    {
+      mTEST_ASSERT_EQUAL(mR_ArgumentNull, mQueue_PopAt(queue, 0, (mTestCppClass *)nullptr));
+    }
+
+    // Make sure test data is what we expect it to be.
+    {
+      size_t queueCount;
+      mTEST_ASSERT_SUCCESS(mQueue_GetCount(queue, &queueCount));
+      mTEST_ASSERT_EQUAL(queueCount, maxCount);
+
+      for (size_t i = 0; i < maxCount - 1; i++)
+      {
+        mTestCppClass *pDummy0;
+        mTEST_ASSERT_SUCCESS(mQueue_PointerAt(queue, i, &pDummy0));
+
+        mTestCppClass *pDummy1;
+        mTEST_ASSERT_SUCCESS(mQueue_PointerAt(queue, i + 1, &pDummy1));
+
+        mTEST_ASSERT_TRUE(pDummy0->pData->data < pDummy1->pData->data);
+        mTEST_ASSERT_EQUAL(pDummy0->pData->data, pDummy1->pData->data - 1);
+        mTEST_ASSERT_EQUAL(pDummy0->pData->data, comparisonVector[i]);
+        mTEST_ASSERT_EQUAL(pDummy1->pData->data, comparisonVector[i + 1]);
+      }
+    }
+
+    // Start popping
+    {
+      // Pop around wrap.
+      {
+        size_t index = queue->size - queue->startIndex - 1;
+
+        for (size_t i = 0; i < 5; i++)
+        {
+          mTestCppClass dummy;
+          mTEST_ASSERT_SUCCESS(mQueue_PopAt(queue, index + i, &dummy));
+
+          const size_t comparisonNumber = comparisonVector[index + i];
+          mTEST_ASSERT_EQUAL(comparisonNumber, dummy.pData->data);
+          mTEST_ASSERT_SUCCESS(mDestruct(&dummy));
+
+          comparisonVector.erase(comparisonVector.begin() + (index + i));
+
+          size_t queueCount;
+          mTEST_ASSERT_SUCCESS(mQueue_GetCount(queue, &queueCount));
+          mTEST_ASSERT_EQUAL(queueCount, comparisonVector.size());
+
+          for (size_t j = 0; j < comparisonVector.size(); j++)
+          {
+            mTestCppClass *pDummy;
+            mTEST_ASSERT_SUCCESS(mQueue_PointerAt(queue, j, &pDummy));
+
+            mTEST_ASSERT_EQUAL(pDummy->pData->data, comparisonVector[j]);
+          }
+        }
+      }
+
+      {
+        size_t remainingSize;
+        mTEST_ASSERT_SUCCESS(mQueue_GetCount(queue, &remainingSize));
+
+        while (remainingSize-- > 1)
+        {
+          mTEST_ASSERT_EQUAL(comparisonVector.size() - 1, remainingSize);
+
+          mTestCppClass dummy;
+          mTEST_ASSERT_SUCCESS(mQueue_PopAt(queue, remainingSize - 1, &dummy)); // second last.
+
+          const size_t comparisonNumber = comparisonVector[remainingSize - 1];
+          mTEST_ASSERT_EQUAL(comparisonNumber, dummy.pData->data);
+          mTEST_ASSERT_SUCCESS(mDestruct(&dummy));
+
+          comparisonVector.erase(comparisonVector.begin() + (remainingSize - 1));
+
+          mTEST_ASSERT_SUCCESS(mQueue_GetCount(queue, &remainingSize));
+          mTEST_ASSERT_EQUAL(remainingSize, comparisonVector.size());
+
+          for (size_t j = 0; j < comparisonVector.size(); j++)
+          {
+            mTestCppClass *pDummy;
+            mTEST_ASSERT_SUCCESS(mQueue_PointerAt(queue, j, &pDummy));
+
+            mTEST_ASSERT_EQUAL(pDummy->pData->data, comparisonVector[j]);
+          }
+        }
+      }
+    }
+
+    mTEST_ASSERT_SUCCESS(mQueue_Clear(queue));
+    comparisonVector.clear();
+
+    // Pop first & pop last
+    {
+      for (size_t i = 0; i < 3; i++)
+      {
+        mTestCppClass dummy(++classIndex);
+        mTEST_ASSERT_SUCCESS(mQueue_PushBack(queue, &dummy));
+        comparisonVector.push_back(dummy.pData->data);
+      }
+
+      // Pop first.
+      {
+        mTestCppClass dummy;
+        mTEST_ASSERT_SUCCESS(mQueue_PopAt(queue, 0, &dummy));
+
+        const size_t comparisonNumber = comparisonVector[0];
+        mTEST_ASSERT_EQUAL(comparisonNumber, dummy.pData->data);
+        mTEST_ASSERT_SUCCESS(mDestruct(&dummy));
+
+        comparisonVector.erase(comparisonVector.begin());
+
+        size_t queueCount;
+        mTEST_ASSERT_SUCCESS(mQueue_GetCount(queue, &queueCount));
+        mTEST_ASSERT_EQUAL(queueCount, comparisonVector.size());
+      }
+
+      // Pop last.
+      {
+        mTestCppClass dummy;
+        mTEST_ASSERT_SUCCESS(mQueue_PopAt(queue, comparisonVector.size() - 1, &dummy));
+
+        const size_t comparisonNumber = comparisonVector[comparisonVector.size() - 1];
+        mTEST_ASSERT_EQUAL(comparisonNumber, dummy.pData->data);
+        mTEST_ASSERT_SUCCESS(mDestruct(&dummy));
+
+        comparisonVector.erase(comparisonVector.begin() + (comparisonVector.size() - 1));
+
+        size_t queueCount;
+        mTEST_ASSERT_SUCCESS(mQueue_GetCount(queue, &queueCount));
+        mTEST_ASSERT_EQUAL(queueCount, comparisonVector.size());
+      }
+
+      mTEST_ASSERT_SUCCESS(mQueue_Clear(queue));
+      comparisonVector.clear();
+    }
+
+    // Add data again.
+    {
+      for (size_t i = 0; i < maxCount; i++)
+      {
+        mTestCppClass dummy(++classIndex);
+
+        if ((i & 1) != 0 || (i & 8) != 0) // to get an odd distribution.
+        {
+          mTEST_ASSERT_SUCCESS(mQueue_PushBack(queue, &dummy));
+          comparisonVector.push_back(dummy.pData->data);
+        }
+        else
+        {
+          mTEST_ASSERT_SUCCESS(mQueue_PushFront(queue, &dummy));
+          comparisonVector.insert(comparisonVector.begin(), dummy.pData->data);
+        }
+      }
+    }
+
+    // Pop in a different way.
+    {
+      for (size_t i = 0; i < maxCount - 10; i++)
+      {
+        mTestCppClass dummy;
+        mTEST_ASSERT_SUCCESS(mQueue_PopAt(queue, 5, &dummy)); // second last.
+
+        const size_t comparisonNumber = comparisonVector[5];
+        mTEST_ASSERT_SUCCESS(mDestruct(&dummy));
+
+        comparisonVector.erase(comparisonVector.begin() + 5);
+
+        size_t queueCount;
+        mTEST_ASSERT_SUCCESS(mQueue_GetCount(queue, &queueCount));
+        mTEST_ASSERT_EQUAL(queueCount, comparisonVector.size());
+
+        for (size_t j = 0; j < comparisonVector.size(); j++)
+        {
+          mTestCppClass *pDummy;
+          mTEST_ASSERT_SUCCESS(mQueue_PointerAt(queue, j, &pDummy));
+
+          mTEST_ASSERT_EQUAL(pDummy->pData->data, comparisonVector[j]);
+        }
+      }
+    }
+  }
+
+  mTEST_ASSERT_EQUAL(0, mTestCppClass::GlobalCount());
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}
+
 mTEST(mQueue, TestContainCppClass)
 {
   mTEST_ASSERT_EQUAL(0, mTestCppClass::GlobalCount());
@@ -496,9 +737,155 @@ mTEST(mQueue, TestContainCppClass)
       for (size_t i = 0; i < 100; i++)
         mTEST_ASSERT_SUCCESS(mQueue_PushFront(queue, mTestCppClass(i)));
     }
+
+    {
+      mTEST_ASSERT_SUCCESS(mQueue_Create(&queue, pAllocator));
+
+      mTEST_ASSERT_SUCCESS(mQueue_PushBack(queue, mTestCppClass(0)));
+      mTEST_ASSERT_SUCCESS(mQueue_PushBack(queue, mTestCppClass(1)));
+      mTEST_ASSERT_SUCCESS(mQueue_PushBack(queue, mTestCppClass(2)));
+      
+      mTestCppClass a;
+      mTEST_ASSERT_SUCCESS(mQueue_PopFront(queue, &a));
+      mTEST_ASSERT_SUCCESS(mQueue_PushBack(queue, mTestCppClass(3)));
+
+      mTEST_ASSERT_SUCCESS(mQueue_PopAt(queue, 1, &a));
+      mTEST_ASSERT_SUCCESS(mQueue_PushBack(queue, std::move(a)));
+    }
   }
 
   mTEST_ASSERT_EQUAL(0, mTestCppClass::GlobalCount());
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}
+
+mTEST(mQueue, TestInplaceString)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  mPtr<mQueue<mInplaceString<0x4000>>> queue = nullptr;
+  mDEFER_CALL(&queue, mQueue_Destroy);
+
+  mInplaceString<0x4000> testString0;
+  mTEST_ASSERT_SUCCESS(mInplaceString_CreateRaw(&testString0, "test string 0 1 2 3 4 5 6 7"));
+
+  mInplaceString<0x4000> testString1;
+  mTEST_ASSERT_SUCCESS(mInplaceString_CreateRaw(&testString1, "test string 0 1 2 3 4 5 6 7 8"));
+
+  mInplaceString<0x4000> testString2;
+  mTEST_ASSERT_SUCCESS(mInplaceString_CreateRaw(&testString2, "test string 0 1 2 3 4 5 6 7 8 9"));
+
+  {
+    mTEST_ASSERT_SUCCESS(mQueue_Create(&queue, pAllocator));
+
+    mTEST_ASSERT_SUCCESS(mQueue_PushBack(queue, testString0));
+    mTEST_ASSERT_SUCCESS(mQueue_PushBack(queue, testString1));
+    mTEST_ASSERT_SUCCESS(mQueue_PushBack(queue, testString2));
+    mTEST_ASSERT_SUCCESS(mQueue_PushBack(queue, testString0));
+    mTEST_ASSERT_SUCCESS(mQueue_PushBack(queue, testString1));
+    mTEST_ASSERT_SUCCESS(mQueue_PushBack(queue, testString2));
+
+    mInplaceString<0x4000> a;
+
+    for (size_t i = 0; i < 100; i++)
+    {
+      mTEST_ASSERT_SUCCESS(mQueue_PopFront(queue, &a));
+      mTEST_ASSERT_SUCCESS(mQueue_PushBack(queue, testString0));
+
+      mTEST_ASSERT_SUCCESS(mQueue_PopAt(queue, (i % 3) + 1, &a));
+      mTEST_ASSERT_SUCCESS(mQueue_PushBack(queue, std::move(a)));
+    }
+  }
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}
+
+mTEST(mQueue, TestPopAtErrorCase)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  struct htMapVersion
+  {
+    mInplaceString<0xFF> string;
+    size_t valueA, valueB;
+
+    bool operator ==(const htMapVersion &other)
+    {
+      return string == other.string && valueA == other.valueA && valueB == other.valueB;
+    }
+
+    bool operator !=(const htMapVersion &other)
+    {
+      return string != other.string || valueA != other.valueA || valueB != other.valueB;
+    }
+  };
+
+  mPtr<mQueue<mKeyValuePair<htMapVersion, mPtr<size_t>>>> queue;
+
+  if (queue == nullptr)
+    mTEST_ASSERT_SUCCESS(mQueue_Create(&queue, pAllocator));
+
+  struct _internal
+  {
+    static mFUNCTION(AddToQueue, mPtr<mQueue<mKeyValuePair<htMapVersion, mPtr<size_t>>>> queue, mKeyValuePair<htMapVersion, mPtr<size_t>> value)
+    {
+      mFUNCTION_SETUP();
+
+      if (queue->count > 4)
+      {
+        mKeyValuePair<htMapVersion, mPtr<size_t>> oldValue;
+
+        mERROR_CHECK(mQueue_PopBack(queue, &oldValue));
+        mERROR_CHECK(mSharedPointer_Destroy(&oldValue.value));
+      }
+
+      mERROR_CHECK(mQueue_PushFront(queue, value));
+
+      mRETURN_SUCCESS();
+    }
+
+    static mFUNCTION(MoveToFront, mPtr<mQueue<mKeyValuePair<htMapVersion, mPtr<size_t>>>> queue, const size_t index)
+    {
+      mFUNCTION_SETUP();
+
+      if (index == 0)
+        mRETURN_SUCCESS();
+
+      mKeyValuePair<htMapVersion, mPtr<size_t>> oldValue;
+
+      mERROR_CHECK(mQueue_PopAt(queue, index, &oldValue));
+      mERROR_CHECK(mQueue_PushFront(queue, std::move(oldValue)));
+
+      mRETURN_SUCCESS();
+    }
+  };
+
+  for (size_t i = 0; i < 10; i++)
+  {
+    for (size_t j = 0; j < 25; j++)
+    {
+      if ((j + i) % 5 > 2 || queue->count < 5)
+      {
+        mPtr<size_t> data;
+        mTEST_ASSERT_SUCCESS(mSharedPointer_Allocate(&data, pAllocator, 1));
+        *data = j;
+
+        htMapVersion mapVersion;
+        mapVersion.valueA = i * j;
+        mTEST_ASSERT_SUCCESS(mInplaceString_CreateRaw(&mapVersion.string, "this is a test string that might cause some trouble."));
+
+        mKeyValuePair<htMapVersion, mPtr<size_t>> value;
+        value.key = mapVersion;
+        value.value = data;
+
+        mTEST_ASSERT_SUCCESS(_internal::AddToQueue(queue, value));
+      }
+      else
+      {
+        mTEST_ASSERT_SUCCESS(_internal::MoveToFront(queue, (i % 3) + 1));
+      }
+    }
+  }
+
   mTEST_ALLOCATOR_ZERO_CHECK();
 }
 

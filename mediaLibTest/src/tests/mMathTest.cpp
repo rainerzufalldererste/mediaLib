@@ -12,6 +12,8 @@ mTEST(mMath, TestIsPrime)
   mTEST_ASSERT_TRUE(mIsPrime(0x10001));
   mTEST_ASSERT_FALSE(mIsPrime(0x10000));
   mTEST_ASSERT_FALSE(mIsPrime(0xFFFF));
+
+  mTEST_RETURN_SUCCESS();
 }
 
 mTEST(mMath, TestVec2Constuct)

@@ -110,6 +110,18 @@ extern size_t mTestDestructible_Count;
   mUnused(pAllocator); \
   { 
 
+#ifdef mDEBUG_MEMORY_ALLOCATIONS
+#define mTEST_ALLOCATOR_ZERO_CHECK() \
+  } \
+  do \
+  { size_t allocationCount = (size_t)-1; \
+    mTEST_ASSERT_SUCCESS(mTestAllocator_GetCount(&__testAllocator, &allocationCount)); \
+    if (allocationCount != 0) \
+      mAllocatorDebugging_PrintRemainingMemoryAllocations(&__testAllocator); \
+    mTEST_ASSERT_EQUAL(allocationCount, 0); \
+    mTEST_RETURN_SUCCESS(); \
+  } while (0)
+#else
 #define mTEST_ALLOCATOR_ZERO_CHECK() \
   } \
   do \
@@ -118,6 +130,7 @@ extern size_t mTestDestructible_Count;
     mTEST_ASSERT_EQUAL(allocationCount, 0); \
     mTEST_RETURN_SUCCESS(); \
   } while (0)
+#endif
 
 void mTestLib_Initialize();
 mFUNCTION(mTestLib_RunAllTests, int *pArgc, char **pArgv);

@@ -271,6 +271,9 @@ struct mInplaceString
   template <size_t TOtherCount>
   bool operator != (const mInplaceString<TOtherCount> &other) const;
 
+  bool operator == (const mString &other) const;
+  bool operator != (const mString &other) const;
+
   mUtf8StringIterator begin() const;
   mUtf8StringIterator end() const;
 };
@@ -383,6 +386,21 @@ inline bool mInplaceString<TCount>::operator==(const mInplaceString<TOtherCount>
 template<size_t TCount>
 template<size_t TOtherCount>
 inline bool mInplaceString<TCount>::operator!=(const mInplaceString<TOtherCount> &other) const
+{
+  return !(*this == other);
+}
+
+template<size_t TCount>
+bool mInplaceString<TCount>::operator == (const mString &other) const
+{
+  if (other.bytes != bytes || other.count != this->count || other.hasFailed)
+    return false;
+
+  return mInplaceString_StringsAreEqual_Internal(text, other.text, bytes, count);
+}
+
+template<size_t TCount>
+bool mInplaceString<TCount>::operator != (const mString &other) const
 {
   return !(*this == other);
 }

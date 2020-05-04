@@ -518,14 +518,14 @@ inline mFUNCTION(mQueue_PopAt, mPtr<mQueue<T>> &queue, size_t index, OUT T *pIte
   if (queue->startIndex + index < queue->size)
   {
     if (queueIndex + 1 != queue->size)
-      mERROR_CHECK(mAllocator_Move(queue->pAllocator, &queue->pData[queueIndex], &queue->pData[queueIndex + 1], queue->size - (queue->startIndex + index)));
+      mERROR_CHECK(mAllocator_Move(queue->pAllocator, &queue->pData[queueIndex], &queue->pData[queueIndex + 1], mMin(queue->size, queue->startIndex + queue->count) - (queue->startIndex + index) - 1));
 
     if (queue->startIndex + queue->count > queue->size)
     {
       new (&queue->pData[queue->size - 1]) T(std::move(queue->pData[0]));
 
       if (queue->startIndex + queue->count - 1 > queue->size)
-        mERROR_CHECK(mAllocator_Move(queue->pAllocator, &queue->pData[0], &queue->pData[1], queue->count - (queue->size - queue->startIndex)));
+        mERROR_CHECK(mAllocator_Move(queue->pAllocator, &queue->pData[0], &queue->pData[1], queue->count - (queue->size - queue->startIndex) - 1));
     }
   }
   else
