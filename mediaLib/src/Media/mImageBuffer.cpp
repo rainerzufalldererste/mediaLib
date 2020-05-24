@@ -1,5 +1,7 @@
 #include "mImageBuffer.h"
+
 #include "mFile.h"
+#include "mProfiler.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #pragma warning(push)
@@ -459,6 +461,8 @@ mFUNCTION(mImageBuffer_SetToFile, mPtr<mImageBuffer> &imageBuffer, const mString
 
   mERROR_IF(imageBuffer == nullptr, mR_ArgumentNull);
   mERROR_IF(filename.hasFailed || filename.text == nullptr, mR_InvalidParameter);
+
+  mPROFILE_SCOPED("mImageBuffer_SetToFile");
 
   bool fileExists = false;
   mERROR_CHECK(mFile_Exists(filename, &fileExists));

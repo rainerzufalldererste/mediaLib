@@ -3,6 +3,7 @@
 #include "mThreading.h"
 #include "mPool.h"
 #include "mQueue.h"
+#include "mProfiler.h"
 
 #define DECLSPEC
 #include "SDL.h"
@@ -165,6 +166,8 @@ void SDLCALL mAudioEngine_AudioCallback_Internal(IN void *pUserData, OUT uint8_t
 
   mFUNCTION_SETUP();
 
+  mPROFILE_SCOPED("mAudioEngine_AudioCallback");
+
   mERROR_IF_GOTO(length / sizeof(int16_t) != pAudioEngine->bufferSize * pAudioEngine->channelCount, mR_ResourceIncompatible, mSTDRESULT, epilogue);
   
   size_t i = 0;
@@ -249,6 +252,8 @@ mFUNCTION(mAudioEngine_ManagedAudioCallback_Internal, IN mAudioEngine *pAudioEng
   mFUNCTION_SETUP();
 
   mERROR_IF(pAudioEngine == nullptr || pStream == nullptr, mR_ArgumentNull);
+
+  mPROFILE_SCOPED("mAudioEngine_ManagedAudioCallback");
 
   const size_t perChannelLength = length / pAudioEngine->channelCount;
 

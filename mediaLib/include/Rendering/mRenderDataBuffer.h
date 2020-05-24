@@ -3,6 +3,7 @@
 
 #include "mRenderParams.h"
 #include "mShader.h"
+#include "mProfiler.h"
 
 #ifdef GIT_BUILD // Define __M_FILE__
   #ifdef __M_FILE__
@@ -213,6 +214,8 @@ inline mFUNCTION(mRenderDataBuffer_SetVertexBuffer, mRenderDataBuffer<Args...> &
   const size_t singleBlockSize = mRDBAttributeQuery_Internal<Args...>::GetSize();
   mERROR_IF(singleBlockSize == 0, mR_ResourceStateInvalid);
 
+  mPROFILE_SCOPED("mRenderDataBuffer_SetVertexBuffer");
+
 #if defined(mRENDERER_OPENGL)
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
   glBindBuffer(GL_ARRAY_BUFFER, buffer.vbo);
@@ -259,6 +262,8 @@ inline mFUNCTION(mRenderDataBuffer_Draw, mRenderDataBuffer<Args...> &buffer)
   mFUNCTION_SETUP();
 
   mERROR_IF(!buffer.validVBO && mRDBAttributeQuery_Internal<Args...>::GetSize() > 0, mR_ResourceStateInvalid);
+
+  mPROFILE_SCOPED("mRenderDataBuffer_Draw");
 
   mGL_DEBUG_ERROR_CHECK();
 

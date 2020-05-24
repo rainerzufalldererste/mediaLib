@@ -5,6 +5,8 @@
 #include "mIndexedRenderDataBuffer.h"
 #include "mBinaryChunk.h"
 
+#include "mProfiler.h"
+
 #pragma warning(push, 0)
 #include "freetype-gl/include/freetype-gl.h"
 #include "freetype-gl/include/texture-atlas.h"
@@ -727,6 +729,8 @@ mFUNCTION(mFontRenderer_DrawEnqueuedText_Internal, mPtr<mFontRenderer> &fontRend
 {
   mFUNCTION_SETUP();
 
+  mPROFILE_SCOPED("mFontRenderer_DrawEnqueuedText");
+
 #if defined(mRENDERER_OPENGL)
 
   size_t count = 0;
@@ -903,6 +907,8 @@ mFUNCTION(mFontRenderer_LoadGlyph_Internal, mPtr<mFontRenderer> &fontRenderer, m
       }
     }
   }
+
+  mPROFILE_SCOPED("mFontRenderer_LoadGlyph");
 
   // Load glyph.
   size_t glyphLoaded = texture_font_load_glyph(pFontDescription->pTextureFont, character, checkBackupFonts ? TRUE : FALSE);
