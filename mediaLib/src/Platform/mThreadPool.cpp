@@ -177,7 +177,7 @@ mFUNCTION(mTask_Abort, IN mTask *pTask)
 
   mERROR_IF(pTask == nullptr, mR_ArgumentNull);
 
-  if (pTask->state < mTask_State::mT_S_Running)
+  if (pTask->state < mTask_State::mT_S_Running && pTask->state != mTask_State::mT_S_NotInitialized)
   {
     if (pTask->pSemaphore != nullptr)
       mERROR_CHECK(mSemaphore_Lock(pTask->pSemaphore));
