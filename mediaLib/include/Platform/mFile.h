@@ -48,6 +48,7 @@ mFUNCTION(mFile_WriteRaw, IN const wchar_t *filename, IN T *pData, const size_t 
 template <typename T>
 mFUNCTION(mFile_WriteRaw, const mString &filename, IN T *pData, const size_t count);
 
+mFUNCTION(mFile_FailOnInvalidDirectoryPath, const mString &folderPath, OUT OPTIONAL mString *pAbsolutePath);
 mFUNCTION(mFile_CreateDirectory, const mString &folderPath);
 mFUNCTION(mFile_DeleteFolder, const mString &folderPath);
 mFUNCTION(mFile_Copy, const mString &destinationFileName, const mString &sourceFileName, const bool overrideFileIfExistent = false);

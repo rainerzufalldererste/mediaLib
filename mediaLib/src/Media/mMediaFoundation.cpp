@@ -1,4 +1,5 @@
 #include "mMediaFoundation.h"
+
 #include <mfapi.h>
 
 #pragma comment(lib, "dxva2.lib")

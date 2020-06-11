@@ -7,6 +7,12 @@
 #include <knownfolders.h>
 #include <Shlwapi.h>
 
+#if (NTDDI_VERSION >= NTDDI_WIN8)
+#include "pathcch.h"
+
+#pragma comment(lib, "Pathcch.lib")
+#endif
+
 #ifdef GIT_BUILD // Define __M_FILE__
   #ifdef __M_FILE__
     #undef __M_FILE__
@@ -156,7 +162,7 @@ mFUNCTION(mFile_WriteAllText, const mString &filename, const mString &text, cons
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mFile_CreateDirectory, const mString &folderPath)
+mFUNCTION(mFile_FailOnInvalidDirectoryPath, const mString &folderPath, OUT OPTIONAL mString *pAbsolutePath)
 {
   mFUNCTION_SETUP();
 
@@ -164,6 +170,11 @@ mFUNCTION(mFile_CreateDirectory, const mString &folderPath)
 
   mString path;
   mERROR_CHECK(mFile_GetAbsoluteDirectoryPath(&path, folderPath));
+
+  mDEFER(
+    if (pAbsolutePath != nullptr)
+      *pAbsolutePath = std::move(path);
+  );
 
   // Prevent user from creating a directory that windows explorer doesn't support.
   {
@@ -198,6 +209,16 @@ mFUNCTION(mFile_CreateDirectory, const mString &folderPath)
 
     mERROR_IF(lastWasSpaceOrDot, mR_InvalidParameter);
   }
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mFile_CreateDirectory, const mString &folderPath)
+{
+  mFUNCTION_SETUP();
+
+  mString path;
+  mERROR_CHECK(mFile_FailOnInvalidDirectoryPath(folderPath, &path));
 
   wchar_t wDirectoryName[MAX_PATH];
   mERROR_CHECK(mString_ToWideString(path, wDirectoryName, mARRAYSIZE(wDirectoryName)));
@@ -642,15 +663,20 @@ mFUNCTION(mFile_ExtractDirectoryFromPath, OUT mString *pDirectory, const mString
   wchar_t wPath[MAX_PATH];
   mERROR_CHECK(mString_ToWideString(filePath, wPath, mARRAYSIZE(wPath)));
 
-//#if (NTDDI_VERSION >= NTDDI_WIN8)
-//  HRESULT hr = S_OK;
-//
-//  // Requires `pathcch.h` && `Pathcch.lib`.
-//  mERROR_IF(FAILED(hr = PathCchRemoveFileSpec(wPath, mARRAYSIZE(wPath))), mR_InternalError); // S_OK, or S_FALSE if nothing was removed.
-//#else
-  const BOOL result = PathRemoveFileSpecW(wPath); // deprecated since windows 8.
-  mUnused(result); // result is true if something was removed, however we don't actually care.
-//#endif
+#if (NTDDI_VERSION >= NTDDI_WIN8)
+  HRESULT hr = S_OK;
+
+  // Requires `pathcch.h` && `Pathcch.lib`.
+  mERROR_IF(FAILED(hr = PathCchRemoveFileSpec(wPath, mARRAYSIZE(wPath))), mR_InternalError); // on success returns `S_OK`, or `S_FALSE` if nothing was removed.
+  //mERROR_IF(hr == S_FALSE, mR_InvalidParameter); // we don't actually care, do we?
+  mUnused(hr);
+#else
+  // deprecated since windows 8.
+  const BOOL result = PathRemoveFileSpecW(wPath); // result is true if something was removed.
+
+  //mERROR_IF(result, mR_InvalidParameter); // we don't actually care.
+  mUnused(result);
+#endif
 
   mERROR_CHECK(mString_Create(pDirectory, wPath, mARRAYSIZE(wPath), pDirectory->pAllocator));
 
