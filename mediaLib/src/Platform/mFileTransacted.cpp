@@ -279,7 +279,7 @@ mFUNCTION(mFileTransaction_MoveFile, mPtr<mFileTransaction> &transaction, const 
   wchar_t wTarget[MAX_PATH];
   mERROR_CHECK(mString_ToWideString(target, wTarget, mARRAYSIZE(wSource)));
 
-  if (0 == MoveFileTransactedW(wSource, wTarget, nullptr, nullptr, MOVEFILE_COPY_ALLOWED | (replaceIfExistent ? 0 : MOVEFILE_REPLACE_EXISTING), transaction->transactionHandle))
+  if (0 == MoveFileTransactedW(wSource, wTarget, nullptr, nullptr, MOVEFILE_COPY_ALLOWED | (replaceIfExistent ? MOVEFILE_REPLACE_EXISTING : 0), transaction->transactionHandle))
   {
     DWORD error = GetLastError();
 
