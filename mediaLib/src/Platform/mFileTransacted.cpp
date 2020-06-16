@@ -195,7 +195,7 @@ mFUNCTION(mFileTransaction_DeleteFile, mPtr<mFileTransaction> &transaction, cons
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mFileTransaction_CopyFile, mPtr<mFileTransaction> &transaction, const mString &target, const mString &source)
+mFUNCTION(mFileTransaction_CopyFile, mPtr<mFileTransaction> &transaction, const mString &target, const mString &source, const bool replaceIfExistent)
 {
   mFUNCTION_SETUP();
 
@@ -209,14 +209,18 @@ mFUNCTION(mFileTransaction_CopyFile, mPtr<mFileTransaction> &transaction, const 
   wchar_t wTarget[MAX_PATH];
   mERROR_CHECK(mString_ToWideString(target, wTarget, mARRAYSIZE(wSource)));
 
-  if (0 == CopyFileTransactedW(wSource, wTarget, nullptr, nullptr, nullptr, 0, transaction->transactionHandle))
+  if (0 == CopyFileTransactedW(wSource, wTarget, nullptr, nullptr, nullptr, replaceIfExistent ? 0 : COPY_FILE_FAIL_IF_EXISTS, transaction->transactionHandle))
   {
     DWORD error = GetLastError();
+
+    mERROR_IF(error == ERROR_ALREADY_EXISTS && !replaceIfExistent, mR_Failure);
 
     if (error == ERROR_PATH_NOT_FOUND)
     {
       HANDLE fileHandle = CreateFileTransactedW(wTarget, GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr, transaction->transactionHandle, nullptr, nullptr);
       error = GetLastError(); // Might be `ERROR_ALREADY_EXISTS` even if the `fileHandle` is valid.
+
+      mERROR_IF(error == ERROR_ALREADY_EXISTS && !replaceIfExistent, mR_Failure);
 
       if (fileHandle == INVALID_HANDLE_VALUE && error == ERROR_PATH_NOT_FOUND)
       {
@@ -244,6 +248,76 @@ mFUNCTION(mFileTransaction_CopyFile, mPtr<mFileTransaction> &transaction, const 
       CloseHandle(fileHandle);
 
       if (0 == CopyFileTransactedW(wSource, wTarget, nullptr, nullptr, nullptr, 0, transaction->transactionHandle))
+      {
+        error = GetLastError();
+
+        mRETURN_RESULT(mR_ResourceNotFound);
+      }
+      else
+      {
+        mRETURN_SUCCESS();
+      }
+    }
+
+    mRETURN_RESULT(mR_IOFailure);
+  }
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mFileTransaction_MoveFile, mPtr<mFileTransaction> &transaction, const mString &target, const mString &source, const bool replaceIfExistent)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(transaction == nullptr, mR_ArgumentNull);
+  mERROR_IF(transaction->hasBeenTransacted, mR_ResourceStateInvalid);
+  mERROR_IF(target.hasFailed || source.hasFailed || target.bytes <= 1 || source.bytes <= 1, mR_InvalidParameter);
+
+  wchar_t wSource[MAX_PATH];
+  mERROR_CHECK(mString_ToWideString(source, wSource, mARRAYSIZE(wSource)));
+
+  wchar_t wTarget[MAX_PATH];
+  mERROR_CHECK(mString_ToWideString(target, wTarget, mARRAYSIZE(wSource)));
+
+  if (0 == MoveFileTransactedW(wSource, wTarget, nullptr, nullptr, MOVEFILE_COPY_ALLOWED | (replaceIfExistent ? 0 : MOVEFILE_REPLACE_EXISTING), transaction->transactionHandle))
+  {
+    DWORD error = GetLastError();
+
+    mERROR_IF(error == ERROR_ALREADY_EXISTS && !replaceIfExistent, mR_Failure);
+
+    if (error == ERROR_PATH_NOT_FOUND)
+    {
+      HANDLE fileHandle = CreateFileTransactedW(wTarget, GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr, transaction->transactionHandle, nullptr, nullptr);
+      error = GetLastError(); // Might be `ERROR_ALREADY_EXISTS` even if the `fileHandle` is valid.
+
+      mERROR_IF(error == ERROR_ALREADY_EXISTS && !replaceIfExistent, mR_Failure);
+
+      if (fileHandle == INVALID_HANDLE_VALUE && error == ERROR_PATH_NOT_FOUND)
+      {
+        wchar_t parentDirectory[MAX_PATH];
+        mERROR_CHECK(mStringCopy(parentDirectory, mARRAYSIZE(parentDirectory), wTarget, MAX_PATH));
+
+#if (NTDDI_VERSION >= NTDDI_WIN8)
+        HRESULT hr = S_OK;
+
+        // Requires `pathcch.h` && `Pathcch.lib`.
+        mERROR_IF(FAILED(hr = PathCchRemoveFileSpec(parentDirectory, mARRAYSIZE(parentDirectory))), mR_InternalError);
+        mERROR_IF(hr == S_FALSE, mR_InvalidParameter);
+#else
+        // deprecated since windows 8.
+        mERROR_IF(PathRemoveFileSpecW(parentDirectory), mR_InvalidParameter);
+#endif
+
+        mERROR_CHECK(_CreateDirectoryRecursive(transaction, parentDirectory));
+
+        fileHandle = CreateFileTransactedW(wTarget, GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr, transaction->transactionHandle, nullptr, nullptr);
+        error = GetLastError(); // Might be `ERROR_ALREADY_EXISTS` even if the `fileHandle` is valid.
+      }
+
+      mERROR_IF(fileHandle == INVALID_HANDLE_VALUE, mR_InternalError);
+      CloseHandle(fileHandle);
+
+      if (0 == MoveFileTransactedW(wSource, wTarget, nullptr, nullptr, MOVEFILE_COPY_ALLOWED | MOVEFILE_REPLACE_EXISTING, transaction->transactionHandle))
       {
         error = GetLastError();
 
