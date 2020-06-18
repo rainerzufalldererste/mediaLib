@@ -354,31 +354,31 @@ mFUNCTION(mFileTransaction_WriteRegistryKey, mPtr<mFileTransaction> &transaction
   {
     parentKey = HKEY_CLASSES_ROOT;
 
-    mERROR_CHECK(mString_Substring(keyUrl, &subAddress, mARRAYSIZE(classesRoot)));
+    mERROR_CHECK(mString_Substring(keyUrl, &subAddress, mARRAYSIZE(classesRoot) - 1));
   }
   else if (keyUrl.StartsWith(currentConfig))
   {
     parentKey = HKEY_CURRENT_CONFIG;
 
-    mERROR_CHECK(mString_Substring(keyUrl, &subAddress, mARRAYSIZE(currentConfig)));
+    mERROR_CHECK(mString_Substring(keyUrl, &subAddress, mARRAYSIZE(currentConfig) - 1));
   }
   else if (keyUrl.StartsWith(currentUser))
   {
     parentKey = HKEY_CURRENT_USER;
 
-    mERROR_CHECK(mString_Substring(keyUrl, &subAddress, mARRAYSIZE(currentUser)));
+    mERROR_CHECK(mString_Substring(keyUrl, &subAddress, mARRAYSIZE(currentUser) - 1));
   }
   else if (keyUrl.StartsWith(localMachine))
   {
     parentKey = HKEY_LOCAL_MACHINE;
 
-    mERROR_CHECK(mString_Substring(keyUrl, &subAddress, mARRAYSIZE(localMachine)));
+    mERROR_CHECK(mString_Substring(keyUrl, &subAddress, mARRAYSIZE(localMachine) - 1));
   }
   else if (keyUrl.StartsWith(users))
   {
     parentKey = HKEY_USERS;
 
-    mERROR_CHECK(mString_Substring(keyUrl, &subAddress, mARRAYSIZE(users)));
+    mERROR_CHECK(mString_Substring(keyUrl, &subAddress, mARRAYSIZE(users) - 1));
   }
   else
   {
@@ -391,7 +391,7 @@ mFUNCTION(mFileTransaction_WriteRegistryKey, mPtr<mFileTransaction> &transaction
   mERROR_CHECK(mString_GetRequiredWideStringCount(subAddress, &wStringCount));
 
   mAllocator *pAllocator = &mDefaultTempAllocator;
-  mDEFER(mAllocator_Free(pAllocator, &wString));
+  mDEFER(mAllocator_FreePtr(pAllocator, &wString));
   mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &wString, wStringCount));
 
   mERROR_CHECK(mString_ToWideString(subAddress, wString, wStringCount));
@@ -413,98 +413,6 @@ mFUNCTION(mFileTransaction_WriteRegistryKey, mPtr<mFileTransaction> &transaction
 
   result = RegSetValueW(key, L"", REG_SZ, wString, (DWORD)wStringCount * sizeof(wchar_t));
   mERROR_IF(result != ERROR_SUCCESS, mR_InternalError);
-
-  mRETURN_SUCCESS();
-}
-
-
-mFUNCTION(mFileTransaction_ReadRegistryKey, mPtr<mFileTransaction> &transaction, const mString &keyUrl, OUT mString *pValue)
-{
-  mFUNCTION_SETUP();
-
-  mERROR_IF(pValue == nullptr, mR_ArgumentNull);
-
-  mString subAddress;
-  subAddress.pAllocator = &mDefaultTempAllocator;
-
-  const char classesRoot[] = "HKEY_CLASSES_ROOT\\";
-  const char currentConfig[] = "HKEY_CURRENT_CONFIG\\";
-  const char currentUser[] = "HKEY_CURRENT_USER\\";
-  const char localMachine[] = "HKEY_LOCAL_MACHINE\\";
-  const char users[] = "HKEY_USERS\\";
-
-  HKEY parentKey = nullptr;
-
-  if (keyUrl.StartsWith(classesRoot))
-  {
-    parentKey = HKEY_CLASSES_ROOT;
-
-    mERROR_CHECK(mString_Substring(keyUrl, &subAddress, mARRAYSIZE(classesRoot)));
-  }
-  else if (keyUrl.StartsWith(currentConfig))
-  {
-    parentKey = HKEY_CURRENT_CONFIG;
-
-    mERROR_CHECK(mString_Substring(keyUrl, &subAddress, mARRAYSIZE(currentConfig)));
-  }
-  else if (keyUrl.StartsWith(currentUser))
-  {
-    parentKey = HKEY_CURRENT_USER;
-
-    mERROR_CHECK(mString_Substring(keyUrl, &subAddress, mARRAYSIZE(currentUser)));
-  }
-  else if (keyUrl.StartsWith(localMachine))
-  {
-    parentKey = HKEY_LOCAL_MACHINE;
-
-    mERROR_CHECK(mString_Substring(keyUrl, &subAddress, mARRAYSIZE(localMachine)));
-  }
-  else if (keyUrl.StartsWith(users))
-  {
-    parentKey = HKEY_USERS;
-
-    mERROR_CHECK(mString_Substring(keyUrl, &subAddress, mARRAYSIZE(users)));
-  }
-  else
-  {
-    mRETURN_RESULT(mR_InvalidParameter);
-  }
-
-  wchar_t *wString = nullptr;
-  size_t wStringCount = 0;
-
-  mERROR_CHECK(mString_GetRequiredWideStringCount(subAddress, &wStringCount));
-
-  mAllocator *pAllocator = &mDefaultTempAllocator;
-  mDEFER(mAllocator_Free(pAllocator, &wString));
-  mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &wString, wStringCount));
-
-  mERROR_CHECK(mString_ToWideString(subAddress, wString, wStringCount));
-
-  HKEY key = nullptr;
-
-  LSTATUS result = RegOpenKeyTransactedW(parentKey, wString, 0, KEY_QUERY_VALUE, &key, transaction->transactionHandle, nullptr);
-  mDEFER(if (key != nullptr) RegCloseKey(key));
-  mERROR_IF(result != ERROR_SUCCESS, mR_InternalError);
-
-  DWORD type = 0;
-  DWORD bytes = 0;
-
-  result = RegQueryValueExW(key, L"", NULL, &type, NULL, &bytes);
-  mERROR_IF(result != ERROR_SUCCESS, mR_InternalError);
-
-  mERROR_IF(type != REG_SZ, mR_ResourceStateInvalid);
-
-  if (bytes > wStringCount * sizeof(wchar_t))
-  {
-    wStringCount = (bytes + 1) / sizeof(wchar_t);
-    mERROR_CHECK(mAllocator_Reallocate(pAllocator, &wString, wStringCount));
-  }
-
-  result = RegQueryValueExW(key, L"", NULL, NULL, reinterpret_cast<BYTE *>(wString), &bytes);
-  mERROR_IF(result != ERROR_SUCCESS, mR_InternalError);
-
-  mERROR_CHECK(mString_Create(pValue, wString, wStringCount, pValue->pAllocator));
 
   mRETURN_SUCCESS();
 }

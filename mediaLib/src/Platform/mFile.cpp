@@ -1418,31 +1418,31 @@ mFUNCTION(mRegistry_WriteKey, const mString &keyUrl, const mString &value, OUT O
   {
     parentKey = HKEY_CLASSES_ROOT;
 
-    mERROR_CHECK(mString_Substring(keyUrl, &subAddress, mARRAYSIZE(classesRoot)));
+    mERROR_CHECK(mString_Substring(keyUrl, &subAddress, mARRAYSIZE(classesRoot) - 1));
   }
   else if (keyUrl.StartsWith(currentConfig))
   {
     parentKey = HKEY_CURRENT_CONFIG;
 
-    mERROR_CHECK(mString_Substring(keyUrl, &subAddress, mARRAYSIZE(currentConfig)));
+    mERROR_CHECK(mString_Substring(keyUrl, &subAddress, mARRAYSIZE(currentConfig) - 1));
   }
   else if (keyUrl.StartsWith(currentUser))
   {
     parentKey = HKEY_CURRENT_USER;
 
-    mERROR_CHECK(mString_Substring(keyUrl, &subAddress, mARRAYSIZE(currentUser)));
+    mERROR_CHECK(mString_Substring(keyUrl, &subAddress, mARRAYSIZE(currentUser) - 1));
   }
   else if (keyUrl.StartsWith(localMachine))
   {
     parentKey = HKEY_LOCAL_MACHINE;
 
-    mERROR_CHECK(mString_Substring(keyUrl, &subAddress, mARRAYSIZE(localMachine)));
+    mERROR_CHECK(mString_Substring(keyUrl, &subAddress, mARRAYSIZE(localMachine) - 1));
   }
   else if (keyUrl.StartsWith(users))
   {
     parentKey = HKEY_USERS;
 
-    mERROR_CHECK(mString_Substring(keyUrl, &subAddress, mARRAYSIZE(users)));
+    mERROR_CHECK(mString_Substring(keyUrl, &subAddress, mARRAYSIZE(users) - 1));
   }
   else
   {
@@ -1455,7 +1455,7 @@ mFUNCTION(mRegistry_WriteKey, const mString &keyUrl, const mString &value, OUT O
   mERROR_CHECK(mString_GetRequiredWideStringCount(subAddress, &wStringCount));
 
   mAllocator *pAllocator = &mDefaultTempAllocator;
-  mDEFER(mAllocator_Free(pAllocator, &wString));
+  mDEFER(mAllocator_FreePtr(pAllocator, &wString));
   mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &wString, wStringCount));
 
   mERROR_CHECK(mString_ToWideString(subAddress, wString, wStringCount));
@@ -1503,31 +1503,31 @@ mFUNCTION(mRegistry_ReadKey, const mString &keyUrl, OUT mString *pValue)
   {
     parentKey = HKEY_CLASSES_ROOT;
 
-    mERROR_CHECK(mString_Substring(keyUrl, &subAddress, mARRAYSIZE(classesRoot)));
+    mERROR_CHECK(mString_Substring(keyUrl, &subAddress, mARRAYSIZE(classesRoot) - 1));
   }
   else if (keyUrl.StartsWith(currentConfig))
   {
     parentKey = HKEY_CURRENT_CONFIG;
 
-    mERROR_CHECK(mString_Substring(keyUrl, &subAddress, mARRAYSIZE(currentConfig)));
+    mERROR_CHECK(mString_Substring(keyUrl, &subAddress, mARRAYSIZE(currentConfig) - 1));
   }
   else if (keyUrl.StartsWith(currentUser))
   {
     parentKey = HKEY_CURRENT_USER;
 
-    mERROR_CHECK(mString_Substring(keyUrl, &subAddress, mARRAYSIZE(currentUser)));
+    mERROR_CHECK(mString_Substring(keyUrl, &subAddress, mARRAYSIZE(currentUser) - 1));
   }
   else if (keyUrl.StartsWith(localMachine))
   {
     parentKey = HKEY_LOCAL_MACHINE;
 
-    mERROR_CHECK(mString_Substring(keyUrl, &subAddress, mARRAYSIZE(localMachine)));
+    mERROR_CHECK(mString_Substring(keyUrl, &subAddress, mARRAYSIZE(localMachine) - 1));
   }
   else if (keyUrl.StartsWith(users))
   {
     parentKey = HKEY_USERS;
 
-    mERROR_CHECK(mString_Substring(keyUrl, &subAddress, mARRAYSIZE(users)));
+    mERROR_CHECK(mString_Substring(keyUrl, &subAddress, mARRAYSIZE(users) - 1));
   }
   else
   {
@@ -1540,7 +1540,7 @@ mFUNCTION(mRegistry_ReadKey, const mString &keyUrl, OUT mString *pValue)
   mERROR_CHECK(mString_GetRequiredWideStringCount(subAddress, &wStringCount));
 
   mAllocator *pAllocator = &mDefaultTempAllocator;
-  mDEFER(mAllocator_Free(pAllocator, &wString));
+  mDEFER(mAllocator_FreePtr(pAllocator, &wString));
   mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &wString, wStringCount));
 
   mERROR_CHECK(mString_ToWideString(subAddress, wString, wStringCount));
@@ -1549,7 +1549,7 @@ mFUNCTION(mRegistry_ReadKey, const mString &keyUrl, OUT mString *pValue)
   
   LSTATUS result = RegOpenKeyExW(parentKey, wString, 0, KEY_QUERY_VALUE, &key);
   mDEFER(if (key != nullptr) RegCloseKey(key));
-  mERROR_IF(result != ERROR_SUCCESS, mR_InternalError);
+  mERROR_IF(result != ERROR_SUCCESS, mR_ResourceNotFound);
 
   DWORD type = 0;
   DWORD bytes = 0;
