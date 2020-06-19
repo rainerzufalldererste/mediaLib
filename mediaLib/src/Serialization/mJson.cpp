@@ -647,9 +647,6 @@ mFUNCTION(mJsonWriter_ToFile, mPtr<mJsonWriter> &jsonWriter, const mString &file
   mERROR_IF(text == nullptr, mR_InternalError);
   mDEFER(cJSON_free(text));
 
-  mString fileContents;
-  mERROR_CHECK(mJsonWriter_ToString(jsonWriter, &fileContents));
-
   mERROR_CHECK(mFile_WriteAllText(filename, text));
 
   mRETURN_SUCCESS();

@@ -1338,19 +1338,19 @@ mFUNCTION(mFile_CreateShortcut, const mString &path, const mString &targetDestin
   HRESULT hr = CoCreateInstance(CLSID_ShellLink, NULL, CLSCTX_ALL, IID_IShellLink, (void **)&pShellLink);
   mERROR_IF(FAILED(hr), mR_InternalError);
 
-  pShellLink->SetPath(wTargetDestination);
+  mERROR_IF(FAILED(hr = pShellLink->SetPath(wTargetDestination)), mR_InternalError);
 
   if (wArgumentsCount > 1)
-    pShellLink->SetArguments(wArguments);
+    mERROR_IF(FAILED(hr = pShellLink->SetArguments(wArguments)), mR_InternalError);
 
   if (wWorkingDirectoryCount > 1)
-    pShellLink->SetWorkingDirectory(wWorkingDirectory);
+    mERROR_IF(FAILED(hr = pShellLink->SetWorkingDirectory(wWorkingDirectory)), mR_InternalError);
 
   if (wDescriptionCount > 1)
-    pShellLink->SetDescription(wDescription);
+    mERROR_IF(FAILED(hr = pShellLink->SetDescription(wDescription)), mR_InternalError);
 
   if (wIconLocationCount > 1)
-    pShellLink->SetIconLocation(wIconLocation, 0);
+    mERROR_IF(FAILED(hr = pShellLink->SetIconLocation(wIconLocation, 0)), mR_InternalError);
 
   IPersistFile *pPersistFile = nullptr;
   
