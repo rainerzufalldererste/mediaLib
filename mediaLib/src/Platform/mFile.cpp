@@ -568,6 +568,78 @@ mFUNCTION(mFile_GetStartupDirectory, OUT mString *pString)
   mRETURN_SUCCESS();
 }
 
+mFUNCTION(mFile_GetStartMenu, OUT mString *pString)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_CHECK(mFile_GetKnownPath_Internal(pString, FOLDERID_StartMenu));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mFile_GetStartMenuPrograms, OUT mString *pString)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_CHECK(mFile_GetKnownPath_Internal(pString, FOLDERID_Programs));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mFile_GetSystemFolder, OUT mString *pString)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_CHECK(mFile_GetKnownPath_Internal(pString, FOLDERID_System));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mFile_GetSystemFolderX86, OUT mString *pString)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_CHECK(mFile_GetKnownPath_Internal(pString, FOLDERID_SystemX86));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mFile_GetOSFolder, OUT mString *pString)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_CHECK(mFile_GetKnownPath_Internal(pString, FOLDERID_Windows));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mFile_GetStartupDirectory_AllUsers, OUT mString *pString)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_CHECK(mFile_GetKnownPath_Internal(pString, FOLDERID_CommonStartup));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mFile_GetStartMenu_AllUsers, OUT mString *pString)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_CHECK(mFile_GetKnownPath_Internal(pString, FOLDERID_CommonStartMenu));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mFile_GetStartMenuPrograms_AllUsers, OUT mString *pString)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_CHECK(mFile_GetKnownPath_Internal(pString, FOLDERID_CommonPrograms));
+
+  mRETURN_SUCCESS();
+}
+
 mFUNCTION(mFile_GetWorkingDirectory, OUT mString *pWorkingDirectory)
 {
   mFUNCTION_SETUP();
@@ -1138,6 +1210,160 @@ mFUNCTION(mFile_LaunchFile, const mString &filename)
       mRETURN_RESULT(mR_InternalError);
     }
   }
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mFile_LaunchApplication, const mString &applicationFilename, const mString &arguments, const mString &workingDirectory)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(applicationFilename.hasFailed || arguments.hasFailed || workingDirectory.hasFailed, mR_InvalidParameter);
+
+  mAllocator *pAllocator = &mDefaultTempAllocator;
+
+  wchar_t *wPath = nullptr;
+  size_t wPathCount = 0;
+
+  mERROR_CHECK(mString_GetRequiredWideStringCount(applicationFilename, &wPathCount));
+  mDEFER(mAllocator_FreePtr(pAllocator, &wPath));
+  mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &wPath, wPathCount));
+  mERROR_CHECK(mString_ToWideString(applicationFilename, wPath, wPathCount));
+
+  wchar_t *wArguments = nullptr;
+  size_t wArgumentsCount = 0;
+
+  mERROR_CHECK(mString_GetRequiredWideStringCount(arguments, &wArgumentsCount));
+  mDEFER(mAllocator_FreePtr(pAllocator, &wArguments));
+  mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &wArguments, wArgumentsCount));
+  mERROR_CHECK(mString_ToWideString(arguments, wArguments, wArgumentsCount));
+
+  wchar_t *wWorkingDirectory = nullptr;
+  size_t wWorkingDirectoryCount = 0;
+
+  mERROR_CHECK(mString_GetRequiredWideStringCount(workingDirectory, &wWorkingDirectoryCount));
+  mDEFER(mAllocator_FreePtr(pAllocator, &wWorkingDirectory));
+  mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &wWorkingDirectory, wWorkingDirectoryCount));
+  mERROR_CHECK(mString_ToWideString(workingDirectory, wWorkingDirectory, wWorkingDirectoryCount));
+
+  const size_t result = reinterpret_cast<size_t>(ShellExecuteW(nullptr, nullptr, wPath, wArguments, wWorkingDirectory, SW_SHOW));
+
+  if (result <= 32)
+  {
+    switch (result)
+    {
+    case ERROR_FILE_NOT_FOUND:
+    case ERROR_PATH_NOT_FOUND:
+    case SE_ERR_ASSOCINCOMPLETE:
+      mRETURN_RESULT(mR_ResourceNotFound);
+
+    case SE_ERR_NOASSOC:
+      mRETURN_RESULT(mR_NotSupported);
+
+    case SE_ERR_ACCESSDENIED:
+    case SE_ERR_SHARE:
+      mRETURN_RESULT(mR_InsufficientPrivileges);
+
+    default:
+      mRETURN_RESULT(mR_InternalError);
+    }
+  }
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mFile_CreateShortcut, const mString &path, const mString &targetDestination, const mString &arguments, const mString &workingDirectory, const mString &description, const mString &iconLocation)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(path.hasFailed || targetDestination.hasFailed || arguments.hasFailed || workingDirectory.hasFailed || description.hasFailed || iconLocation.hasFailed, mR_InvalidParameter);
+
+  mAllocator *pAllocator = &mDefaultTempAllocator;
+
+  wchar_t *wPath = nullptr;
+  size_t wPathCount = 0;
+
+  mERROR_CHECK(mString_GetRequiredWideStringCount(path, &wPathCount));
+  mDEFER(mAllocator_FreePtr(pAllocator, &wPath));
+  mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &wPath, wPathCount));
+  mERROR_CHECK(mString_ToWideString(path, wPath, wPathCount));
+  
+  wchar_t *wTargetDestination = nullptr;
+  size_t wTargetDestinationCount = 0;
+
+  mERROR_CHECK(mString_GetRequiredWideStringCount(targetDestination, &wTargetDestinationCount));
+  mDEFER(mAllocator_FreePtr(pAllocator, &wTargetDestination));
+  mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &wTargetDestination, wTargetDestinationCount));
+  mERROR_CHECK(mString_ToWideString(targetDestination, wTargetDestination, wTargetDestinationCount));
+
+  wchar_t *wArguments = nullptr;
+  size_t wArgumentsCount = 0;
+
+  mERROR_CHECK(mString_GetRequiredWideStringCount(arguments, &wArgumentsCount));
+  mDEFER(mAllocator_FreePtr(pAllocator, &wArguments));
+  mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &wArguments, wArgumentsCount));
+  mERROR_CHECK(mString_ToWideString(arguments, wArguments, wArgumentsCount));
+
+  wchar_t *wWorkingDirectory = nullptr;
+  size_t wWorkingDirectoryCount = 0;
+
+  mERROR_CHECK(mString_GetRequiredWideStringCount(workingDirectory, &wWorkingDirectoryCount));
+  mDEFER(mAllocator_FreePtr(pAllocator, &wWorkingDirectory));
+  mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &wWorkingDirectory, wWorkingDirectoryCount));
+  mERROR_CHECK(mString_ToWideString(workingDirectory, wWorkingDirectory, wWorkingDirectoryCount));
+
+  wchar_t *wDescription = nullptr;
+  size_t wDescriptionCount = 0;
+
+  mERROR_CHECK(mString_GetRequiredWideStringCount(description, &wDescriptionCount));
+  mDEFER(mAllocator_FreePtr(pAllocator, &wDescription));
+  mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &wDescription, wDescriptionCount));
+  mERROR_CHECK(mString_ToWideString(description, wDescription, wDescriptionCount));
+
+  wchar_t *wIconLocation = nullptr;
+  size_t wIconLocationCount = 0;
+
+  mERROR_CHECK(mString_GetRequiredWideStringCount(iconLocation, &wIconLocationCount));
+  mDEFER(mAllocator_FreePtr(pAllocator, &wIconLocation));
+  mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &wIconLocation, wIconLocationCount));
+  mERROR_CHECK(mString_ToWideString(iconLocation, wIconLocation, wIconLocationCount));
+
+  IShellLinkW *pShellLink = nullptr;
+
+  mDEFER(
+    if (pShellLink != nullptr)
+      pShellLink->Release()
+  );
+
+  HRESULT hr = CoCreateInstance(CLSID_ShellLink, NULL, CLSCTX_ALL, IID_IShellLink, (void **)&pShellLink);
+  mERROR_IF(FAILED(hr), mR_InternalError);
+
+  pShellLink->SetPath(wTargetDestination);
+
+  if (wArgumentsCount > 1)
+    pShellLink->SetArguments(wArguments);
+
+  if (wWorkingDirectoryCount > 1)
+    pShellLink->SetWorkingDirectory(wWorkingDirectory);
+
+  if (wDescriptionCount > 1)
+    pShellLink->SetDescription(wDescription);
+
+  if (wIconLocationCount > 1)
+    pShellLink->SetIconLocation(wIconLocation, 0);
+
+  IPersistFile *pPersistFile = nullptr;
+  
+  mDEFER(
+    if (pPersistFile != nullptr)
+      pPersistFile->Release()
+  );
+
+  hr = pShellLink->QueryInterface(IID_IPersistFile, (void **)&pPersistFile);
+  mERROR_IF(FAILED(hr), mR_InternalError);
+
+  hr = pPersistFile->Save(wPath, TRUE);
+  mERROR_IF(FAILED(hr), mR_InternalError);
 
   mRETURN_SUCCESS();
 }

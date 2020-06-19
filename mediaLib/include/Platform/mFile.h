@@ -65,6 +65,14 @@ mFUNCTION(mFile_GetFontsDirectory, OUT mString *pString);
 mFUNCTION(mFile_GetCurrentUserDirectory, OUT mString *pString);
 mFUNCTION(mFile_GetProgramFilesDirectory, OUT mString *pString);
 mFUNCTION(mFile_GetStartupDirectory, OUT mString *pString);
+mFUNCTION(mFile_GetStartMenu, OUT mString *pString);
+mFUNCTION(mFile_GetStartMenuPrograms, OUT mString *pString);
+mFUNCTION(mFile_GetSystemFolder, OUT mString *pString);
+mFUNCTION(mFile_GetSystemFolderX86, OUT mString *pString);
+mFUNCTION(mFile_GetOSFolder, OUT mString *pString);
+mFUNCTION(mFile_GetStartupDirectory_AllUsers, OUT mString *pString);
+mFUNCTION(mFile_GetStartMenu_AllUsers, OUT mString *pString);
+mFUNCTION(mFile_GetStartMenuPrograms_AllUsers, OUT mString *pString);
 
 mFUNCTION(mFile_GetWorkingDirectory, OUT mString *pWorkingDirectory);
 mFUNCTION(mFile_SetWorkingDirectory, const mString &workingDirectory);
@@ -121,6 +129,9 @@ mFUNCTION(mFile_GetAbsoluteDirectoryPath, OUT mString *pAbsolutePath, const mStr
 mFUNCTION(mFile_GetAbsoluteFilePath, OUT mString *pAbsolutePath, const mString &filePath);
 
 mFUNCTION(mFile_LaunchFile, const mString &filename);
+mFUNCTION(mFile_LaunchApplication, const mString &applicationFilename, const mString &arguments, const mString &workingDirectory);
+
+mFUNCTION(mFile_CreateShortcut, const mString &path, const mString &targetDestination, const mString &arguments, const mString &workingDirectory, const mString &description, const mString &iconLocation);
 
 struct mFileWriter
 {
