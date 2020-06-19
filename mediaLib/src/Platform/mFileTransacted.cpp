@@ -385,33 +385,74 @@ mFUNCTION(mFileTransaction_WriteRegistryKey, mPtr<mFileTransaction> &transaction
     mRETURN_RESULT(mR_InvalidParameter);
   }
 
-  wchar_t *wString = nullptr;
-  size_t wStringCount = 0;
+  mString pathString;
+  pathString.pAllocator = &mDefaultTempAllocator;
 
-  mERROR_CHECK(mString_GetRequiredWideStringCount(subAddress, &wStringCount));
+  mString valueName;
+  valueName.pAllocator = &mDefaultTempAllocator;
+
+  size_t index = (size_t)-1;
+  size_t lastSlashIndex = (size_t)-1;
+  const mchar_t slashCodePoint = mToChar<2>("\\");
+
+  for (const auto &&_char : subAddress)
+  {
+    ++index;
+
+    if (_char.codePoint == slashCodePoint)
+      lastSlashIndex = index;
+  }
+
+  if (lastSlashIndex == (size_t)-1)
+  {
+    mERROR_CHECK(mString_Create(&pathString, subAddress, &mDefaultTempAllocator));
+    mERROR_CHECK(mString_Create(&valueName, "", 1, &mDefaultTempAllocator));
+  }
+  else
+  {
+    mERROR_CHECK(mString_Substring(subAddress, &pathString, 0, lastSlashIndex));
+
+    if (lastSlashIndex != subAddress.count)
+      mERROR_CHECK(mString_Substring(subAddress, &valueName, lastSlashIndex + 1, subAddress.count - (lastSlashIndex + 2)));
+    else
+      mERROR_CHECK(mString_Create(&valueName, "", 1, &mDefaultTempAllocator));
+  }
+
+  wchar_t *wPathString = nullptr;
+  size_t wPathStringCount = 0;
+  mERROR_CHECK(mString_GetRequiredWideStringCount(pathString, &wPathStringCount));
 
   mAllocator *pAllocator = &mDefaultTempAllocator;
-  mDEFER(mAllocator_FreePtr(pAllocator, &wString));
-  mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &wString, wStringCount));
+  mDEFER(mAllocator_FreePtr(pAllocator, &wPathString));
+  mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &wPathString, wPathStringCount));
 
-  mERROR_CHECK(mString_ToWideString(subAddress, wString, wStringCount));
+  mERROR_CHECK(mString_ToWideString(pathString, wPathString, wPathStringCount));
+
+  wchar_t *wValueName = nullptr;
+  size_t wValueNameCount = 0;
+  mERROR_CHECK(mString_GetRequiredWideStringCount(valueName, &wValueNameCount));
+
+  mDEFER(mAllocator_FreePtr(pAllocator, &wValueName));
+  mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &wValueName, wValueNameCount));
+
+  mERROR_CHECK(mString_ToWideString(valueName, wValueName, wValueNameCount));
 
   HKEY key = nullptr;
   DWORD disposition = 0;
 
-  LSTATUS result = RegCreateKeyTransactedW(parentKey, wString, 0, NULL, 0, KEY_ALL_ACCESS, NULL, &key, &disposition, transaction->transactionHandle, nullptr);
+  LSTATUS result = RegCreateKeyTransactedW(parentKey, wPathString, 0, NULL, 0, KEY_ALL_ACCESS, NULL, &key, &disposition, transaction->transactionHandle, nullptr);
   mDEFER(if (key != nullptr) RegCloseKey(key));
   mERROR_IF(result != ERROR_SUCCESS, mR_InternalError);
 
   if (pNewlyCreated != nullptr)
     *pNewlyCreated = (disposition == REG_CREATED_NEW_KEY);
 
-  mERROR_CHECK(mString_GetRequiredWideStringCount(value, &wStringCount));
+  mERROR_CHECK(mString_GetRequiredWideStringCount(value, &wPathStringCount));
 
-  mERROR_CHECK(mAllocator_Reallocate(pAllocator, &wString, wStringCount));
-  mERROR_CHECK(mString_ToWideString(value, wString, wStringCount));
+  mERROR_CHECK(mAllocator_Reallocate(pAllocator, &wPathString, wPathStringCount));
+  mERROR_CHECK(mString_ToWideString(value, wPathString, wPathStringCount));
 
-  result = RegSetValueW(key, L"", REG_SZ, wString, (DWORD)wStringCount * sizeof(wchar_t));
+  result = RegSetValueW(key, wValueName, REG_SZ, wPathString, (DWORD)wPathStringCount * sizeof(wchar_t));
   mERROR_IF(result != ERROR_SUCCESS, mR_InternalError);
 
   mRETURN_SUCCESS();
