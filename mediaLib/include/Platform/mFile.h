@@ -48,6 +48,8 @@ mFUNCTION(mFile_WriteRaw, IN const wchar_t *filename, IN T *pData, const size_t 
 template <typename T>
 mFUNCTION(mFile_WriteRaw, const mString &filename, IN T *pData, const size_t count);
 
+mFUNCTION(mFile_WriteRawBytes, const wchar_t *filename, IN const uint8_t *pData, const size_t bytes);
+
 mFUNCTION(mFile_FailOnInvalidDirectoryPath, const mString &folderPath, OUT OPTIONAL mString *pAbsolutePath);
 mFUNCTION(mFile_CreateDirectory, const mString &folderPath);
 mFUNCTION(mFile_DeleteFolder, const mString &folderPath);
@@ -222,7 +224,7 @@ inline mFUNCTION(mFile_ReadRaw, const mString &filename, OUT T **ppData, IN mAll
 {
   mFUNCTION_SETUP();
 
-  wchar_t wfilename[1024];
+  wchar_t wfilename[MAX_PATH];
   mERROR_CHECK(mString_ToWideString(filename, wfilename, mARRAYSIZE(wfilename)));
 
   mERROR_CHECK(mFile_ReadRaw(wfilename, ppData, pAllocator, pCount));
@@ -235,15 +237,9 @@ inline mFUNCTION(mFile_WriteRaw, IN const wchar_t *filename, IN T *pData, const 
 {
   mFUNCTION_SETUP();
 
-  mERROR_IF(pData == nullptr, mR_ArgumentNull);
+  mERROR_IF(pData == nullptr || filename == nullptr, mR_ArgumentNull);
 
-  FILE *pFile = _wfopen(filename, L"wb");
-  mDEFER(if (pFile) fclose(pFile););
-  mERROR_IF(pFile == nullptr, mR_ResourceNotFound);
-
-  const size_t writeCount = fwrite(pData, 1, sizeof(T) * count, pFile);
-
-  mERROR_IF(writeCount != count * sizeof(T), mR_IOFailure);
+  mERROR_CHECK(mFile_WriteRawBytes(filename, reinterpret_cast<const uint8_t *>(pData), count * sizeof(T)));
 
   mRETURN_SUCCESS();
 }
@@ -253,7 +249,7 @@ inline mFUNCTION(mFile_WriteRaw, const mString &filename, IN T *pData, const siz
 {
   mFUNCTION_SETUP();
 
-  wchar_t wfilename[1024];
+  wchar_t wfilename[MAX_PATH];
   mERROR_CHECK(mString_ToWideString(filename, wfilename, mARRAYSIZE(wfilename)));
 
   mERROR_CHECK(mFile_WriteRaw(wfilename, pData, count));

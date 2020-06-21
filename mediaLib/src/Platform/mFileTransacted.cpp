@@ -29,7 +29,7 @@ struct mFileTransaction
 
 mFUNCTION(mFileTransaction_Destroy_Internal, IN_OUT mFileTransaction *pTransaction);
 
-mFUNCTION(_CreateDirectoryRecursive, mPtr<mFileTransaction> &transaction, const wchar_t *directoryPath);
+mFUNCTION(mFileTransaction_CreateDirectoryRecursive_Internal, mPtr<mFileTransaction> &transaction, const wchar_t *directoryPath);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -105,7 +105,7 @@ mFUNCTION(mFileTransaction_CreateDirectory, mPtr<mFileTransaction> &transaction,
   wchar_t wDirectoryName[MAX_PATH];
   mERROR_CHECK(mString_ToWideString(path, wDirectoryName, mARRAYSIZE(wDirectoryName)));
 
-  mERROR_CHECK(_CreateDirectoryRecursive(transaction, wDirectoryName));
+  mERROR_CHECK(mFileTransaction_CreateDirectoryRecursive_Internal(transaction, wDirectoryName));
 
   mRETURN_SUCCESS();
 }
@@ -140,7 +140,7 @@ mFUNCTION(mFileTransaction_WriteFile, mPtr<mFileTransaction> &transaction, const
     mERROR_IF(PathRemoveFileSpecW(parentDirectory), mR_InvalidParameter);
 #endif
 
-    mERROR_CHECK(_CreateDirectoryRecursive(transaction, parentDirectory));
+    mERROR_CHECK(mFileTransaction_CreateDirectoryRecursive_Internal(transaction, parentDirectory));
     
     fileHandle = CreateFileTransactedW(wFilename, GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr, transaction->transactionHandle, nullptr, nullptr);
     error = GetLastError(); // Might be `ERROR_ALREADY_EXISTS` even if the `fileHandle` is valid.
@@ -238,7 +238,7 @@ mFUNCTION(mFileTransaction_CopyFile, mPtr<mFileTransaction> &transaction, const 
         mERROR_IF(PathRemoveFileSpecW(parentDirectory), mR_InvalidParameter);
 #endif
 
-        mERROR_CHECK(_CreateDirectoryRecursive(transaction, parentDirectory));
+        mERROR_CHECK(mFileTransaction_CreateDirectoryRecursive_Internal(transaction, parentDirectory));
 
         fileHandle = CreateFileTransactedW(wTarget, GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr, transaction->transactionHandle, nullptr, nullptr);
         error = GetLastError(); // Might be `ERROR_ALREADY_EXISTS` even if the `fileHandle` is valid.
@@ -308,7 +308,7 @@ mFUNCTION(mFileTransaction_MoveFile, mPtr<mFileTransaction> &transaction, const 
         mERROR_IF(PathRemoveFileSpecW(parentDirectory), mR_InvalidParameter);
 #endif
 
-        mERROR_CHECK(_CreateDirectoryRecursive(transaction, parentDirectory));
+        mERROR_CHECK(mFileTransaction_CreateDirectoryRecursive_Internal(transaction, parentDirectory));
 
         fileHandle = CreateFileTransactedW(wTarget, GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr, transaction->transactionHandle, nullptr, nullptr);
         error = GetLastError(); // Might be `ERROR_ALREADY_EXISTS` even if the `fileHandle` is valid.
@@ -473,11 +473,11 @@ mFUNCTION(mFileTransaction_Destroy_Internal, IN_OUT mFileTransaction *pTransacti
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(_CreateDirectoryRecursive, mPtr<mFileTransaction> &transaction, const wchar_t *directoryPath)
+mFUNCTION(mFileTransaction_CreateDirectoryRecursive_Internal, mPtr<mFileTransaction> &transaction, const wchar_t *directoryPath)
 {
   mFUNCTION_SETUP();
 
-  if (0 == CreateDirectoryTransactedW(nullptr, directoryPath, NULL, transaction->transactionHandle))
+  if (0 == CreateDirectoryTransactedW(nullptr, directoryPath, nullptr, transaction->transactionHandle))
   {
     DWORD error = GetLastError();
 
@@ -501,9 +501,9 @@ mFUNCTION(_CreateDirectoryRecursive, mPtr<mFileTransaction> &transaction, const 
       mERROR_IF(PathRemoveFileSpecW(parentDirectory), mR_InvalidParameter);
 #endif
 
-      mERROR_CHECK(_CreateDirectoryRecursive(transaction, parentDirectory));
+      mERROR_CHECK(mFileTransaction_CreateDirectoryRecursive_Internal(transaction, parentDirectory));
 
-      if (0 == CreateDirectoryTransactedW(nullptr, directoryPath, NULL, transaction->transactionHandle))
+      if (0 == CreateDirectoryTransactedW(nullptr, directoryPath, nullptr, transaction->transactionHandle))
       {
         error = GetLastError();
 

@@ -689,30 +689,40 @@ mFUNCTION(mString_ToWideString, const mString &string, OUT wchar_t *pWideString,
   mFUNCTION_SETUP();
 
   mERROR_IF(pWideString == nullptr || pWideStringCount == nullptr, mR_ArgumentNull);
-  mERROR_IF(string.text == nullptr || string.hasFailed, mR_ResourceInvalid);
+  mERROR_IF(string.hasFailed, mR_ResourceInvalid);
 
-  int32_t length = 0;
-
-  if (0 >= (length = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, string.text, (int32_t)string.bytes, pWideString, (int32_t)bufferCount)))
+  if (string.text == nullptr)
   {
-    const DWORD error = GetLastError();
-
-    switch (error)
-    {
-    case ERROR_INSUFFICIENT_BUFFER:
-      mRETURN_RESULT(mR_IndexOutOfBounds);
-
-    case ERROR_NO_UNICODE_TRANSLATION:
-      mRETURN_RESULT(mR_InvalidParameter);
-
-    case ERROR_INVALID_FLAGS:
-    case ERROR_INVALID_PARAMETER:
-    default:
-      mRETURN_RESULT(mR_InternalError);
-    }
+    mERROR_IF(bufferCount == 0, mR_ArgumentOutOfBounds);
+    
+    pWideString[0] = L'\0';
+    *pWideStringCount = 1;
   }
+  else
+  {
+    int32_t length = 0;
 
-  *pWideStringCount = length;
+    if (0 >= (length = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, string.text, (int32_t)string.bytes, pWideString, (int32_t)bufferCount)))
+    {
+      const DWORD error = GetLastError();
+
+      switch (error)
+      {
+      case ERROR_INSUFFICIENT_BUFFER:
+        mRETURN_RESULT(mR_IndexOutOfBounds);
+
+      case ERROR_NO_UNICODE_TRANSLATION:
+        mRETURN_RESULT(mR_InvalidParameter);
+
+      case ERROR_INVALID_FLAGS:
+      case ERROR_INVALID_PARAMETER:
+      default:
+        mRETURN_RESULT(mR_InternalError);
+      }
+    }
+
+    *pWideStringCount = length;
+  }
 
   mRETURN_SUCCESS();
 }
@@ -722,30 +732,37 @@ mFUNCTION(mString_GetRequiredWideStringCount, const mString &string, OUT size_t 
   mFUNCTION_SETUP();
 
   mERROR_IF(pWideStringCount == nullptr, mR_ArgumentNull);
-  mERROR_IF(string.text == nullptr || string.hasFailed, mR_ResourceInvalid);
+  mERROR_IF(string.hasFailed, mR_ResourceInvalid);
 
-  int32_t length = 0;
-
-  if (0 >= (length = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, string.text, (int32_t)string.bytes, nullptr, 0)))
+  if (string.text == nullptr)
   {
-    const DWORD error = GetLastError();
-
-    switch (error)
-    {
-    case ERROR_INSUFFICIENT_BUFFER:
-      mRETURN_RESULT(mR_IndexOutOfBounds);
-
-    case ERROR_NO_UNICODE_TRANSLATION:
-      mRETURN_RESULT(mR_InvalidParameter);
-
-    case ERROR_INVALID_FLAGS:
-    case ERROR_INVALID_PARAMETER:
-    default:
-      mRETURN_RESULT(mR_InternalError);
-    }
+    *pWideStringCount = 1;
   }
+  else
+  {
+    int32_t length = 0;
 
-  *pWideStringCount = length;
+    if (0 >= (length = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, string.text, (int32_t)string.bytes, nullptr, 0)))
+    {
+      const DWORD error = GetLastError();
+
+      switch (error)
+      {
+      case ERROR_INSUFFICIENT_BUFFER:
+        mRETURN_RESULT(mR_IndexOutOfBounds);
+
+      case ERROR_NO_UNICODE_TRANSLATION:
+        mRETURN_RESULT(mR_InvalidParameter);
+
+      case ERROR_INVALID_FLAGS:
+      case ERROR_INVALID_PARAMETER:
+      default:
+        mRETURN_RESULT(mR_InternalError);
+      }
+    }
+
+    *pWideStringCount = length;
+  }
 
   mRETURN_SUCCESS();
 }
