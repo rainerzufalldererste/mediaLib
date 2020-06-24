@@ -114,7 +114,13 @@ mFUNCTION(mHttpRequest_Send, mPtr<mHttpRequest> &httpRequest)
   switch (result)
   {
   case CURLE_OK:
+  {
+    int32_t response_code;
+    mERROR_IF(CURLE_OK != curl_easy_getinfo(httpRequest->pCurl, CURLINFO_RESPONSE_CODE, &response_code), mR_InternalError);
+    mERROR_IF(response_code >= 400, mR_IOFailure);
+
     break;
+  }
 
   case CURLE_OPERATION_TIMEDOUT:
     mRETURN_RESULT(mR_Timeout);
