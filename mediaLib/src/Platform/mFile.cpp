@@ -7,6 +7,9 @@
 #include <knownfolders.h>
 #include <Shlwapi.h>
 
+#include <aclapi.h>
+#pragma comment(lib, "Advapi32.lib")
+
 #if (NTDDI_VERSION >= NTDDI_WIN8)
 #include "pathcch.h"
 
@@ -1644,6 +1647,76 @@ mFUNCTION(mFile_CreateShortcut, const mString &path, const mString &targetDestin
   mRETURN_SUCCESS();
 }
 
+mFUNCTION(mFile_GrantAccessToAllUsers, const mString &path)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(path.hasFailed || path.bytes <= 1, mR_InvalidParameter);
+
+  wchar_t wPath[MAX_PATH];
+  mERROR_CHECK(mString_ToWideString(path, wPath, mARRAYSIZE(wPath)));
+
+  HANDLE fileHandle = CreateFileW(wPath, READ_CONTROL | WRITE_DAC, 0, nullptr, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, nullptr);
+  mDEFER(CloseHandle(fileHandle));
+
+  if (fileHandle == INVALID_HANDLE_VALUE)
+  {
+    const DWORD error = GetLastError();
+
+    switch (error)
+    {
+    case ERROR_FILE_NOT_FOUND:
+    case ERROR_PATH_NOT_FOUND:
+      mRETURN_RESULT(mR_ResourceNotFound);
+
+    case ERROR_ACCESS_DENIED:
+      mRETURN_RESULT(mR_InsufficientPrivileges);
+
+    default:
+      mRETURN_RESULT(mR_InternalError);
+    }
+  }
+
+  ACL *pOldDACL = nullptr;
+  SECURITY_DESCRIPTOR *pSD = nullptr;
+  
+  mDEFER(
+    LocalFree(pSD);
+  );
+
+  mERROR_IF(ERROR_SUCCESS != GetSecurityInfo(fileHandle, SE_FILE_OBJECT, DACL_SECURITY_INFORMATION, nullptr, nullptr, &pOldDACL, nullptr, reinterpret_cast<void **>(&pSD)), mR_InternalError);
+
+  PSID pSid = nullptr;
+  mDEFER(FreeSid(pSid));
+
+  SID_IDENTIFIER_AUTHORITY authNt = SECURITY_NT_AUTHORITY;
+
+  if (0 == AllocateAndInitializeSid(&authNt, 2, SECURITY_BUILTIN_DOMAIN_RID, DOMAIN_ALIAS_RID_USERS, 0, 0, 0, 0, 0, 0, &pSid))
+  {
+    const DWORD error = GetLastError();
+    mUnused(error);
+
+    mRETURN_RESULT(mR_InternalError);
+  }
+
+  EXPLICIT_ACCESS ea = { 0 };
+  ea.grfAccessMode = GRANT_ACCESS;
+  ea.grfAccessPermissions = GENERIC_ALL;
+  ea.grfInheritance = CONTAINER_INHERIT_ACE | OBJECT_INHERIT_ACE;
+  ea.Trustee.TrusteeType = TRUSTEE_IS_GROUP;
+  ea.Trustee.TrusteeForm = TRUSTEE_IS_SID;
+  ea.Trustee.ptstrName = (LPTSTR)pSid;
+
+  ACL *pNewDACL = nullptr;
+  mDEFER(LocalFree(pNewDACL));
+  mERROR_IF(ERROR_SUCCESS != SetEntriesInAclW(1, &ea, pOldDACL, &pNewDACL), mR_InternalError);
+
+  if (pNewDACL)
+    mERROR_IF(ERROR_SUCCESS != SetSecurityInfo(fileHandle, SE_FILE_OBJECT, DACL_SECURITY_INFORMATION, nullptr, nullptr, pNewDACL, nullptr), mR_InternalError);
+
+  mRETURN_SUCCESS();
+}
+
 //////////////////////////////////////////////////////////////////////////
 
 mFUNCTION(mFile_CreateDirectoryRecursive_Internal, const wchar_t *directoryPath)
@@ -2049,15 +2122,15 @@ mFUNCTION(mRegistry_WriteKey, const mString &keyUrl, const mString &value, OUT O
       mERROR_CHECK(mString_Create(&valueName, "", 1, &mDefaultTempAllocator));
   }
 
-  wchar_t *wPathString = nullptr;
-  size_t wPathStringCount = 0;
-  mERROR_CHECK(mString_GetRequiredWideStringCount(pathString, &wPathStringCount));
+  wchar_t *wPathOrValue = nullptr;
+  size_t wPathOrValueCount = 0;
+  mERROR_CHECK(mString_GetRequiredWideStringCount(pathString, &wPathOrValueCount));
 
   mAllocator *pAllocator = &mDefaultTempAllocator;
-  mDEFER(mAllocator_FreePtr(pAllocator, &wPathString));
-  mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &wPathString, wPathStringCount));
+  mDEFER(mAllocator_FreePtr(pAllocator, &wPathOrValue));
+  mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &wPathOrValue, wPathOrValueCount));
 
-  mERROR_CHECK(mString_ToWideString(pathString, wPathString, wPathStringCount));
+  mERROR_CHECK(mString_ToWideString(pathString, wPathOrValue, wPathOrValueCount));
 
   wchar_t *wValueName = nullptr;
   size_t wValueNameCount = 0;
@@ -2071,19 +2144,19 @@ mFUNCTION(mRegistry_WriteKey, const mString &keyUrl, const mString &value, OUT O
   HKEY key = nullptr;
   DWORD disposition = 0;
 
-  LSTATUS result = RegCreateKeyExW(parentKey, wPathString, 0, NULL, 0, KEY_ALL_ACCESS, NULL, &key, &disposition);
+  LSTATUS result = RegCreateKeyExW(parentKey, wPathOrValue, 0, NULL, 0, KEY_ALL_ACCESS, NULL, &key, &disposition);
   mDEFER(if (key != nullptr) RegCloseKey(key));
   mERROR_IF(result != ERROR_SUCCESS, mR_InternalError);
 
   if (pNewlyCreated != nullptr)
     *pNewlyCreated = (disposition == REG_CREATED_NEW_KEY);
 
-  mERROR_CHECK(mString_GetRequiredWideStringCount(value, &wPathStringCount));
+  mERROR_CHECK(mString_GetRequiredWideStringCount(value, &wPathOrValueCount));
 
-  mERROR_CHECK(mAllocator_Reallocate(pAllocator, &wPathString, wPathStringCount));
-  mERROR_CHECK(mString_ToWideString(value, wPathString, wPathStringCount));
+  mERROR_CHECK(mAllocator_Reallocate(pAllocator, &wPathOrValue, wPathOrValueCount));
+  mERROR_CHECK(mString_ToWideString(value, wPathOrValue, wPathOrValueCount));
 
-  result = RegSetValueW(key, wValueName, REG_SZ, wPathString, (DWORD)wPathStringCount * sizeof(wchar_t));
+  result = RegSetValueExW(key, wValueName, 0, REG_SZ, reinterpret_cast<const BYTE *>(wPathOrValue), (DWORD)wPathOrValueCount * sizeof(wchar_t));
   mERROR_IF(result != ERROR_SUCCESS, mR_InternalError);
 
   mRETURN_SUCCESS();
@@ -2174,15 +2247,15 @@ mFUNCTION(mRegistry_ReadKey, const mString &keyUrl, OUT mString *pValue)
       mERROR_CHECK(mString_Create(&valueName, "", 1, &mDefaultTempAllocator));
   }
 
-  wchar_t *wPathString = nullptr;
+  wchar_t *wPathOrValue = nullptr;
   size_t wPathStringCount = 0;
   mERROR_CHECK(mString_GetRequiredWideStringCount(pathString, &wPathStringCount));
 
   mAllocator *pAllocator = &mDefaultTempAllocator;
-  mDEFER(mAllocator_FreePtr(pAllocator, &wPathString));
-  mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &wPathString, wPathStringCount));
+  mDEFER(mAllocator_FreePtr(pAllocator, &wPathOrValue));
+  mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &wPathOrValue, wPathStringCount));
 
-  mERROR_CHECK(mString_ToWideString(pathString, wPathString, wPathStringCount));
+  mERROR_CHECK(mString_ToWideString(pathString, wPathOrValue, wPathStringCount));
 
   wchar_t *wValueName = nullptr;
   size_t wValueNameCount = 0;
@@ -2195,14 +2268,15 @@ mFUNCTION(mRegistry_ReadKey, const mString &keyUrl, OUT mString *pValue)
 
   HKEY key = nullptr;
   
-  LSTATUS result = RegOpenKeyExW(parentKey, wPathString, 0, KEY_QUERY_VALUE, &key);
+  LSTATUS result = RegOpenKeyExW(parentKey, wPathOrValue, 0, KEY_QUERY_VALUE, &key);
   mDEFER(if (key != nullptr) RegCloseKey(key));
   mERROR_IF(result != ERROR_SUCCESS, mR_ResourceNotFound);
 
   DWORD type = 0;
   DWORD bytes = 0;
 
-  result = RegQueryValueExW(key, L"", NULL, &type, NULL, &bytes);
+  result = RegQueryValueExW(key, wValueName, NULL, &type, NULL, &bytes);
+  mERROR_IF(result == ERROR_FILE_NOT_FOUND, mR_ResourceNotFound);
   mERROR_IF(result != ERROR_SUCCESS, mR_InternalError);
 
   mERROR_IF(type != REG_SZ, mR_ResourceStateInvalid);
@@ -2210,13 +2284,13 @@ mFUNCTION(mRegistry_ReadKey, const mString &keyUrl, OUT mString *pValue)
   if (bytes > wPathStringCount * sizeof(wchar_t))
   {
     wPathStringCount = (bytes + 1) / sizeof(wchar_t);
-    mERROR_CHECK(mAllocator_Reallocate(pAllocator, &wPathString, wPathStringCount));
+    mERROR_CHECK(mAllocator_Reallocate(pAllocator, &wPathOrValue, wPathStringCount));
   }
 
-  result = RegQueryValueExW(key, L"", NULL, NULL, reinterpret_cast<BYTE *>(wPathString), &bytes);
+  result = RegQueryValueExW(key, wValueName, NULL, NULL, reinterpret_cast<BYTE *>(wPathOrValue), &bytes);
   mERROR_IF(result != ERROR_SUCCESS, mR_InternalError);
 
-  mERROR_CHECK(mString_Create(pValue, wPathString, wPathStringCount, pValue->pAllocator));
+  mERROR_CHECK(mString_Create(pValue, wPathOrValue, wPathStringCount, pValue->pAllocator));
 
   mRETURN_SUCCESS();
 }

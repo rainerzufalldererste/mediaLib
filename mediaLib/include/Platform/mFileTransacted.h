@@ -28,5 +28,6 @@ mFUNCTION(mFileTransaction_CopyFile, mPtr<mFileTransaction> &transaction, const 
 mFUNCTION(mFileTransaction_MoveFile, mPtr<mFileTransaction> &transaction, const mString &target, const mString &source, const bool replaceIfExistent);
 
 mFUNCTION(mFileTransaction_WriteRegistryKey, mPtr<mFileTransaction> &transaction, const mString &keyUrl, const mString &value, OUT OPTIONAL bool *pNewlyCreated = nullptr);
+mFUNCTION(mFileTransaction_SetRegistryKeyAccessibleToAllUsers, mPtr<mFileTransaction> &transaction, const mString &keyUrl);
 
 #endif // mFileTransacted_h__

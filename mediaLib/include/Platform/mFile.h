@@ -135,6 +135,8 @@ mFUNCTION(mFile_LaunchApplication, const mString &applicationFilename, const mSt
 
 mFUNCTION(mFile_CreateShortcut, const mString &path, const mString &targetDestination, const mString &arguments, const mString &workingDirectory, const mString &description, const mString &iconLocation);
 
+mFUNCTION(mFile_GrantAccessToAllUsers, const mString &path);
+
 struct mFileWriter
 {
 #ifdef mPLATFORM_WINDOWS

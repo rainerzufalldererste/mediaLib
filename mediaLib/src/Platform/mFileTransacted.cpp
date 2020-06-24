@@ -3,8 +3,10 @@
 #include "mFile.h"
 
 #include <ktmw32.h>
-
 #pragma comment (lib, "KtmW32.lib")
+
+#include <aclapi.h>
+#pragma comment(lib, "Advapi32.lib")
 
 #if (NTDDI_VERSION >= NTDDI_WIN8)
 #include "pathcch.h"
@@ -418,15 +420,15 @@ mFUNCTION(mFileTransaction_WriteRegistryKey, mPtr<mFileTransaction> &transaction
       mERROR_CHECK(mString_Create(&valueName, "", 1, &mDefaultTempAllocator));
   }
 
-  wchar_t *wPathString = nullptr;
-  size_t wPathStringCount = 0;
-  mERROR_CHECK(mString_GetRequiredWideStringCount(pathString, &wPathStringCount));
+  wchar_t *wPathOrValue = nullptr;
+  size_t wPathOrValueCount = 0;
+  mERROR_CHECK(mString_GetRequiredWideStringCount(pathString, &wPathOrValueCount));
 
   mAllocator *pAllocator = &mDefaultTempAllocator;
-  mDEFER(mAllocator_FreePtr(pAllocator, &wPathString));
-  mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &wPathString, wPathStringCount));
+  mDEFER(mAllocator_FreePtr(pAllocator, &wPathOrValue));
+  mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &wPathOrValue, wPathOrValueCount));
 
-  mERROR_CHECK(mString_ToWideString(pathString, wPathString, wPathStringCount));
+  mERROR_CHECK(mString_ToWideString(pathString, wPathOrValue, wPathOrValueCount));
 
   wchar_t *wValueName = nullptr;
   size_t wValueNameCount = 0;
@@ -440,20 +442,126 @@ mFUNCTION(mFileTransaction_WriteRegistryKey, mPtr<mFileTransaction> &transaction
   HKEY key = nullptr;
   DWORD disposition = 0;
 
-  LSTATUS result = RegCreateKeyTransactedW(parentKey, wPathString, 0, NULL, 0, KEY_ALL_ACCESS, NULL, &key, &disposition, transaction->transactionHandle, nullptr);
+  LSTATUS result = RegCreateKeyTransactedW(parentKey, wPathOrValue, 0, NULL, 0, KEY_ALL_ACCESS, NULL, &key, &disposition, transaction->transactionHandle, nullptr);
   mDEFER(if (key != nullptr) RegCloseKey(key));
   mERROR_IF(result != ERROR_SUCCESS, mR_InternalError);
 
   if (pNewlyCreated != nullptr)
     *pNewlyCreated = (disposition == REG_CREATED_NEW_KEY);
 
-  mERROR_CHECK(mString_GetRequiredWideStringCount(value, &wPathStringCount));
+  mERROR_CHECK(mString_GetRequiredWideStringCount(value, &wPathOrValueCount));
 
-  mERROR_CHECK(mAllocator_Reallocate(pAllocator, &wPathString, wPathStringCount));
-  mERROR_CHECK(mString_ToWideString(value, wPathString, wPathStringCount));
+  mERROR_CHECK(mAllocator_Reallocate(pAllocator, &wPathOrValue, wPathOrValueCount));
+  mERROR_CHECK(mString_ToWideString(value, wPathOrValue, wPathOrValueCount));
 
-  result = RegSetValueW(key, wValueName, REG_SZ, wPathString, (DWORD)wPathStringCount * sizeof(wchar_t));
+  result = RegSetValueExW(key, wValueName, 0, REG_SZ, reinterpret_cast<const BYTE *>(wPathOrValue), (DWORD)wPathOrValueCount * sizeof(wchar_t));
   mERROR_IF(result != ERROR_SUCCESS, mR_InternalError);
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mFileTransaction_SetRegistryKeyAccessibleToAllUsers, mPtr<mFileTransaction> &transaction, const mString &keyUrl)
+{
+  mFUNCTION_SETUP();
+
+  mString subAddress;
+  subAddress.pAllocator = &mDefaultTempAllocator;
+
+  const char classesRoot[] = "HKEY_CLASSES_ROOT\\";
+  const char currentConfig[] = "HKEY_CURRENT_CONFIG\\";
+  const char currentUser[] = "HKEY_CURRENT_USER\\";
+  const char localMachine[] = "HKEY_LOCAL_MACHINE\\";
+  const char users[] = "HKEY_USERS\\";
+
+  HKEY parentKey = nullptr;
+
+  if (keyUrl.StartsWith(classesRoot))
+  {
+    parentKey = HKEY_CLASSES_ROOT;
+
+    mERROR_CHECK(mString_Substring(keyUrl, &subAddress, mARRAYSIZE(classesRoot) - 1));
+  }
+  else if (keyUrl.StartsWith(currentConfig))
+  {
+    parentKey = HKEY_CURRENT_CONFIG;
+
+    mERROR_CHECK(mString_Substring(keyUrl, &subAddress, mARRAYSIZE(currentConfig) - 1));
+  }
+  else if (keyUrl.StartsWith(currentUser))
+  {
+    parentKey = HKEY_CURRENT_USER;
+
+    mERROR_CHECK(mString_Substring(keyUrl, &subAddress, mARRAYSIZE(currentUser) - 1));
+  }
+  else if (keyUrl.StartsWith(localMachine))
+  {
+    parentKey = HKEY_LOCAL_MACHINE;
+
+    mERROR_CHECK(mString_Substring(keyUrl, &subAddress, mARRAYSIZE(localMachine) - 1));
+  }
+  else if (keyUrl.StartsWith(users))
+  {
+    parentKey = HKEY_USERS;
+
+    mERROR_CHECK(mString_Substring(keyUrl, &subAddress, mARRAYSIZE(users) - 1));
+  }
+  else
+  {
+    mRETURN_RESULT(mR_InvalidParameter);
+  }
+
+  wchar_t *wPath = nullptr;
+  size_t wPathCount = 0;
+  mERROR_CHECK(mString_GetRequiredWideStringCount(subAddress, &wPathCount));
+
+  mAllocator *pAllocator = &mDefaultTempAllocator;
+  mDEFER(mAllocator_FreePtr(pAllocator, &wPath));
+  mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &wPath, wPathCount));
+
+  mERROR_CHECK(mString_ToWideString(subAddress, wPath, wPathCount));
+
+  HKEY key = nullptr;
+
+  LSTATUS result = RegOpenKeyTransactedW(parentKey, wPath, 0, KEY_QUERY_VALUE, &key, transaction->transactionHandle, nullptr);
+  mDEFER(if (key != nullptr) RegCloseKey(key));
+  mERROR_IF(result != ERROR_SUCCESS, mR_ResourceNotFound);
+
+  ACL *pOldDACL = nullptr;
+  SECURITY_DESCRIPTOR *pSD = nullptr;
+
+  mDEFER(
+    LocalFree(pSD);
+  );
+
+  mERROR_IF(ERROR_SUCCESS != GetSecurityInfo(key, SE_REGISTRY_KEY, DACL_SECURITY_INFORMATION, nullptr, nullptr, &pOldDACL, nullptr, reinterpret_cast<void **>(&pSD)), mR_InternalError);
+
+  PSID pSid = nullptr;
+  mDEFER(FreeSid(pSid));
+
+  SID_IDENTIFIER_AUTHORITY authNt = SECURITY_NT_AUTHORITY;
+
+  if (0 == AllocateAndInitializeSid(&authNt, 2, SECURITY_BUILTIN_DOMAIN_RID, DOMAIN_ALIAS_RID_USERS, 0, 0, 0, 0, 0, 0, &pSid))
+  {
+    const DWORD error = GetLastError();
+    mUnused(error);
+
+    mRETURN_RESULT(mR_InternalError);
+  }
+
+  EXPLICIT_ACCESS ea = { 0 };
+  ea.grfAccessMode = GRANT_ACCESS;
+  ea.grfAccessPermissions = GENERIC_ALL;
+  ea.grfInheritance = CONTAINER_INHERIT_ACE | OBJECT_INHERIT_ACE;
+  ea.Trustee.TrusteeType = TRUSTEE_IS_GROUP;
+  ea.Trustee.TrusteeForm = TRUSTEE_IS_SID;
+  ea.Trustee.ptstrName = (LPTSTR)pSid;
+
+  ACL *pNewDACL = nullptr;
+  mDEFER(LocalFree(pNewDACL));
+  mERROR_IF(ERROR_SUCCESS != SetEntriesInAclW(1, &ea, pOldDACL, &pNewDACL), mR_InternalError);
+
+  if (pNewDACL)
+    mERROR_IF(ERROR_SUCCESS != SetSecurityInfo(key, SE_REGISTRY_KEY, DACL_SECURITY_INFORMATION, nullptr, nullptr, pNewDACL, nullptr), mR_InternalError);
 
   mRETURN_SUCCESS();
 }
