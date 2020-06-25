@@ -492,11 +492,11 @@ bool WinToast::initialize(_Out_ WinToastError* error) {
         return false;
     }
 
-    if (createShortcut() < 0) {
-        setError(error, WinToastError::ShellLinkNotCreated);
-        DEBUG_MSG(L"Error while attaching the AUMI to the current proccess =(");
-        return false;
-    }
+    //if (createShortcut() < 0) {
+    //    setError(error, WinToastError::ShellLinkNotCreated);
+    //    DEBUG_MSG(L"Error while attaching the AUMI to the current proccess =(");
+    //    return false;
+    //}
 
     if (FAILED(DllImporter::SetCurrentProcessExplicitAppUserModelID(_aumi.c_str()))) {
         setError(error, WinToastError::InvalidAppUserModelID);

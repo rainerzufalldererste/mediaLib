@@ -29,7 +29,21 @@ constexpr size_t mHttpRequest_DefaultTimeout = 5000;
 //////////////////////////////////////////////////////////////////////////
 
 mFUNCTION(mHttpRequest_Destroy_Internal, mHttpRequest *pHttpRequest);
+mFUNCTION(mHttpRequest_Send_Internal, mPtr<mHttpRequest> &httpRequest);
+
 size_t mHttpRequest_WriteMemoryCallback(const void *pContents, const size_t size, const size_t count, void *pUserData);
+size_t mHttpRequest_WriteMemoryCallbackWithFunc(const void *pContents, const size_t size, const size_t count, void *pUserData);
+
+struct mHttpRequest_SendFuncContainer
+{
+  mPtr<mHttpRequest> httpRequest;
+  std::function<mResult(size_t bytesDownloaded)> callback;
+
+  mHttpRequest_SendFuncContainer(const mPtr<mHttpRequest> &httpRequest, const std::function<mResult(size_t bytesDownloaded)> &callback) :
+    httpRequest(httpRequest),
+    callback(callback)
+  { }
+};
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -99,40 +113,26 @@ mFUNCTION(mHttpRequest_Send, mPtr<mHttpRequest> &httpRequest)
 
   mERROR_IF(httpRequest == nullptr, mR_ArgumentNull);
 
-  mERROR_IF(CURLE_OK != curl_easy_setopt(httpRequest->pCurl, CURLOPT_URL, httpRequest->url.c_str()), mR_InternalError);
   mERROR_IF(CURLE_OK != curl_easy_setopt(httpRequest->pCurl, CURLOPT_WRITEFUNCTION, mHttpRequest_WriteMemoryCallback), mR_InternalError);
   mERROR_IF(CURLE_OK != curl_easy_setopt(httpRequest->pCurl, CURLOPT_WRITEDATA, reinterpret_cast<void *>(httpRequest.GetPointer())), mR_InternalError);
 
-  if (httpRequest->pChunk != nullptr)
-    mERROR_IF(CURLE_OK != curl_easy_setopt(httpRequest->pCurl, CURLOPT_HTTPHEADER, httpRequest->pChunk), mR_InternalError);
+  mERROR_CHECK(mHttpRequest_Send_Internal(httpRequest));
 
-  if (httpRequest->timeout)
-    mERROR_IF(CURLE_OK != curl_easy_setopt(httpRequest->pCurl, CURLOPT_TIMEOUT_MS, httpRequest->timeout), mR_InternalError);
-  
-  const CURLcode result = curl_easy_perform(httpRequest->pCurl);
+  mRETURN_SUCCESS();
+}
 
-  switch (result)
-  {
-  case CURLE_OK:
-  {
-    int32_t response_code;
-    mERROR_IF(CURLE_OK != curl_easy_getinfo(httpRequest->pCurl, CURLINFO_RESPONSE_CODE, &response_code), mR_InternalError);
-    mERROR_IF(response_code >= 400, mR_IOFailure);
+mFUNCTION(mHttpRequest_Send, mPtr<mHttpRequest> &httpRequest, const std::function<mResult (const size_t downloadedSize)> &callback)
+{
+  mFUNCTION_SETUP();
 
-    break;
-  }
+  mERROR_IF(httpRequest == nullptr, mR_ArgumentNull);
 
-  case CURLE_OPERATION_TIMEDOUT:
-    mRETURN_RESULT(mR_Timeout);
+  mHttpRequest_SendFuncContainer sendFuncContainer(httpRequest, callback);
 
-  case CURLE_COULDNT_CONNECT:
-    mRETURN_RESULT(mR_ResourceNotFound);
+  mERROR_IF(CURLE_OK != curl_easy_setopt(httpRequest->pCurl, CURLOPT_WRITEFUNCTION, mHttpRequest_WriteMemoryCallbackWithFunc), mR_InternalError);
+  mERROR_IF(CURLE_OK != curl_easy_setopt(httpRequest->pCurl, CURLOPT_WRITEDATA, reinterpret_cast<void *>(&sendFuncContainer)), mR_InternalError);
 
-  default:
-    mRETURN_RESULT(mR_Failure);
-  }
-
-  httpRequest->responseRequested = true;
+  mERROR_CHECK(mHttpRequest_Send_Internal(httpRequest));
 
   mRETURN_SUCCESS();
 }
@@ -142,9 +142,57 @@ mFUNCTION(mHttpRequest_GetResponseSize, mPtr<mHttpRequest> &httpRequest, OUT siz
   mFUNCTION_SETUP();
 
   mERROR_IF(httpRequest == nullptr || pBytes == nullptr, mR_ArgumentNull);
-  mERROR_IF(!httpRequest->responseRequested, mR_ResourceStateInvalid);
+  
+  if (!httpRequest->responseRequested)
+  {
+    CURL *pCurl = curl_easy_init();
+    mERROR_IF(pCurl == nullptr, mR_InternalError);
+    mDEFER_CALL(pCurl, curl_easy_cleanup);
 
-  *pBytes = httpRequest->responseSize;
+    mERROR_IF(CURLE_OK != curl_easy_setopt(pCurl, CURLOPT_URL, httpRequest->url.c_str()), mR_InternalError);
+
+    mERROR_IF(CURLE_OK != curl_easy_setopt(pCurl, CURLOPT_HEADER, 1), mR_InternalError);
+    mERROR_IF(CURLE_OK != curl_easy_setopt(pCurl, CURLOPT_NOBODY, 1), mR_InternalError);
+
+    if (httpRequest->timeout)
+      mERROR_IF(CURLE_OK != curl_easy_setopt(pCurl, CURLOPT_TIMEOUT_MS, httpRequest->timeout), mR_InternalError);
+
+    const CURLcode result = curl_easy_perform(pCurl);
+
+    switch (result)
+    {
+    case CURLE_OK:
+    {
+      int32_t responseCode;
+      mERROR_IF(CURLE_OK != curl_easy_getinfo(pCurl, CURLINFO_RESPONSE_CODE, &responseCode), mR_InternalError);
+      mERROR_IF(responseCode >= 400, mR_IOFailure);
+
+      curl_off_t size;
+      mERROR_IF(CURLE_OK != curl_easy_getinfo(pCurl, CURLINFO_CONTENT_LENGTH_DOWNLOAD_T, &size), mR_InternalError);
+      mERROR_IF(size < 0, mR_IOFailure);
+
+      *pBytes = (size_t)size;
+
+      if (httpRequest->responseCapacity < (size_t)size && mSUCCEEDED(mRealloc(&httpRequest->pResponseBytes, (size_t)size)))
+        httpRequest->responseCapacity = (size_t)size;
+
+      break;
+    }
+
+    case CURLE_OPERATION_TIMEDOUT:
+      mRETURN_RESULT(mR_Timeout);
+
+    case CURLE_COULDNT_CONNECT:
+      mRETURN_RESULT(mR_ResourceNotFound);
+
+    default:
+      mRETURN_RESULT(mR_Failure);
+    }
+  }
+  else
+  {
+    *pBytes = httpRequest->responseSize;
+  }
 
   mRETURN_SUCCESS();
 }
@@ -196,6 +244,46 @@ mFUNCTION(mHttpRequest_Destroy_Internal, mHttpRequest *pHttpRequest)
   mRETURN_SUCCESS();
 }
 
+mFUNCTION(mHttpRequest_Send_Internal, mPtr<mHttpRequest> &httpRequest)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(CURLE_OK != curl_easy_setopt(httpRequest->pCurl, CURLOPT_URL, httpRequest->url.c_str()), mR_InternalError);
+
+  if (httpRequest->pChunk != nullptr)
+    mERROR_IF(CURLE_OK != curl_easy_setopt(httpRequest->pCurl, CURLOPT_HTTPHEADER, httpRequest->pChunk), mR_InternalError);
+
+  if (httpRequest->timeout)
+    mERROR_IF(CURLE_OK != curl_easy_setopt(httpRequest->pCurl, CURLOPT_TIMEOUT_MS, httpRequest->timeout), mR_InternalError);
+
+  const CURLcode result = curl_easy_perform(httpRequest->pCurl);
+
+  switch (result)
+  {
+  case CURLE_OK:
+  {
+    int32_t responseCode;
+    mERROR_IF(CURLE_OK != curl_easy_getinfo(httpRequest->pCurl, CURLINFO_RESPONSE_CODE, &responseCode), mR_InternalError);
+    mERROR_IF(responseCode >= 400, mR_IOFailure);
+
+    break;
+  }
+
+  case CURLE_OPERATION_TIMEDOUT:
+    mRETURN_RESULT(mR_Timeout);
+
+  case CURLE_COULDNT_CONNECT:
+    mRETURN_RESULT(mR_ResourceNotFound);
+
+  default:
+    mRETURN_RESULT(mR_Failure);
+  }
+
+  httpRequest->responseRequested = true;
+
+  mRETURN_SUCCESS();
+}
+
 size_t mHttpRequest_WriteMemoryCallback(const void *pContents, const size_t size, const size_t count, void *pUserData)
 {
   mHttpRequest *pHttpRequest = reinterpret_cast<mHttpRequest *>(pUserData);
@@ -217,6 +305,21 @@ size_t mHttpRequest_WriteMemoryCallback(const void *pContents, const size_t size
 
   pHttpRequest->responseSize += additionalSize;
   pHttpRequest->pResponseBytes[pHttpRequest->responseSize] = 0;
+
+  return additionalSize;
+}
+
+size_t mHttpRequest_WriteMemoryCallbackWithFunc(const void *pContents, const size_t size, const size_t count, void *pUserData)
+{
+  mHttpRequest_SendFuncContainer *pContainer = reinterpret_cast<mHttpRequest_SendFuncContainer *>(pUserData);
+
+  const size_t additionalSize = mHttpRequest_WriteMemoryCallback(pContents, size, count, pContainer->httpRequest.GetPointer());
+
+  if (additionalSize == 0)
+    return 0;
+
+  if (mFAILED(pContainer->callback(pContainer->httpRequest->responseSize)))
+    return 0;
 
   return additionalSize;
 }

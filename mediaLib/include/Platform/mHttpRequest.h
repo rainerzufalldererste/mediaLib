@@ -19,8 +19,12 @@ mFUNCTION(mHttpRequest_AddHeader, mPtr<mHttpRequest> &httpRequest, const mString
 mFUNCTION(mHttpRequest_SetTimeout, mPtr<mHttpRequest> &httpRequest, const size_t timeout);
 
 mFUNCTION(mHttpRequest_Send, mPtr<mHttpRequest> &httpRequest);
+mFUNCTION(mHttpRequest_Send, mPtr<mHttpRequest> &httpRequest, const std::function<mResult(const size_t downloadedSize)> &callback);
 
+// If a successful request has been performed already: Retrieve size of the response.
+// Can also be called the request has been sent. Will attempt to retrieve the `Content-Length` header parameter.
 mFUNCTION(mHttpRequest_GetResponseSize, mPtr<mHttpRequest> &httpRequest, OUT size_t *pBytes);
+
 mFUNCTION(mHttpRequest_GetResponseBytes, mPtr<mHttpRequest> &httpRequest, OUT uint8_t *pBuffer, const size_t bufferSize);
 mFUNCTION(mHttpRequest_GetResponseString, mPtr<mHttpRequest> &httpRequest, OUT mString *pResponse);
 

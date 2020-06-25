@@ -27,6 +27,8 @@ enum mToastNotification_Result
 
 struct mToastNotification;
 
+mFUNCTION(mToastNotification_SetGlobalApplicationName, const mString &appName);
+
 mFUNCTION(mToastNotification_Create, OUT mPtr<mToastNotification> *pNotification, IN mAllocator *pAllocator, const mString &headline, const mString &text, OPTIONAL const mString &imageOrEmpty = "");
 mFUNCTION(mToastNotification_Destroy, IN_OUT mPtr<mToastNotification> *pNotification);
 

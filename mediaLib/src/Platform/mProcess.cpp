@@ -1,5 +1,8 @@
 #include "mProcess.h"
 
+#include <windows.h>
+#include <psapi.h>
+
 #ifdef GIT_BUILD // Define __M_FILE__
   #ifdef __M_FILE__
     #undef __M_FILE__
@@ -12,6 +15,68 @@ struct mProcess
   mPtr<mPipe> _stdin, _stderr, _stdout;
   HANDLE processHandle;
 };
+
+//////////////////////////////////////////////////////////////////////////
+
+mFUNCTION(mProcess_GetRunningProcesses, OUT mPtr<mQueue<mProcessInfo>> *pProcesses, IN mAllocator *pAllocator)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pProcesses == nullptr, mR_ArgumentNull);
+
+  if (*pProcesses == nullptr)
+    mERROR_CHECK(mQueue_Create(pProcesses, pAllocator));
+  else
+    mERROR_CHECK(mQueue_Clear(*pProcesses));
+
+  DWORD processIDs[2048];
+  DWORD bytesNeeded = 0;
+
+  if (!K32EnumProcesses(processIDs, sizeof(processIDs), &bytesNeeded))
+  {
+    const DWORD error = GetLastError();
+    mUnused(error);
+
+    mRETURN_RESULT(mR_InternalError);
+  }
+
+  const size_t processCount = bytesNeeded / sizeof(DWORD);
+
+  mERROR_CHECK(mQueue_Reserve(*pProcesses, processCount));
+
+  for (size_t i = 0; i < processCount; i++)
+  {
+    const DWORD processID = processIDs[i];
+
+    if (processID == 0)
+      continue;
+
+    HANDLE processHandle = OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, processID);
+
+    if (processHandle == nullptr)
+    {
+      GetLastError();
+      continue;
+    }
+
+    mDEFER(CloseHandle(processHandle));
+
+    wchar_t filename[MAX_PATH];
+
+    if (0 != K32GetModuleFileNameExW(processHandle, nullptr, filename, mARRAYSIZE(filename)))
+    {
+      mProcessInfo processInfo = { };
+      processInfo.processId = processID;
+      mERROR_CHECK(mString_Create(&processInfo.filename, filename, mARRAYSIZE(filename), pAllocator));
+
+      mERROR_CHECK(mQueue_PushBack(*pProcesses, std::move(processInfo)));
+    }
+  }
+
+  mRETURN_SUCCESS();
+}
+
+//////////////////////////////////////////////////////////////////////////
 
 mFUNCTION(mProcess_Destroy_Internal, IN_OUT mProcess *pProcess);
 mFUNCTION(mProcess_Run_Internal, const mString &executable, const mString &workingDirectory, const mString &params, OPTIONAL mPtr<mPipe> stdinPipe, OPTIONAL mPtr<mPipe> stdoutPipe, OPTIONAL mPtr<mPipe> stderrPipe, OUT OPTIONAL HANDLE *pProcessHandle, const mProcess_CreationFlags flags);
@@ -35,6 +100,45 @@ mFUNCTION(mProcess_Create, OUT mPtr<mProcess> *pProcess, IN mAllocator *pAllocat
   (*pProcess)->_stdin = stdinPipe;
   (*pProcess)->_stdout = stdoutPipe;
   (*pProcess)->_stderr = stderrPipe;
+  (*pProcess)->processHandle = processHandle;
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mProcess_CreateFromProcessId, OUT mPtr<mProcess> *pProcess, IN mAllocator *pAllocator, const size_t processId)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pProcess == nullptr, mR_ArgumentNull);
+  mERROR_IF(processId > MAXDWORD, mR_InvalidParameter);
+
+  HANDLE processHandle = OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, (DWORD)processId);
+
+  if (processHandle == nullptr)
+  {
+    const DWORD error = GetLastError();
+
+    switch (error)
+    {
+    case ERROR_NOT_FOUND:
+    case ERROR_FILE_NOT_FOUND:
+    case ERROR_PATH_NOT_FOUND:
+      mRETURN_RESULT(mR_ResourceNotFound);
+      break;
+
+    case ERROR_ACCESS_DENIED:
+      mRETURN_RESULT(mR_InsufficientPrivileges);
+      break;
+
+    default:
+      mRETURN_RESULT(mR_InternalError);
+    }
+  }
+
+  mDEFER_ON_ERROR(CloseHandle(processHandle));
+
+  mERROR_CHECK(mSharedPointer_Allocate<mProcess>(pProcess, pAllocator, [](mProcess *pData) { mProcess_Destroy_Internal(pData); }, 1));
+
   (*pProcess)->processHandle = processHandle;
 
   mRETURN_SUCCESS();
@@ -76,7 +180,7 @@ mFUNCTION(mProcess_IsRunning, mPtr<mProcess> &process, OUT bool *pIsRunning)
   }
   // continue. (not break!)
   default:
-    mRETURN_RESULT(mR_InvalidParameter);
+    mRETURN_RESULT(mR_InternalError);
     break;
   }
 
@@ -121,6 +225,37 @@ mFUNCTION(mProcess_Terminate, mPtr<mProcess> &process, const uint32_t exitCode /
     mUnused(error);
 
     mRETURN_RESULT(mR_InternalError);
+  }
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mProcess_WaitForExit, mPtr<mProcess> &process, const uint32_t timeoutMs /* = (uint32_t)-1 */)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(process == nullptr, mR_ArgumentNull);
+
+  const DWORD result = WaitForSingleObject(process->processHandle, timeoutMs);
+
+  switch (result)
+  {
+  case WAIT_TIMEOUT:
+    mRETURN_RESULT(mR_Timeout);
+    break;
+
+  case WAIT_OBJECT_0:
+    break;
+
+  case WAIT_FAILED:
+  {
+    const DWORD error = GetLastError();
+    mUnused(error);
+  }
+  // continue. (not break!)
+  default:
+    mRETURN_RESULT(mR_InternalError);
+    break;
   }
 
   mRETURN_SUCCESS();

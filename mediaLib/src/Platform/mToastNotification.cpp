@@ -21,18 +21,19 @@ struct mToastNotification
   size_t actionId;
 };
 
-mFUNCTION(mToastNotification_Create, OUT mPtr<mToastNotification> *pNotification, IN mAllocator *pAllocator, const mString &headline, const mString &text, OPTIONAL const mString &imageOrEmpty /* = "" */)
+//////////////////////////////////////////////////////////////////////////
+
+static bool mToastNotification_IsInitialized = false;
+
+//////////////////////////////////////////////////////////////////////////
+
+mFUNCTION(mToastNotification_SetGlobalApplicationName, const mString &appName)
 {
   mFUNCTION_SETUP();
 
   mERROR_IF(!WinToast::isCompatible(), mR_ResourceIncompatible);
-  mERROR_IF(pNotification == nullptr, mR_ArgumentNull);
 
   mAllocator *pTempAllocator = &mDefaultTempAllocator;
-
-  mString appName;
-  mERROR_CHECK(mFile_GetCurrentApplicationFilePath(&appName));
-  mERROR_CHECK(mFile_ExtractFileNameFromPath(&appName, appName, false));
 
   wchar_t *wAppName = nullptr;
   size_t wAppNameCount = 0;
@@ -42,17 +43,27 @@ mFUNCTION(mToastNotification_Create, OUT mPtr<mToastNotification> *pNotification
   mERROR_CHECK(mAllocator_AllocateZero(pTempAllocator, &wAppName, wAppNameCount));
   mERROR_CHECK(mString_ToWideString(appName, wAppName, wAppNameCount));
 
-  mString modelName;
-  mERROR_CHECK(mString_Create(&modelName, appName));
-  mERROR_CHECK(mString_AppendInteger(modelName, mGetCurrentTimeNs()));
+  WinToast::instance()->setAppName(wAppName);
+  WinToast::instance()->setAppUserModelId(wAppName);
 
-  wchar_t *wAppModelName = nullptr;
-  size_t wAppModelNameCount = 0;
+  mERROR_IF(!WinToast::instance()->initialize(), mR_ResourceIncompatible);
 
-  mERROR_CHECK(mString_GetRequiredWideStringCount(modelName, &wAppModelNameCount));
-  mDEFER(mAllocator_FreePtr(pTempAllocator, &wAppModelName));
-  mERROR_CHECK(mAllocator_AllocateZero(pTempAllocator, &wAppModelName, wAppModelNameCount));
-  mERROR_CHECK(mString_ToWideString(modelName, wAppModelName, wAppModelNameCount));
+  mToastNotification_IsInitialized = true;
+
+  mRETURN_SUCCESS();
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+mFUNCTION(mToastNotification_Create, OUT mPtr<mToastNotification> *pNotification, IN mAllocator *pAllocator, const mString &headline, const mString &text, OPTIONAL const mString &imageOrEmpty /* = "" */)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(!mToastNotification_IsInitialized, mR_ResourceStateInvalid);
+  mERROR_IF(!WinToast::isCompatible(), mR_ResourceIncompatible);
+  mERROR_IF(pNotification == nullptr, mR_ArgumentNull);
+
+  mAllocator *pTempAllocator = &mDefaultTempAllocator;
 
   wchar_t *wHeadline = nullptr;
   size_t wHeadlineCount = 0;
@@ -70,7 +81,6 @@ mFUNCTION(mToastNotification_Create, OUT mPtr<mToastNotification> *pNotification
   mERROR_CHECK(mAllocator_AllocateZero(pTempAllocator, &wText, wTextCount));
   mERROR_CHECK(mString_ToWideString(text, wText, wTextCount));
  
-
   wchar_t *wImagePath = nullptr;
   size_t wImagePathCount = 0;
 
@@ -83,11 +93,6 @@ mFUNCTION(mToastNotification_Create, OUT mPtr<mToastNotification> *pNotification
   mERROR_CHECK((mSharedPointer_Allocate<mToastNotification>(pNotification, pAllocator, [] (mToastNotification *pData) { mDestruct(pData); }, 1)));
 
   new (&(*pNotification)->toastTemplate) WinToastTemplate(wImagePathCount < 2 ? WinToastTemplate::Text02 : WinToastTemplate::ImageAndText02);
-
-  WinToast::instance()->setAppName(wAppName);
-  WinToast::instance()->setAppUserModelId(wAppModelName);
-
-  mERROR_IF(!WinToast::instance()->initialize(), mR_ResourceIncompatible);
 
   if (wImagePathCount >= 2)
     (*pNotification)->toastTemplate.setImagePath(wImagePath);
