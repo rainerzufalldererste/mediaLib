@@ -20,6 +20,7 @@ enum mHardwareWindow_DisplayMode
   mHW_DM_Minimized = SDL_WINDOW_MINIMIZED,
   mHW_DM_Hidden = SDL_WINDOW_HIDDEN,
   mHW_DM_NotInTaskbar = SDL_WINDOW_SKIP_TASKBAR,
+  mHW_DM_Borderless = SDL_WINDOW_BORDERLESS,
 };
 
 struct mHardwareWindow;

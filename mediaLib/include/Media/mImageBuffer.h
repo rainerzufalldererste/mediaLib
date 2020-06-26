@@ -31,6 +31,7 @@ struct mImageBuffer
 
 mFUNCTION(mImageBuffer_Create, OUT mPtr<mImageBuffer> *pImageBuffer, IN OPTIONAL mAllocator *pAllocator);
 mFUNCTION(mImageBuffer_CreateFromFile, OUT mPtr<mImageBuffer> *pImageBuffer, IN OPTIONAL mAllocator *pAllocator, const mString &filename, const mPixelFormat pixelFormat = mPF_R8G8B8A8);
+mFUNCTION(mImageBuffer_CreateFromData, OUT mPtr<mImageBuffer> *pImageBuffer, IN OPTIONAL mAllocator *pAllocator, IN const uint8_t *pData, const size_t size, const mPixelFormat pixelFormat = mPF_R8G8B8A8);
 mFUNCTION(mImageBuffer_Create, OUT mPtr<mImageBuffer> *pImageBuffer, IN OPTIONAL mAllocator *pAllocator, const mVec2s &size, const mPixelFormat pixelFormat = mPF_B8G8R8A8);
 mFUNCTION(mImageBuffer_Create, OUT mPtr<mImageBuffer> *pImageBuffer, IN OPTIONAL mAllocator *pAllocator, IN const void *pData, const mVec2s &size, const mPixelFormat pixelFormat = mPF_B8G8R8A8);
 mFUNCTION(mImageBuffer_Create, OUT mPtr<mImageBuffer> *pImageBuffer, IN OPTIONAL mAllocator *pAllocator, IN const void *pData, const mVec2s &size, const size_t stride, const mPixelFormat pixelFormat = mPF_B8G8R8A8);
@@ -49,6 +50,7 @@ mFUNCTION(mImageBuffer_SaveAsBmp, mPtr<mImageBuffer> &imageBuffer, const mString
 mFUNCTION(mImageBuffer_SaveAsTga, mPtr<mImageBuffer> &imageBuffer, const mString &filename);
 
 mFUNCTION(mImageBuffer_SetToFile, mPtr<mImageBuffer> &imageBuffer, const mString &filename, const mPixelFormat pixelFormat = mPF_B8G8R8A8);
+mFUNCTION(mImageBuffer_SetToData, mPtr<mImageBuffer> &imageBuffer, IN const uint8_t *pData, const size_t size, const mPixelFormat pixelFormat = mPF_B8G8R8A8);
 
 mFUNCTION(mImageBuffer_FlipY, mPtr<mImageBuffer> &imageBuffer);
 

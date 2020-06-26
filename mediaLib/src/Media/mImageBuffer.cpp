@@ -66,6 +66,18 @@ mFUNCTION(mImageBuffer_CreateFromFile, OUT mPtr<mImageBuffer> *pImageBuffer, IN 
   mRETURN_SUCCESS();
 }
 
+mFUNCTION(mImageBuffer_CreateFromData, OUT mPtr<mImageBuffer> *pImageBuffer, IN OPTIONAL mAllocator *pAllocator, IN const uint8_t *pData, const size_t size, const mPixelFormat pixelFormat /* = mPF_R8G8B8A8 */)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pImageBuffer == nullptr, mR_ArgumentNull);
+  mERROR_CHECK(mImageBuffer_Create_Iternal(pImageBuffer, pAllocator));
+
+  mERROR_CHECK(mImageBuffer_SetToData(*pImageBuffer, pData, size, pixelFormat));
+
+  mRETURN_SUCCESS();
+}
+
 mFUNCTION(mImageBuffer_Create, OUT mPtr<mImageBuffer> *pImageBuffer, IN OPTIONAL mAllocator *pAllocator, const mVec2s &size, const mPixelFormat pixelFormat /* = mPF_B8G8R8A8 */)
 {
   mFUNCTION_SETUP();
@@ -473,7 +485,19 @@ mFUNCTION(mImageBuffer_SetToFile, mPtr<mImageBuffer> &imageBuffer, const mString
   mERROR_CHECK(mFile_ReadRaw(filename, &pData, &mDefaultTempAllocator, &size));
   mDEFER(mAllocator_FreePtr(&mDefaultTempAllocator, &pData));
 
-  int components = 4;
+  mERROR_CHECK(mImageBuffer_SetToData(imageBuffer, pData, size, pixelFormat));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mImageBuffer_SetToData, mPtr<mImageBuffer> &imageBuffer, IN const uint8_t *pData, const size_t size, const mPixelFormat pixelFormat /* = mPF_B8G8R8A8 */)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(imageBuffer == nullptr || pData == nullptr, mR_ArgumentNull);
+  mERROR_IF(size == 0, mR_InvalidParameter);
+
+  int32_t components = 4;
   mPixelFormat readPixelFormat = mPF_R8G8B8A8;
 
   const bool tryJpeg = (size > 3 && pData[0] == 0xFF && pData[1] == 0xD8 && pData[2] == 0xFF);
@@ -489,7 +513,7 @@ mFUNCTION(mImageBuffer_SetToFile, mPtr<mImageBuffer> &imageBuffer, const mString
 
     mDEFER(tjDestroy(decoder));
 
-    if (0 != tjDecompressHeader(decoder, pData, (uint32_t)size, &width, &height))
+    if (0 != tjDecompressHeader(decoder, const_cast<uint8_t *>(reinterpret_cast<const uint8_t *>(pData)), (uint32_t)size, &width, &height))
       goto jpeg_decoder_failed;
 
     if (pixelFormat == mPF_YUV420)
