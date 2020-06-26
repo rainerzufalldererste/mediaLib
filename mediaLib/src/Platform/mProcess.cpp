@@ -112,7 +112,15 @@ mFUNCTION(mProcess_CreateFromProcessId, OUT mPtr<mProcess> *pProcess, IN mAlloca
   mERROR_IF(pProcess == nullptr, mR_ArgumentNull);
   mERROR_IF(processId > MAXDWORD, mR_InvalidParameter);
 
-  HANDLE processHandle = OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, (DWORD)processId);
+  HANDLE processHandle = OpenProcess(PROCESS_QUERY_INFORMATION | SYNCHRONIZE | PROCESS_TERMINATE, FALSE, (DWORD)processId);
+
+  if (processHandle == nullptr)
+  {
+    const DWORD error = GetLastError();
+    mUnused(error);
+
+    processHandle = OpenProcess(PROCESS_QUERY_INFORMATION | SYNCHRONIZE, FALSE, (DWORD)processId);
+  }
 
   if (processHandle == nullptr)
   {
