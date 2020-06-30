@@ -31,6 +31,9 @@ mFUNCTION(mUI_PopMonospacedFont);
 mFUNCTION(mUI_PushHeadlineFont);
 mFUNCTION(mUI_PopHeadlineFont);
 
+mFUNCTION(mUI_PushSlimHeadlineFont);
+mFUNCTION(mUI_PopSlimHeadlineFont);
+
 mFUNCTION(mUI_PushSubHeadlineFont);
 mFUNCTION(mUI_PopSubHeadlineFont);
 
