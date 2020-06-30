@@ -14,6 +14,7 @@
 #endif
 
 mFUNCTION(mUI_Initilialize, mPtr<mHardwareWindow> &hardwareWindow, const bool addUpdateCallback = true);
+mFUNCTION(mUI_SetIniFilePath, const mString &path);
 mFUNCTION(mUI_StartFrame, mPtr<mHardwareWindow> &hardwareWindow);
 mFUNCTION(mUI_Shutdown);
 mFUNCTION(mUI_Bake);
