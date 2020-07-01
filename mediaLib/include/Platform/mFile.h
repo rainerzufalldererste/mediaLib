@@ -263,5 +263,6 @@ inline mFUNCTION(mFile_WriteRaw, const mString &filename, IN T *pData, const siz
 
 mFUNCTION(mRegistry_ReadKey, const mString &keyUrl, OUT mString *pValue);
 mFUNCTION(mRegistry_WriteKey, const mString &keyUrl, const mString &value, OUT OPTIONAL bool *pNewlyCreated = nullptr);
+mFUNCTION(mRegistry_DeleteKey, const mString &keyUrl);
 
 #endif // mFile_h__

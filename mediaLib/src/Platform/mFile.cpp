@@ -2294,3 +2294,157 @@ mFUNCTION(mRegistry_ReadKey, const mString &keyUrl, OUT mString *pValue)
 
   mRETURN_SUCCESS();
 }
+
+mFUNCTION(mRegistry_DeleteKey, const mString &keyUrl)
+{
+  mFUNCTION_SETUP();
+
+  mString subAddress;
+  subAddress.pAllocator = &mDefaultTempAllocator;
+
+  const char classesRoot[] = "HKEY_CLASSES_ROOT\\";
+  const char currentConfig[] = "HKEY_CURRENT_CONFIG\\";
+  const char currentUser[] = "HKEY_CURRENT_USER\\";
+  const char localMachine[] = "HKEY_LOCAL_MACHINE\\";
+  const char users[] = "HKEY_USERS\\";
+
+  HKEY parentKey = nullptr;
+
+  if (keyUrl.StartsWith(classesRoot))
+  {
+    parentKey = HKEY_CLASSES_ROOT;
+
+    mERROR_CHECK(mString_Substring(keyUrl, &subAddress, mARRAYSIZE(classesRoot) - 1));
+  }
+  else if (keyUrl.StartsWith(currentConfig))
+  {
+    parentKey = HKEY_CURRENT_CONFIG;
+
+    mERROR_CHECK(mString_Substring(keyUrl, &subAddress, mARRAYSIZE(currentConfig) - 1));
+  }
+  else if (keyUrl.StartsWith(currentUser))
+  {
+    parentKey = HKEY_CURRENT_USER;
+
+    mERROR_CHECK(mString_Substring(keyUrl, &subAddress, mARRAYSIZE(currentUser) - 1));
+  }
+  else if (keyUrl.StartsWith(localMachine))
+  {
+    parentKey = HKEY_LOCAL_MACHINE;
+
+    mERROR_CHECK(mString_Substring(keyUrl, &subAddress, mARRAYSIZE(localMachine) - 1));
+  }
+  else if (keyUrl.StartsWith(users))
+  {
+    parentKey = HKEY_USERS;
+
+    mERROR_CHECK(mString_Substring(keyUrl, &subAddress, mARRAYSIZE(users) - 1));
+  }
+  else
+  {
+    mRETURN_RESULT(mR_InvalidParameter);
+  }
+
+  mString pathString;
+  pathString.pAllocator = &mDefaultTempAllocator;
+
+  mString valueName;
+  valueName.pAllocator = &mDefaultTempAllocator;
+
+  size_t index = (size_t)-1;
+  size_t lastSlashIndex = (size_t)-1;
+  const mchar_t slashCodePoint = mToChar<2>("\\");
+
+  for (const auto &&_char : subAddress)
+  {
+    ++index;
+
+    if (_char.codePoint == slashCodePoint)
+      lastSlashIndex = index;
+  }
+
+  if (lastSlashIndex == (size_t)-1)
+  {
+    mERROR_CHECK(mString_Create(&pathString, subAddress, &mDefaultTempAllocator));
+    mERROR_CHECK(mString_Create(&valueName, "", 1, &mDefaultTempAllocator));
+  }
+  else
+  {
+    mERROR_CHECK(mString_Substring(subAddress, &pathString, 0, lastSlashIndex));
+
+    if (lastSlashIndex != subAddress.count)
+      mERROR_CHECK(mString_Substring(subAddress, &valueName, lastSlashIndex + 1, subAddress.count - (lastSlashIndex + 2)));
+    else
+      mERROR_CHECK(mString_Create(&valueName, "", 1, &mDefaultTempAllocator));
+  }
+
+  wchar_t *wPath = nullptr;
+  size_t wPathCount = 0;
+  mERROR_CHECK(mString_GetRequiredWideStringCount(pathString, &wPathCount));
+
+  mAllocator *pAllocator = &mDefaultTempAllocator;
+  mDEFER(mAllocator_FreePtr(pAllocator, &wPath));
+  mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &wPath, wPathCount));
+
+  mERROR_CHECK(mString_ToWideString(pathString, wPath, wPathCount));
+
+  HKEY key = nullptr;
+
+  LSTATUS result = RegOpenKeyExW(parentKey, wPath, 0, KEY_ALL_ACCESS, &key);
+  mDEFER(if (key != nullptr) RegCloseKey(key));
+  mERROR_IF(result != ERROR_SUCCESS, mR_ResourceNotFound);
+
+  if (valueName.bytes <= 1)
+  {
+    result = RegDeleteTreeW(key, nullptr);
+    
+    if (result != ERROR_SUCCESS)
+    {
+      switch (result)
+      {
+      case ERROR_ACCESS_DENIED:
+        mRETURN_RESULT(mR_InsufficientPrivileges);
+
+      case ERROR_PATH_NOT_FOUND:
+      case ERROR_FILE_NOT_FOUND:
+      case ERROR_NOT_FOUND:
+        mRETURN_RESULT(mR_ResourceNotFound);
+
+      default:
+        mRETURN_RESULT(mR_InternalError);
+      }
+    }
+  }
+  else
+  {
+    wchar_t *wValueName = nullptr;
+    size_t wValueNameCount = 0;
+    mERROR_CHECK(mString_GetRequiredWideStringCount(valueName, &wValueNameCount));
+
+    mDEFER(mAllocator_FreePtr(pAllocator, &wValueName));
+    mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &wValueName, wValueNameCount));
+
+    mERROR_CHECK(mString_ToWideString(valueName, wValueName, wValueNameCount));
+
+    result = RegDeleteValueW(key, wValueName);
+
+    if (result != ERROR_SUCCESS)
+    {
+      switch (result)
+      {
+      case ERROR_ACCESS_DENIED:
+        mRETURN_RESULT(mR_InsufficientPrivileges);
+
+      case ERROR_PATH_NOT_FOUND:
+      case ERROR_FILE_NOT_FOUND:
+      case ERROR_NOT_FOUND:
+        mRETURN_RESULT(mR_ResourceNotFound);
+
+      default:
+        mRETURN_RESULT(mR_InternalError);
+      }
+    }
+  }
+
+  mRETURN_SUCCESS();
+}
