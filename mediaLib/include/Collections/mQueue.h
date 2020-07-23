@@ -125,16 +125,22 @@ template <typename T>
 mFUNCTION(mQueue_Destroy, IN_OUT mPtr<mQueue<T>> *pQueue);
 
 template <typename T>
-mFUNCTION(mQueue_PushBack, mPtr<mQueue<T>> &queue, IN T *pItem);
+mFUNCTION(mQueue_PushBack, mPtr<mQueue<T>> &queue, IN const T *pItem);
 
 template <typename T>
-mFUNCTION(mQueue_PushBack, mPtr<mQueue<T>> &queue, IN T item);
+mFUNCTION(mQueue_PushBack, mPtr<mQueue<T>> &queue, IN const T &item);
 
 template <typename T>
-mFUNCTION(mQueue_PushFront, mPtr<mQueue<T>> &queue, IN T *pItem);
+mFUNCTION(mQueue_PushBack, mPtr<mQueue<T>> &queue, IN T &&item);
 
 template <typename T>
-mFUNCTION(mQueue_PushFront, mPtr<mQueue<T>> &queue, IN T item);
+mFUNCTION(mQueue_PushFront, mPtr<mQueue<T>> &queue, IN const T *pItem);
+
+template <typename T>
+mFUNCTION(mQueue_PushFront, mPtr<mQueue<T>> &queue, IN const T &item);
+
+template <typename T>
+mFUNCTION(mQueue_PushFront, mPtr<mQueue<T>> &queue, IN T &&item);
 
 template <typename T>
 mFUNCTION(mQueue_PopFront, mPtr<mQueue<T>> &queue, OUT T *pItem);
@@ -305,7 +311,7 @@ inline mFUNCTION(mQueue_Destroy, IN_OUT mPtr<mQueue<T>> *pQueue)
 }
 
 template<typename T>
-inline mFUNCTION(mQueue_PushBack, mPtr<mQueue<T>> &queue, IN T *pItem)
+inline mFUNCTION(mQueue_PushBack, mPtr<mQueue<T>> &queue, IN const T *pItem)
 {
   mFUNCTION_SETUP();
 
@@ -350,17 +356,23 @@ mFUNCTION(mQueue_EmplaceBack, mPtr<mQueue<T>> &queue, Args && ...args)
 }
 
 template<typename T>
-inline mFUNCTION(mQueue_PushBack, mPtr<mQueue<T>> &queue, IN T item)
+inline mFUNCTION(mQueue_PushBack, mPtr<mQueue<T>> &queue, IN const T &item)
 {
   mFUNCTION_SETUP();
 
-  mERROR_CHECK(mQueue_PushBack(queue, &item));
+  mERROR_CHECK((mQueue_PushBack<T>(queue, &item)));
 
   mRETURN_SUCCESS();
 }
 
 template<typename T>
-inline mFUNCTION(mQueue_PushFront, mPtr<mQueue<T>> &queue, IN T *pItem)
+inline mFUNCTION(mQueue_PushBack, mPtr<mQueue<T>> &queue, IN T &&item)
+{
+  return mQueue_EmplaceBack(queue, std::forward<T>(item));
+}
+
+template<typename T>
+inline mFUNCTION(mQueue_PushFront, mPtr<mQueue<T>> &queue, IN const T *pItem)
 {
   mFUNCTION_SETUP();
 
@@ -417,13 +429,19 @@ mFUNCTION(mQueue_EmplaceFront, mPtr<mQueue<T>> &queue, Args && ...args)
 }
 
 template<typename T>
-inline mFUNCTION(mQueue_PushFront, mPtr<mQueue<T>> &queue, IN T item)
+inline mFUNCTION(mQueue_PushFront, mPtr<mQueue<T>> &queue, IN const T &item)
 {
   mFUNCTION_SETUP();
 
-  mERROR_CHECK(mQueue_PushFront(queue, &item));
+  mERROR_CHECK((mQueue_PushFront<T>(queue, &item)));
 
   mRETURN_SUCCESS();
+}
+
+template<typename T>
+inline mFUNCTION(mQueue_PushFront, mPtr<mQueue<T>> &queue, IN T &&item)
+{
+  return mQueue_EmplaceFront(queue, std::forward<T>(item));
 }
 
 template<typename T>
