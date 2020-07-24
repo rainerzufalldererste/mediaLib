@@ -4,7 +4,7 @@
 #include "mediaLib.h"
 #include "gtest/gtest.h"
 
-//#define mDEBUG_TESTS
+#define mDEBUG_TESTS
 
 #if defined(mDEBUG_TESTS) && defined(GIT_BUILD)
 static_assert(false, "mDEBUG_TESTS has to be turned off for Buildserver builds.");

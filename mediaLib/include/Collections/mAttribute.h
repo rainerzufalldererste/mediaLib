@@ -13,7 +13,7 @@
 
 struct mAttribute;
 
-constexpr size_t mAttribute_NameLength = 64;
+constexpr size_t mAttribute_NameLength = 63;
 
 enum mAttribute_Type
 {
@@ -49,8 +49,8 @@ enum mAttribute_Type
 
 struct mAttribute
 {
-  mAttribute_Type type;
   mInplaceString<mAttribute_NameLength> name;
+  mAttribute_Type type;
 
   union
   {
@@ -96,8 +96,7 @@ struct mAttribute
 
     struct
     {
-      uint32_t size, skip;
-      size_t parentIndex;
+      uint32_t size, skip, parentIndex, added; // `added` even contains inactive values.
     } Object;
 
     struct 
@@ -178,18 +177,24 @@ mFUNCTION(mAttributeStore_Destroy, IN_OUT mAttributeStore *pAttributeStore);
 mFUNCTION(mAttributeIterator_Reset, IN_OUT mAttributeIterator *pAttributeIterator);
 mFUNCTION(mAttributeIterator_Next, IN_OUT mAttributeIterator *pAttributeIterator);
 mFUNCTION(mAttributeIterator_Find, IN_OUT mAttributeIterator *pAttributeIterator, const mString &name);
+mFUNCTION(mAttributeIterator_Find, IN_OUT mAttributeIterator *pAttributeIterator, const mInplaceString<mAttribute_NameLength> &name);
 
 mFUNCTION(mAttributeIterator_AddUInt64, IN_OUT mAttributeIterator *pAttributeIterator, const mString &name, const uint64_t value);
-mFUNCTION(mAttributeIterator_AddInt64, IN_OUT mAttributeIterator *pAttributeIterator, const mString &name, const int64_t value);
+mFUNCTION(mAttributeIterator_AddInt64, IN_OUT mAttributeIterator *pAttributeIterator, const mString &name, const int64_t value); 
 mFUNCTION(mAttributeIterator_AddBool, IN_OUT mAttributeIterator *pAttributeIterator, const mString &name, const bool value);
 mFUNCTION(mAttributeIterator_AddFloat64, IN_OUT mAttributeIterator *pAttributeIterator, const mString &name, const double_t value);
 mFUNCTION(mAttributeIterator_AddVector2, IN_OUT mAttributeIterator *pAttributeIterator, const mString &name, const mVec2f value);
 mFUNCTION(mAttributeIterator_AddVector3, IN_OUT mAttributeIterator *pAttributeIterator, const mString &name, const mVec3f value);
 mFUNCTION(mAttributeIterator_AddVector4, IN_OUT mAttributeIterator *pAttributeIterator, const mString &name, const mVec4f value);
 mFUNCTION(mAttributeIterator_AddString, IN_OUT mAttributeIterator *pAttributeIterator, const mString &name, const mString &value);
+
+// Enters the current object after adding it.
 mFUNCTION(mAttributeIterator_AddObject, IN_OUT mAttributeIterator *pAttributeIterator, const mString &name);
 
+mFUNCTION(mAttributeIterator_LeaveObject, IN_OUT mAttributeIterator *pAttributeIterator);
+
 mFUNCTION(mAttributeIterator_GetCurrentAttributeName, IN mAttributeIterator *pAttributeIterator, OUT mString *pName);
+mFUNCTION(mAttributeIterator_GetCurrentAttributeName, IN mAttributeIterator *pAttributeIterator, OUT mInplaceString<mAttribute_NameLength> *pName);
 mFUNCTION(mAttributeIterator_GetCurrentAttributeType, IN mAttributeIterator *pAttributeIterator, OUT mAttribute_Type *pType);
 
 mFUNCTION(mAttributeIterator_GetCurrentValue, IN mAttributeIterator *pAttributeIterator, OUT uint64_t *pValue);
@@ -203,8 +208,14 @@ mFUNCTION(mAttributeIterator_GetCurrentValue, IN mAttributeIterator *pAttributeI
 mFUNCTION(mAttributeIterator_GetCurrentValue, IN mAttributeIterator *pAttributeIterator, OUT mString *pValue);
 
 mFUNCTION(mAttributeIterator_GetCurrentObject, IN mAttributeIterator *pAttributeIterator, OUT mAttributeIterator *pChildAttributeIterator);
+mFUNCTION(mAttributeIterator_EnterCurrentObject, IN mAttributeIterator *pAttributeIterator);
 
 mFUNCTION(mAttributeIterator_DeactivateCurrentValue, IN mAttributeIterator *pAttributeIterator);
+
+typedef size_t mAttributeValueHandle;
+
+mFUNCTION(mAttributeIterator_ReactivateValueFromGlobalHandle, IN mAttributeIterator *pAttributeIterator, const mAttributeValueHandle handle);
+mFUNCTION(mAttributeIterator_GetCurrentValueGlobalHandle, IN mAttributeIterator *pAttributeIterator, OUT mAttributeValueHandle *pHandle);
 
 mFUNCTION(mAttributeIterator_ReplaceCurrentValueWithUInt64, IN_OUT mAttributeIterator *pAttributeIterator, const uint64_t value);
 mFUNCTION(mAttributeIterator_ReplaceCurrentValueWithInt64, IN_OUT mAttributeIterator *pAttributeIterator, const int64_t value);
