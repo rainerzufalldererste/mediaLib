@@ -67,4 +67,17 @@ mFUNCTION(mThreadPool_Clear, mPtr<mThreadPool> &asyncTaskHandler);
 mFUNCTION(mThreadPool_EnqueueTask, mPtr<mThreadPool> &asyncTaskHandler, IN mTask *pTask);
 mFUNCTION(mThreadPool_GetThreadCount, mPtr<mThreadPool> &asyncTaskHandler, OUT size_t *pThreadCount);
 
+//////////////////////////////////////////////////////////////////////////
+
+// This provides the same functionality and performance from htCodec's thread pool.
+struct mTasklessThreadPool;
+
+mFUNCTION(mTasklessThreadPool_Create, OUT mPtr<mTasklessThreadPool> *pThreadPool, IN mAllocator *pAllocator, const size_t threadCount);
+mFUNCTION(mTasklessThreadPool_Destroy, IN_OUT mPtr<mTasklessThreadPool> *pThreadPool);
+
+mFUNCTION(mTasklessThreadPool_EnqueueTask, mPtr<mTasklessThreadPool> &threadPool, const std::function<void(void)> &taskHandle);
+mFUNCTION(mTasklessThreadPool_WaitForAll, mPtr<mTasklessThreadPool> &threadPool);
+
+mFUNCTION(htCodecThreadPool_GetWorkerThreadCount, const mPtr<mTasklessThreadPool> &threadPool, OUT size_t *pCount);
+
 #endif // mThreadPool_h__
