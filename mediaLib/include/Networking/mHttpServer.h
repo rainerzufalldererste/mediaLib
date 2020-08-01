@@ -3,7 +3,8 @@
 
 #include "mediaLib.h"
 #include "mBinaryChunk.h"
-#include "mHashMap.h"
+#include "mQueue.h"
+#include "mKeyValuePair.h"
 
 enum HttpResponseStatusCode
 {
@@ -127,9 +128,9 @@ struct mHttpRequestHandler;
 struct mHttpRequest
 {
   mHttpRequestMethod requestMethod;
-  mPtr<mHashMap<mString, mString>> headParameters;
-  mPtr<mHashMap<mString, mString>> postParameters;
-  mPtr<mHashMap<mString, mString>> attributes;
+  mUniqueContainer<mQueue<mKeyValuePair<mString, mString>>> headParameters;
+  mUniqueContainer<mQueue<mKeyValuePair<mString, mString>>> postParameters;
+  mUniqueContainer<mQueue<mKeyValuePair<mString, mString>>> attributes;
   mString url;
 };
 
@@ -148,6 +149,6 @@ struct mHttpRequestHandler
 
 struct mHttpServer;
 
-mFUNCTION(mHttpServer_Create, OUT mPtr<mHttpServer> *pHttpServer, IN mAllocator *pAllocator, const uint16_t port = 80);
+mFUNCTION(mHttpServer_Create, OUT mPtr<mHttpServer> *pHttpServer, IN mAllocator *pAllocator, const uint16_t port = 80, const size_t threadCount = 1);
 
 #endif, //  mHTTPServer_h__

@@ -20,7 +20,7 @@ struct mHttpServer
 
 struct mHttpRequest_Parser : mHttpRequest
 {
-  mString *pLastAttributeValue;
+  mKeyValuePair<mString, mString> *pLastAttributeValue;
   mResult result;
   mString body;
 };
@@ -33,9 +33,12 @@ int32_t _OnHeaderField(http_parser *, const char *at, size_t length);
 int32_t _OnHeaderValue(http_parser *, const char *at, size_t length);
 int32_t _OnBody(http_parser *, const char *at, size_t length);
 
+mFUNCTION(mHttpRequest_Parser_Init_Internal, mPtr<mHttpRequest_Parser> &request, IN mAllocator *pAllocator);
+void mHttpRequest_Parser_Destroy_Internal(IN_OUT mHttpRequest_Parser *pRequest);
+
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mHttpServer_Create, OUT mPtr<mHttpServer> *pHttpServer, IN mAllocator *pAllocator, const uint16_t port /* = 80 */)
+mFUNCTION(mHttpServer_Create, OUT mPtr<mHttpServer> *pHttpServer, IN mAllocator *pAllocator, const uint16_t port /* = 80 */, const size_t threadCount /* = 1 */)
 {
   mFUNCTION_SETUP();
 
@@ -56,6 +59,7 @@ mFUNCTION(mHttpServer_Create, OUT mPtr<mHttpServer> *pHttpServer, IN mAllocator 
   (*pHttpServer)->pAllocator = pAllocator;
 
   mERROR_CHECK(mThread_Create(&(*pHttpServer)->pListenerThread, pAllocator, mHttpServer_ThreadInternal, *pHttpServer));
+  mERROR_CHECK(mTasklessThreadPool_Create(&(*pHttpServer)->threadPool, pAllocator, threadCount));
 
   mRETURN_SUCCESS();
 }
@@ -89,6 +93,8 @@ mFUNCTION(mHttpServer_ThreadInternal, mPtr<mHttpServer> &server)
     {
       std::function<void ()> task = [server, client]() mutable
       {
+        // TODO: Use Arena Allocator.
+
         char data[8 * 1024];
         size_t bytesReceived = 0;
 
@@ -100,15 +106,24 @@ mFUNCTION(mHttpServer_ThreadInternal, mPtr<mHttpServer> &server)
           http_parser_init(&parser, HTTP_REQUEST);
 
           mUniqueContainer<mHttpRequest_Parser> request;
+          mUniqueContainer<mHttpRequest_Parser>::CreateWithCleanupFunction(&request, mHttpRequest_Parser_Destroy_Internal);
+
+          if (mFAILED(mHttpRequest_Parser_Init_Internal(request, server->pAllocator)))
+            RETURN;
 
           parser.data = request.GetPointer();
-
+          
           http_parser_execute(&parser, &server->settings, data, bytesReceived);
 
           if (mFAILED(request->result))
             RETURN;
 
           request->pLastAttributeValue = nullptr;
+          
+          if (parser.type != HTTP_REQUEST)
+            RETURN; // TODO: Reply with error.
+
+          request->requestMethod = (mHttpRequestMethod)parser.method;
         }
 
         RETURN;
@@ -143,31 +158,22 @@ int32_t _OnHeaderField(http_parser *pParser, const char *at, size_t length)
   if (mFAILED(pRequest->result))
     return 0;
 
-  mString key, value;
+  mKeyValuePair<mString, mString> pair;
 
-  pRequest->result = mString_Create(&key, at, length);
-
-  if (mFAILED(pRequest->result))
-    return 0;
-
-  pRequest->result = mHashMap_Add(pRequest->attributes, key, &value);
+  pRequest->result = mString_Create(&pair.key, at, length);
 
   if (mFAILED(pRequest->result))
     return 0;
 
-  bool contained = false;
-
-  pRequest->result = mHashMap_ContainsGetPointer(pRequest->attributes, key, &contained, &pRequest->pLastAttributeValue);
+  pRequest->result = mQueue_PushBack(pRequest->attributes, pair);
 
   if (mFAILED(pRequest->result))
     return 0;
 
-  if (!contained)
-  {
-    pRequest->pLastAttributeValue = nullptr;
-    pRequest->result = mR_ResourceNotFound;
+  pRequest->result = mQueue_PointerAt(pRequest->attributes, pRequest->attributes->count - 1, &pRequest->pLastAttributeValue);
+
+  if (mFAILED(pRequest->result))
     return 0;
-  }
 
   return 0;
 }
@@ -185,10 +191,10 @@ int32_t _OnHeaderValue(http_parser *pParser, const char *at, size_t length)
     return 0;
   }
 
-  if (pRequest->pLastAttributeValue->bytes == 0)
-    pRequest->result = mString_Create(pRequest->pLastAttributeValue, at, length);
+  if (pRequest->pLastAttributeValue->value.bytes == 0)
+    pRequest->result = mString_Create(&pRequest->pLastAttributeValue->value, at, length);
   else
-    pRequest->result = mString_Append(*pRequest->pLastAttributeValue, at, length);
+    pRequest->result = mString_Append(pRequest->pLastAttributeValue->value, at, length);
 
   return 0;
 }
@@ -206,6 +212,31 @@ int32_t _OnBody(http_parser *pParser, const char *at, size_t length)
     pRequest->result = mString_Append(pRequest->body, at, length);
 
   return 0;
+}
+
+mFUNCTION(mHttpRequest_Parser_Init_Internal, mPtr<mHttpRequest_Parser> &request, IN mAllocator *pAllocator)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(request == nullptr, mR_ArgumentNull);
+
+  mERROR_CHECK(mQueue_Create(&request->attributes, pAllocator));
+  mERROR_CHECK(mQueue_Create(&request->headParameters, pAllocator));
+  mERROR_CHECK(mQueue_Create(&request->postParameters, pAllocator));
+
+  mRETURN_SUCCESS();
+}
+
+void mHttpRequest_Parser_Destroy_Internal(IN_OUT mHttpRequest_Parser *pRequest)
+{
+  if (pRequest == nullptr)
+    return;
+
+  mQueue_Destroy(&pRequest->attributes);
+  mQueue_Destroy(&pRequest->headParameters);
+  mQueue_Destroy(&pRequest->headParameters);
+  mString_Destroy(&pRequest->url);
+  mString_Destroy(&pRequest->body);
 }
 
 //////////////////////////////////////////////////////////////////////////

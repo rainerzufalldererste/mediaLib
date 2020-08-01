@@ -506,6 +506,8 @@ mFUNCTION(mTasklessThreadPool_Create, OUT mPtr<mTasklessThreadPool> *pThreadPool
 
   (*pThreadPool)->pAllocator = pAllocator;
   (*pThreadPool)->taskCount = 0;
+  (*pThreadPool)->threadCount = threadCount;
+  (*pThreadPool)->isRunning = true;
 
   mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &(*pThreadPool)->pThreads, threadCount));
   mERROR_CHECK(mQueue_Create(&(*pThreadPool)->tasks, pAllocator));
