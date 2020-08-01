@@ -132,6 +132,7 @@ struct mHttpRequest
   mUniqueContainer<mQueue<mKeyValuePair<mString, mString>>> postParameters;
   mUniqueContainer<mQueue<mKeyValuePair<mString, mString>>> attributes;
   mString url;
+  mAllocator *pAllocator;
 };
 
 struct mHttpResponse

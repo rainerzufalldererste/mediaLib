@@ -16,6 +16,8 @@ template <size_t TCount>
 mchar_t mToChar(const char c[TCount]);
 mchar_t mToChar(IN const char *c, const size_t size);
 
+bool mString_IsValidChar(const char *c, const size_t size, OUT OPTIONAL mchar_t *pChar = nullptr, OUT OPTIONAL size_t *pCharSize = nullptr);
+
 struct mIteratedString
 {
   char *character;
@@ -452,11 +454,17 @@ inline mFUNCTION(mInplaceString_Create, OUT mInplaceString<TCount> *pStackString
   size_t textCount;
 
   mERROR_CHECK(mInplaceString_GetCount_Internal(text, size, &textCount, &textSize));
-  mERROR_IF(textSize > TCount, mR_ArgumentOutOfBounds);
 
-  pStackString->bytes = textSize;
-  pStackString->count = textCount;
+  const bool isNotNullTerminated = *(text + textSize - 1) != '\0';
+
+  mERROR_IF(textSize + isNotNullTerminated > TCount, mR_ArgumentOutOfBounds);
+
+  pStackString->bytes = textSize + isNotNullTerminated;
+  pStackString->count = textCount + isNotNullTerminated;
   mERROR_CHECK(mMemcpy(pStackString->text, text, textSize + 1));
+
+  if (isNotNullTerminated)
+    pStackString->text[textSize] = '\0';
 
   mRETURN_SUCCESS();
 }

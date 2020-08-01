@@ -11,9 +11,29 @@
 mchar_t mToChar(IN const char *c, const size_t size)
 {
   utf8proc_int32_t codePoint;
-  utf8proc_iterate((uint8_t *)c, size, &codePoint);
+  utf8proc_iterate(reinterpret_cast<const uint8_t *>(c), size, &codePoint);
 
   return mchar_t(codePoint);
+}
+
+bool mString_IsValidChar(const char *c, const size_t size, OUT OPTIONAL mchar_t *pChar /* = nullptr */, OUT OPTIONAL size_t *pCharSize /* = nullptr */)
+{
+  if (c == nullptr || size == 0)
+    return false;
+
+  utf8proc_int32_t codePoint;
+  const ptrdiff_t characterSize = utf8proc_iterate(reinterpret_cast<const uint8_t *>(c), size, &codePoint);
+
+  if (codePoint <= 0 || characterSize <= 0)
+    return false;
+
+  if (pChar != nullptr)
+    *pChar = (mchar_t)codePoint;
+
+  if (pCharSize != nullptr)
+    *pCharSize = (size_t)characterSize;
+
+  return true;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -96,7 +116,7 @@ mString::mString(const mString &copy) :
   capacity = bytes = copy.bytes;
   count = copy.count;
 
-  mERROR_CHECK_GOTO(mAllocator_Copy(pAllocator, text, copy.text, bytes), result, epilogue);
+  mMemcpy(text, copy.text, bytes);
 
   return;
 
@@ -131,11 +151,11 @@ mString & mString::operator=(const mString &copy)
   {
     mERROR_CHECK_GOTO(mAllocator_Reallocate(pAllocator, &text, copy.bytes), result, epilogue);
     this->capacity = copy.bytes;
-    mERROR_CHECK_GOTO(mAllocator_Copy(pAllocator, text, copy.text, copy.bytes), result, epilogue);
+    mMemcpy(text, copy.text, copy.bytes);
   }
   else if(copy.bytes > 0)
   {
-    mERROR_CHECK_GOTO(mAllocator_Copy(pAllocator, text, copy.text, copy.bytes), result, epilogue);
+    mMemcpy(text, copy.text, copy.bytes);
   }
 
   this->bytes = copy.bytes;
@@ -189,7 +209,7 @@ mchar_t mString::operator[](const size_t index) const
 
   for (size_t i = 0; i <= index; ++i)
   {
-    const ptrdiff_t characterSize = utf8proc_iterate((uint8_t *)this->text + offset, this->bytes - offset, &codePoint);
+    const ptrdiff_t characterSize = utf8proc_iterate(reinterpret_cast<const uint8_t *>(this->text) + offset, this->bytes - offset, &codePoint);
 
     if (characterSize < 0 || codePoint < 0)
       return codePoint;
@@ -215,8 +235,8 @@ mString mString::operator+(const mString &s) const
 
   mERROR_CHECK_GOTO(mAllocator_AllocateZero(this->pAllocator, &ret.text, this->bytes + s.bytes - 1), result, epilogue);
   ret.capacity = this->bytes + s.bytes - 1;
-  mERROR_CHECK_GOTO(mAllocator_Copy(this->pAllocator, ret.text, this->text, this->bytes - 1), result, epilogue);
-  mERROR_CHECK_GOTO(mAllocator_Copy(s.pAllocator, ret.text + this->bytes - 1, s.text, s.bytes), result, epilogue);
+  mMemcpy(ret.text, this->text, this->bytes - 1);
+  mMemcpy(ret.text + this->bytes - 1, s.text, s.bytes);
   ret.bytes = ret.capacity;
   ret.count = s.count + count - 1;
   ret.pAllocator = pAllocator;
@@ -386,7 +406,7 @@ mFUNCTION(mString_Create, OUT mString *pString, IN const char *text, size_t size
     pString->capacity = pString->bytes = size;
   }
 
-  mERROR_CHECK(mAllocator_Copy(pString->pAllocator, pString->text, text, pString->bytes - 1));
+  mMemcpy(pString->text, text, pString->bytes - 1);
   pString->text[pString->bytes - 1] = '\0';
 
   size_t offset = 0;
@@ -396,7 +416,7 @@ mFUNCTION(mString_Create, OUT mString *pString, IN const char *text, size_t size
   {
     utf8proc_int32_t codePoint;
     ptrdiff_t characterSize;
-    mERROR_IF((characterSize = utf8proc_iterate((uint8_t *)pString->text + offset, pString->bytes - offset, &codePoint)) < 0, mR_InternalError);
+    mERROR_IF((characterSize = utf8proc_iterate(reinterpret_cast<const uint8_t *>(pString->text) + offset, pString->bytes - offset, &codePoint)) < 0, mR_InternalError);
     mERROR_IF(codePoint < 0, mR_InternalError);
     offset += (size_t)characterSize;
     pString->count++;
@@ -477,7 +497,7 @@ mFUNCTION(mString_Create, OUT mString *pString, const wchar_t *text, IN OPTIONAL
   {
     utf8proc_int32_t codePoint;
     ptrdiff_t characterSize;
-    mERROR_IF((characterSize = utf8proc_iterate((uint8_t *)pString->text + offset, pString->bytes - offset, &codePoint)) < 0, mR_InternalError);
+    mERROR_IF((characterSize = utf8proc_iterate(reinterpret_cast<const uint8_t *>(pString->text) + offset, pString->bytes - offset, &codePoint)) < 0, mR_InternalError);
     mERROR_IF(codePoint < 0, mR_InternalError);
     offset += (size_t)characterSize;
     pString->count++;
@@ -561,7 +581,7 @@ mFUNCTION(mString_Create, OUT mString *pString, const wchar_t *text, const size_
   {
     utf8proc_int32_t codePoint;
     ptrdiff_t characterSize;
-    mERROR_IF((characterSize = utf8proc_iterate((uint8_t *)pString->text + offset, pString->bytes - offset, &codePoint)) < 0, mR_InternalError);
+    mERROR_IF((characterSize = utf8proc_iterate(reinterpret_cast<const uint8_t *>(pString->text) + offset, pString->bytes - offset, &codePoint)) < 0, mR_InternalError);
     mERROR_IF(codePoint < 0, mR_InternalError);
     offset += (size_t)characterSize;
     pString->count++;
@@ -617,7 +637,7 @@ mFUNCTION(mString_Create, OUT mString *pString, const mString &from, IN OPTIONAL
     pString->capacity = pString->bytes = from.bytes;
   }
 
-  mERROR_CHECK(mAllocator_Copy(pString->pAllocator, pString->text, from.text, pString->bytes));
+  mMemcpy(pString->text, from.text, pString->bytes);
 
   pString->count = from.count;
 
@@ -793,23 +813,22 @@ mFUNCTION(mString_Substring, const mString &text, OUT mString *pSubstring, const
   {
     utf8proc_int32_t codePoint;
     ptrdiff_t characterSize;
-    mERROR_IF((characterSize = utf8proc_iterate((uint8_t *)text.text + byteOffset, text.bytes - byteOffset, &codePoint)) < 0, mR_InternalError);
+    mERROR_IF((characterSize = utf8proc_iterate(reinterpret_cast<const uint8_t *>(text.text) + byteOffset, text.bytes - byteOffset, &codePoint)) < 0, mR_InternalError);
     mERROR_IF(codePoint < 0, mR_InternalError);
     byteOffset += (size_t)characterSize;
     character++;
   }
 
   *pSubstring = mString();
-  char utf8char[5] = { 0, 0, 0, 0, 0 };
+  char utf8char[4];
 
   while (character - startCharacter < length)
   {
     utf8proc_int32_t codePoint;
     ptrdiff_t characterSize;
-    mERROR_IF((characterSize = utf8proc_iterate((uint8_t *)text.text + byteOffset, text.bytes - byteOffset, &codePoint)) < 0, mR_InternalError);
+    mERROR_IF((characterSize = utf8proc_iterate(reinterpret_cast<const uint8_t *>(text.text) + byteOffset, text.bytes - byteOffset, &codePoint)) < 0, mR_InternalError);
     mERROR_IF(codePoint < 0, mR_InternalError);
     character++;
-    *(uint32_t *)utf8char = 0;
 
     switch (characterSize)
     {
@@ -825,7 +844,7 @@ mFUNCTION(mString_Substring, const mString &text, OUT mString *pSubstring, const
     }
 
     byteOffset += (size_t)characterSize;
-    mERROR_CHECK(mString_Append(*pSubstring, utf8char));
+    mERROR_CHECK(mString_Append(*pSubstring, utf8char, characterSize));
   }
 
   mRETURN_SUCCESS();
@@ -839,21 +858,21 @@ mFUNCTION(mString_Append, mString &text, const mString &appendedText)
   {
     if (text.capacity < text.bytes + appendedText.bytes - 1)
     {
+      size_t newCapacity;
+
       if (text.capacity * 2 >= text.bytes + appendedText.bytes - 1)
-      {
-        const size_t newCapacity = text.capacity *= 2;
-
-        mERROR_CHECK(mAllocator_Reallocate(text.pAllocator, &text.text, newCapacity));
-        text.capacity = newCapacity;
-      }
+        newCapacity = text.capacity * 2;
       else
-      {
-        const size_t newCapacity = text.bytes + appendedText.bytes - 1;
+        newCapacity = text.bytes + appendedText.bytes - 1;
 
-        mERROR_CHECK(mAllocator_Reallocate(text.pAllocator, &text.text, newCapacity));
-        text.capacity = newCapacity;
-      }
+      mERROR_CHECK(mAllocator_Reallocate(text.pAllocator, &text.text, newCapacity));
+      text.capacity = newCapacity;
     }
+
+    mMemcpy(text.text + text.bytes - 1, appendedText.text, appendedText.bytes);
+
+    text.count += appendedText.count - 1;
+    text.bytes += appendedText.bytes - 1;
   }
   else
   {
@@ -869,11 +888,11 @@ mFUNCTION(mString_Append, mString &text, const mString &appendedText)
       {
         mERROR_CHECK(mAllocator_Reallocate(text.pAllocator, &text.text, appendedText.bytes));
         text.capacity = appendedText.bytes;
-        mERROR_CHECK(mAllocator_Copy(text.pAllocator, text.text, appendedText.text, appendedText.bytes));
+        mMemcpy(text.text, appendedText.text, appendedText.bytes);
       }
       else if (appendedText.bytes > 0)
       {
-        mERROR_CHECK(mAllocator_Copy(text.pAllocator, text.text, appendedText.text, appendedText.bytes));
+        mMemcpy(text.text, appendedText.text, appendedText.bytes);
       }
 
       text.bytes = appendedText.bytes;
@@ -882,11 +901,6 @@ mFUNCTION(mString_Append, mString &text, const mString &appendedText)
       mRETURN_SUCCESS();
     }
   }
-
-  mERROR_CHECK(mAllocator_Copy(text.pAllocator, text.text + text.bytes - 1, appendedText.text, appendedText.bytes));
-
-  text.count += appendedText.count - 1;
-  text.bytes += appendedText.bytes - 1;
 
   mRETURN_SUCCESS();
 }
@@ -897,21 +911,7 @@ mFUNCTION(mString_Append, mString &text, const char *appendedText)
 
   mERROR_IF(appendedText == nullptr, mR_ArgumentNull);
 
-  mString s;
-
-  mERROR_CHECK(mInplaceString_GetCount_Internal(appendedText, (size_t)-1, &s.count, &s.bytes));
-
-  s.capacity = s.bytes;
-  s.hasFailed = false;
-  s.text = const_cast<char *>(appendedText);
-
-  // Prevent from attempting to free `s.text`;
-  mDEFER(
-    s.capacity = s.count = s.bytes = 0;
-    s.text = nullptr;
-  );
-
-  mERROR_CHECK(mString_Append(text, s));
+  mERROR_CHECK(mString_Append(text, appendedText, strlen(appendedText)));
 
   mRETURN_SUCCESS();
 }
@@ -922,21 +922,79 @@ mFUNCTION(mString_Append, mString &text, const char *appendedText, const size_t 
 
   mERROR_IF(appendedText == nullptr, mR_ArgumentNull);
 
-  mString s;
+  size_t count, bytes;
+  mERROR_CHECK(mInplaceString_GetCount_Internal(appendedText, size, &count, &bytes));
 
-  mERROR_CHECK(mInplaceString_GetCount_Internal(appendedText, size, &s.count, &s.bytes));
+  const bool appendedTextNotTerminated = *(appendedText + bytes - 1) != '\0';
 
-  s.capacity = s.bytes;
-  s.hasFailed = false;
-  s.text = const_cast<char *>(appendedText);
+  if (text.bytes > 0 && bytes > 0)
+  {
+    if (text.capacity < text.bytes + bytes - 1 + appendedTextNotTerminated)
+    {
+      size_t newCapacity;
 
-  // Prevent from attempting to free `s.text`;
-  mDEFER(
-    s.capacity = s.count = s.bytes = 0;
-  s.text = nullptr;
-  );
+      if (text.capacity * 2 >= text.bytes + bytes - 1 + appendedTextNotTerminated)
+        newCapacity = text.capacity * 2;
+      else
+        newCapacity = text.bytes + bytes - 1 + appendedTextNotTerminated;
 
-  mERROR_CHECK(mString_Append(text, s));
+      mERROR_CHECK(mAllocator_Reallocate(text.pAllocator, &text.text, newCapacity));
+      text.capacity = newCapacity;
+    }
+
+    mMemcpy(text.text + text.bytes - 1, appendedText, bytes);
+
+    if (!appendedTextNotTerminated)
+    {
+      text.count += count - 1;
+      text.bytes += bytes - 1;
+    }
+    else
+    {
+      text.text[text.bytes - 1 + bytes] = '\0';
+
+      text.count += count;
+      text.bytes += bytes;
+    }
+  }
+  else
+  {
+    if (bytes == 0)
+    {
+      mRETURN_SUCCESS();
+    }
+    else
+    {
+      text.hasFailed = false;
+
+      if (text.capacity < bytes + appendedTextNotTerminated)
+      {
+        mERROR_CHECK(mAllocator_Reallocate(text.pAllocator, &text.text, bytes + appendedTextNotTerminated));
+        text.capacity = bytes + appendedTextNotTerminated;
+        
+        mMemcpy(text.text, appendedText, bytes);
+      }
+      else if (bytes > 0)
+      {
+        mMemcpy(text.text, appendedText, bytes);
+      }
+
+      if (!appendedTextNotTerminated)
+      {
+        text.bytes = bytes;
+        text.count = count;
+      }
+      else
+      {
+        text.text[bytes] = '\0';
+
+        text.bytes = bytes + 1;
+        text.count = count + 1;
+      }
+
+      mRETURN_SUCCESS();
+    }
+  }
 
   mRETURN_SUCCESS();
 }
@@ -945,9 +1003,10 @@ mFUNCTION(mString_AppendUnsignedInteger, mString &text, const uint64_t value)
 {
   mFUNCTION_SETUP();
 
-  mString format;
-  mERROR_CHECK(mString_CreateFormat(&format, text.pAllocator, "%" PRIu64, value));
-  mERROR_CHECK(mString_Append(text, format));
+  char txt[64];
+  _ui64toa(value, txt, 10);
+
+  mERROR_CHECK(mString_Append(text, txt, sizeof(txt)));
 
   mRETURN_SUCCESS();
 }
@@ -956,9 +1015,10 @@ mFUNCTION(mString_AppendInteger, mString &text, const int64_t value)
 {
   mFUNCTION_SETUP();
 
-  mString format;
-  mERROR_CHECK(mString_CreateFormat(&format, text.pAllocator, "%" PRIi64, value));
-  mERROR_CHECK(mString_Append(text, format));
+  char txt[64];
+  _i64toa(value, txt, 10);
+
+  mERROR_CHECK(mString_Append(text, txt, sizeof(txt)));
 
   mRETURN_SUCCESS();
 }
@@ -976,9 +1036,10 @@ mFUNCTION(mString_AppendDouble, mString &text, const double_t value)
 {
   mFUNCTION_SETUP();
 
-  mString format;
-  mERROR_CHECK(mString_CreateFormat(&format, text.pAllocator, "%f", value));
-  mERROR_CHECK(mString_Append(text, format));
+  char txt[128];
+  mERROR_IF(0 > sprintf_s(txt, "%f", value), mR_InternalError);
+
+  mERROR_CHECK(mString_Append(text, txt, sizeof(txt)));
 
   mRETURN_SUCCESS();
 }
@@ -1016,7 +1077,7 @@ mFUNCTION(mString_ToDirectoryPath, OUT mString *pString, const mString &text)
   {
     utf8proc_int32_t codePoint;
     ptrdiff_t characterSize;
-    mERROR_IF((characterSize = utf8proc_iterate((uint8_t *)pString->text + offset, pString->bytes - offset, &codePoint)) < 0, mR_InternalError);
+    mERROR_IF((characterSize = utf8proc_iterate(reinterpret_cast<const uint8_t *>(pString->text) + offset, pString->bytes - offset, &codePoint)) < 0, mR_InternalError);
     mERROR_IF(codePoint < 0, mR_InternalError);
 
     if (characterSize == 1)
@@ -1091,7 +1152,7 @@ mFUNCTION(mString_ToFilePath, OUT mString *pString, const mString &text)
   {
     utf8proc_int32_t codePoint;
     ptrdiff_t characterSize;
-    mERROR_IF((characterSize = utf8proc_iterate((uint8_t *)pString->text + offset, pString->bytes - offset, &codePoint)) < 0, mR_InternalError);
+    mERROR_IF((characterSize = utf8proc_iterate(reinterpret_cast<const uint8_t *>(pString->text) + offset, pString->bytes - offset, &codePoint)) < 0, mR_InternalError);
     mERROR_IF(codePoint < 0, mR_InternalError);
 
     if (characterSize == 1)
@@ -1154,10 +1215,10 @@ mFUNCTION(mString_Equals, const mString &stringA, const mString &stringB, bool *
   for (size_t i = 0; i < stringA.count; ++i)
   {
     utf8proc_int32_t codePointA;
-    ptrdiff_t characterSizeA = utf8proc_iterate((uint8_t *)stringA.text + offset, stringA.bytes - offset, &codePointA);
+    ptrdiff_t characterSizeA = utf8proc_iterate(reinterpret_cast<const uint8_t *>(stringA.text) + offset, stringA.bytes - offset, &codePointA);
 
     utf8proc_int32_t codePointB;
-    utf8proc_iterate((uint8_t *)stringB.text + offset, stringA.bytes - offset, &codePointB);
+    utf8proc_iterate(reinterpret_cast<const uint8_t *>(stringB.text) + offset, stringA.bytes - offset, &codePointB);
 
     if (codePointA != codePointB)
     {
@@ -1189,7 +1250,7 @@ mFUNCTION(mString_ForEachChar, const mString &string, const std::function<mResul
   {
     utf8proc_int32_t codePoint;
     ptrdiff_t characterSize;
-    mERROR_IF((characterSize = utf8proc_iterate((uint8_t *)string.text + offset, string.bytes - offset, &codePoint)) < 0, mR_InternalError);
+    mERROR_IF((characterSize = utf8proc_iterate(reinterpret_cast<const uint8_t *>(string.text) + offset, string.bytes - offset, &codePoint)) < 0, mR_InternalError);
     mERROR_IF(codePoint < 0, mR_InternalError);
 
     if (characterSize == 0)
@@ -1234,10 +1295,10 @@ mFUNCTION(mString_StartsWith, const mString &stringA, const mString &start, OUT 
   for (size_t i = 0; i < start.count - 1; ++i) // Exclude null char.
   {
     utf8proc_int32_t codePointA;
-    ptrdiff_t characterSizeA = utf8proc_iterate((uint8_t *)stringA.text + offset, stringA.bytes - offset, &codePointA);
+    ptrdiff_t characterSizeA = utf8proc_iterate(reinterpret_cast<const uint8_t *>(stringA.text) + offset, stringA.bytes - offset, &codePointA);
 
     utf8proc_int32_t codePointB;
-    utf8proc_iterate((uint8_t *)start.text + offset, stringA.bytes - offset, &codePointB);
+    utf8proc_iterate(reinterpret_cast<const uint8_t *>(start.text) + offset, stringA.bytes - offset, &codePointB);
 
     mERROR_IF(codePointA != codePointB, mR_Success); // pStartsWith is already false.
 
@@ -1275,7 +1336,7 @@ mFUNCTION(mString_EndsWith, const mString &stringA, const mString &end, OUT bool
   for (size_t i = 0; i < stringA.count - end.count; ++i) // Exclude null char.
   {
     utf8proc_int32_t codePoint;
-    const ptrdiff_t characterSize = utf8proc_iterate((uint8_t *)stringA.text + stringOffset, stringA.bytes - stringOffset, &codePoint);
+    const ptrdiff_t characterSize = utf8proc_iterate(reinterpret_cast<const uint8_t *>(stringA.text) + stringOffset, stringA.bytes - stringOffset, &codePoint);
     stringOffset += characterSize;
 
     if (characterSize == 0)
@@ -1287,10 +1348,10 @@ mFUNCTION(mString_EndsWith, const mString &stringA, const mString &end, OUT bool
   for (size_t i = 0; i < end.count - 1; ++i) // Exclude null char.
   {
     utf8proc_int32_t codePointA;
-    const ptrdiff_t characterSizeA = utf8proc_iterate((uint8_t *)stringA.text + stringOffset, stringA.bytes - stringOffset, &codePointA);
+    const ptrdiff_t characterSizeA = utf8proc_iterate(reinterpret_cast<const uint8_t *>(stringA.text) + stringOffset, stringA.bytes - stringOffset, &codePointA);
 
     utf8proc_int32_t codePointB;
-    utf8proc_iterate((uint8_t *)end.text + endOffset, stringA.bytes - endOffset, &codePointB);
+    utf8proc_iterate(reinterpret_cast<const uint8_t *>(end.text) + endOffset, stringA.bytes - endOffset, &codePointB);
 
     mERROR_IF(codePointA != codePointB, mR_Success); // pEndsWith is already false.
 
@@ -1317,7 +1378,7 @@ void mString_GetKmp(const mString &string, IN_OUT mchar_t *pString, IN_OUT size_
   for (size_t i = 0; i < length; i++)
   {
     utf8proc_int32_t codePoint;
-    const ptrdiff_t characterSize = utf8proc_iterate((uint8_t *)string.text + offset, string.bytes - offset, &codePoint);
+    const ptrdiff_t characterSize = utf8proc_iterate(reinterpret_cast<const uint8_t *>(string.text) + offset, string.bytes - offset, &codePoint);
     offset += characterSize;
 
     pString[i] = codePoint;
@@ -1352,7 +1413,7 @@ void mString_GetKmp(const mString &string, IN_OUT mchar_t *pString, IN_OUT size_
    for (size_t i = 0, k = 0; i < chars; i++)
    {
      utf8proc_int32_t codePoint;
-     const ptrdiff_t characterSize = utf8proc_iterate((uint8_t *)string.text + offset, string.bytes - offset, &codePoint);
+     const ptrdiff_t characterSize = utf8proc_iterate(reinterpret_cast<const uint8_t *>(string.text) + offset, string.bytes - offset, &codePoint);
      offset += characterSize;
 
      while (k > 0 && pFind[k] != codePoint)
@@ -1455,7 +1516,7 @@ mFUNCTION(mString_TrimStart, const mString &string, const mchar_t trimmedChar, O
   for (; charOffset < string.count - 1; charOffset++)
   {
     utf8proc_int32_t codePoint;
-    const ptrdiff_t characterSize = utf8proc_iterate((uint8_t *)string.text + byteOffset, string.bytes - byteOffset, &codePoint);
+    const ptrdiff_t characterSize = utf8proc_iterate(reinterpret_cast<const uint8_t *>(string.text) + byteOffset, string.bytes - byteOffset, &codePoint);
     
     if (codePoint != trimmedChar || characterSize == 0)
       break;
@@ -1492,7 +1553,7 @@ mFUNCTION(mString_TrimEnd, const mString &string, const mchar_t trimmedChar, OUT
   for (size_t charOffset = 0; charOffset < string.count - 1; charOffset++)
   {
     utf8proc_int32_t codePoint;
-    const ptrdiff_t characterSize = utf8proc_iterate((uint8_t *)string.text + byteOffset, string.bytes - byteOffset, &codePoint);
+    const ptrdiff_t characterSize = utf8proc_iterate(reinterpret_cast<const uint8_t *>(string.text) + byteOffset, string.bytes - byteOffset, &codePoint);
     byteOffset += characterSize;
 
     if (codePoint != trimmedChar)
@@ -1542,7 +1603,7 @@ mFUNCTION(mString_RemoveChar, const mString &string, const mchar_t remove, OUT m
   for (size_t charOffset = 0; charOffset < string.count - 1; charOffset++)
   {
     utf8proc_int32_t codePoint;
-    characterSize = utf8proc_iterate((uint8_t *)string.text + sourceOffset, string.bytes - sourceOffset, &codePoint);
+    characterSize = utf8proc_iterate(reinterpret_cast<const uint8_t *>(string.text) + sourceOffset, string.bytes - sourceOffset, &codePoint);
     sourceOffset += characterSize;
 
     if (characterSize == 0)
@@ -1753,25 +1814,25 @@ mFUNCTION(mInplaceString_GetCount_Internal, IN const char *text, const size_t ma
   size_t offset = 0;
   size_t count = 0;
 
-  while (offset + 1 < maxSize)
+  while (offset < maxSize)
   {
     utf8proc_int32_t codePoint;
     ptrdiff_t characterSize;
-    mERROR_IF((characterSize = utf8proc_iterate((uint8_t *)text + offset, maxSize - offset, &codePoint)) < 0, mR_InternalError);
+    mERROR_IF((characterSize = utf8proc_iterate(reinterpret_cast<const uint8_t *>(text) + offset, maxSize - offset, &codePoint)) < 0, mR_InternalError);
     mERROR_IF(codePoint < 0, mR_InternalError);
     offset += (size_t)characterSize;
     count++;
 
     if (characterSize == 0 || codePoint == 0)
     {
-      count--;
-      offset--;
+      *pCount = count;
+      *pSize = offset;
       break;
     }
   }
 
-  *pCount = count + 1;
-  *pSize = offset + 1;
+  *pCount = count;
+  *pSize = offset;
 
   mRETURN_SUCCESS();
 }
@@ -1783,10 +1844,10 @@ bool mInplaceString_StringsAreEqual_Internal(IN const char *textA, IN const char
   for (size_t i = 0; i < count; ++i)
   {
     utf8proc_int32_t codePointA;
-    ptrdiff_t characterSizeA = utf8proc_iterate((uint8_t *)textA + offset, bytes - offset, &codePointA);
+    ptrdiff_t characterSizeA = utf8proc_iterate(reinterpret_cast<const uint8_t *>(textA)  + offset, bytes - offset, &codePointA);
 
     utf8proc_int32_t codePointB;
-    utf8proc_iterate((uint8_t *)textB + offset, bytes - offset, &codePointB);
+    utf8proc_iterate(reinterpret_cast<const uint8_t *>(textB)  + offset, bytes - offset, &codePointB);
 
     if (codePointA != codePointB)
     {
@@ -1828,7 +1889,7 @@ bool mUtf8StringIterator::operator!=(const mUtf8StringIterator &)
   if (position + 1 >= bytes)
     return false;
 
-  characterSize = utf8proc_iterate((uint8_t *)string + position, bytes - position, &codePoint);
+  characterSize = utf8proc_iterate(reinterpret_cast<const uint8_t *>(string)  + position, bytes - position, &codePoint);
   position += (size_t)characterSize;
   charCount++;
 
