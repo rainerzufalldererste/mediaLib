@@ -69,35 +69,7 @@ mFUNCTION(mBinaryChunk_WriteBytes, mPtr<mBinaryChunk> &binaryChunk, IN const uin
 
   mERROR_CHECK(mBinaryChunk_GrowBack(binaryChunk, bytes));
 
-  uint8_t *pData = &binaryChunk->pData[binaryChunk->writeBytes];
-  size_t writtenSize = 0;
-
-#if defined(SSE2)
-  while (writtenSize + sizeof(__m128i) <= bytes)
-  {
-    *((__m128i *)pData) = *(__m128i *)pItems;
-    writtenSize += sizeof(__m128i);
-    pData += sizeof(__m128i);
-    pItems += sizeof(__m128i);
-  }
-#else
-  while (writtenSize + sizeof(size_t) <= bytes)
-  {
-    *((size_t *)pData) = *(size_t *)pItems;
-    writtenSize += sizeof(size_t);
-    pData += sizeof(size_t);
-    pItems += sizeof(size_t);
-  }
-#endif
-
-  while (writtenSize < bytes)
-  {
-    *pData = *pItems;
-    ++writtenSize;
-    ++pData;
-    ++pItems;
-  }
-
+  mMemcpy(&binaryChunk->pData[binaryChunk->writeBytes], pItems, bytes);
   binaryChunk->writeBytes += bytes;
 
   mRETURN_SUCCESS();
@@ -110,35 +82,7 @@ mFUNCTION(mBinaryChunk_ReadBytes, mPtr<mBinaryChunk> &binaryChunk, OUT uint8_t *
   mERROR_IF(binaryChunk == nullptr || pItems == nullptr, mR_ArgumentNull);
   mERROR_IF(binaryChunk->readBytes + bytes > binaryChunk->writeBytes, mR_IndexOutOfBounds);
 
-  uint8_t *pData = &binaryChunk->pData[binaryChunk->writeBytes];
-  size_t writtenSize = 0;
-
-#if defined(SSE2)
-  while (writtenSize + sizeof(__m128i) <= bytes)
-  {
-    *(__m128i *)pItems = *((__m128i *)pData);
-    writtenSize += sizeof(__m128i);
-    pData += sizeof(__m128i);
-    pItems += sizeof(__m128i);
-  }
-#else
-  while (writtenSize + sizeof(size_t) <= bytes)
-  {
-    *(size_t *)pItems = *((size_t *)pData);
-    writtenSize += sizeof(size_t);
-    pData += sizeof(size_t);
-    pItems += sizeof(size_t);
-  }
-#endif
-
-  while (writtenSize < bytes)
-  {
-    *pItems = *pData;
-    ++writtenSize;
-    ++pData;
-    ++pItems;
-  }
-
+  mMemcpy(pItems, &binaryChunk->pData[binaryChunk->writeBytes], bytes);
   binaryChunk->readBytes += bytes;
 
   mRETURN_SUCCESS();
@@ -166,7 +110,7 @@ mFUNCTION(mBinaryChunk_ResetRead, mPtr<mBinaryChunk> &binaryChunk)
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mBinaryChunk_GetWriteBytes, mPtr<mBinaryChunk> &binaryChunk, OUT size_t *pSize)
+mFUNCTION(mBinaryChunk_GetWriteBytes, const mPtr<mBinaryChunk> &binaryChunk, OUT size_t *pSize)
 {
   mFUNCTION_SETUP();
 
@@ -177,7 +121,7 @@ mFUNCTION(mBinaryChunk_GetWriteBytes, mPtr<mBinaryChunk> &binaryChunk, OUT size_
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mBinaryChunk_GetReadBytes, mPtr<mBinaryChunk> &binaryChunk, OUT size_t *pSize)
+mFUNCTION(mBinaryChunk_GetReadBytes, const mPtr<mBinaryChunk> &binaryChunk, OUT size_t *pSize)
 {
   mFUNCTION_SETUP();
 

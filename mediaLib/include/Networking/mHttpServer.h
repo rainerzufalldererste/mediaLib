@@ -5,68 +5,69 @@
 #include "mBinaryChunk.h"
 #include "mQueue.h"
 #include "mKeyValuePair.h"
+#include "mThreadPool.h"
 
-enum HttpResponseStatusCode
+enum mHttpResponseStatusCode
 {
-  mHRTC_Continue = 100, // Continue
-  mHRTC_SwitchingProtocols = 101, // Switching Protocols 
-  mHRTC_Processing = 102, // Processing 
-  mHRTC_Ok = 200, // OK
-  mHRTC_Created = 201, // Created 
-  mHRTC_Accepted = 202, // Accepted
-  mHRTC_NonAuthoritativeInformation = 203, // Non-Authoritative Information
-  mHRTC_NoContent = 204, // No Content 
-  mHRTC_ResetContent = 205, // Reset Content 
-  mHRTC_PartialContent = 206, // Partial Content
-  mHRTC_MultiStatus = 207, // Multi-Status
-  mHRTC_AlreadyReported = 208, // Already Reported 
-  mHRTC_ImUsed = 226, // IM Used 
-  mHRTC_MultipleChoices = 300, // Multiple Choices 
-  mHRTC_MovedPermanently = 301, // Moved Permanently
-  mHRTC_Found = 302, // Found
-  mHRTC_SeeOther = 303, // See Other
-  mHRTC_NotModified = 304, // Not Modified
-  mHRTC_UseProxy = 305, // Use Proxy
-  mHRTC_TemporaryRedirect = 307, // Temporary Redirect
-  mHRTC_PermanentRedirect = 308, // Permanent Redirect
-  mHRTC_BadRequest = 400, // Bad Request
-  mHRTC_Unauthorized = 401, // Unauthorized
-  mHRTC_PaymentRequired = 402, // Payment Required 
-  mHRTC_Forbidden = 403, // Forbidden
-  mHRTC_NotFound = 404, // Not Found
-  mHRTC_MethodNotAllowed = 405, // Method Not Allowed
-  mHRTC_NotAcceptable = 406, // Not Acceptable
-  mHRTC_ProxyAuthenticationRequired = 407, // Proxy Authentication Required
-  mHRTC_RequestTimeout = 408, // Request Timeout
-  mHRTC_Conflict = 409, // Conflict
-  mHRTC_Gone = 410, // Gone 
-  mHRTC_LengthRequired = 411, // Length Required
-  mHRTC_PreconditionFailed = 412, // Precondition Failed 
-  mHRTC_PayloadTooLarge = 413, // Payload Too Large
-  mHRTC_UriTooLong = 414, // URI Too Long
-  mHRTC_UnsupportedMediaType = 415, // Unsupported Media Type 
-  mHRTC_RangeNotSatisfiable = 416, // Range Not Satisfiable
-  mHRTC_ExpectationFailed = 417, // Expectation Failed
-  mHRTC_MisdirectedRequest = 421, // Misdirected Request 
-  mHRTC_UnprocessableEntity = 422, // Unprocessable Entity
-  mHRTC_Locked = 423, // Locked
-  mHRTC_FailedDependency = 424, // Failed Dependency
-  mHRTC_UpgradeRequired = 426, // Upgrade Required 
-  mHRTC_PreconditionRequired = 428, // Precondition Required
-  mHRTC_TooManyRequests = 429, // Too Many Requests
-  mHRTC_RequestHeaderFieldsTooLarge = 431, // Request Header Fields Too Large 
-  mHRTC_UnavailableForLegalReasons = 451, // Unavailable For Legal Reasons
-  mHRTC_InternalServerError = 500, // Internal Server Error
-  mHRTC_NotImplemented = 501, // Not Implemented
-  mHRTC_BadGateway = 502, // Bad Gateway
-  mHRTC_ServiceUnavailable = 503, // Service Unavailable 
-  mHRTC_GatewayTimeout = 504, // Gateway Timeout
-  mHRTC_HttpVersionNotSupported = 505, // HTTP Version Not Supported
-  mHRTC_VariantAlsoNegotiates = 506, // Variant Also Negotiates
-  mHRTC_InsufficientStorage = 507, // Insufficient Storage
-  mHRTC_LoopDetected = 508, // Loop Detected 
-  mHRTC_NotExtended = 510, // Not Extended
-  mHRTC_NetworkAuthenticationRequired = 511, // Network Authentication Required 
+  mHRSC_Continue = 100, // Continue
+  mHRSC_SwitchingProtocols = 101, // Switching Protocols 
+  mHRSC_Processing = 102, // Processing 
+  mHRSC_Ok = 200, // OK
+  mHRSC_Created = 201, // Created 
+  mHRSC_Accepted = 202, // Accepted
+  mHRSC_NonAuthoritativeInformation = 203, // Non-Authoritative Information
+  mHRSC_NoContent = 204, // No Content 
+  mHRSC_ResetContent = 205, // Reset Content 
+  mHRSC_PartialContent = 206, // Partial Content
+  mHRSC_MultiStatus = 207, // Multi-Status
+  mHRSC_AlreadyReported = 208, // Already Reported 
+  mHRSC_ImUsed = 226, // IM Used 
+  mHRSC_MultipleChoices = 300, // Multiple Choices 
+  mHRSC_MovedPermanently = 301, // Moved Permanently
+  mHRSC_Found = 302, // Found
+  mHRSC_SeeOther = 303, // See Other
+  mHRSC_NotModified = 304, // Not Modified
+  mHRSC_UseProxy = 305, // Use Proxy
+  mHRSC_TemporaryRedirect = 307, // Temporary Redirect
+  mHRSC_PermanentRedirect = 308, // Permanent Redirect
+  mHRSC_BadRequest = 400, // Bad Request
+  mHRSC_Unauthorized = 401, // Unauthorized
+  mHRSC_PaymentRequired = 402, // Payment Required 
+  mHRSC_Forbidden = 403, // Forbidden
+  mHRSC_NotFound = 404, // Not Found
+  mHRSC_MethodNotAllowed = 405, // Method Not Allowed
+  mHRSC_NotAcceptable = 406, // Not Acceptable
+  mHRSC_ProxyAuthenticationRequired = 407, // Proxy Authentication Required
+  mHRSC_RequestTimeout = 408, // Request Timeout
+  mHRSC_Conflict = 409, // Conflict
+  mHRSC_Gone = 410, // Gone 
+  mHRSC_LengthRequired = 411, // Length Required
+  mHRSC_PreconditionFailed = 412, // Precondition Failed 
+  mHRSC_PayloadTooLarge = 413, // Payload Too Large
+  mHRSC_UriTooLong = 414, // URI Too Long
+  mHRSC_UnsupportedMediaType = 415, // Unsupported Media Type 
+  mHRSC_RangeNotSatisfiable = 416, // Range Not Satisfiable
+  mHRSC_ExpectationFailed = 417, // Expectation Failed
+  mHRSC_MisdirectedRequest = 421, // Misdirected Request 
+  mHRSC_UnprocessableEntity = 422, // Unprocessable Entity
+  mHRSC_Locked = 423, // Locked
+  mHRSC_FailedDependency = 424, // Failed Dependency
+  mHRSC_UpgradeRequired = 426, // Upgrade Required 
+  mHRSC_PreconditionRequired = 428, // Precondition Required
+  mHRSC_TooManyRequests = 429, // Too Many Requests
+  mHRSC_RequestHeaderFieldsTooLarge = 431, // Request Header Fields Too Large 
+  mHRSC_UnavailableForLegalReasons = 451, // Unavailable For Legal Reasons
+  mHRSC_InternalServerError = 500, // Internal Server Error
+  mHRSC_NotImplemented = 501, // Not Implemented
+  mHRSC_BadGateway = 502, // Bad Gateway
+  mHRSC_ServiceUnavailable = 503, // Service Unavailable 
+  mHRSC_GatewayTimeout = 504, // Gateway Timeout
+  mHRSC_HttpVersionNotSupported = 505, // HTTP Version Not Supported
+  mHRSC_VariantAlsoNegotiates = 506, // Variant Also Negotiates
+  mHRSC_InsufficientStorage = 507, // Insufficient Storage
+  mHRSC_LoopDetected = 508, // Loop Detected 
+  mHRSC_NotExtended = 510, // Not Extended
+  mHRSC_NetworkAuthenticationRequired = 511, // Network Authentication Required 
 };
 
 enum mHttpRequestMethod
@@ -137,19 +138,40 @@ struct mHttpRequest
 
 struct mHttpResponse
 {
-  HttpResponseStatusCode statusCode;
+  mHttpResponseStatusCode statusCode;
   mPtr<mBinaryChunk> responseStream;
+  mString contentType;
+  OPTIONAL mString charSet;
+  mUniqueContainer<mQueue<mKeyValuePair<mString, mString>>> setCookies;
+  mUniqueContainer<mQueue<mKeyValuePair<mString, mString>>> attributes;
 };
 
 struct mHttpRequestHandler
 {
-  typedef mFUNCTION(TryHandleRequestFunc, mPtr<mHttpRequest> &request, OUT bool *pCanRespond, IN_OUT mPtr<mHttpResponse> &response);
+  typedef mFUNCTION(TryHandleRequestFunc, mPtr<mHttpRequestHandler> &handler, mPtr<mHttpRequest> &request, OUT bool *pCanRespond, IN_OUT mPtr<mHttpResponse> &response);
 
   TryHandleRequestFunc *pHandleRequest;
 };
 
+struct mHttpErrorRequestHandler
+{
+  typedef mFUNCTION(HandleRequestFunc, mPtr<mHttpErrorRequestHandler> &handler, const mString &errorString, IN_OUT mPtr<mHttpResponse> &response);
+
+  HandleRequestFunc *pHandleRequest;
+};
+
 struct mHttpServer;
 
-mFUNCTION(mHttpServer_Create, OUT mPtr<mHttpServer> *pHttpServer, IN mAllocator *pAllocator, const uint16_t port = 80, const size_t threadCount = 1);
+mFUNCTION(mHttpServer_Create, OUT mPtr<mHttpServer> *pHttpServer, IN mAllocator *pAllocator, const uint16_t port = 80, const size_t threadCount = 8);
+mFUNCTION(mHttpServer_Create, OUT mPtr<mHttpServer> *pHttpServer, IN mAllocator *pAllocator, mPtr<mTasklessThreadPool> &threadPool, const uint16_t port = 80);
+
+mFUNCTION(mHttpServer_AddRequestHandler, mPtr<mHttpServer> &httpServer, mPtr<mHttpRequestHandler> &requestHandler);
+mFUNCTION(mHttpServer_SetErrorRequestHandler, mPtr<mHttpServer> &httpServer, mPtr<mHttpErrorRequestHandler> &requestHandler);
+
+mFUNCTION(mHttpServer_Start, mPtr<mHttpServer> &httpServer);
+
+//////////////////////////////////////////////////////////////////////////
+
+mFUNCTION(mHttpErrorRequestHandler_CreateDefaultHandler, OUT mPtr<mHttpErrorRequestHandler> *pRequestHandler, IN mAllocator *pAllocator, const bool respondWithJson = false);
 
 #endif, //  mHTTPServer_h__
