@@ -618,9 +618,8 @@ mFUNCTION(mTasklessThreadPool_WaitForAll_Internal, mTasklessThreadPool *pThreadP
     }
   }
 
-  // spin lock while other threads are finishing their work.
   while (pThreadPool->taskCount > 0)
-    _mm_clflush(&pThreadPool->taskCount);
+    std::this_thread::yield(); // wait for other threads to finish their tasks.
 
   mRETURN_SUCCESS();
 }

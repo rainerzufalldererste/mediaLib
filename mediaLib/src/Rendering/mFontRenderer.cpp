@@ -268,6 +268,17 @@ mFUNCTION(mFontRenderer_GetCurrentDisplayPosition, mPtr<mFontRenderer> &fontRend
   mRETURN_SUCCESS();
 }
 
+mFUNCTION(mFontRenderer_IsStarted, mPtr<mFontRenderer> &fontRenderer, OUT bool *pStarted)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(fontRenderer == nullptr || pStarted == nullptr, mR_ArgumentNull);
+
+  *pStarted = fontRenderer->started;
+
+  mRETURN_SUCCESS();
+}
+
 mFUNCTION(mFontRenderer_ResetRenderedRect, mPtr<mFontRenderer> &fontRenderer)
 {
   mFUNCTION_SETUP();
