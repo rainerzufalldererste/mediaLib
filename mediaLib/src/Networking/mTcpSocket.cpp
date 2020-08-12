@@ -7,6 +7,13 @@
 
 #pragma comment(lib, "Ws2_32.lib")
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "uCzF+6pzV/ptvx8Jh5ZOHkDqfkK63Xd0fTa9kupppSjjlRkXhl1Qh9Wqe04J8ejYmyzKaEqpYv1uS2hp"
+#endif
+
 //////////////////////////////////////////////////////////////////////////
 
 struct mTcpSocket
@@ -148,7 +155,7 @@ mFUNCTION(mTcpClient_Create, OUT mPtr<mTcpClient> *pClient, IN mAllocator *pAllo
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mTcpClient_Send, mPtr<mTcpClient> &tcpClient, IN const void *pData, const size_t length, OUT OPTIONAL size_t *pBytesSent)
+mFUNCTION(mTcpClient_Send, mPtr<mTcpClient> &tcpClient, IN const void *pData, const size_t length, OUT OPTIONAL size_t *pBytesSent /* = nullptr */)
 {
   mFUNCTION_SETUP();
 
@@ -174,7 +181,7 @@ mFUNCTION(mTcpClient_Send, mPtr<mTcpClient> &tcpClient, IN const void *pData, co
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mTcpClient_Receive, mPtr<mTcpClient> &tcpClient, OUT void *pData, const size_t maxLength, OUT OPTIONAL size_t *pBytesReceived)
+mFUNCTION(mTcpClient_Receive, mPtr<mTcpClient> &tcpClient, OUT void *pData, const size_t maxLength, OUT OPTIONAL size_t *pBytesReceived /* = nullptr */)
 {
   mFUNCTION_SETUP();
 
@@ -205,6 +212,60 @@ mFUNCTION(mTcpClient_Receive, mPtr<mTcpClient> &tcpClient, OUT void *pData, cons
     if (pBytesReceived != nullptr)
       *pBytesReceived = (size_t)bytesReceived;
   }
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mTcpCLient_GetReadableBytes, mPtr<mTcpClient> &tcpClient, OUT size_t *pReadableBytes, OPTIONAL size_t timeoutMs /* = 0 */)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(tcpClient == nullptr || pReadableBytes == nullptr, mR_ArgumentNull);
+
+  WSAPOLLFD pollInfo;
+  pollInfo.fd = tcpClient->socket;
+  pollInfo.events = POLLRDNORM;
+
+  const int32_t result = WSAPoll(&pollInfo, 1, timeoutMs >= INT_MAX ? -1 : (INT)timeoutMs);
+
+  if (result < 0 || pollInfo.revents < 0)
+  {
+    const int32_t error = WSAGetLastError();
+    mUnused(error);
+
+    *pReadableBytes = 0;
+
+    mRETURN_RESULT(mR_IOFailure);
+  }
+
+  *pReadableBytes = (size_t)pollInfo.revents;
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mTcpCLient_GetWritebleBytes, mPtr<mTcpClient> &tcpClient, OUT size_t *pWriteableBytes, OPTIONAL size_t timeoutMs /* = 0 */)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(tcpClient == nullptr || pWriteableBytes == nullptr, mR_ArgumentNull);
+
+  WSAPOLLFD pollInfo;
+  pollInfo.fd = tcpClient->socket;
+  pollInfo.events = POLLWRNORM;
+
+  const int32_t result = WSAPoll(&pollInfo, 1, timeoutMs >= INT_MAX ? -1 : (INT)timeoutMs);
+
+  if (result < 0 || pollInfo.revents < 0)
+  {
+    const int32_t error = WSAGetLastError();
+    mUnused(error);
+
+    *pWriteableBytes = 0;
+
+    mRETURN_RESULT(mR_IOFailure);
+  }
+
+  *pWriteableBytes = (size_t)pollInfo.revents;
 
   mRETURN_SUCCESS();
 }

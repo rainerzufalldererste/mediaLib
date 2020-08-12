@@ -6,6 +6,13 @@
 
 #include "http_parser/src/http_parser.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "H/L+uBO77NtNTeWaUgmywwRSPoj74Gv6U+ejvXjCr/Q2XXeSy0CFuKfXlxm/Y6anWlybOlGLZ9N70rOK"
+#endif
+
 //////////////////////////////////////////////////////////////////////////
 
 struct mHttpServer
@@ -19,6 +26,9 @@ struct mHttpServer
 
   mUniqueContainer<mQueue<mPtr<mHttpRequestHandler>>> requestHandlers;
   mPtr<mHttpErrorRequestHandler> errorRequestHandler;
+  mUniqueContainer<mQueue<mPtr<mTcpClient>>> staleTcpClients;
+  mMutex *pStaleTcpClientMutex;
+  mThread *pStaleTcpClientHandlerThread;
 };
 
 struct mHttpRequest_Parser : mHttpRequest
@@ -38,6 +48,8 @@ int32_t mHttpServer_OnHeaderField_Internal(http_parser *, const char *at, size_t
 int32_t mHttpServer_OnHeaderValue_Internal(http_parser *, const char *at, size_t length);
 int32_t mHttpServer_OnBody_Internal(http_parser *, const char *at, size_t length);
 
+void mHttpServer_HandleTcpClient_Internal(mPtr<mHttpServer> &server, mPtr<mTcpClient> &client);
+
 mFUNCTION(mHttpRequest_Parser_Init_Internal, mPtr<mHttpRequest_Parser> &request, IN mAllocator *pAllocator);
 void mHttpRequest_Parser_Destroy_Internal(IN_OUT mHttpRequest_Parser *pRequest);
 
@@ -48,9 +60,9 @@ void mHttpResponse_Destroy_Internal(IN_OUT mHttpResponse *pResponse);
 
 static const char *mHttpResponse_AsString_100[] = { "100 Continue", "101 Switching Protocols", "103 Early Hints" };
 static const char *mHttpResponse_AsString_200[] = { "200 OK", "201 Created", "202 Accepted", "203 Non-Authoritative Information", "204 No Content", "205 Reset Content", "206 Partial Content" };
-static const char *mHttpResponse_AsString_300[] = { "300 Multiple Choices", "301 Moved Permanently", "302 Found", "303 See Other", "304 Not Modified", "307 Temporary Redirect", "308 Permanent Redirect" };
-static const char *mHttpResponse_AsString_400[] = { "400 Bad Request", "401 Unauthorized", "402 Payment Required", "403 Forbidden", "404 Not Found", "405 Method Not Allowed", "406 Not Acceptable", "407 Proxy Authentication Required", "408 Request Timeout", "409 Conflict", "410 Gone", "411 Length Required", "412 Precondition Failed", "413 Payload Too Large", "414 URI Too Long", "415 Unsupported Media Type", "416 Range Not Satisfiable", "417 Expectation Failed", "418 I'm a teapot", "422 Unprocessable Entity", "425 Too Early", "426 Upgrade Required", "428 Precondition Required", "429 Too Many Requests", "431 Request Header Fields Too Large", "451 Unavailable For Legal Reasons" };
-static const char *mHttpResponse_AsString_500[] = { "500 Internal Server Error", "501 Not Implemented", "502 Bad Gateway", "503 Service Unavailable", "504 Gateway Timeout", "505 HTTP Version Not Supported", "506 Variant Also Negotiates", "507 Insufficient Storage", "508 Loop Detected", "510 Not Extended", "511 Network Authentication Required" };
+static const char *mHttpResponse_AsString_300[] = { "300 Multiple Choices", "301 Moved Permanently", "302 Found", "303 See Other", "304 Not Modified", "", "", "307 Temporary Redirect", "308 Permanent Redirect" };
+static const char *mHttpResponse_AsString_400[] = { "400 Bad Request", "401 Unauthorized", "402 Payment Required", "403 Forbidden", "404 Not Found", "405 Method Not Allowed", "406 Not Acceptable", "407 Proxy Authentication Required", "408 Request Timeout", "409 Conflict", "410 Gone", "411 Length Required", "412 Precondition Failed", "413 Payload Too Large", "414 URI Too Long", "415 Unsupported Media Type", "416 Range Not Satisfiable", "417 Expectation Failed", "418 I'm a teapot", "", "", "", "422 Unprocessable Entity", "", "", "425 Too Early", "426 Upgrade Required", "", "428 Precondition Required", "429 Too Many Requests", "", "431 Request Header Fields Too Large", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "451 Unavailable For Legal Reasons" };
+static const char *mHttpResponse_AsString_500[] = { "500 Internal Server Error", "501 Not Implemented", "502 Bad Gateway", "503 Service Unavailable", "504 Gateway Timeout", "505 HTTP Version Not Supported", "506 Variant Also Negotiates", "507 Insufficient Storage", "508 Loop Detected", "", "510 Not Extended", "511 Network Authentication Required" };
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -123,6 +135,8 @@ mFUNCTION(mHttpServer_Create, OUT mPtr<mHttpServer> *pHttpServer, IN mAllocator 
   (*pHttpServer)->threadPool = threadPool;
 
   mERROR_CHECK(mQueue_Create(&(*pHttpServer)->requestHandlers, pAllocator));
+  mERROR_CHECK(mQueue_Create(&(*pHttpServer)->staleTcpClients, pAllocator));
+  mERROR_CHECK(mMutex_Create(&(*pHttpServer)->pStaleTcpClientMutex, pAllocator));
   
   mRETURN_SUCCESS();
 }
@@ -175,7 +189,14 @@ mFUNCTION(mHttpServer_Destroy_Internal, IN_OUT mHttpServer *pHttpServer)
 
   mERROR_CHECK(mSharedPointer_Destroy(&pHttpServer->tcpServer));
   mERROR_CHECK(mThread_Destroy(&pHttpServer->pListenerThread));
+  mERROR_CHECK(mThread_Destroy(&pHttpServer->pStaleTcpClientHandlerThread));
+  mERROR_CHECK(mMutex_Destroy(&pHttpServer->pStaleTcpClientMutex));
   mERROR_CHECK(mTasklessThreadPool_Destroy(&pHttpServer->threadPool));
+
+  mERROR_CHECK(mSharedPointer_Destroy(&pHttpServer->errorRequestHandler));
+  mERROR_CHECK(mQueue_Destroy(&pHttpServer->requestHandlers));
+
+  mERROR_CHECK(mQueue_Destroy(&pHttpServer->staleTcpClients));
 
   mRETURN_SUCCESS();
 }
@@ -189,89 +210,187 @@ mFUNCTION(mHttpServer_Thread_Internal, mPtr<mHttpServer> &server)
     mPtr<mTcpClient> client;
 
     if (mSUCCEEDED(mTcpServer_Listen(server->tcpServer, &client, server->pAllocator)))
-    {
-      std::function<void ()> task = [server, client]() mutable
-      {
-        // TODO: Use Arena Allocator.
-
-        char data[8 * 1024];
-        size_t bytesReceived = 0;
-
-        if (mSUCCEEDED(mSILENCE_ERROR(mTcpClient_Receive(client, data, sizeof(data), &bytesReceived))))
-        {
-          data[mMin(bytesReceived + 1, sizeof(data) - 1)] = '\0';
-
-          http_parser parser;
-          http_parser_init(&parser, HTTP_REQUEST);
-
-          mUniqueContainer<mHttpRequest_Parser> request;
-          mUniqueContainer<mHttpRequest_Parser>::CreateWithCleanupFunction(&request, mHttpRequest_Parser_Destroy_Internal);
-
-          if (mFAILED(mHttpRequest_Parser_Init_Internal(request, server->pAllocator)))
-            RETURN;
-
-          parser.data = request.GetPointer();
-          
-          http_parser_execute(&parser, &server->settings, data, bytesReceived);
-
-          if (mFAILED(request->result))
-          {
-            mHttpServer_RespondWithError_Internal(server, client, mHRSC_BadRequest, "Failed to parse HTTP Header.", server->pAllocator);
-
-            RETURN;
-          }
-
-          request->pLastAttributeValue = nullptr;
-          
-          if (parser.type != HTTP_REQUEST)
-          {
-            mHttpServer_RespondWithError_Internal(server, client, mHRSC_BadRequest, "Expected HTTP Request.", server->pAllocator);
-
-            RETURN;
-          }
-
-          request->requestMethod = (mHttpRequestMethod)parser.method;
-
-          if (request->requestMethod == mHRM_Post && request->body.bytes > 1)
-          {
-            if (mFAILED(mHttpRequest_ParseArguments(request->body.c_str(), request->postParameters, server->pAllocator)))
-            {
-              mHttpServer_RespondWithError_Internal(server, client, mHRSC_BadRequest, "Failed to parse POST parameters.", server->pAllocator);
-
-              RETURN;
-            }
-          }
-
-          mUniqueContainer<mHttpResponse> response;
-          mUniqueContainer<mHttpResponse>::ConstructWithCleanupFunction(&response, mHttpResponse_Destroy_Internal);
-
-          if (mFAILED(mHttpResponse_Init_Internal(response, server->pAllocator)))
-            RETURN;
-
-          bool handled = false;
-
-          mPtr<mHttpRequest> requestWrap = (mPtr<mHttpRequest>)((mPtr<mHttpRequest_Parser>)request);
-
-          for (auto &_handler : server->requestHandlers->Iterate())
-            if (_handler->pHandleRequest && mSUCCEEDED(_handler->pHandleRequest(_handler, requestWrap, &handled, response)) && handled)
-              break;
-          
-          if (!handled)
-          {
-            mHttpServer_RespondWithError_Internal(server, client, mHRSC_InternalServerError, "No Response Handler found for this request.", server->pAllocator);
-
-            RETURN;
-          }
-        }
-
-        RETURN;
-      };
-
-      mERROR_CHECK(mTasklessThreadPool_EnqueueTask(server->threadPool, task));
-    }
+      mERROR_CHECK(mTasklessThreadPool_EnqueueTask(server->threadPool, [server, client]() mutable { mHttpServer_HandleTcpClient_Internal(server, client); }));
   }
 
   mRETURN_SUCCESS();
+}
+
+mFUNCTION(mHttpServer_StaleTcpHandlerThread_Internal, mPtr<mHttpServer> &server)
+{
+  mFUNCTION_SETUP();
+
+  while (server->keepRunning)
+  {
+    size_t index = 0;
+    size_t count = 0;
+
+    while (server->keepRunning)
+    {
+      mPtr<mTcpClient> client = nullptr;
+
+      // Get Next Client.
+      {
+        mERROR_CHECK(mMutex_Lock(server->pStaleTcpClientMutex));
+        mDEFER_CALL(server->pStaleTcpClientMutex, mMutex_Unlock);
+
+        mERROR_CHECK(mQueue_GetCount(server->staleTcpClients, &count));
+
+        ++index;
+
+        if (index >= count)
+          break;
+
+        mERROR_CHECK(mQueue_PeekAt(server->staleTcpClients, index, &client));
+      }
+
+      uint8_t _unused[1];
+      size_t bytesReadable = 0;
+
+      // if the client disconnected.
+      if (mR_IOFailure == mTcpClient_Receive(client, &_unused, 0, nullptr) || mFAILED(mTcpCLient_GetReadableBytes(client, &bytesReadable)))
+      {
+        // Remove from queue.
+        {
+          mERROR_CHECK(mMutex_Lock(server->pStaleTcpClientMutex));
+          mDEFER_CALL(server->pStaleTcpClientMutex, mMutex_Unlock);
+
+          mERROR_CHECK(mQueue_PopAt(server->staleTcpClients, index, &client));
+        }
+        
+        client = nullptr;
+
+        --index;
+      }
+      // if the client has sent some more data.
+      else if (bytesReadable > 0)
+      {
+        mERROR_CHECK(mTasklessThreadPool_EnqueueTask(server->threadPool, [server, client]() mutable { mHttpServer_HandleTcpClient_Internal(server, client); }));
+
+        // Remove from queue.
+        {
+          mERROR_CHECK(mMutex_Lock(server->pStaleTcpClientMutex));
+          mDEFER_CALL(server->pStaleTcpClientMutex, mMutex_Unlock);
+
+          mERROR_CHECK(mQueue_PopAt(server->staleTcpClients, index, &client));
+        }
+
+        client = nullptr;
+
+        --index;
+      }
+    }
+
+    mSleep(1);
+  }
+
+  mRETURN_SUCCESS();
+}
+
+void mHttpServer_HandleTcpClient_Internal(mPtr<mHttpServer> &server, mPtr<mTcpClient> &client)
+{
+  // TODO: Use Arena Allocator.
+
+  char data[8 * 1024];
+  size_t bytesReceived = 0;
+
+  while (mSUCCEEDED(mSILENCE_ERROR(mTcpClient_Receive(client, data, sizeof(data), &bytesReceived))))
+  {
+    data[mMin(bytesReceived + 1, sizeof(data) - 1)] = '\0';
+
+    http_parser parser;
+    http_parser_init(&parser, HTTP_REQUEST);
+
+    mUniqueContainer<mHttpRequest_Parser> request;
+    mUniqueContainer<mHttpRequest_Parser>::CreateWithCleanupFunction(&request, mHttpRequest_Parser_Destroy_Internal);
+
+    if (mFAILED(mHttpRequest_Parser_Init_Internal(request, server->pAllocator)))
+      return;
+
+    parser.data = request.GetPointer();
+
+    http_parser_execute(&parser, &server->settings, data, bytesReceived);
+
+    if (mFAILED(request->result))
+    {
+      mHttpServer_RespondWithError_Internal(server, client, mHRSC_BadRequest, "Failed to parse HTTP Header.", server->pAllocator);
+
+      return;
+    }
+
+    request->pLastAttributeValue = nullptr;
+
+    if (parser.type != HTTP_REQUEST)
+    {
+      mHttpServer_RespondWithError_Internal(server, client, mHRSC_BadRequest, "Expected HTTP Request.", server->pAllocator);
+
+      return;
+    }
+
+    request->requestMethod = (mHttpRequestMethod)parser.method;
+
+    if (request->requestMethod == mHRM_Post && request->body.bytes > 1)
+    {
+      if (mFAILED(mHttpRequest_ParseArguments(request->body.c_str(), request->postParameters, server->pAllocator)))
+      {
+        mHttpServer_RespondWithError_Internal(server, client, mHRSC_BadRequest, "Failed to parse POST parameters.", server->pAllocator);
+
+        return;
+      }
+    }
+
+    mUniqueContainer<mHttpResponse> response;
+    mUniqueContainer<mHttpResponse>::ConstructWithCleanupFunction(&response, mHttpResponse_Destroy_Internal);
+
+    if (mFAILED(mHttpResponse_Init_Internal(response, server->pAllocator)))
+      return;
+
+    bool handled = false;
+
+    mPtr<mHttpRequest> requestWrap = (mPtr<mHttpRequest>)((mPtr<mHttpRequest_Parser>)request);
+
+    for (auto &_handler : server->requestHandlers->Iterate())
+    {
+      handled = false;
+
+      if (_handler->pHandleRequest && mSUCCEEDED(_handler->pHandleRequest(_handler, requestWrap, &handled, response)) && handled)
+      {
+        if (mFAILED(mHttpServer_SendResponsePacket_Internal(client, response, server->pAllocator)))
+        {
+          mHttpServer_RespondWithError_Internal(server, client, mHRSC_InternalServerError, "Failed to send response packet.", server->pAllocator);
+
+          return;
+        }
+
+        break;
+      }
+    }
+
+    if (!handled)
+    {
+      mHttpServer_RespondWithError_Internal(server, client, mHRSC_InternalServerError, "No Response Handler found for this request.", server->pAllocator);
+
+      return;
+    }
+
+    size_t readableBytes = 0;
+
+    if (mFAILED(mTcpCLient_GetReadableBytes(client, &readableBytes)))
+      return;
+
+    if (readableBytes == 0)
+    {
+      if (mSUCCEEDED(mMutex_Lock(server->pStaleTcpClientMutex)))
+      {
+        mQueue_PushBack(server->staleTcpClients, std::move(client));
+        mMutex_Unlock(server->pStaleTcpClientMutex);
+      }
+
+      return;
+    }
+  }
+
+  return;
 }
 
 mFUNCTION(mHttpServer_RespondWithError_Internal, mPtr<mHttpServer> &server, mPtr<mTcpClient> &client, const mHttpResponseStatusCode statusCode, const mString &errorString, IN mAllocator *pAllocator)
@@ -350,6 +469,8 @@ mFUNCTION(mHttpServer_SendResponsePacket_Internal, mPtr<mTcpClient> &client, con
     mERROR_IF(statusCode >= mARRAYSIZE(mHttpResponse_AsString_400), mR_ResourceInvalid);
 
     const char *statusText = mHttpResponse_AsString_400[statusCode];
+    mERROR_IF(strlen(statusText) == 0, mR_ResourceInvalid);
+
     mERROR_CHECK(mBinaryChunk_WriteBytes(responsePacket, reinterpret_cast<const uint8_t *>(statusText), strlen(statusText)));
 
     break;
@@ -361,6 +482,8 @@ mFUNCTION(mHttpServer_SendResponsePacket_Internal, mPtr<mTcpClient> &client, con
     mERROR_IF(statusCode >= mARRAYSIZE(mHttpResponse_AsString_500), mR_ResourceInvalid);
 
     const char *statusText = mHttpResponse_AsString_500[statusCode];
+    mERROR_IF(strlen(statusText) == 0, mR_ResourceInvalid);
+
     mERROR_CHECK(mBinaryChunk_WriteBytes(responsePacket, reinterpret_cast<const uint8_t *>(statusText), strlen(statusText)));
 
     break;
@@ -376,7 +499,7 @@ mFUNCTION(mHttpServer_SendResponsePacket_Internal, mPtr<mTcpClient> &client, con
   const char charSet[] = ";charset=";
   const char contentLength[] = "\r\nConnection: Keep-Alive\r\nContent-Length: ";
   const char utf8[] = "UTF-8\r\nConnection: Keep-Alive\r\nContent-Length: ";
-  const char endOfParams[] = "\r\n\r\n\r\n";
+  const char endOfParams[] = "\r\n\r\n";
 
   mERROR_IF(response->contentType.bytes <= 1, mR_ResourceInvalid);
 
@@ -852,8 +975,6 @@ mFUNCTION(mDefaultHttpErrorRequestHandler_HandleRequest, mPtr<mHttpErrorRequestH
     mERROR_CHECK(mBinaryChunk_WriteBytes(response->responseStream, reinterpret_cast<const uint8_t *>(afterHeadline), sizeof(afterHeadline) - 1));
     mERROR_CHECK(mBinaryChunk_WriteBytes(response->responseStream, reinterpret_cast<const uint8_t *>(errorString.c_str()), errorString.bytes - 1));
     mERROR_CHECK(mBinaryChunk_WriteBytes(response->responseStream, reinterpret_cast<const uint8_t *>(end), sizeof(end) - 1));
-
-    mERROR_CHECK(mBinaryChunk_WriteData(response->responseStream, '\0'));
   }
   else
   {
@@ -906,12 +1027,9 @@ mFUNCTION(mDefaultHttpErrorRequestHandler_HandleRequest, mPtr<mHttpErrorRequestH
           mERROR_CHECK(mBinaryChunk_WriteBytes(response->responseStream, reinterpret_cast<const uint8_t *>(bytes), sizeof(bytes)));
         }
       }
-      mERROR_CHECK(mBinaryChunk_WriteBytes(response->responseStream, reinterpret_cast<const uint8_t *>(errorString.c_str()), errorString.bytes));
     }
 
     mERROR_CHECK(mBinaryChunk_WriteBytes(response->responseStream, reinterpret_cast<const uint8_t *>(after), sizeof(after) - 1));
-
-    mERROR_CHECK(mBinaryChunk_WriteData(response->responseStream, '\0'));
   }
 
   mRETURN_SUCCESS();
@@ -924,3 +1042,10 @@ mFUNCTION(mDefaultHttpErrorRequestHandler_HandleRequest, mPtr<mHttpErrorRequestH
 #pragma warning(push, 0)
 #include "http_parser/src/http_parser.c"
 #pragma warning(pop)
+
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "H/L+uBO77NtNTeWaUgmywwRSPoj74Gv6U+ejvXjCr/Q2XXeSy0CFuKfXlxm/Y6anWlybOlGLZ9N70rOK"
+#endif

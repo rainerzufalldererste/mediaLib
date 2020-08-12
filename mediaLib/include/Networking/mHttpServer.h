@@ -7,6 +7,13 @@
 #include "mKeyValuePair.h"
 #include "mThreadPool.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "spXOOhpyugFz66f7m8FOfXjvvk6I+8kARIXKip/Z6Nc/52neDouggGa8zEluy6tt6g72Qoe3p1JQog03"
+#endif
+
 enum mHttpResponseStatusCode
 {
   mHRSC_Continue = 100, // Continue
@@ -48,6 +55,7 @@ enum mHttpResponseStatusCode
   mHRSC_UnsupportedMediaType = 415, // Unsupported Media Type 
   mHRSC_RangeNotSatisfiable = 416, // Range Not Satisfiable
   mHRSC_ExpectationFailed = 417, // Expectation Failed
+  mHRSC_ImATeapot = 418, // I'm a teapot
   mHRSC_MisdirectedRequest = 421, // Misdirected Request 
   mHRSC_UnprocessableEntity = 422, // Unprocessable Entity
   mHRSC_Locked = 423, // Locked
