@@ -81,6 +81,9 @@ mFUNCTION(mNetwork_GetLocalAddresses, OUT mPtr<mQueue<mIPAddress>> *pAddresses, 
   {
     for (IP_ADAPTER_UNICAST_ADDRESS *pUnicastAddress = pCurrentAdapter->FirstUnicastAddress; pUnicastAddress != nullptr; pUnicastAddress = pUnicastAddress->Next)
     {
+      if (pUnicastAddress->DadState == NldsInvalid || pUnicastAddress->DadState == NldsDeprecated || pUnicastAddress->DadState == NldsTentative || pUnicastAddress->DadState == NldsDuplicate)
+        continue;
+
       mIPAddress ip;
 
       switch (pUnicastAddress->Address.lpSockaddr->sa_family)
@@ -113,6 +116,131 @@ mFUNCTION(mNetwork_GetLocalAddresses, OUT mPtr<mQueue<mIPAddress>> *pAddresses, 
 
       mERROR_CHECK(mQueue_PushBack(*pAddresses, ip));
     }
+  }
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mNetwork_GetAdapters, OUT mPtr<mQueue<mNetworkAdapter>> *pAdapters, IN mAllocator *pAllocator)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pAdapters == nullptr, mR_ArgumentNull);
+
+  if (*pAdapters == nullptr)
+    mERROR_CHECK(mQueue_Create(pAdapters, pAllocator));
+  else
+    mERROR_CHECK(mQueue_Clear(*pAdapters));
+
+  mERROR_CHECK(mNetwork_Init());
+
+  IP_ADAPTER_ADDRESSES *pAdapterAddresses = nullptr;
+  mAllocator *pTempAllocator = &mDefaultTempAllocator;
+  mDEFER(mAllocator_FreePtr(pTempAllocator, &pAdapterAddresses));
+
+  ULONG bytes = 0;
+
+  while (true)
+  {
+    const ULONG result = GetAdaptersAddresses(AF_UNSPEC, GAA_FLAG_SKIP_ANYCAST | GAA_FLAG_SKIP_MULTICAST | GAA_FLAG_SKIP_DNS_SERVER | GAA_FLAG_INCLUDE_GATEWAYS, nullptr, pAdapterAddresses, &bytes);
+
+    if (result != ERROR_SUCCESS)
+      mERROR_IF(result != ERROR_BUFFER_OVERFLOW, mR_InternalError);
+    else
+      break;
+
+    mERROR_CHECK(mAllocator_Reallocate(pTempAllocator, reinterpret_cast<uint8_t **>(&pAdapterAddresses), bytes));
+  }
+
+  for (IP_ADAPTER_ADDRESSES *pCurrentAdapter = pAdapterAddresses; pCurrentAdapter != nullptr; pCurrentAdapter = pCurrentAdapter->Next)
+  {
+    if (pCurrentAdapter->OperStatus != IfOperStatusUp && pCurrentAdapter->OperStatus != IfOperStatusUnknown)
+      continue;
+
+    mNetworkAdapter adapter;
+
+    adapter.sendBitsPerSecond = pCurrentAdapter->TransmitLinkSpeed;
+    adapter.receiveBitsPerSecond = pCurrentAdapter->ReceiveLinkSpeed;
+
+    mERROR_CHECK(mQueue_Create(&adapter.addresses, pAllocator));
+    mERROR_CHECK(mQueue_Create(&adapter.gatewayAddresses, pAllocator));
+
+    mERROR_CHECK(mString_Create(&adapter.name, pCurrentAdapter->FriendlyName, pAllocator));
+
+    for (IP_ADAPTER_UNICAST_ADDRESS *pUnicastAddress = pCurrentAdapter->FirstUnicastAddress; pUnicastAddress != nullptr; pUnicastAddress = pUnicastAddress->Next)
+    {
+      if (pUnicastAddress->DadState == NldsInvalid || pUnicastAddress->DadState == NldsDeprecated || pUnicastAddress->DadState == NldsTentative || pUnicastAddress->DadState == NldsDuplicate)
+        continue;
+
+      mIPAddress ip;
+
+      switch (pUnicastAddress->Address.lpSockaddr->sa_family)
+      {
+      case AF_INET:
+      {
+        ip.isIPv6 = false;
+
+        const sockaddr_in *pIPv4Addr = reinterpret_cast<const sockaddr_in *>(pUnicastAddress->Address.lpSockaddr);
+        memcpy(ip.ipv4, &pIPv4Addr->sin_addr.S_un, sizeof(ip.ipv4));
+
+        break;
+      }
+
+      case AF_INET6:
+      {
+        ip.isIPv6 = true;
+
+        const sockaddr_in6 *pIPv6Addr = reinterpret_cast<const sockaddr_in6 *>(pUnicastAddress->Address.lpSockaddr);
+        memcpy(ip.ipv6, &pIPv6Addr->sin6_addr.u, sizeof(ip.ipv6));
+
+        break;
+      }
+
+      default:
+      {
+        continue;
+      }
+      }
+
+      mERROR_CHECK(mQueue_PushBack(adapter.addresses, ip));
+    }
+
+    for (IP_ADAPTER_GATEWAY_ADDRESS *pGatewayAddress = pCurrentAdapter->FirstGatewayAddress; pGatewayAddress != nullptr; pGatewayAddress = pGatewayAddress->Next)
+    {
+      mIPAddress ip;
+
+      switch (pGatewayAddress->Address.lpSockaddr->sa_family)
+      {
+      case AF_INET:
+      {
+        ip.isIPv6 = false;
+
+        const sockaddr_in *pIPv4Addr = reinterpret_cast<const sockaddr_in *>(pGatewayAddress->Address.lpSockaddr);
+        memcpy(ip.ipv4, &pIPv4Addr->sin_addr.S_un, sizeof(ip.ipv4));
+
+        break;
+      }
+
+      case AF_INET6:
+      {
+        ip.isIPv6 = true;
+
+        const sockaddr_in6 *pIPv6Addr = reinterpret_cast<const sockaddr_in6 *>(pGatewayAddress->Address.lpSockaddr);
+        memcpy(ip.ipv6, &pIPv6Addr->sin6_addr.u, sizeof(ip.ipv6));
+
+        break;
+      }
+
+      default:
+      {
+        continue;
+      }
+      }
+
+      mERROR_CHECK(mQueue_PushBack(adapter.gatewayAddresses, ip));
+    }
+
+    mERROR_CHECK(mQueue_PushBack(*pAdapters, std::move(adapter)));
   }
 
   mRETURN_SUCCESS();
