@@ -55,7 +55,7 @@ inline mFUNCTION(mRefPool_Add, mPtr<mRefPool<T>> &refPool, IN T *pItem, OUT mPtr
   if (std::is_trivially_copy_constructible<T>::value)
     new (pIndex->GetPointer()) T(*pItem);
   else
-    mERROR_CHECK(mAllocator_Copy(refPool->pAllocator, pIndex->GetPointer(), pItem, 1));
+    mERROR_CHECK(mMemcpy(pIndex->GetPointer(), pItem, 1));
 
   mRETURN_SUCCESS();
 }

@@ -96,17 +96,15 @@ struct mAllocator
   mAllocator_AllocFunction *pAllocateZero = nullptr;
   mAllocator_AllocFunction *pReallocate = nullptr;
   mAllocator_FreeFunction *pFree = nullptr;
-  mAllocator_MoveFunction *pMove = nullptr;
-  mAllocator_CopyFunction *pCopy = nullptr;
   mAllocator_DestroyAllocator *pDestroyAllocator = nullptr;
 
   void *pUserData = nullptr;
   bool initialized = false;
 };
 
-mAllocator mAllocator_StaticCreate(IN mAllocator_AllocFunction *pAllocFunction, IN mAllocator_AllocFunction *pReallocFunction, IN mAllocator_FreeFunction *pFree, IN OPTIONAL mAllocator_MoveFunction *pMove = nullptr, IN OPTIONAL mAllocator_CopyFunction *pCopy = nullptr, IN OPTIONAL mAllocator_AllocFunction *pAllocZeroFunction = nullptr, IN OPTIONAL mAllocator_DestroyAllocator *pDestroyAllocator = nullptr, IN OPTIONAL void *pUserData = nullptr);
+mAllocator mAllocator_StaticCreate(IN mAllocator_AllocFunction *pAllocFunction, IN mAllocator_AllocFunction *pReallocFunction, IN mAllocator_FreeFunction *pFree, IN OPTIONAL mAllocator_AllocFunction *pAllocZeroFunction = nullptr, IN OPTIONAL mAllocator_DestroyAllocator *pDestroyAllocator = nullptr, IN OPTIONAL void *pUserData = nullptr);
 
-mFUNCTION(mAllocator_Create, OUT mAllocator *pAllocator, IN mAllocator_AllocFunction *pAllocFunction, IN mAllocator_AllocFunction *pReallocFunction, IN mAllocator_FreeFunction *pFree, IN OPTIONAL mAllocator_MoveFunction *pMove = nullptr, IN OPTIONAL mAllocator_CopyFunction *pCopy = nullptr, IN OPTIONAL mAllocator_AllocFunction *pAllocZeroFunction = nullptr, IN OPTIONAL mAllocator_DestroyAllocator *pDestroyAllocator = nullptr, IN OPTIONAL void *pUserData = nullptr);
+mFUNCTION(mAllocator_Create, OUT mAllocator *pAllocator, IN mAllocator_AllocFunction *pAllocFunction, IN mAllocator_AllocFunction *pReallocFunction, IN mAllocator_FreeFunction *pFree, IN OPTIONAL mAllocator_AllocFunction *pAllocZeroFunction = nullptr, IN OPTIONAL mAllocator_DestroyAllocator *pDestroyAllocator = nullptr, IN OPTIONAL void *pUserData = nullptr);
 mFUNCTION(mAllocator_Destroy, IN_OUT mAllocator *pAllocator);
 
 template <typename T>
@@ -123,12 +121,6 @@ mFUNCTION(mAllocator_FreePtr, IN OPTIONAL mAllocator *pAllocator, IN_OUT T **ppD
 
 template <typename T>
 mFUNCTION(mAllocator_Free, IN OPTIONAL mAllocator *pAllocator, IN T *pData);
-
-template <typename T>
-mFUNCTION(mAllocator_Move, IN OPTIONAL mAllocator *pAllocator, IN_OUT T *pDestination, IN_OUT T *pSource, const size_t count);
-
-template <typename T>
-mFUNCTION(mAllocator_Copy, IN OPTIONAL mAllocator *pAllocator, IN_OUT T *pDestination, IN const T *pSource, const size_t count);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -292,43 +284,6 @@ inline mFUNCTION(mAllocator_Free, IN OPTIONAL mAllocator *pAllocator, IN T *pDat
 #ifdef mDEBUG_MEMORY_ALLOCATIONS
   mAllocatorDebugging_StoreFreeCall(pAllocator, originalPointer);
 #endif
-
-  mRETURN_SUCCESS();
-}
-
-template<typename T>
-inline mFUNCTION(mAllocator_Move, IN OPTIONAL mAllocator *pAllocator, IN_OUT T *pDestination, IN_OUT T *pSource, const size_t count)
-{
-  mFUNCTION_SETUP();
-
-  mERROR_IF(pDestination == nullptr || pSource == nullptr, mR_ArgumentNull);
-
-  if (mIsTriviallyMemoryMovable<T>::value)
-  {
-    if (pAllocator == nullptr || !pAllocator->initialized || pAllocator->pMove == nullptr)
-      mERROR_CHECK(mDefaultAllocator_Move((uint8_t *)pDestination, (uint8_t *)pSource, sizeof(T), count));
-    else
-      mERROR_CHECK(pAllocator->pMove((uint8_t *)pDestination, (uint8_t *)pSource, sizeof(T), count, pAllocator->pUserData));
-  }
-  else
-  {
-    mMoveConstructMultiple(pDestination, pSource, count);
-  }
-
-  mRETURN_SUCCESS();
-}
-
-template<typename T>
-inline mFUNCTION(mAllocator_Copy, IN OPTIONAL mAllocator *pAllocator, IN_OUT T *pDestination, IN const T *pSource, const size_t count)
-{
-  mFUNCTION_SETUP();
-
-  mERROR_IF(pDestination == nullptr || pSource == nullptr, mR_ArgumentNull);
-
-  if (pAllocator == nullptr || !pAllocator->initialized || pAllocator->pCopy == nullptr)
-    mERROR_CHECK(mDefaultAllocator_Copy((uint8_t *)pDestination, (uint8_t *)pSource, sizeof(T), count));
-  else
-    mERROR_CHECK(pAllocator->pCopy((uint8_t *)pDestination, (uint8_t *)pSource, sizeof(T), count, pAllocator->pUserData));
 
   mRETURN_SUCCESS();
 }

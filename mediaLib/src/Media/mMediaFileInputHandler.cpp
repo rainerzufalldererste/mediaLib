@@ -451,7 +451,7 @@ mFUNCTION(mMediaFileInputHandler_AddStream_Internal, IN mMediaFileInputHandler *
   else
     mERROR_CHECK(mAllocator_Reallocate(pInputHandler->pAllocator, &pInputHandler->pStreamTypeLookup, pInputHandler->streamCount));
 
-  mERROR_CHECK(mAllocator_Copy(pInputHandler->pAllocator, &pInputHandler->pStreamTypeLookup[pInputHandler->streamCount - 1], pMediaType, 1));
+  mERROR_CHECK(mMemcpy(&pInputHandler->pStreamTypeLookup[pInputHandler->streamCount - 1], pMediaType, 1));
 
   mRETURN_SUCCESS();
 }
@@ -469,7 +469,7 @@ mFUNCTION(mMediaFileInputHandler_AddVideoStream_Internal, IN mMediaFileInputHand
   else
     mERROR_CHECK(mAllocator_Reallocate(pInputHandler->pAllocator, &pInputHandler->pVideoStreams, pInputHandler->videoStreamCount));
 
-  mERROR_CHECK(mAllocator_Copy(pInputHandler->pAllocator, &pInputHandler->pVideoStreams[pInputHandler->videoStreamCount - 1], pVideoStreamType, 1));
+  mERROR_CHECK(mMemcpy(&pInputHandler->pVideoStreams[pInputHandler->videoStreamCount - 1], pVideoStreamType, 1));
 
   mRETURN_SUCCESS();
 }
@@ -487,7 +487,7 @@ mFUNCTION(mMediaFileInputHandler_AddAudioStream_Internal, IN mMediaFileInputHand
   else
     mERROR_CHECK(mAllocator_Reallocate(pInputHandler->pAllocator, &pInputHandler->pAudioStreams, pInputHandler->audioStreamCount));
 
-  mERROR_CHECK(mAllocator_Copy(pInputHandler->pAllocator, &pInputHandler->pAudioStreams[pInputHandler->audioStreamCount - 1], pAudioStreamType, 1));
+  mERROR_CHECK(mMemcpy(&pInputHandler->pAudioStreams[pInputHandler->audioStreamCount - 1], pAudioStreamType, 1));
 
   mRETURN_SUCCESS();
 }

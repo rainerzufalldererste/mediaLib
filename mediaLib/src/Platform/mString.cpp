@@ -1085,7 +1085,7 @@ mFUNCTION(mString_ToDirectoryPath, OUT mString *pString, const mString &text)
       if (lastWasSlash && (pString->text[offset] == '/' || pString->text[offset] == '\\') && i != 1)
       {
         pString->bytes -= characterSize;
-        mERROR_CHECK(mAllocator_Move(pString->pAllocator, &pString->text[offset], &pString->text[offset + characterSize], pString->bytes - offset));
+        mERROR_CHECK(mMemmove(&pString->text[offset], &pString->text[offset + characterSize], pString->bytes - offset));
         --pString->count;
         --i;
         continue;
@@ -1160,7 +1160,7 @@ mFUNCTION(mString_ToFilePath, OUT mString *pString, const mString &text)
       if (lastWasSlash && (pString->text[offset] == '/' || pString->text[offset] == '\\') && i != 1)
       {
         pString->bytes -= characterSize;
-        mERROR_CHECK(mAllocator_Move(pString->pAllocator, &pString->text[offset], &pString->text[offset + characterSize], pString->bytes - offset));
+        mERROR_CHECK(mMemmove(&pString->text[offset], &pString->text[offset + characterSize], pString->bytes - offset));
         --pString->count;
         continue;
       }

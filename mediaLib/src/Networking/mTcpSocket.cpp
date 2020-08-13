@@ -16,17 +16,6 @@
 
 //////////////////////////////////////////////////////////////////////////
 
-struct mTcpSocket
-{
-
-};
-
-bool _StaticallyInitiailized = false;
-
-#ifdef mPLATFORM_WINDOWS
-WSADATA _WinsockInfo;
-#endif
-
 struct mTcpServer
 {
   SOCKET socket;
@@ -37,7 +26,6 @@ struct mTcpClient
   SOCKET socket;
 };
 
-mFUNCTION(_Initialize);
 mFUNCTION(mTcpServer_Destroy_Internal, IN_OUT mTcpServer *pTcpServer);
 mFUNCTION(mTcpClient_Destroy_Internal, IN_OUT mTcpClient *pTcpClient);
 mFUNCTION(mTcpClient_Create_Internal, OUT mPtr<mTcpClient> *pClient, IN mAllocator *pAllocator, const char *address, const uint16_t port);
@@ -53,7 +41,7 @@ mFUNCTION(mTcpServer_Create, OUT mPtr<mTcpServer> *pTcpServer, IN mAllocator *pA
 
   *pTcpServer = nullptr;
 
-  mERROR_CHECK(_Initialize());
+  mERROR_CHECK(mNetwork_Init());
 
   struct addrinfo *pResult = nullptr;
   struct addrinfo hints = { 0 };
@@ -216,7 +204,7 @@ mFUNCTION(mTcpClient_Receive, mPtr<mTcpClient> &tcpClient, OUT void *pData, cons
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mTcpCLient_GetReadableBytes, mPtr<mTcpClient> &tcpClient, OUT size_t *pReadableBytes, OPTIONAL size_t timeoutMs /* = 0 */)
+mFUNCTION(mTcpClient_GetReadableBytes, mPtr<mTcpClient> &tcpClient, OUT size_t *pReadableBytes, OPTIONAL size_t timeoutMs /* = 0 */)
 {
   mFUNCTION_SETUP();
 
@@ -243,7 +231,7 @@ mFUNCTION(mTcpCLient_GetReadableBytes, mPtr<mTcpClient> &tcpClient, OUT size_t *
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mTcpCLient_GetWritebleBytes, mPtr<mTcpClient> &tcpClient, OUT size_t *pWriteableBytes, OPTIONAL size_t timeoutMs /* = 0 */)
+mFUNCTION(mTcpClient_GetWriteableBytes, mPtr<mTcpClient> &tcpClient, OUT size_t *pWriteableBytes, OPTIONAL size_t timeoutMs /* = 0 */)
 {
   mFUNCTION_SETUP();
 
@@ -271,32 +259,6 @@ mFUNCTION(mTcpCLient_GetWritebleBytes, mPtr<mTcpClient> &tcpClient, OUT size_t *
 }
 
 //////////////////////////////////////////////////////////////////////////
-
-int32_t WSACleanupWrapper()
-{
-  return WSACleanup();
-}
-
-mFUNCTION(_Initialize)
-{
-  mFUNCTION_SETUP();
-
-  if (_StaticallyInitiailized)
-    mRETURN_SUCCESS();
-
-  const int32_t result = WSAStartup(MAKEWORD(2, 2), &_WinsockInfo);
-
-  if (result != 0)
-  {
-    mPRINT_ERROR("Failed to initialize WinSock with error code 0x%" PRIx32 ".\n", result);
-    mRETURN_RESULT(mR_OperationNotSupported);
-  }
-
-  onexit(WSACleanupWrapper);
-  _StaticallyInitiailized = true;
-
-  mRETURN_SUCCESS();
-}
 
 mFUNCTION(mTcpServer_Destroy_Internal, IN_OUT mTcpServer *pTcpServer)
 {

@@ -267,7 +267,7 @@ mFUNCTION(mImageBuffer_CopyTo, mPtr<mImageBuffer> &source, mPtr<mImageBuffer> &t
   {
     size_t copiedSize;
     mERROR_CHECK(mPixelFormat_GetSize(source->pixelFormat, mVec2s(source->lineStride, source->currentSize.y), &copiedSize));
-    mERROR_CHECK(mAllocator_Copy(source->pAllocator, target->pPixels, source->pPixels, copiedSize));
+    mERROR_CHECK(mMemcpy(target->pPixels, source->pPixels, copiedSize));
   }
   else
   {
@@ -305,7 +305,7 @@ mFUNCTION(mImageBuffer_CopyTo, mPtr<mImageBuffer> &source, mPtr<mImageBuffer> &t
 
       for (size_t y = 0; y < source->currentSize.y; y++)
       {
-        mERROR_CHECK(mAllocator_Copy(source->pAllocator, pTargetSubBufferPixels + targetLineStride, pSourceSubBufferPixels + sourceLineStride, subBufferSize.x));
+        mERROR_CHECK(mMemcpy(pTargetSubBufferPixels + targetLineStride, pSourceSubBufferPixels + sourceLineStride, subBufferSize.x));
 
         targetLineStride += sourceSubBufferStride * subBufferUnitSize;
         sourceLineStride += targetSubBufferStride * subBufferUnitSize;
@@ -628,7 +628,7 @@ jpeg_decoder_failed:
   }
   else
   {
-    mERROR_CHECK(mAllocator_Copy(imageBuffer->pAllocator, imageBuffer->pPixels, (uint8_t *)pResult, imageBytes));
+    mERROR_CHECK(mMemcpy(imageBuffer->pPixels, (uint8_t *)pResult, imageBytes));
   }
 
   mRETURN_SUCCESS();
@@ -676,9 +676,9 @@ mFUNCTION(mImageBuffer_FlipY, mPtr<mImageBuffer> &imageBuffer)
 
     while (pSubBuffer < pSubBufferEnd)
     {
-      mERROR_CHECK(mAllocator_Copy(imageBuffer->pAllocator, pBuffer, pSubBuffer, strideBytes));
-      mERROR_CHECK(mAllocator_Copy(imageBuffer->pAllocator, pSubBuffer, pSubBufferEnd, strideBytes));
-      mERROR_CHECK(mAllocator_Copy(imageBuffer->pAllocator, pSubBufferEnd, pBuffer, strideBytes));
+      mERROR_CHECK(mMemcpy(pBuffer, pSubBuffer, strideBytes));
+      mERROR_CHECK(mMemcpy(pSubBuffer, pSubBufferEnd, strideBytes));
+      mERROR_CHECK(mMemcpy(pSubBufferEnd, pBuffer, strideBytes));
 
       pSubBuffer += strideBytes;
       pSubBufferEnd -= strideBytes;

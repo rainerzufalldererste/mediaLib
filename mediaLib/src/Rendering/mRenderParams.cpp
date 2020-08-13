@@ -64,8 +64,8 @@ mFUNCTION(mRenderParams_CreateRenderContext, OUT mRenderContextId *pRenderContex
 
   ++mRenderParams_RenderContextCount;
   ++mRenderParams_InitializedRenderContextCount;
-  mERROR_CHECK(mAllocator_Reallocate(nullptr, &mRenderParams_pRenderContexts, mRenderParams_RenderContextCount));
-  mERROR_CHECK(mAllocator_Move(nullptr, &mRenderParams_pRenderContexts[renderContextId], &currentRenderContext, 1));
+  mERROR_CHECK(mAllocator_Reallocate(&mDefaultAllocator, &mRenderParams_pRenderContexts, mRenderParams_RenderContextCount));
+  mERROR_CHECK(mMemmove(&mRenderParams_pRenderContexts[renderContextId], &currentRenderContext, 1));
 
   *pRenderContextId = renderContextId;
 

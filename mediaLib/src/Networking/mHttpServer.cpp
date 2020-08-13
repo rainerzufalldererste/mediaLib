@@ -248,7 +248,7 @@ mFUNCTION(mHttpServer_StaleTcpHandlerThread_Internal, mPtr<mHttpServer> &server)
       size_t bytesReadable = 0;
 
       // if the client disconnected.
-      if (mR_IOFailure == mTcpClient_Receive(client, &_unused, 0, nullptr) || mFAILED(mTcpCLient_GetReadableBytes(client, &bytesReadable)))
+      if (mR_IOFailure == mTcpClient_Receive(client, &_unused, 0, nullptr) || mFAILED(mTcpClient_GetReadableBytes(client, &bytesReadable)))
       {
         // Remove from queue.
         {
@@ -375,7 +375,7 @@ void mHttpServer_HandleTcpClient_Internal(mPtr<mHttpServer> &server, mPtr<mTcpCl
 
     size_t readableBytes = 0;
 
-    if (mFAILED(mTcpCLient_GetReadableBytes(client, &readableBytes)))
+    if (mFAILED(mTcpClient_GetReadableBytes(client, &readableBytes)))
       return;
 
     if (readableBytes == 0)

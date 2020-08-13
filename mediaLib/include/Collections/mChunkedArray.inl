@@ -120,7 +120,7 @@ mFUNCTION(mChunkedArray_PushBack, mPtr<mChunkedArray<T>> &chunkedArray, IN T *pI
       chunkedArray->pBlocks[chunkedArray->blockCount - 1].blockStartIndex = 0;
       chunkedArray->pBlocks[chunkedArray->blockCount - 1].blockEndIndex = blockCount;
 
-      mERROR_CHECK(mAllocator_Move(chunkedArray->pAllocator, chunkedArray->pBlocks[chunkedArray->blockCount - 1].pData, chunkedArray->pBlocks[chunkedArray->blockCount - 1].pData + oldBlockStartIndex, blockCount));
+      mERROR_CHECK(mMemmove(chunkedArray->pBlocks[chunkedArray->blockCount - 1].pData, chunkedArray->pBlocks[chunkedArray->blockCount - 1].pData + oldBlockStartIndex, blockCount));
     }
   }
 
@@ -208,14 +208,14 @@ mFUNCTION(mChunkedArray_PopAt, mPtr<mChunkedArray<T>> &chunkedArray, const size_
     if (innerItemIndex - pBlock->blockStartIndex <= pBlock->blockEndIndex - innerItemIndex)
     {
       if (innerItemIndex - pBlock->blockStartIndex > 0)
-        mERROR_CHECK(mAllocator_Move(chunkedArray->pAllocator, &pBlock->pData[pBlock->blockStartIndex + 1], &pBlock->pData[pBlock->blockStartIndex], innerItemIndex - pBlock->blockStartIndex));
+        mERROR_CHECK(mMemmove(&pBlock->pData[pBlock->blockStartIndex + 1], &pBlock->pData[pBlock->blockStartIndex], innerItemIndex - pBlock->blockStartIndex));
 
       ++pBlock->blockStartIndex;
     }
     else
     {
       if (pBlock->blockEndIndex - innerItemIndex - 1 > 0)
-        mERROR_CHECK(mAllocator_Move(chunkedArray->pAllocator, &pBlock->pData[innerItemIndex], &pBlock->pData[innerItemIndex + 1], pBlock->blockEndIndex - innerItemIndex - 1));
+        mERROR_CHECK(mMemmove(&pBlock->pData[innerItemIndex], &pBlock->pData[innerItemIndex + 1], pBlock->blockEndIndex - innerItemIndex - 1));
 
       --pBlock->blockEndIndex;
     }
@@ -228,7 +228,7 @@ mFUNCTION(mChunkedArray_PopAt, mPtr<mChunkedArray<T>> &chunkedArray, const size_
         mChunkedArray<T>::mChunkedArrayBlock currentBlock = *pBlock;
         const size_t activeBlocksAfterwards = chunkedArray->blockCount - blockIndex - 1;
         
-        mERROR_CHECK(mAllocator_Move(chunkedArray->pAllocator, pBlock, pBlock + 1, activeBlocksAfterwards)); // only move active blocks forward.
+        mERROR_CHECK(mMemmove(pBlock, pBlock + 1, activeBlocksAfterwards)); // only move active blocks forward.
         pBlock[activeBlocksAfterwards] = currentBlock; // move current block to the end of the blocks in use.
       }
     }

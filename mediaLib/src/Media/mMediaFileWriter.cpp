@@ -103,9 +103,9 @@ mFUNCTION(mMediaFileWriter_AppendVideoFrame, mPtr<mMediaFileWriter> &mediaFileWr
   for (size_t y = 0; y < imageBuffer->currentSize.y; y++)
   {
     if (mediaFileWriter->mediaFileInformation.videoFormat == mMediaFileVideoFormat::mMFVF_H264 || mediaFileWriter->mediaFileInformation.videoFormat == mMediaFileVideoFormat::mMFVF_H264_ES || mediaFileWriter->mediaFileInformation.videoFormat == mMediaFileVideoFormat::mMFVF_H263 || mediaFileWriter->mediaFileInformation.videoFormat == mMediaFileVideoFormat::mMFVF_HEVC || mediaFileWriter->mediaFileInformation.videoFormat == mMediaFileVideoFormat::mMFVF_HEVC_ES) // Just h.264 is tested to be upside down.
-    mERROR_CHECK(mAllocator_Move(imageBuffer->pAllocator, &((uint32_t *)pData)[y * targetStride], &((uint32_t *)imageBuffer->pPixels)[(imageBuffer->currentSize.y - y - 1) * sourceStride], imageBuffer->currentSize.x));
+      mERROR_CHECK(mMemmove(&((uint32_t *)pData)[y * targetStride], &((uint32_t *)imageBuffer->pPixels)[(imageBuffer->currentSize.y - y - 1) * sourceStride], imageBuffer->currentSize.x));
     else
-      mERROR_CHECK(mAllocator_Move(imageBuffer->pAllocator, &((uint32_t *)pData)[y * targetStride], &((uint32_t *)imageBuffer->pPixels)[y * sourceStride], imageBuffer->currentSize.x));
+      mERROR_CHECK(mMemmove(&((uint32_t *)pData)[y * targetStride], &((uint32_t *)imageBuffer->pPixels)[y * sourceStride], imageBuffer->currentSize.x));
   }
 
   mERROR_IF(FAILED(hr = pBuffer->Unlock()), mR_InternalError);
