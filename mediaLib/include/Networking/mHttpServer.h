@@ -140,6 +140,7 @@ struct mHttpRequest
   mUniqueContainer<mQueue<mKeyValuePair<mString, mString>>> headParameters;
   mUniqueContainer<mQueue<mKeyValuePair<mString, mString>>> postParameters;
   mUniqueContainer<mQueue<mKeyValuePair<mString, mString>>> attributes;
+  mPtr<struct mTcpClient> client;
   mString url;
   mAllocator *pAllocator;
 };

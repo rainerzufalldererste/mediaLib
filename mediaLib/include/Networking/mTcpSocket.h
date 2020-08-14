@@ -11,6 +11,19 @@
   #define __M_FILE__ "c+hgJ/qsL0rAbbtA4d41yPRr1RJobiLDjDAY6G7QaMKtHpKZvGHBxedWT5dCuFXNX4y/WKbvjlx3nspX"
 #endif
 
+struct mTcpConnectionInfo : mIPAddress
+{
+  uint16_t port;
+
+  inline mFUNCTION(ToString, OUT char *string, const size_t maxLength)
+  {
+    if (isIPv6)
+      return mSprintf(string, maxLength, "[%02" PRIx8 "%02" PRIx8 ":%02" PRIx8 "%02" PRIx8 ":%02" PRIx8 "%02" PRIx8 ":%02" PRIx8 "%02" PRIx8 ":%02" PRIx8 "%02" PRIx8 ":%02" PRIx8 "%02" PRIx8 ":%02" PRIx8 "%02" PRIx8 ":%02" PRIx8 "%02" PRIx8 "]:" PRIu16, ipv6[0], ipv6[1], ipv6[2], ipv6[3], ipv6[4], ipv6[5], ipv6[6], ipv6[7], ipv6[8], ipv6[9], ipv6[10], ipv6[11], ipv6[12], ipv6[13], ipv6[14], ipv6[15], port);
+    else
+      return mSprintf(string, maxLength, "%" PRIu8 ".%" PRIu8 ".%" PRIu8 ".%" PRIu8 ":" PRIu16, ipv4[0], ipv4[1], ipv4[2], ipv4[3], port);
+  }
+};
+
 struct mTcpServer;
 struct mTcpClient;
 
@@ -24,5 +37,7 @@ mFUNCTION(mTcpClient_Send, mPtr<mTcpClient> &tcpClient, IN const void *pData, co
 mFUNCTION(mTcpClient_Receive, mPtr<mTcpClient> &tcpClient, OUT void *pData, const size_t maxLength, OUT OPTIONAL size_t *pBytesReceived = nullptr);
 mFUNCTION(mTcpClient_GetReadableBytes, mPtr<mTcpClient> &tcpClient, OUT size_t *pReadableBytes, OPTIONAL size_t timeoutMs = 0);
 mFUNCTION(mTcpClient_GetWriteableBytes, mPtr<mTcpClient> &tcpClient, OUT size_t *pWriteableBytes, OPTIONAL size_t timeoutMs = 0);
+
+mFUNCTION(mTcpClient_GetConnectionInfo, mPtr<mTcpClient> &tcpClient, OUT mTcpConnectionInfo *pConnectionInfo);
 
 #endif // mTCPSocket_h__

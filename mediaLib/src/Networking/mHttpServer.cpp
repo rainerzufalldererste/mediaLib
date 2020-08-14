@@ -50,7 +50,7 @@ int32_t mHttpServer_OnBody_Internal(http_parser *, const char *at, size_t length
 
 void mHttpServer_HandleTcpClient_Internal(mPtr<mHttpServer> &server, mPtr<mTcpClient> &client);
 
-mFUNCTION(mHttpRequest_Parser_Init_Internal, mPtr<mHttpRequest_Parser> &request, IN mAllocator *pAllocator);
+mFUNCTION(mHttpRequest_Parser_Init_Internal, mPtr<mHttpRequest_Parser> &request, IN mAllocator *pAllocator, mPtr<mTcpClient> &client);
 void mHttpRequest_Parser_Destroy_Internal(IN_OUT mHttpRequest_Parser *pRequest);
 
 mFUNCTION(mHttpRequest_ParseArguments, const char *params, OUT mPtr<mQueue<mKeyValuePair<mString, mString>>> &args, IN mAllocator *pAllocator);
@@ -304,7 +304,7 @@ void mHttpServer_HandleTcpClient_Internal(mPtr<mHttpServer> &server, mPtr<mTcpCl
     mUniqueContainer<mHttpRequest_Parser> request;
     mUniqueContainer<mHttpRequest_Parser>::CreateWithCleanupFunction(&request, mHttpRequest_Parser_Destroy_Internal);
 
-    if (mFAILED(mHttpRequest_Parser_Init_Internal(request, server->pAllocator)))
+    if (mFAILED(mHttpRequest_Parser_Init_Internal(request, server->pAllocator, client)))
       return;
 
     parser.data = request.GetPointer();
@@ -691,7 +691,7 @@ int32_t mHttpServer_OnBody_Internal(http_parser *pParser, const char *at, size_t
   return 0;
 }
 
-mFUNCTION(mHttpRequest_Parser_Init_Internal, mPtr<mHttpRequest_Parser> &request, IN mAllocator *pAllocator)
+mFUNCTION(mHttpRequest_Parser_Init_Internal, mPtr<mHttpRequest_Parser> &request, IN mAllocator *pAllocator, mPtr<mTcpClient> &client)
 {
   mFUNCTION_SETUP();
 
@@ -702,6 +702,7 @@ mFUNCTION(mHttpRequest_Parser_Init_Internal, mPtr<mHttpRequest_Parser> &request,
   mERROR_CHECK(mQueue_Create(&request->postParameters, pAllocator));
 
   request->pAllocator = pAllocator;
+  request->client = client;
 
   mRETURN_SUCCESS();
 }
@@ -716,6 +717,7 @@ void mHttpRequest_Parser_Destroy_Internal(IN_OUT mHttpRequest_Parser *pRequest)
   mQueue_Destroy(&pRequest->headParameters);
   mString_Destroy(&pRequest->url);
   mString_Destroy(&pRequest->body);
+  mSharedPointer_Destroy(&pRequest->client);
 }
 
 mFUNCTION(mHttpRequest_ParseArguments, const char *params, OUT mPtr<mQueue<mKeyValuePair<mString, mString>>> &args, IN mAllocator *pAllocator)

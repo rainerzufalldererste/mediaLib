@@ -258,6 +258,51 @@ mFUNCTION(mTcpClient_GetWriteableBytes, mPtr<mTcpClient> &tcpClient, OUT size_t 
   mRETURN_SUCCESS();
 }
 
+mFUNCTION(mTcpClient_GetConnectionInfo, mPtr<mTcpClient> &tcpClient, OUT mTcpConnectionInfo *pConnectionInfo)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(tcpClient == nullptr || pConnectionInfo == nullptr, mR_ArgumentNull);
+
+  SOCKADDR_STORAGE_LH address;
+  int32_t nameLength = sizeof(sockaddr);
+
+  const int32_t result = getpeername(tcpClient->socket, reinterpret_cast<SOCKADDR *>(&address), &nameLength);
+  mERROR_IF(result != 0, mR_InternalError);
+
+  switch (address.ss_family)
+  {
+  case AF_INET:
+  {
+    const SOCKADDR_IN *pIPv4 = reinterpret_cast<const SOCKADDR_IN *>(&address);
+    
+    pConnectionInfo->isIPv6 = false;
+    pConnectionInfo->port = pIPv4->sin_port;
+    memcpy(pConnectionInfo->ipv4, &pIPv4->sin_addr, sizeof(pConnectionInfo->ipv4));
+
+    break;
+  }
+
+  case AF_INET6:
+  {
+    const SOCKADDR_IN6 *pIPv6 = reinterpret_cast<const SOCKADDR_IN6 *>(&address);
+
+    pConnectionInfo->isIPv6 = true;
+    pConnectionInfo->port = pIPv6->sin6_port;
+    memcpy(pConnectionInfo->ipv6, &pIPv6->sin6_addr, sizeof(pConnectionInfo->ipv6));
+
+    break;
+  }
+
+  default:
+  {
+    mRETURN_RESULT(mR_NotSupported);
+  }
+  }
+
+  mRETURN_SUCCESS();
+}
+
 //////////////////////////////////////////////////////////////////////////
 
 mFUNCTION(mTcpServer_Destroy_Internal, IN_OUT mTcpServer *pTcpServer)
