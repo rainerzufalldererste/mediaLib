@@ -39,6 +39,11 @@ struct mIPAddress_v4
   }
 };
 
+inline mFUNCTION(mIPAddress_v4_ToString, const mIPAddress_v4 &address, OUT char *string, const size_t maxLength)
+{
+  return address.ToString(string, maxLength);
+}
+
 struct mIPAddress_v6
 {
 #pragma warning(push)
@@ -71,6 +76,11 @@ struct mIPAddress_v6
   }
 };
 
+inline mFUNCTION(mIPAddress_v6_ToString, const mIPAddress_v6 &address, OUT char *string, const size_t maxLength)
+{
+  return address.ToString(string, maxLength);
+}
+
 struct mIPAddress
 {
   bool isIPv6;
@@ -92,6 +102,11 @@ struct mIPAddress
       return mSprintf(string, maxLength, "%" PRIu8 ".%" PRIu8 ".%" PRIu8 ".%" PRIu8, ipv4[0], ipv4[1], ipv4[2], ipv4[3]);
   }
 };
+
+inline mFUNCTION(mIPAddress_ToString, const mIPAddress &address, OUT char *string, const size_t maxLength)
+{
+  return address.ToString(string, maxLength);
+}
 
 struct mNetworkAdapter
 {
