@@ -936,7 +936,7 @@ mFUNCTION(mFontRenderer_LoadGlyph_Internal, mPtr<mFontRenderer> &fontRenderer, m
   {
     for (const auto &_backupFont : fontRenderer->backupFonts->Iterate())
     {
-      if (_backupFont != pFontDescription->fontFileName.c_str())
+      if (_backupFont != pFontDescription->fontFileName)
       {
         // We've already checked earlier: This font does not contain the glyph.
 

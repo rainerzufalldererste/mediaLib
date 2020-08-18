@@ -50,6 +50,9 @@ struct mUtf8StringIterator
   mIteratedString operator*();
 };
 
+template <size_t TCount>
+struct mInplaceString;
+
 struct mString
 {
   char *text;
@@ -100,7 +103,14 @@ struct mString
   mString operator +=(const mString &s);
 
   bool operator == (const mString &s) const;
+
+  template <size_t T>
+  bool operator == (const mInplaceString<T> &s) const;
+
   bool operator != (const mString &s) const;
+
+  template <size_t T>
+  bool operator != (const mInplaceString<T> &s) const;
 
   mUtf8StringIterator begin() const;
   mUtf8StringIterator end() const;
@@ -553,6 +563,29 @@ inline mFUNCTION(mInplaceString_GetCount, const mInplaceString<TCount> &string, 
   *pLength = string.count;
 
   mRETURN_SUCCESS();
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+template<size_t T>
+inline bool mString::operator==(const mInplaceString<T> &s) const
+{
+  mString tmp;
+  tmp.text = const_cast<char *>(s.text);
+  tmp.capacity = tmp.bytes = s.bytes;
+  tmp.count = s.count;
+
+  const bool equal = (*this) == tmp;
+
+  tmp.text = nullptr;
+
+  return equal;
+}
+
+template<size_t T>
+inline bool mString::operator!=(const mInplaceString<T> &s) const
+{
+  return !((*this) == s);
 }
 
 #endif // mString_h__

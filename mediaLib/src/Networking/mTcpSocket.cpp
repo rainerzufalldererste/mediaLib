@@ -61,8 +61,6 @@ mFUNCTION(mTcpServer_Create, OUT mPtr<mTcpServer> *pTcpServer, IN mAllocator *pA
   mDEFER_CALL_ON_ERROR(pTcpServer, mSharedPointer_Destroy);
   mERROR_CHECK(mSharedPointer_Allocate<mTcpServer>(pTcpServer, pAllocator, [](mTcpServer *pData) { mTcpServer_Destroy_Internal(pData); }, 1));
 
-  (*pTcpServer)->socket = INVALID_SOCKET;
-
   (*pTcpServer)->socket = socket(pResult->ai_family, pResult->ai_socktype, pResult->ai_protocol);
   
   if ((*pTcpServer)->socket == INVALID_SOCKET)
@@ -72,13 +70,20 @@ mFUNCTION(mTcpServer_Create, OUT mPtr<mTcpServer> *pTcpServer, IN mAllocator *pA
     mRETURN_RESULT(mR_InternalError);
   }
 
-  error = bind((*pTcpServer)->socket, pResult->ai_addr, (int)pResult->ai_addrlen);
+  error = bind((*pTcpServer)->socket, pResult->ai_addr, (int32_t)pResult->ai_addrlen);
 
   if (error == SOCKET_ERROR)
   {
     error = WSAGetLastError();
 
-    mRETURN_RESULT(mR_InternalError);
+    switch (error)
+    {
+    case WSAEADDRINUSE:
+      mRETURN_RESULT(mR_ResourceAlreadyExists);
+
+    default:
+      mRETURN_RESULT(mR_InternalError);
+    }
   }
 
   mRETURN_SUCCESS();
