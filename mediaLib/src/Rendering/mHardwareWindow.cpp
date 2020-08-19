@@ -36,6 +36,8 @@ mFUNCTION(mHardwareWindow_Create, OUT mPtr<mHardwareWindow> *pWindow, IN mAlloca
 
   mERROR_CHECK(mRenderParams_CreateRenderContext(&(*pWindow)->renderContextID, *pWindow));
 
+  mRenderParams_PrintRenderState(false, true);
+
   mGL_ERROR_CHECK();
 
   mUniqueContainer<mFramebuffer>::CreateWithCleanupFunction(&(*pWindow)->fakeFramebuffer, nullptr);
@@ -44,7 +46,7 @@ mFUNCTION(mHardwareWindow_Create, OUT mPtr<mHardwareWindow> *pWindow, IN mAlloca
 
   mERROR_CHECK(mHardwareWindow_SetAsActiveRenderTarget(*pWindow));
 
-  mDebugOut("GPU: %s %s\nDriver Version: %s\nGLSL Version: %s\n", glGetString(GL_VENDOR), glGetString(GL_RENDERER), glGetString(GL_VERSION), glGetString(GL_SHADING_LANGUAGE_VERSION));
+  mPRINT("GPU: %s %s\nDriver Version: %s\nGLSL Version: %s\n", glGetString(GL_VENDOR), glGetString(GL_RENDERER), glGetString(GL_VERSION), glGetString(GL_SHADING_LANGUAGE_VERSION));
 
   mGL_ERROR_CHECK();
 

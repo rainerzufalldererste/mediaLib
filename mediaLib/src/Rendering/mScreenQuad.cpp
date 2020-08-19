@@ -19,6 +19,8 @@ mFUNCTION(mScreenQuad_Create, OUT mPtr<mScreenQuad> *pScreenQuad, IN mAllocator 
   mERROR_CHECK(mSharedPointer_Allocate(pScreenQuad, pAllocator, (std::function<void(mScreenQuad *)>)[](mScreenQuad *pData) {mScreenQuad_Destroy_Internal(pData);}, 1));
 
 #if defined(mRENDERER_OPENGL)
+  mGL_ERROR_CHECK();
+
   char vertexShader[2048] = "#version 150 core\n\nin vec2 position0;";
 
   for (size_t i = 0; i < textureCount; ++i)

@@ -559,6 +559,8 @@ mFUNCTION(mTexture2DParams_ApplyToBoundTexture, const mTexture2DParams &params, 
 {
   mFUNCTION_SETUP();
 
+  mERROR_IF(params.minFilter == 0 || params.magFilter == 0 || params.wrapModeX == 0 || params.wrapModeY == 0, mR_InvalidParameter);
+
 #ifdef mRENDERER_OPENGL
   if (!isMultisampleTexture)
   {
@@ -567,7 +569,7 @@ mFUNCTION(mTexture2DParams_ApplyToBoundTexture, const mTexture2DParams &params, 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, params.wrapModeX);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, params.wrapModeY);
 
-    mGL_DEBUG_ERROR_CHECK();
+    mGL_ERROR_CHECK();
   }
 #else
   mRETURN_RESULT(mR_NotImplemented);
@@ -580,6 +582,8 @@ mFUNCTION(mTexture3DParams_ApplyToBoundTexture, const mTexture3DParams &params, 
 {
   mFUNCTION_SETUP();
 
+  mERROR_IF(params.minFilter == 0 || params.magFilter == 0 || params.wrapModeX == 0 || params.wrapModeY == 0 || params.wrapModeZ == 0, mR_InvalidParameter);
+
 #ifdef mRENDERER_OPENGL
   if (!isMultisampleTexture)
   {
@@ -589,7 +593,7 @@ mFUNCTION(mTexture3DParams_ApplyToBoundTexture, const mTexture3DParams &params, 
     glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, params.wrapModeY);
     glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, params.wrapModeZ);
 
-    mGL_DEBUG_ERROR_CHECK();
+    mGL_ERROR_CHECK();
   }
 #else
   mRETURN_RESULT(mR_NotImplemented);
@@ -604,18 +608,20 @@ mFUNCTION(mTexture3DParams_ApplyToBoundTexture, const mTexture3DParams &params, 
 #define mPRINT_FUNC mPRINT
 #endif
 
-mFUNCTION(mRenderParams_PrintRenderState, const bool onlyNewValues /* = false */)
+mFUNCTION(mRenderParams_PrintRenderState, const bool onlyNewValues /* = false */, const bool onlyUpdateValues /* = false */)
 {
   mFUNCTION_SETUP();
 
 #ifdef mRENDERER_OPENGL
 
-  mPRINT_FUNC("GL STATE:\n================================================\n");
+  if (!onlyUpdateValues)
+    mPRINT_FUNC("GL STATE:\n================================================\n");
 
 #define mGL_PRINT_PARAM(func, param, paramString, var, format) \
   do { static var mCONCAT_LITERALS(_var_, param)[4]; \
   var mCONCAT_LITERALS(_local_var_, param)[4]; \
   func(param, &mCONCAT_LITERALS(_local_var_, param)[0]); \
+  if (!onlyUpdateValues) \
   { const bool valueIsNew = mCONCAT_LITERALS(_var_, param)[0] != mCONCAT_LITERALS(_local_var_, param)[0]; \
     if (onlyNewValues) \
     { if (valueIsNew) \
@@ -632,6 +638,7 @@ mFUNCTION(mRenderParams_PrintRenderState, const bool onlyNewValues /* = false */
   do { static var mCONCAT_LITERALS(_var_, param)[4]; \
   var mCONCAT_LITERALS(_local_var_, param)[4]; \
   func(param, &mCONCAT_LITERALS(_local_var_, param)[0]); \
+  if (!onlyUpdateValues) \
   { const bool valueIsNew = mCONCAT_LITERALS(_var_, param)[0] != mCONCAT_LITERALS(_local_var_, param)[0] || mCONCAT_LITERALS(_var_, param)[1] != mCONCAT_LITERALS(_local_var_, param)[1]; \
     if (onlyNewValues) \
     { if (valueIsNew) \
@@ -649,6 +656,7 @@ mFUNCTION(mRenderParams_PrintRenderState, const bool onlyNewValues /* = false */
   do { static var mCONCAT_LITERALS(_var_, param)[4]; \
   var mCONCAT_LITERALS(_local_var_, param)[4]; \
   func(param, &mCONCAT_LITERALS(_local_var_, param)[0]); \
+  if (!onlyUpdateValues) \
   { const bool valueIsNew = mCONCAT_LITERALS(_var_, param)[0] != mCONCAT_LITERALS(_local_var_, param)[0] || mCONCAT_LITERALS(_var_, param)[1] != mCONCAT_LITERALS(_local_var_, param)[1] || mCONCAT_LITERALS(_var_, param)[2] != mCONCAT_LITERALS(_local_var_, param)[2]; \
     if (onlyNewValues) \
     { if (valueIsNew) \
@@ -667,6 +675,7 @@ mFUNCTION(mRenderParams_PrintRenderState, const bool onlyNewValues /* = false */
   do { static var mCONCAT_LITERALS(_var_, param)[4]; \
   var mCONCAT_LITERALS(_local_var_, param)[4]; \
   func(param, &mCONCAT_LITERALS(_local_var_, param)[0]); \
+  if (!onlyUpdateValues) \
   { const bool valueIsNew = mCONCAT_LITERALS(_var_, param)[0] != mCONCAT_LITERALS(_local_var_, param)[0] || mCONCAT_LITERALS(_var_, param)[1] != mCONCAT_LITERALS(_local_var_, param)[1] || mCONCAT_LITERALS(_var_, param)[2] != mCONCAT_LITERALS(_local_var_, param)[2] || mCONCAT_LITERALS(_var_, param)[3] != mCONCAT_LITERALS(_local_var_, param)[3]; \
     if (onlyNewValues) \
     { if (valueIsNew) \
@@ -681,6 +690,25 @@ mFUNCTION(mRenderParams_PrintRenderState, const bool onlyNewValues /* = false */
   mCONCAT_LITERALS(_var_, param)[1] = mCONCAT_LITERALS(_local_var_, param)[1]; \
   mCONCAT_LITERALS(_var_, param)[2] = mCONCAT_LITERALS(_local_var_, param)[2]; \
   mCONCAT_LITERALS(_var_, param)[3] = mCONCAT_LITERALS(_local_var_, param)[3]; } while (0)
+
+#define mGL_PRINT_FRAMEBUFFER_ATTACHMENT_PARAM(target, attachment, param) \
+  do \
+  { static GLint __var__ = 0; \
+    GLint __local_var; \
+    glGetFramebufferAttachmentParameteriv(target, attachment, param, &__local_var); \
+    if (!onlyUpdateValues) \
+    { const bool valueIsNew = __local_var != __var__; \
+      if (onlyNewValues) \
+      { if (valueIsNew) \
+        { mPRINT_FUNC(#target ": " #attachment " (" #param ") = %" PRIi32 " [was %" PRIi32 "]\n", __local_var, __var__); \
+        } \
+      } \
+      else \
+      { mPRINT_FUNC("%s" #target ": " #attachment " (" #param ")" " = %" PRIi32 "\n", valueIsNew ? " * " : "   ", __local_var, __var__); \
+      } \
+    } \
+    __var__ = __local_var; \
+  } while (0)
 
 #define mGL_PRINT_DOUBLE_PARAM(param) \
   mGL_PRINT_PARAM(glGetDoublev, param, #param, double_t, "%f"); \
@@ -998,23 +1026,6 @@ mFUNCTION(mRenderParams_PrintRenderState, const bool onlyNewValues /* = false */
   mGL_PRINT_INTEGER_VEC4_PARAM(GL_VIEWPORT);
   mGL_PRINT_INTEGER_PARAM(GL_ZOOM_X);
   mGL_PRINT_INTEGER_PARAM(GL_ZOOM_Y);
-
-#define mGL_PRINT_FRAMEBUFFER_ATTACHMENT_PARAM(target, attachment, param) \
-  do \
-  { static GLint __var__ = 0; \
-    GLint __local_var; \
-    glGetFramebufferAttachmentParameteriv(target, attachment, param, &__local_var); \
-    const bool valueIsNew = __local_var != __var__; \
-    if (onlyNewValues) \
-    { if (valueIsNew) \
-      { mPRINT_FUNC(#target ": " #attachment " (" #param ") = %" PRIi32 " [was %" PRIi32 "]\n", __local_var, __var__); \
-      } \
-    } \
-    else \
-    { mPRINT_FUNC("%s" #target ": " #attachment " (" #param ")" " = %" PRIi32 "\n", valueIsNew ? " * " : "   ", __local_var, __var__); \
-    } \
-    __var__ = __local_var; \
-  } while (0)
   
   mGL_PRINT_FRAMEBUFFER_ATTACHMENT_PARAM(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE);
   mGL_PRINT_FRAMEBUFFER_ATTACHMENT_PARAM(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME);
@@ -1023,11 +1034,41 @@ mFUNCTION(mRenderParams_PrintRenderState, const bool onlyNewValues /* = false */
   mGL_PRINT_FRAMEBUFFER_ATTACHMENT_PARAM(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_FRAMEBUFFER_ATTACHMENT_BLUE_SIZE);
   mGL_PRINT_FRAMEBUFFER_ATTACHMENT_PARAM(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_FRAMEBUFFER_ATTACHMENT_ALPHA_SIZE);
 
-  glGetError(); // Clear glError.
+  // Clear glError.
+  while (glGetError() != GL_NO_ERROR)
+    ;
 
-  mPRINT_DEBUG("================================================\nEND OF GL STATE\n");
+  if (!onlyUpdateValues)
+    mPRINT_DEBUG("================================================\nEND OF GL STATE\n");
 
 #endif
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mRenderParams_SetOnErrorDebugCallback, const std::function<mResult(const GLenum source, const GLenum type, const GLuint id, const GLenum severity, const GLsizei lenght, const char *msg)> &callback)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(callback == nullptr, mR_InvalidParameter);
+
+  static std::function<mResult(const GLenum source, const GLenum type, const GLuint id, const GLenum severity, const GLsizei lenght, const char *msg)> _Callback;
+  
+  struct _internal
+  {
+    static void GLAPIENTRY _ErrorMessageCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, const void *)
+    {
+      _Callback(source, type, id, severity, length, message);
+    }
+  };
+
+  // During init, enable debug output
+  glEnable(GL_DEBUG_OUTPUT);
+  glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+  _Callback = callback;
+
+  glDebugMessageCallback(_internal::_ErrorMessageCallback, nullptr);
+  glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
 
   mRETURN_SUCCESS();
 }

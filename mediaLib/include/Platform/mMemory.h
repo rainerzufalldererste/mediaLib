@@ -262,11 +262,41 @@ mFUNCTION(mMemmove, T *pDst, T *pSrc, const size_t count)
 {
   mFUNCTION_SETUP();
   mERROR_IF(pDst == nullptr || pSrc == nullptr, mR_ArgumentNull);
-
-  if (count == 0)
-    mRETURN_SUCCESS();
+  mERROR_IF(count == 0, mR_Success);
 
   memmove(pDst, pSrc, sizeof(T) * count);
+
+  mRETURN_SUCCESS();
+}
+
+template <typename T>
+mFUNCTION(mMove, T *pDestination, T *pSource, const size_t count)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pDestination == nullptr || pSource == nullptr, mR_ArgumentNull);
+  mERROR_IF(count == 0, mR_Success);
+
+  if (mIsTriviallyMemoryMovable<T>::value)
+    memmove(pDestination, pSource, sizeof(T) * count);
+  else
+    mMoveConstructMultiple(pDestination, pSource, count);
+
+  mRETURN_SUCCESS();
+}
+
+template <typename T>
+mFUNCTION(mCopy, T *pDestination, T *pSource, const size_t count)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pDst == nullptr || pSource == nullptr, mR_ArgumentNull);
+  mERROR_IF(count == 0, mR_Success);
+
+  if (!std::is_trivially_copy_constructible<T>::value)
+    memcpy(pDestination, pSource, sizeof(T) * count);
+  else
+    mCopyConstructMultiple(pDestination, pSource, count);
 
   mRETURN_SUCCESS();
 }

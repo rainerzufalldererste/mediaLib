@@ -24,6 +24,13 @@ void mMoveConstructMultiple(T *pDestination, T *pSource, const size_t count)
     new (&pDestination[i]) T(std::move(pSource[i]));
 }
 
+template <typename T>
+void mCopyConstructMultiple(T *pDestination, T *pSource, const size_t count)
+{
+  for (size_t i = 0; i < count; i++)
+    new (&pDestination[i]) T(pSource[i]);
+}
+
 template <typename T, typename T2 = T>
 struct mEquals
 {

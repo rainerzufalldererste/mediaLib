@@ -439,6 +439,8 @@ mFUNCTION(mFramebuffer_Create_Internal, mFramebuffer *pFramebuffer, const mVec2s
   pFramebuffer->pixelFormat = pixelFormat;
 
 #ifdef mRENDERER_OPENGL
+  mGL_ERROR_CHECK();
+
   GLenum glPixelFormat = GL_RGBA;
   mERROR_CHECK(mFramebuffer_PixelFormatToGLenum_Internal(pixelFormat, &glPixelFormat));
 

@@ -536,19 +536,19 @@ inline mFUNCTION(mQueue_PopAt, mPtr<mQueue<T>> &queue, size_t index, OUT T *pIte
   if (queue->startIndex + index < queue->size)
   {
     if (queueIndex + 1 != queue->size)
-      mERROR_CHECK(mMemmove(&queue->pData[queueIndex], &queue->pData[queueIndex + 1], mMin(queue->size, queue->startIndex + queue->count) - (queue->startIndex + index) - 1));
+      mERROR_CHECK(mMove(&queue->pData[queueIndex], &queue->pData[queueIndex + 1], mMin(queue->size, queue->startIndex + queue->count) - (queue->startIndex + index) - 1));
 
     if (queue->startIndex + queue->count > queue->size)
     {
       new (&queue->pData[queue->size - 1]) T(std::move(queue->pData[0]));
 
       if (queue->startIndex + queue->count - 1 > queue->size)
-        mERROR_CHECK(mMemmove(&queue->pData[0], &queue->pData[1], queue->count - (queue->size - queue->startIndex) - 1));
+        mERROR_CHECK(mMove(&queue->pData[0], &queue->pData[1], queue->count - (queue->size - queue->startIndex) - 1));
     }
   }
   else
   {
-    mERROR_CHECK(mMemmove(&queue->pData[queueIndex], &queue->pData[queueIndex + 1], queue->count - (queue->size - queue->startIndex) - queueIndex - 1));
+    mERROR_CHECK(mMove(&queue->pData[queueIndex], &queue->pData[queueIndex + 1], queue->count - (queue->size - queue->startIndex) - queueIndex - 1));
   }
 
   --queue->count;
@@ -1310,7 +1310,7 @@ inline mFUNCTION(mQueue_Grow_Internal, mPtr<mQueue<T>> &queue)
   if (queue->startIndex > 0 && queue->startIndex + queue->count > originalSize)
   {
     const size_t wrappedCount = queue->count - (originalSize - queue->startIndex);
-    mERROR_CHECK(mMemmove(&queue->pData[originalSize], &queue->pData[0], wrappedCount));
+    mERROR_CHECK(mMove(&queue->pData[originalSize], &queue->pData[0], wrappedCount));
   }
 
   mRETURN_SUCCESS();
@@ -1354,7 +1354,7 @@ inline mFUNCTION(mQueue_Grow_Internal, mPtr<mQueue<T>> &queue)
   if (queue->startIndex > 0 && queue->startIndex + queue->count > originalSize)
   {
     const size_t wrappedCount = queue->count - (originalSize - queue->startIndex);
-    mERROR_CHECK(mMemmove(&queue->pData[originalSize], &queue->pData[0], wrappedCount));
+    mERROR_CHECK(mMove(&queue->pData[originalSize], &queue->pData[0], wrappedCount));
   }
 
   mRETURN_SUCCESS();

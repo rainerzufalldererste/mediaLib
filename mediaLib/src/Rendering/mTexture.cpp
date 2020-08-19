@@ -243,6 +243,7 @@ mFUNCTION(mTexture_Upload, mTexture &texture)
 {
   mFUNCTION_SETUP();
 
+  mERROR_IF(texture.textureId == 0, mR_NotInitialized);
   mERROR_IF(texture.uploadState == mRP_US_NotInitialized, mR_NotInitialized);
 
   if (texture.uploadState == mRP_US_Ready)
