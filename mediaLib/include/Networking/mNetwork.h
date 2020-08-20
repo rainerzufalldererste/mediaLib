@@ -37,6 +37,16 @@ struct mIPAddress_v4
   {
     return mSprintf(string, maxLength, "%" PRIu8 ".%" PRIu8 ".%" PRIu8 ".%" PRIu8, _0, _1, _2, _3);
   }
+
+  inline bool operator == (const mIPAddress_v4 &other)
+  {
+    return memcmp(bytes, other.bytes, sizeof(bytes)) == 0;
+  }
+
+  inline bool operator != (const mIPAddress_v4 &other)
+  {
+    return !(*this == other);
+  }
 };
 
 inline mFUNCTION(mIPAddress_v4_ToString, const mIPAddress_v4 &address, OUT char *string, const size_t maxLength)
@@ -74,6 +84,16 @@ struct mIPAddress_v6
   {
     return mSprintf(string, maxLength, "%02" PRIx8 "%02" PRIx8 ":%02" PRIx8 "%02" PRIx8 ":%02" PRIx8 "%02" PRIx8 ":%02" PRIx8 "%02" PRIx8 ":%02" PRIx8 "%02" PRIx8 ":%02" PRIx8 "%02" PRIx8 ":%02" PRIx8 "%02" PRIx8 ":%02" PRIx8 "%02" PRIx8, bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7], bytes[8], bytes[9], bytes[10], bytes[11], bytes[12], bytes[13], bytes[14], bytes[15]);
   }
+
+  inline bool operator == (const mIPAddress_v6 &other)
+  {
+    return memcmp(bytes, other.bytes, sizeof(bytes)) == 0;
+  }
+
+  inline bool operator != (const mIPAddress_v6 &other)
+  {
+    return !(*this == other);
+  }
 };
 
 inline mFUNCTION(mIPAddress_v6_ToString, const mIPAddress_v6 &address, OUT char *string, const size_t maxLength)
@@ -100,6 +120,19 @@ struct mIPAddress
       return mSprintf(string, maxLength, "%02" PRIx8 "%02" PRIx8 ":%02" PRIx8 "%02" PRIx8 ":%02" PRIx8 "%02" PRIx8 ":%02" PRIx8 "%02" PRIx8 ":%02" PRIx8 "%02" PRIx8 ":%02" PRIx8 "%02" PRIx8 ":%02" PRIx8 "%02" PRIx8 ":%02" PRIx8 "%02" PRIx8, ipv6[0], ipv6[1], ipv6[2], ipv6[3], ipv6[4], ipv6[5], ipv6[6], ipv6[7], ipv6[8], ipv6[9], ipv6[10], ipv6[11], ipv6[12], ipv6[13], ipv6[14], ipv6[15]);
     else
       return mSprintf(string, maxLength, "%" PRIu8 ".%" PRIu8 ".%" PRIu8 ".%" PRIu8, ipv4[0], ipv4[1], ipv4[2], ipv4[3]);
+  }
+
+  inline bool operator == (const mIPAddress &other)
+  {
+    if (other.isIPv6 != isIPv6)
+      return false;
+
+    return memcmp(other.ipv6, ipv6, isIPv6 ? sizeof(ipv6) : sizeof(ipv4)) == 0;
+  }
+
+  inline bool operator != (const mIPAddress &other)
+  {
+    return !(*this == other);
   }
 };
 

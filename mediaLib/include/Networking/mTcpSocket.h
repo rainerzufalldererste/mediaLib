@@ -22,6 +22,19 @@ struct mTcpConnectionInfo : mIPAddress
     else
       return mSprintf(string, maxLength, "%" PRIu8 ".%" PRIu8 ".%" PRIu8 ".%" PRIu8 ":" PRIu16, ipv4[0], ipv4[1], ipv4[2], ipv4[3], port);
   }
+
+  inline bool operator == (const mTcpConnectionInfo &other)
+  {
+    if (other.isIPv6 != isIPv6 || other.port != port)
+      return false;
+
+    return memcmp(other.ipv6, ipv6, isIPv6 ? sizeof(ipv6) : sizeof(ipv4)) == 0;
+  }
+
+  inline bool operator != (const mTcpConnectionInfo &other)
+  {
+    return !(*this == other);
+  }
 };
 
 inline mFUNCTION(mTcpConnectionInfo_ToString, const mTcpConnectionInfo &connectionInfo, OUT char *string, const size_t maxLength)
