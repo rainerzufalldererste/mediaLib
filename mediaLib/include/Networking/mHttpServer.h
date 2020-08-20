@@ -174,6 +174,8 @@ struct mHttpServer;
 mFUNCTION(mHttpServer_Create, OUT mPtr<mHttpServer> *pHttpServer, IN mAllocator *pAllocator, const uint16_t port = 80, const size_t threadCount = 8);
 mFUNCTION(mHttpServer_Create, OUT mPtr<mHttpServer> *pHttpServer, IN mAllocator *pAllocator, mPtr<mTasklessThreadPool> &threadPool, const uint16_t port = 80);
 
+mFUNCTION(mHttpServer_Destroy, IN_OUT mPtr<mHttpServer> *pHttpServer);
+
 mFUNCTION(mHttpServer_AddRequestHandler, mPtr<mHttpServer> &httpServer, mPtr<mHttpRequestHandler> &requestHandler);
 mFUNCTION(mHttpServer_SetErrorRequestHandler, mPtr<mHttpServer> &httpServer, mPtr<mHttpErrorRequestHandler> &requestHandler);
 

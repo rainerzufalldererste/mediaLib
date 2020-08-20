@@ -53,12 +53,12 @@ void mHttpServer_HandleTcpClient_Internal(mPtr<mHttpServer> &server, mPtr<mTcpCl
 mFUNCTION(mHttpRequest_Parser_Init_Internal, mPtr<mHttpRequest_Parser> &request, IN mAllocator *pAllocator, mPtr<mTcpClient> &client);
 void mHttpRequest_Parser_Destroy_Internal(IN_OUT mHttpRequest_Parser *pRequest);
 
-mFUNCTION(mHttpRequest_ParseArguments, const char *params, OUT mPtr<mQueue<mKeyValuePair<mString, mString>>> &args, IN mAllocator *pAllocator);
+mFUNCTION(mHttpRequest_ParseArguments, const char *params, OUT mPtr<mQueue<mKeyValuePair<mString, mString>>> &args, IN mAllocator *pAllocator, const bool ignoreFragment);
 
 mFUNCTION(mHttpResponse_Init_Internal, mPtr<mHttpResponse> &response, IN mAllocator *pAllocator);
 void mHttpResponse_Destroy_Internal(IN_OUT mHttpResponse *pResponse);
 
-static const char *mHttpResponse_AsString_100[] = { "100 Continue", "101 Switching Protocols", "103 Early Hints" };
+static const char *mHttpResponse_AsString_100[] = { "100 Continue", "101 Switching Protocols", "", "103 Early Hints" };
 static const char *mHttpResponse_AsString_200[] = { "200 OK", "201 Created", "202 Accepted", "203 Non-Authoritative Information", "204 No Content", "205 Reset Content", "206 Partial Content" };
 static const char *mHttpResponse_AsString_300[] = { "300 Multiple Choices", "301 Moved Permanently", "302 Found", "303 See Other", "304 Not Modified", "", "", "307 Temporary Redirect", "308 Permanent Redirect" };
 static const char *mHttpResponse_AsString_400[] = { "400 Bad Request", "401 Unauthorized", "402 Payment Required", "403 Forbidden", "404 Not Found", "405 Method Not Allowed", "406 Not Acceptable", "407 Proxy Authentication Required", "408 Request Timeout", "409 Conflict", "410 Gone", "411 Length Required", "412 Precondition Failed", "413 Payload Too Large", "414 URI Too Long", "415 Unsupported Media Type", "416 Range Not Satisfiable", "417 Expectation Failed", "418 I'm a teapot", "", "", "", "422 Unprocessable Entity", "", "", "425 Too Early", "426 Upgrade Required", "", "428 Precondition Required", "429 Too Many Requests", "", "431 Request Header Fields Too Large", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "451 Unavailable For Legal Reasons" };
@@ -139,6 +139,11 @@ mFUNCTION(mHttpServer_Create, OUT mPtr<mHttpServer> *pHttpServer, IN mAllocator 
   mERROR_CHECK(mMutex_Create(&(*pHttpServer)->pStaleTcpClientMutex, pAllocator));
   
   mRETURN_SUCCESS();
+}
+
+mFUNCTION(mHttpServer_Destroy, IN_OUT mPtr<mHttpServer> *pHttpServer)
+{
+  return mSharedPointer_Destroy(pHttpServer);
 }
 
 mFUNCTION(mHttpServer_Start, mPtr<mHttpServer> &httpServer)
@@ -331,7 +336,7 @@ void mHttpServer_HandleTcpClient_Internal(mPtr<mHttpServer> &server, mPtr<mTcpCl
 
     if (request->requestMethod == mHRM_Post && request->body.bytes > 1)
     {
-      if (mFAILED(mHttpRequest_ParseArguments(request->body.c_str(), request->postParameters, server->pAllocator)))
+      if (mFAILED(mHttpRequest_ParseArguments(request->body.c_str(), request->postParameters, server->pAllocator, false)))
       {
         mHttpServer_RespondWithError_Internal(server, client, mHRSC_BadRequest, "Failed to parse POST parameters.", server->pAllocator);
 
@@ -605,7 +610,7 @@ int32_t mHttpServer_OnUrl_Internal(http_parser *pParser, const char *at, size_t 
       const char previousLastChar = *(at - character + length);
       *const_cast<char *>(at - character + length) = '\0';
 
-      pRequest->result = mHttpRequest_ParseArguments(at + 1, pRequest->headParameters, pRequest->pAllocator); // TODO: Handle '#'.
+      pRequest->result = mHttpRequest_ParseArguments(at + 1, pRequest->headParameters, pRequest->pAllocator, true);
 
       *const_cast<char *>(at - character + length) = previousLastChar;
 
@@ -720,7 +725,7 @@ void mHttpRequest_Parser_Destroy_Internal(IN_OUT mHttpRequest_Parser *pRequest)
   mSharedPointer_Destroy(&pRequest->client);
 }
 
-mFUNCTION(mHttpRequest_ParseArguments, const char *params, OUT mPtr<mQueue<mKeyValuePair<mString, mString>>> &args, IN mAllocator *pAllocator)
+mFUNCTION(mHttpRequest_ParseArguments, const char *params, OUT mPtr<mQueue<mKeyValuePair<mString, mString>>> &args, IN mAllocator *pAllocator, const bool ignoreFragment)
 {
   mFUNCTION_SETUP();
 
@@ -806,6 +811,14 @@ mFUNCTION(mHttpRequest_ParseArguments, const char *params, OUT mPtr<mQueue<mKeyV
       params++;
 
       break;
+    }
+
+    case '#':
+    {
+      if (ignoreFragment)
+        goto no_more_params;
+
+      // Fall Through.
     }
 
     default:
@@ -919,6 +932,8 @@ mFUNCTION(mDefaultHttpErrorRequestHandler_HandleRequest, mPtr<mHttpErrorRequestH
       mERROR_IF(statusCode >= mARRAYSIZE(mHttpResponse_AsString_100), mR_ResourceInvalid);
 
       const char *statusText = mHttpResponse_AsString_100[statusCode];
+      mERROR_IF(statusText[0] == '\0', mR_ResourceInvalid);
+
       mERROR_CHECK(mBinaryChunk_WriteBytes(response->responseStream, reinterpret_cast<const uint8_t *>(statusText), strlen(statusText)));
 
       break;
@@ -930,6 +945,8 @@ mFUNCTION(mDefaultHttpErrorRequestHandler_HandleRequest, mPtr<mHttpErrorRequestH
       mERROR_IF(statusCode >= mARRAYSIZE(mHttpResponse_AsString_200), mR_ResourceInvalid);
 
       const char *statusText = mHttpResponse_AsString_200[statusCode];
+      mERROR_IF(statusText[0] == '\0', mR_ResourceInvalid);
+
       mERROR_CHECK(mBinaryChunk_WriteBytes(response->responseStream, reinterpret_cast<const uint8_t *>(statusText), strlen(statusText)));
 
       break;
@@ -941,6 +958,8 @@ mFUNCTION(mDefaultHttpErrorRequestHandler_HandleRequest, mPtr<mHttpErrorRequestH
       mERROR_IF(statusCode >= mARRAYSIZE(mHttpResponse_AsString_300), mR_ResourceInvalid);
 
       const char *statusText = mHttpResponse_AsString_300[statusCode];
+      mERROR_IF(statusText[0] == '\0', mR_ResourceInvalid);
+
       mERROR_CHECK(mBinaryChunk_WriteBytes(response->responseStream, reinterpret_cast<const uint8_t *>(statusText), strlen(statusText)));
 
       break;
@@ -952,6 +971,8 @@ mFUNCTION(mDefaultHttpErrorRequestHandler_HandleRequest, mPtr<mHttpErrorRequestH
       mERROR_IF(statusCode >= mARRAYSIZE(mHttpResponse_AsString_400), mR_ResourceInvalid);
 
       const char *statusText = mHttpResponse_AsString_400[statusCode];
+      mERROR_IF(statusText[0] == '\0', mR_ResourceInvalid);
+
       mERROR_CHECK(mBinaryChunk_WriteBytes(response->responseStream, reinterpret_cast<const uint8_t *>(statusText), strlen(statusText)));
 
       break;
@@ -963,6 +984,8 @@ mFUNCTION(mDefaultHttpErrorRequestHandler_HandleRequest, mPtr<mHttpErrorRequestH
       mERROR_IF(statusCode >= mARRAYSIZE(mHttpResponse_AsString_500), mR_ResourceInvalid);
 
       const char *statusText = mHttpResponse_AsString_500[statusCode];
+      mERROR_IF(statusText[0] == '\0', mR_ResourceInvalid);
+
       mERROR_CHECK(mBinaryChunk_WriteBytes(response->responseStream, reinterpret_cast<const uint8_t *>(statusText), strlen(statusText)));
 
       break;

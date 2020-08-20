@@ -32,7 +32,8 @@
   XX(mR_NotSupported) \
   XX(mR_ResourceAlreadyExists) \
   XX(mR_IOFailure) \
-  XX(mR_InsufficientPrivileges)
+  XX(mR_InsufficientPrivileges) \
+  XX(mR_ResourceBusy)
 
 #define mRESULT_SEPARATE_WITH_COMMA(A) A ,
 

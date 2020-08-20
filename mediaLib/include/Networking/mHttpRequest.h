@@ -15,8 +15,9 @@ struct mHttpRequest;
 mFUNCTION(mHttpRequest_Create, OUT mPtr<mHttpRequest> *pHttpRequest, IN mAllocator *pAllocator, const mString &url);
 mFUNCTION(mHttpRequest_Destroy, IN_OUT mPtr<mHttpRequest> *pHttpRequest);
 
+mFUNCTION(mHttpRequest_AddHeadParameter, mPtr<mHttpRequest> &httpRequest, const mString &key, const mString &value);
 mFUNCTION(mHttpRequest_AddHeader, mPtr<mHttpRequest> &httpRequest, const mString &header);
-mFUNCTION(mHttpRequest_SetTimeout, mPtr<mHttpRequest> &httpRequest, const size_t timeout);
+mFUNCTION(mHttpRequest_SetTimeout, mPtr<mHttpRequest> &httpRequest, const size_t timeoutMs);
 
 mFUNCTION(mHttpRequest_Send, mPtr<mHttpRequest> &httpRequest);
 mFUNCTION(mHttpRequest_Send, mPtr<mHttpRequest> &httpRequest, const std::function<mResult(const size_t downloadedSize)> &callback);

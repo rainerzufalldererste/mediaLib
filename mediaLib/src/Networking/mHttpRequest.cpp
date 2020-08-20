@@ -79,6 +79,86 @@ mFUNCTION(mHttpRequest_Destroy, IN_OUT mPtr<mHttpRequest> *pHttpRequest)
   return mSharedPointer_Destroy(pHttpRequest);
 }
 
+mFUNCTION(mHttpRequest_AddHeadParameter, mPtr<mHttpRequest> &httpRequest, const mString &key, const mString &value)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(httpRequest == nullptr, mR_ArgumentNull);
+  mERROR_IF(key.bytes <= 1, mR_InvalidParameter);
+
+  bool hasQuestionMark = false;
+  bool hasAmpersand = false;
+
+  // Analyze URL state.
+  {
+    const mchar_t questionMark = mToChar<2>("?");
+    const mchar_t ampersand = mToChar<2>("&");
+
+    for (const auto &_char : httpRequest->url)
+    {
+      if (!hasQuestionMark && _char.codePoint == questionMark)
+      {
+        hasQuestionMark = true;
+        hasAmpersand = true;
+      }
+      else if (_char.codePoint == ampersand)
+      {
+        hasAmpersand = true;
+      }
+      else if (_char.codePoint != 0)
+      {
+        hasAmpersand = false;
+      }
+    }
+  }
+
+  if (!hasQuestionMark)
+    mERROR_CHECK(mString_Append(httpRequest->url, "?", 2));
+  else if (!hasAmpersand)
+    mERROR_CHECK(mString_Append(httpRequest->url, "&", 2));
+
+  char encodedChar[4] = "%00";
+
+  for (const auto &_char : key)
+  {
+    if (_char.characterSize == 1 && ((*_char.character >= 'A' && *_char.character <= 'Z') || (*_char.character >= 'a' && *_char.character <= 'z') || (*_char.character >= '0' && *_char.character <= '9') || *_char.character == '-' || *_char.character == '_' || *_char.character == '.' || *_char.character == '~'))
+    {
+      mERROR_CHECK(mString_Append(httpRequest->url, _char.character, 1));
+    }
+    else
+    {
+      for (size_t i = 0; i < _char.characterSize; i++)
+      {
+        mERROR_CHECK(mSprintf(encodedChar + 1, sizeof(encodedChar) - 1, "%02" PRIX8, (uint8_t)_char.character[i]));
+        mERROR_CHECK(mString_Append(httpRequest->url, encodedChar, sizeof(encodedChar)));
+      }
+    }
+  }
+
+  if (value.bytes > 1)
+  {
+    mERROR_CHECK(mString_Append(httpRequest->url, "=", 2));
+
+    for (const auto &_char : value)
+    {
+      if (_char.characterSize == 1 && ((*_char.character >= 'A' && *_char.character <= 'Z') || (*_char.character >= 'a' && *_char.character <= 'z') || (*_char.character >= '0' && *_char.character <= '9') || *_char.character == '-' || *_char.character == '_' || *_char.character == '.' || *_char.character == '~'))
+      {
+        mERROR_CHECK(mString_Append(httpRequest->url, _char.character, 1));
+      }
+      else
+      {
+        for (size_t i = 0; i < _char.characterSize; i++)
+        {
+          mERROR_CHECK(mSprintf(encodedChar + 1, sizeof(encodedChar) - 1, "%02" PRIX8, (uint8_t)_char.character[i]));
+          mERROR_CHECK(mString_Append(httpRequest->url, encodedChar, sizeof(encodedChar)));
+        }
+      }
+    }
+  }
+
+  mRETURN_SUCCESS();
+}
+
 mFUNCTION(mHttpRequest_AddHeader, mPtr<mHttpRequest> &httpRequest, const mString &header)
 {
   mFUNCTION_SETUP();
@@ -95,14 +175,14 @@ mFUNCTION(mHttpRequest_AddHeader, mPtr<mHttpRequest> &httpRequest, const mString
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mHttpRequest_SetTimeout, mPtr<mHttpRequest> &httpRequest, const size_t timeout)
+mFUNCTION(mHttpRequest_SetTimeout, mPtr<mHttpRequest> &httpRequest, const size_t timeoutMs)
 {
   mFUNCTION_SETUP();
 
   mERROR_IF(httpRequest == nullptr, mR_ArgumentNull);
-  mERROR_IF(timeout > INT32_MAX, mR_ArgumentOutOfBounds);
+  mERROR_IF(timeoutMs > INT32_MAX, mR_ArgumentOutOfBounds);
 
-  httpRequest->timeout = (int32_t)timeout;
+  httpRequest->timeout = (int32_t)timeoutMs;
 
   mRETURN_SUCCESS();
 }

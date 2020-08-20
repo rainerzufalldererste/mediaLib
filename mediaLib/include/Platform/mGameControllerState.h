@@ -46,5 +46,15 @@ mFUNCTION(mGameControllerState_GetLastButtonState, mPtr<mGameControllerState> &c
 mFUNCTION(mGameControllerState_GetButtonPressed, mPtr<mGameControllerState> &controllerState, const mGameControllerState_Button index, OUT bool *pValue);
 mFUNCTION(mGameControllerState_GetButtonReleased, mPtr<mGameControllerState> &controllerState, const mGameControllerState_Button index, OUT bool *pValue);
 
+mFUNCTION(mGameControllerState_Rumble, mPtr<mGameControllerState> &controllerState, const size_t durationMs, const float_t strength);
+mFUNCTION(mGameControllerState_StopRumble, mPtr<mGameControllerState> &controllerState);
+
+struct mGameControllerState_ConstantHapticEffect
+{
+  float_t strength = 1.f, fadeInStartStrength = 0.f, fadeOutEndStrength = 0.f;
+  size_t durationMs = 125, fadeInTimeMs = 125, fadeOutTimeMs = 125;
+};
+
+mFUNCTION(mGameControllerState_PlayHapticEffect, mPtr<mGameControllerState> &controllerState, const mGameControllerState_ConstantHapticEffect &effect);
 
 #endif // mGameControllerState_h__

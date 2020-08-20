@@ -31,6 +31,8 @@ struct mGameControllerState
   size_t ballCount, buttonCount, hatCount, axisCount;
   bool lastButtons[mGameControllerState_ButtonCount];
   bool currentButtons[mGameControllerState_ButtonCount];
+  SDL_Haptic *pHapticHandle;
+  bool allowRumble;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -72,17 +74,23 @@ mFUNCTION(mGameControllerState_Create, OUT mPtr<mGameControllerState> *pControll
   mDEFER_CALL_ON_ERROR(pJoystick, SDL_JoystickClose);
   mERROR_IF(SDL_FALSE == SDL_JoystickGetAttached(pJoystick), mR_ResourceNotFound);
 
+  SDL_Haptic *pHaptic = SDL_HapticOpenFromJoystick(pJoystick);
+  mDEFER_CALL_ON_ERROR(pHaptic, SDL_HapticClose);
+
   mDEFER_CALL_ON_ERROR(pControllerState, mSharedPointer_Destroy);
   mERROR_CHECK((mSharedPointer_Allocate<mGameControllerState>(pControllerState, pAllocator, [](mGameControllerState *pData) {mGameControllerState_Destroy_Internal(pData);}, 1)));
 
   mGameControllerState *pState = pControllerState->GetPointer();
 
   pState->pJoystickHandle = pJoystick;
+  pState->pHapticHandle = pHaptic;
 
   pState->axisCount = mMax(0, SDL_JoystickNumAxes(pJoystick));
   pState->ballCount = mMax(0, SDL_JoystickNumBalls(pJoystick));
   pState->buttonCount = mMax(0, SDL_JoystickNumButtons(pJoystick));
   pState->hatCount = mMax(0, SDL_JoystickNumHats(pJoystick));
+
+  pState->allowRumble = (pHaptic != nullptr && SDL_HapticRumbleInit(pHaptic) == 0);
 
   // Update twice to populate both current and last values.
   mERROR_CHECK(mGameControllerState_Update(*pControllerState));
@@ -305,6 +313,58 @@ mFUNCTION(mGameControllerState_GetButtonReleased, mPtr<mGameControllerState> &co
   mRETURN_SUCCESS();
 }
 
+mFUNCTION(mGameControllerState_Rumble, mPtr<mGameControllerState> &controllerState, const size_t durationMs, const float_t strength)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(controllerState == nullptr, mR_ArgumentNull);
+  mERROR_IF(controllerState->pHapticHandle == nullptr || !controllerState->allowRumble, mR_NotSupported);
+
+  mERROR_IF(0 != SDL_HapticRumblePlay(controllerState->pHapticHandle, strength, (uint32_t)mMin((size_t)UINT32_MAX, durationMs)), mR_InternalError);
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mGameControllerState_StopRumble, mPtr<mGameControllerState> &controllerState)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(controllerState == nullptr, mR_ArgumentNull);
+  mERROR_IF(controllerState->pHapticHandle == nullptr || !controllerState->allowRumble, mR_NotSupported);
+
+  mERROR_IF(0 != SDL_HapticRumbleStop(controllerState->pHapticHandle), mR_InternalError);
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mGameControllerState_PlayHapticEffect, mPtr<mGameControllerState> &controllerState, const mGameControllerState_ConstantHapticEffect &effect)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(controllerState == nullptr, mR_ArgumentNull);
+  mERROR_IF(controllerState->pHapticHandle == nullptr, mR_NotSupported);
+
+  SDL_HapticConstant effectDescription;
+  mZeroMemory(&effectDescription, 1);
+
+  effectDescription.type = SDL_HAPTIC_CONSTANT;
+  effectDescription.direction.type = SDL_HAPTIC_CARTESIAN;
+  effectDescription.direction.dir[1] = -1; // Coming from in front of the user. This is somewhat arbitrary.
+  effectDescription.length = (uint32_t)mMin((size_t)0x7FFF, effect.durationMs); // See https://wiki.libsdl.org/SDL_HapticEffect.
+  effectDescription.level = (int16_t)(effect.strength * INT16_MAX);
+  effectDescription.attack_level = (int16_t)(effect.fadeInStartStrength * INT16_MAX);
+  effectDescription.fade_level = (int16_t)(effect.fadeOutEndStrength * INT16_MAX);
+  effectDescription.attack_length = (int16_t)mMin((size_t)0x7FFF, effect.fadeInTimeMs); // See https://wiki.libsdl.org/SDL_HapticEffect.
+  effectDescription.fade_length = (int16_t)mMin((size_t)0x7FFF, effect.fadeOutTimeMs); // See https://wiki.libsdl.org/SDL_HapticEffect.
+
+  const int32_t effectId = SDL_HapticNewEffect(controllerState->pHapticHandle, reinterpret_cast<SDL_HapticEffect *>(&effectDescription));
+  mERROR_IF(effectId < 0, mR_InternalError);
+
+  mERROR_IF(SDL_HapticRunEffect(controllerState->pHapticHandle, effectId, 1) != 0, mR_InternalError);
+
+  mRETURN_SUCCESS();
+}
+
 //////////////////////////////////////////////////////////////////////////
 
 mFUNCTION(mGameControllerState_Destroy_Internal, IN_OUT mGameControllerState *pControllerState)
@@ -315,6 +375,9 @@ mFUNCTION(mGameControllerState_Destroy_Internal, IN_OUT mGameControllerState *pC
 
   if (pControllerState->pJoystickHandle != nullptr)
     SDL_JoystickClose(pControllerState->pJoystickHandle);
+
+  if (pControllerState->pHapticHandle)
+    SDL_HapticClose(pControllerState->pHapticHandle);
 
   mRETURN_SUCCESS();
 }
