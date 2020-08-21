@@ -74,11 +74,3 @@ const char * mResult_ToString(const mResult result)
     return mResultAsString[result];
 #endif
 }
-
-void mDeinit() { }
-
-void mDeinit(const std::function<void(void)> &param)
-{
-  if (param)
-    param();
-}

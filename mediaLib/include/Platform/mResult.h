@@ -109,8 +109,8 @@ void mPrintError(char *function, char *file, const int32_t line, const mResult e
 
 const char * mResult_ToString(const mResult result);
 
-void mDeinit();
-void mDeinit(const std::function<void(void)> &param);
+inline void mDeinit() {}
+inline void mDeinit(const std::function<void(void)> &param) { if (param != nullptr) param(); }
 
 template <typename ...Args>
 inline void mDeinit(const std::function<void(void)> &param, Args && ...args)
