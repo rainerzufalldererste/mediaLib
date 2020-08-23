@@ -25,14 +25,12 @@ struct mFontDescription
   float_t glyphSpacingRatio = 1.0f;
   float_t scale = 1;
 
+  bool ignoreBackupFonts = false;
   bool hasBounds = false;
+  mFontDescription_BoundMode boundMode = mFD_BM_Stop;
 
   // WARNING: This is not in screen space. Use `mFontDescription_GetDisplayBounds`.
   mRectangle2D<float_t> bounds;
-  
-  mFontDescription_BoundMode boundMode = mFD_BM_Stop;
-
-  bool ignoreBackupFonts = false;
 };
 
 mRectangle2D<float_t> mFontDescription_GetDisplayBounds(const mRectangle2D<float_t> &displayBounds);
@@ -62,6 +60,8 @@ mFUNCTION(mFontRenderer_IsStarted, mPtr<mFontRenderer> &fontRenderer, OUT bool *
 mFUNCTION(mFontRenderer_ResetRenderedRect, mPtr<mFontRenderer> &fontRenderer);
 mFUNCTION(mFontRenderer_GetRenderedRect, mPtr<mFontRenderer> &fontRenderer, OUT mRectangle2D<float_t> *pRenderedArea);
 mFUNCTION(mFontRenderer_GetRenderedDisplayRect, mPtr<mFontRenderer> &fontRenderer, OUT mRectangle2D<float_t> *pRenderedArea);
+
+mFUNCTION(mFontRenderer_LastDrawCallStoppedAtBounds, mPtr<mFontRenderer> &fontRenderer, OUT OPTIONAL bool *pStopped, OUT OPTIONAL bool *pStoppedAtStartX = nullptr, OUT OPTIONAL bool *pStoppedAtStartY = nullptr, OUT OPTIONAL bool *pStoppedAtEndX = nullptr, OUT OPTIONAL bool *pStoppedAtEndY = nullptr);
 
 mFUNCTION(mFontRenderer_AddBackupFont, mPtr<mFontRenderer> &fontRenderer, const mString &backupFont);
 mFUNCTION(mFontRenderer_ClearBackupFonts, mPtr<mFontRenderer> &fontRenderer);

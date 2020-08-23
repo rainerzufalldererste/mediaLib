@@ -58,6 +58,7 @@ project(ProjectName)
   includedirs { "3rdParty/expat/include" }
   includedirs { "3rdParty/turbojpeg/include" }
   includedirs { "3rdParty/curl/include" }
+  includedirs { "3rdParty/freetype/include" }
 
   filter { "configurations:Debug", "system:Windows" }
     ignoredefaultlibraries { "libcmt" }
