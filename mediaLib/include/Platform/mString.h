@@ -570,6 +570,12 @@ inline mFUNCTION(mInplaceString_GetCount, const mInplaceString<TCount> &string, 
 template<size_t T>
 inline bool mString::operator==(const mInplaceString<T> &s) const
 {
+  if (s.bytes <= 1 && bytes <= 1)
+    return true;
+
+  if (s.bytes != bytes || s.count != count)
+    return false;
+
   mString tmp;
   tmp.text = const_cast<char *>(s.text);
   tmp.capacity = tmp.bytes = s.bytes;
