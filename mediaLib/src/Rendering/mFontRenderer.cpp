@@ -896,18 +896,6 @@ mFUNCTION(mFontRenderer_DrawWithLayout, mPtr<mFontRenderer> &fontRenderer, const
 
   fontRenderer->previousChar[0] = '\0';
 
-  if (fontDescription.hasBounds && !fontDescription.bounds.Contains(fontRenderer->position - mVec2f(0, fontDescription.fontSize)))
-  {
-    fontRenderer->position = fontDescription.bounds.position + mVec2f(0, fontDescription.bounds.size.y - fontDescription.fontSize);
-    
-    if (layout.alignment == mTL_A_Centered)
-      fontRenderer->position.x += (fontDescription.bounds.width * .5f);
-    else if (layout.alignment == mTL_A_Right)
-      fontRenderer->position.x += fontDescription.bounds.width;
-
-    fontRenderer->resetPosition = fontRenderer->position;
-  }
-
   const char *startText = text.c_str();
   bool lastWasEndPhrase = true;
   mVec2f phraseSize;
@@ -918,13 +906,24 @@ mFUNCTION(mFontRenderer_DrawWithLayout, mPtr<mFontRenderer> &fontRenderer, const
   mFontRenderer_PhraseRenderGlyphInfo spaceGlyphInfo;
   const bool phraseCanEndAtSpace = fontDescription.hasBounds;
 
-  if (phraseCanEndAtSpace)
   {
     mERROR_CHECK(mString_Create(&fontRenderer->phraseString, " ", fontRenderer->pAllocator));
     mERROR_CHECK(mFontRenderer_TryRenderPhrase(fontRenderer, fontRenderer->phraseString, fontDescription, fontRenderer->phraseRenderInfo, &phraseSize));
 
     mERROR_IF(fontRenderer->phraseRenderInfo->count != 1, mR_Failure);
     mERROR_CHECK(mQueue_PopFront(fontRenderer->phraseRenderInfo, &spaceGlyphInfo));
+  }
+
+  if (fontDescription.hasBounds && !fontDescription.bounds.Contains(fontRenderer->position - mVec2f(0, fontDescription.fontSize)))
+  {
+    fontRenderer->position = fontDescription.bounds.position + mVec2f(0, fontDescription.bounds.size.y - fontDescription.fontSize);
+    
+    if (layout.alignment == mTL_A_Centered)
+      fontRenderer->position.x += ((fontDescription.bounds.width + spaceGlyphInfo.advanceX) * .5f);
+    else if (layout.alignment == mTL_A_Right)
+      fontRenderer->position.x += fontDescription.bounds.width + spaceGlyphInfo.advanceX;
+
+    fontRenderer->resetPosition = fontRenderer->position;
   }
 
   const mchar_t space = mToChar<2>(" ");
@@ -1047,9 +1046,9 @@ mFUNCTION(mFontRenderer_DrawWithLayout, mPtr<mFontRenderer> &fontRenderer, const
             size = 0;
 
             if (layout.alignment == mTL_A_Centered)
-              fontRenderer->position.x = fontRenderer->resetPosition.x - phraseSize.x * .5f;
+              fontRenderer->position.x = fontRenderer->resetPosition.x - (phraseSize.x + spaceGlyphInfo.advanceX) * .5f;
             else if (layout.alignment == mTL_A_Right)
-              fontRenderer->position.x = fontRenderer->resetPosition.x - phraseSize.x;
+              fontRenderer->position.x = fontRenderer->resetPosition.x - (phraseSize.x + spaceGlyphInfo.advanceX);
 
             // Render.
             for (const auto &_item : fontRenderer->phraseRenderInfo->Iterate())
