@@ -951,7 +951,7 @@ mFUNCTION(mFontRenderer_DrawWithLayout, mPtr<mFontRenderer> &fontRenderer, const
 
     if (endPhrase || isLast)
     {
-      if (lastWasEndPhrase)
+      if (lastWasEndPhrase && endPhrase)
       {
         if (isNewLine)
         {
