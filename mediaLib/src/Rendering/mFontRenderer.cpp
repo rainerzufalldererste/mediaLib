@@ -986,6 +986,7 @@ mFUNCTION(mFontRenderer_DrawWithLayout, mPtr<mFontRenderer> &fontRenderer, const
             for (const auto &_item : fontRenderer->phraseRenderInfo->Iterate())
               mERROR_CHECK(mQueue_PushBack(fontRenderer->entirePhraseRenderInfo, _item));
 
+            size += phraseSize.x;
             charsAdded = true;
           }
 
