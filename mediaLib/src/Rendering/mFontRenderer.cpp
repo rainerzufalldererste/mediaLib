@@ -884,7 +884,7 @@ mFUNCTION(mFontRenderer_DrawContinue, mPtr<mFontRenderer> &fontRenderer, const m
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mFontRenderer_DrawWithLayout, mPtr<mFontRenderer> &fontRenderer, const mFontDescription &fontDescription, const mTextLayout layout, const mString &text, const mVector colour /* = mVector(1, 1, 1, 1) */)
+mFUNCTION(mFontRenderer_DrawWithLayout, mPtr<mFontRenderer> &fontRenderer, const mFontDescription &fontDescription, const mTextLayout layout, const mString &text, const bool setPosition /* = false */, const mVector colour /* = mVector(1, 1, 1, 1) */)
 {
   mFUNCTION_SETUP();
 
@@ -900,6 +900,7 @@ mFUNCTION(mFontRenderer_DrawWithLayout, mPtr<mFontRenderer> &fontRenderer, const
   bool lastWasEndPhrase = true;
   mVec2f phraseSize;
   float_t size = 0;
+  bool firstPhrase = fontDescription.hasBounds;
 
   mERROR_CHECK(mQueue_Clear(fontRenderer->entirePhraseRenderInfo));
 
@@ -914,7 +915,7 @@ mFUNCTION(mFontRenderer_DrawWithLayout, mPtr<mFontRenderer> &fontRenderer, const
     mERROR_CHECK(mQueue_PopFront(fontRenderer->phraseRenderInfo, &spaceGlyphInfo));
   }
 
-  if (fontDescription.hasBounds && !fontDescription.bounds.Contains(fontRenderer->position - mVec2f(0, fontDescription.fontSize)))
+  if (fontDescription.hasBounds && setPosition)
   {
     fontRenderer->position = fontDescription.bounds.position + mVec2f(0, fontDescription.bounds.size.y - fontDescription.fontSize);
     
@@ -938,7 +939,7 @@ mFUNCTION(mFontRenderer_DrawWithLayout, mPtr<mFontRenderer> &fontRenderer, const
   {
     ++index;
 
-    const bool isLast = (index == (text.count - 1));
+    const bool isLast = (index == (text.count - 2));
     bool endPhrase = false;
 
     if (phraseCanEndAtSpace)
@@ -995,6 +996,9 @@ mFUNCTION(mFontRenderer_DrawWithLayout, mPtr<mFontRenderer> &fontRenderer, const
           else if (layout.alignment == mTL_A_Right)
             fontRenderer->position.x = fontRenderer->resetPosition.x - size;
 
+          bool first = firstPhrase;
+          firstPhrase = false;
+
           // Render.
           for (const auto &_item : fontRenderer->entirePhraseRenderInfo->Iterate())
           {
@@ -1016,6 +1020,33 @@ mFUNCTION(mFontRenderer_DrawWithLayout, mPtr<mFontRenderer> &fontRenderer, const
               const float_t y0 = (fontRenderer->position.y + _item.offsetY) * fontDescription.scale;
               const float_t x1 = (x0 + _item.sizeX * fontDescription.scale);
               const float_t y1 = (y0 - _item.sizeY * fontDescription.scale);
+
+              mRectangle2D<float_t> glyphBounds(x0, y1, x1 - x0, y0 - y1); // Flipped because it's in OpenGL space.
+
+              if (first)
+              {
+                if (fontDescription.hasBounds && !fontDescription.bounds.Contains(glyphBounds))
+                {
+                  fontRenderer->stoppedAtStartX = glyphBounds.x < fontDescription.bounds.x;
+                  fontRenderer->stoppedAtStartY = glyphBounds.y < fontDescription.bounds.y;
+                  fontRenderer->stoppedAtEndX = glyphBounds.x + glyphBounds.w > fontDescription.bounds.x;
+                  fontRenderer->stoppedAtEndY = glyphBounds.y + glyphBounds.h > fontDescription.bounds.y;
+                  
+                  if (fontDescription.boundMode == mFD_BM_StopWithTrippleDot)
+                  {
+                    mFontDescription description = fontDescription;
+                    description.hasBounds = false;
+
+                    mERROR_CHECK(mFontRenderer_Draw(fontRenderer, description, "...", colour));
+                  }
+
+                  mRETURN_SUCCESS();
+                }
+
+                first = false;
+              }
+
+              fontRenderer->renderedArea.GrowToContain(glyphBounds);
 
               mERROR_CHECK(mBinaryChunk_WriteData(fontRenderer->enqueuedText, x0 * fontRenderer->right + y0 * fontRenderer->up + fontRenderer->spacialOrigin));
               mERROR_CHECK(mBinaryChunk_WriteData(fontRenderer->enqueuedText, mVec2f(_item.s0, _item.t0)));
@@ -1072,6 +1103,9 @@ mFUNCTION(mFontRenderer_DrawWithLayout, mPtr<mFontRenderer> &fontRenderer, const
                 const float_t x1 = (x0 + _item.sizeX * fontDescription.scale);
                 const float_t y1 = (y0 - _item.sizeY * fontDescription.scale);
 
+                mRectangle2D<float_t> glyphBounds(x0, y1, x1 - x0, y0 - y1); // Flipped because it's in OpenGL space.
+                fontRenderer->renderedArea.GrowToContain(glyphBounds);
+
                 mERROR_CHECK(mBinaryChunk_WriteData(fontRenderer->enqueuedText, x0 * fontRenderer->right + y0 * fontRenderer->up + fontRenderer->spacialOrigin));
                 mERROR_CHECK(mBinaryChunk_WriteData(fontRenderer->enqueuedText, mVec2f(_item.s0, _item.t0)));
                 mERROR_CHECK(mBinaryChunk_WriteData(fontRenderer->enqueuedText, (mVec4f)colour));
@@ -1114,6 +1148,7 @@ mFUNCTION(mFontRenderer_DrawWithLayout, mPtr<mFontRenderer> &fontRenderer, const
                 case mFD_BM_StopWithTrippleDot:
                   mFontDescription description = fontDescription;
                   description.hasBounds = false;
+                  fontRenderer->stoppedAtStartY = true;
 
                   mERROR_CHECK(mFontRenderer_Draw(fontRenderer, description, "...", colour));
                   break;

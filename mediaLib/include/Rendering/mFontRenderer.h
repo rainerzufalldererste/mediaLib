@@ -67,7 +67,7 @@ mFUNCTION(mFontRenderer_EndRenderable, mPtr<mFontRenderer> &fontRenderer, OUT mP
 mFUNCTION(mFontRenderer_Draw, mPtr<mFontRenderer> &fontRenderer, const mFontDescription &fontDescription, const mString &string, const mVector colour = mVector(1, 1, 1, 1));
 mFUNCTION(mFontRenderer_DrawContinue, mPtr<mFontRenderer> &fontRenderer, const mFontDescription &fontDescription, const mString &string, const mVector colour = mVector(1, 1, 1, 1));
 
-mFUNCTION(mFontRenderer_DrawWithLayout, mPtr<mFontRenderer> &fontRenderer, const mFontDescription &fontDescription, const mTextLayout layout, const mString &string, const mVector colour = mVector(1, 1, 1, 1));
+mFUNCTION(mFontRenderer_DrawWithLayout, mPtr<mFontRenderer> &fontRenderer, const mFontDescription &fontDescription, const mTextLayout layout, const mString &string, const bool setPosition = false, const mVector colour = mVector(1, 1, 1, 1));
 
 mFUNCTION(mFontRenderer_GetRenderedSize, mPtr<mFontRenderer> &fontRenderer, const mFontDescription &fontDescription, const mString &string, OUT mVec2f *pRenderedSize);
 mFUNCTION(mFontRenderer_GetRenderedWidth, mPtr<mFontRenderer> &fontRenderer, const mFontDescription &fontDescription, const mString &string, OUT float_t *pRenderedWidth);
