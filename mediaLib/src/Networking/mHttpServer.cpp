@@ -503,24 +503,20 @@ mFUNCTION(mHttpServer_SendResponsePacket_Internal, mPtr<mTcpClient> &client, con
   const char contentType[] = "\r\nContent-Type: ";
   const char charSet[] = ";charset=";
   const char contentLength[] = "\r\nConnection: Keep-Alive\r\nContent-Length: ";
-  const char utf8[] = "UTF-8\r\nConnection: Keep-Alive\r\nContent-Length: ";
   const char endOfParams[] = "\r\n\r\n";
 
   mERROR_IF(response->contentType.bytes <= 1, mR_ResourceInvalid);
 
   mERROR_CHECK(mBinaryChunk_WriteBytes(responsePacket, reinterpret_cast<const uint8_t *>(contentType), sizeof(contentType) - 1));
   mERROR_CHECK(mBinaryChunk_WriteBytes(responsePacket, reinterpret_cast<const uint8_t *>(response->contentType.c_str()), response->contentType.bytes - 1));
-  mERROR_CHECK(mBinaryChunk_WriteBytes(responsePacket, reinterpret_cast<const uint8_t *>(charSet), sizeof(charSet) - 1));
 
   if (response->charSet.bytes > 1)
   {
+    mERROR_CHECK(mBinaryChunk_WriteBytes(responsePacket, reinterpret_cast<const uint8_t *>(charSet), sizeof(charSet) - 1));
     mERROR_CHECK(mBinaryChunk_WriteBytes(responsePacket, reinterpret_cast<const uint8_t *>(response->charSet.c_str()), response->charSet.bytes - 1));
-    mERROR_CHECK(mBinaryChunk_WriteBytes(responsePacket, reinterpret_cast<const uint8_t *>(contentLength), sizeof(contentLength) - 1));
   }
-  else
-  {
-    mERROR_CHECK(mBinaryChunk_WriteBytes(responsePacket, reinterpret_cast<const uint8_t *>(utf8), sizeof(utf8) - 1));
-  }
+
+  mERROR_CHECK(mBinaryChunk_WriteBytes(responsePacket, reinterpret_cast<const uint8_t *>(contentLength), sizeof(contentLength) - 1));
 
   size_t streamBytes = 0;
   mERROR_CHECK(mBinaryChunk_GetWriteBytes(response->responseStream, &streamBytes));
@@ -860,8 +856,8 @@ mFUNCTION(mHttpResponse_Init_Internal, mPtr<mHttpResponse> &response, IN mAlloca
   mERROR_CHECK(mBinaryChunk_Create(&response->responseStream, pAllocator));
   mERROR_CHECK(mQueue_Create(&response->setCookies, pAllocator));
   mERROR_CHECK(mQueue_Create(&response->attributes, pAllocator));
-
-  response->charSet.pAllocator = pAllocator;
+  
+  mERROR_CHECK(mString_Create(&response->charSet, "UTF-8", pAllocator));
   response->contentType.pAllocator = pAllocator;
 
   mRETURN_SUCCESS();
