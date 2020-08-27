@@ -29,4 +29,6 @@ mFUNCTION(mHttpRequest_GetResponseSize, mPtr<mHttpRequest> &httpRequest, OUT siz
 mFUNCTION(mHttpRequest_GetResponseBytes, mPtr<mHttpRequest> &httpRequest, OUT uint8_t *pBuffer, const size_t bufferSize);
 mFUNCTION(mHttpRequest_GetResponseString, mPtr<mHttpRequest> &httpRequest, OUT mString *pResponse);
 
+mFUNCTION(mHttpRequest_GetResponseContentType, mPtr<mHttpRequest> &httpRequest, OUT mString *pContentType);
+
 #endif // mHttpRequest_h__

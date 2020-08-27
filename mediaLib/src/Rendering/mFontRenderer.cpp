@@ -981,7 +981,7 @@ mFUNCTION(mFontRenderer_DrawWithLayout, mPtr<mFontRenderer> &fontRenderer, const
 
         if (isLast || isNewLine || doesntFit)
         {
-          if (!doesntFit || isLast)
+          if (!doesntFit)
           {
             for (const auto &_item : fontRenderer->phraseRenderInfo->Iterate())
               mERROR_CHECK(mQueue_PushBack(fontRenderer->entirePhraseRenderInfo, _item));

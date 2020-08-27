@@ -36,6 +36,10 @@ mFUNCTION(mHardwareWindow_GetRenderContextId, mPtr<mHardwareWindow> &window, OUT
 mFUNCTION(mHardwareWindow_SetFullscreenMode, mPtr<mHardwareWindow> &window, const mHardwareWindow_DisplayMode displayMode);
 mFUNCTION(mHardwareWindow_SetActive, mPtr<mHardwareWindow> &window);
 
+mFUNCTION(mHardwareWindow_MaximizeWindow, mPtr<mHardwareWindow> &window);
+mFUNCTION(mHardwareWindow_MinimizeWindow, mPtr<mHardwareWindow> &window);
+mFUNCTION(mHardwareWindow_RestoreWindow, mPtr<mHardwareWindow> &window);
+
 mFUNCTION(mHardwareWindow_AddOnResizeEvent, mPtr<mHardwareWindow> &window, const std::function<mResult(const mVec2s &)> &callback);
 mFUNCTION(mHardwareWindow_AddOnCloseEvent, mPtr<mHardwareWindow> &window, const std::function<mResult(void)> &callback);
 mFUNCTION(mHardwareWindow_AddOnAnyEvent, mPtr<mHardwareWindow> &window, const std::function<mResult(IN SDL_Event *)> &callback);

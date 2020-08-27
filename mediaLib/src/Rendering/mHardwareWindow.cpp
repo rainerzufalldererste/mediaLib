@@ -245,6 +245,39 @@ mFUNCTION(mHardwareWindow_SetFullscreenMode, mPtr<mHardwareWindow> &window, cons
   mRETURN_SUCCESS();
 }
 
+mFUNCTION(mHardwareWindow_MaximizeWindow, mPtr<mHardwareWindow> &window)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(window == nullptr, mR_ArgumentNull);
+
+  SDL_MaximizeWindow(window->pWindow);
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mHardwareWindow_MinimizeWindow, mPtr<mHardwareWindow> &window)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(window == nullptr, mR_ArgumentNull);
+
+  SDL_MinimizeWindow(window->pWindow);
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mHardwareWindow_RestoreWindow, mPtr<mHardwareWindow> &window)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(window == nullptr, mR_ArgumentNull);
+
+  SDL_RestoreWindow(window->pWindow);
+
+  mRETURN_SUCCESS();
+}
+
 mFUNCTION(mHardwareWindow_AddOnResizeEvent, mPtr<mHardwareWindow> &window, const std::function<mResult(const mVec2s&)> &callback)
 {
   mFUNCTION_SETUP();

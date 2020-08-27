@@ -302,6 +302,21 @@ mFUNCTION(mHttpRequest_GetResponseString, mPtr<mHttpRequest> &httpRequest, OUT m
   mRETURN_SUCCESS();
 }
 
+mFUNCTION(mHttpRequest_GetResponseContentType, mPtr<mHttpRequest> &httpRequest, OUT mString *pContentType)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(httpRequest == nullptr || pContentType == nullptr, mR_ArgumentNull);
+  mERROR_IF(!httpRequest->responseRequested, mR_ResourceStateInvalid);
+
+  char *contentType = nullptr;
+  mERROR_IF(CURLE_OK != curl_easy_getinfo(httpRequest->pCurl, CURLINFO_CONTENT_TYPE, &contentType), mR_InternalError);
+
+  mERROR_CHECK(mString_Create(pContentType, contentType, pContentType->pAllocator));
+
+  mRETURN_SUCCESS();
+}
+
 //////////////////////////////////////////////////////////////////////////
 
 mFUNCTION(mHttpRequest_Destroy_Internal, mHttpRequest *pHttpRequest)
