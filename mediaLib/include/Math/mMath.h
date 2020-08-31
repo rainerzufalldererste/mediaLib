@@ -184,9 +184,9 @@ struct mMath_DistanceTypeOf<float_t>
   typedef float_t type;
 };
 
-#define _mVECTOR_SUBSET_2(a, b) __host__ __device__ inline mVec2t<T> a ## b() { return mVec2t<T>(a, b); }
-#define _mVECTOR_SUBSET_3(a, b, c) __host__ __device__ inline mVec3t<T> a ## b ## c() { return mVec3t<T>(a, b, c); }
-#define _mVECTOR_SUBSET_4(a, b, c, d) __host__ __device__ inline mVec4t<T> a ## b ## c ## d() { return mVec4t<T>(a, b, c, d); }
+#define _mVECTOR_SUBSET_2(a, b) __host__ __device__ inline mVec2t<T> a ## b() const { return mVec2t<T>(a, b); }
+#define _mVECTOR_SUBSET_3(a, b, c) __host__ __device__ inline mVec3t<T> a ## b ## c() const { return mVec3t<T>(a, b, c); }
+#define _mVECTOR_SUBSET_4(a, b, c, d) __host__ __device__ inline mVec4t<T> a ## b ## c ## d() const { return mVec4t<T>(a, b, c, d); }
 
 template <typename T>
 struct mVec2t

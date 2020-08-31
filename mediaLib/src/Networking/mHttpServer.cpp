@@ -192,11 +192,11 @@ mFUNCTION(mHttpServer_Destroy_Internal, IN_OUT mHttpServer *pHttpServer)
 
   pHttpServer->keepRunning = false;
 
-  mERROR_CHECK(mSharedPointer_Destroy(&pHttpServer->tcpServer));
+  mERROR_CHECK(mTasklessThreadPool_Destroy(&pHttpServer->threadPool));
   mERROR_CHECK(mThread_Destroy(&pHttpServer->pListenerThread));
   mERROR_CHECK(mThread_Destroy(&pHttpServer->pStaleTcpClientHandlerThread));
+  mERROR_CHECK(mSharedPointer_Destroy(&pHttpServer->tcpServer));
   mERROR_CHECK(mMutex_Destroy(&pHttpServer->pStaleTcpClientMutex));
-  mERROR_CHECK(mTasklessThreadPool_Destroy(&pHttpServer->threadPool));
 
   mERROR_CHECK(mSharedPointer_Destroy(&pHttpServer->errorRequestHandler));
   mERROR_CHECK(mQueue_Destroy(&pHttpServer->requestHandlers));
