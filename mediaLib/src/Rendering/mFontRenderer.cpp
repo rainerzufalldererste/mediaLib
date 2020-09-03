@@ -920,9 +920,9 @@ mFUNCTION(mFontRenderer_DrawWithLayout, mPtr<mFontRenderer> &fontRenderer, const
     fontRenderer->position = fontDescription.bounds.position + mVec2f(0, fontDescription.bounds.size.y - fontDescription.fontSize);
     
     if (layout.alignment == mTL_A_Centered)
-      fontRenderer->position.x += ((fontDescription.bounds.width + spaceGlyphInfo.advanceX) * .5f);
+      fontRenderer->position.x += fontDescription.bounds.width * .5f;
     else if (layout.alignment == mTL_A_Right)
-      fontRenderer->position.x += fontDescription.bounds.width + spaceGlyphInfo.advanceX;
+      fontRenderer->position.x += fontDescription.bounds.width;
 
     fontRenderer->resetPosition = fontRenderer->position;
   }
@@ -934,6 +934,7 @@ mFUNCTION(mFontRenderer_DrawWithLayout, mPtr<mFontRenderer> &fontRenderer, const
   size_t index = (size_t)-1;
 
   bool justWrapped = false;
+  float_t hideableSize = 0;
 
   for (const auto &_char : text)
   {
@@ -963,7 +964,7 @@ mFUNCTION(mFontRenderer_DrawWithLayout, mPtr<mFontRenderer> &fontRenderer, const
         {
           const float_t sizeFactor = _char.codePoint == tab ? 2.f : 1.f;
 
-          size += sizeFactor * spaceGlyphInfo.advanceX;
+          hideableSize += sizeFactor * spaceGlyphInfo.advanceX;
         }
       }
       else
@@ -977,7 +978,7 @@ mFUNCTION(mFontRenderer_DrawWithLayout, mPtr<mFontRenderer> &fontRenderer, const
         mERROR_CHECK(mFontRenderer_TryRenderPhrase(fontRenderer, fontRenderer->phraseString, fontDescription, fontRenderer->phraseRenderInfo, &phraseSize));
 
         bool charsAdded = false;
-        bool doesntFit = fontDescription.hasBounds && fontDescription.bounds.width <= size + phraseSize.x;
+        bool doesntFit = fontDescription.hasBounds && fontDescription.bounds.width <= hideableSize + size + phraseSize.x;
 
         if (isLast || isNewLine || doesntFit)
         {
@@ -987,15 +988,16 @@ mFUNCTION(mFontRenderer_DrawWithLayout, mPtr<mFontRenderer> &fontRenderer, const
               mERROR_CHECK(mQueue_PushBack(fontRenderer->entirePhraseRenderInfo, _item));
 
             size += phraseSize.x;
+            hideableSize = 0;
             charsAdded = true;
           }
 
           justWrapped = true;
 
           if (layout.alignment == mTL_A_Centered)
-            fontRenderer->position.x = fontRenderer->resetPosition.x - size * .5f;
+            fontRenderer->position.x = fontRenderer->resetPosition.x - (size + spaceGlyphInfo.advanceX) * .5f;
           else if (layout.alignment == mTL_A_Right)
-            fontRenderer->position.x = fontRenderer->resetPosition.x - size;
+            fontRenderer->position.x = fontRenderer->resetPosition.x - size + spaceGlyphInfo.advanceX;
 
           bool first = firstPhrase;
           firstPhrase = false;
@@ -1026,7 +1028,9 @@ mFUNCTION(mFontRenderer_DrawWithLayout, mPtr<mFontRenderer> &fontRenderer, const
 
               if (first)
               {
-                if (fontDescription.hasBounds && !fontDescription.bounds.Contains(glyphBounds))
+                if (fontDescription.hasBounds && !fontDescription.bounds.Contains(glyphBounds)
+                  // HACK: Sometimes it seems like we're a tiny amount of pixels off, when rendering center- (and probably also right-) aligned.
+                  && (glyphBounds.size.LengthSquared() - fontDescription.bounds.Intersect(glyphBounds).size.LengthSquared() > mVec2f(spaceGlyphInfo.advanceX * .5f, glyphBounds.height).LengthSquared() && fontDescription.bounds.position.y <= glyphBounds.y && fontDescription.bounds.position.y + fontDescription.bounds.height >= glyphBounds.y + glyphBounds.height))
                 {
                   fontRenderer->stoppedAtStartX = glyphBounds.x < fontDescription.bounds.x;
                   fontRenderer->stoppedAtStartY = glyphBounds.y < fontDescription.bounds.y;
@@ -1171,14 +1175,15 @@ mFUNCTION(mFontRenderer_DrawWithLayout, mPtr<mFontRenderer> &fontRenderer, const
           for (const auto &_item : fontRenderer->phraseRenderInfo->Iterate())
             mERROR_CHECK(mQueue_PushBack(fontRenderer->entirePhraseRenderInfo, _item));
 
-          size += phraseSize.x;
+          size += hideableSize + phraseSize.x;
+          hideableSize = 0;
 
           // Add current character.
           {
             const float_t sizeFactor = _char.codePoint == tab ? 2.f : 1.f;
             const float_t addedSize = sizeFactor * spaceGlyphInfo.advanceX * fontDescription.glyphSpacingRatio;
 
-            size += addedSize;
+            hideableSize = addedSize;
 
             mFontRenderer_PhraseRenderGlyphInfo info;
             info.commandType = mFR_PRGI_CT_AdvanceOnly;

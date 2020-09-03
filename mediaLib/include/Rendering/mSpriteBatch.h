@@ -169,7 +169,7 @@ struct mSBETextureCrop : mSpriteBatchExtention
 
 struct mSBEColour : mSpriteBatchExtention
 {
-  mVec4f colour;
+  mVec4f colour = mVec4f(1, 1, 1, 1);
 
   mSBEColour() = default;
   explicit mSBEColour(const float_t r, const float_t g, const float_t b);
