@@ -1717,6 +1717,133 @@ mFUNCTION(mFile_GrantAccessToAllUsers, const mString &path)
   mRETURN_SUCCESS();
 }
 
+mFUNCTION(mFile_GetDriveFromFilePath, OUT mString *pDrivePath, const mString &filePath)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pDrivePath == nullptr, mR_ArgumentNull);
+  mERROR_IF(filePath.hasFailed, mR_InvalidParameter);
+
+  wchar_t wfilepath[MAX_PATH];
+  mERROR_CHECK(mString_ToWideString(filePath, wfilepath, mARRAYSIZE(wfilepath)));
+
+  wchar_t volumePath[MAX_PATH];
+
+  if (0 == GetVolumePathNameW(wfilepath, volumePath, mARRAYSIZE(volumePath)))
+  {
+    const DWORD error = GetLastError();
+    mUnused(error);
+
+    mRETURN_RESULT(mR_InternalError);
+  }
+
+  mERROR_CHECK(mString_Create(pDrivePath, volumePath, mARRAYSIZE(volumePath), filePath.pAllocator));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mFile_GetDriveInfo, const mString &drivePath, OUT mDriveInfo *pDriveInfo, IN mAllocator *pAllocator)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(drivePath.hasFailed, mR_InvalidParameter);
+  mERROR_IF(pDriveInfo == nullptr, mR_ArgumentNull);
+
+  wchar_t wDrivePath[MAX_PATH];
+  mERROR_CHECK(mString_ToWideString(drivePath, wDrivePath, mARRAYSIZE(wDrivePath)));
+
+  wchar_t driveName[MAX_PATH + 1];
+  wchar_t volumeTypeName[MAX_PATH + 1]; // FAT, NTFS, ...
+  const BOOL result = GetVolumeInformationW(wDrivePath, driveName, mARRAYSIZE(driveName), nullptr, nullptr, nullptr, volumeTypeName, mARRAYSIZE(volumeTypeName));
+
+  if (result)
+    mERROR_CHECK(mString_Create(&pDriveInfo->driveName, driveName, pAllocator));
+
+  const UINT driveType = GetDriveTypeW(wDrivePath);
+
+  switch (driveType)
+  {
+  case DRIVE_UNKNOWN:
+  case DRIVE_NO_ROOT_DIR:
+  default:
+    pDriveInfo->driveType = mDT_Unknown;
+    break;
+
+  case DRIVE_REMOVABLE:
+    pDriveInfo->driveType = mDT_Removable;
+    break;
+
+  case DRIVE_FIXED:
+    pDriveInfo->driveType = mDT_NonRemovable;
+    break;
+
+  case DRIVE_REMOTE:
+    pDriveInfo->driveType = mDT_Remote;
+    break;
+
+  case DRIVE_CDROM:
+    pDriveInfo->driveType = mDT_CDRom;
+    break;
+
+  case DRIVE_RAMDISK:
+    pDriveInfo->driveType = mDT_RamDisk;
+    break;
+  }
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mFile_GetFolderSize, const mString &directoryPath, OUT size_t *pFolderSize)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(directoryPath.hasFailed, mR_InvalidParameter);
+  mERROR_IF(pFolderSize == nullptr, mR_ArgumentNull);
+
+  *pFolderSize = 0;
+
+  mString actualFolderPath;
+  mERROR_CHECK(mString_ToDirectoryPath(&actualFolderPath, directoryPath));
+
+  mERROR_CHECK(mString_Append(actualFolderPath, "*", 2));
+
+  wchar_t folderPath[MAX_PATH];
+  mERROR_CHECK(mString_ToWideString(actualFolderPath, folderPath, mARRAYSIZE(folderPath)));
+
+  wchar_t absolutePath[MAX_PATH];
+  const DWORD length = GetFullPathNameW(folderPath, mARRAYSIZE(absolutePath), absolutePath, nullptr);
+  mERROR_IF(length == 0, mR_InternalError);
+
+  WIN32_FIND_DATAW fileData;
+  const HANDLE handle = FindFirstFileExW(absolutePath, FindExInfoBasic, &fileData, FindExSearchNameMatch, NULL, FIND_FIRST_EX_LARGE_FETCH);
+
+  if (handle == INVALID_HANDLE_VALUE)
+  {
+    const DWORD error = GetLastError();
+
+    switch (error)
+    {
+    case ERROR_FILE_NOT_FOUND:
+    case ERROR_PATH_NOT_FOUND:
+    case ERROR_BAD_NETPATH:
+      mRETURN_RESULT(mR_ResourceNotFound);
+
+    case ERROR_DIRECTORY:
+    default:
+      mRETURN_RESULT(mR_InternalError);
+    }
+  }
+
+  mDEFER(FindClose(handle));
+
+  do
+  {
+    *pFolderSize += ((size_t)fileData.nFileSizeHigh * (size_t)(MAXDWORD + 1ULL)) + (size_t)fileData.nFileSizeLow;
+  } while (FindNextFileW(handle, &fileData));
+
+  mRETURN_SUCCESS();
+}
+
 //////////////////////////////////////////////////////////////////////////
 
 mFUNCTION(mFile_CreateDirectoryRecursive_Internal, const wchar_t *directoryPath)

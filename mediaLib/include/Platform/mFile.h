@@ -137,6 +137,10 @@ mFUNCTION(mFile_CreateShortcut, const mString &path, const mString &targetDestin
 
 mFUNCTION(mFile_GrantAccessToAllUsers, const mString &path);
 
+mFUNCTION(mFile_GetDriveFromFilePath, OUT mString *pDrivePath, const mString &filePath);
+mFUNCTION(mFile_GetDriveInfo, const mString &drivePath, OUT mDriveInfo *pDriveInfo, IN mAllocator *pAllocator);
+mFUNCTION(mFile_GetFolderSize, const mString &directoryPath, OUT size_t *pFolderSize);
+
 struct mFileWriter
 {
 #ifdef mPLATFORM_WINDOWS
