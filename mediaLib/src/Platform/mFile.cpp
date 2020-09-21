@@ -1081,7 +1081,7 @@ mFUNCTION(mFile_GetDirectoryContents, const mString &directoryPath, const mStrin
     mERROR_CHECK(mQueue_Clear(*pFiles));
   
   WIN32_FIND_DATAW fileData;
-  const HANDLE handle = FindFirstFileW(absolutePath, &fileData);
+  const HANDLE handle = FindFirstFileExW(absolutePath, FindExInfoBasic, &fileData, FindExSearchNameMatch, NULL, FIND_FIRST_EX_LARGE_FETCH);
 
   if (handle == INVALID_HANDLE_VALUE)
   {
