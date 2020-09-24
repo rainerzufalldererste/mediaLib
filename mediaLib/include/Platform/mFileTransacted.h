@@ -30,4 +30,9 @@ mFUNCTION(mFileTransaction_MoveFile, mPtr<mFileTransaction> &transaction, const 
 mFUNCTION(mFileTransaction_WriteRegistryKey, mPtr<mFileTransaction> &transaction, const mString &keyUrl, const mString &value, OUT OPTIONAL bool *pNewlyCreated = nullptr);
 mFUNCTION(mFileTransaction_SetRegistryKeyAccessibleToAllUsers, mPtr<mFileTransaction> &transaction, const mString &keyUrl);
 
+//////////////////////////////////////////////////////////////////////////
+
+mFUNCTION(mFileTransaction_CopyFile, mPtr<mFileTransaction> &transaction, const mString &target, const mString &source, const bool replaceIfExistent, const std::function<mResult(const size_t transferred, const size_t total)> &progressCallback);
+mFUNCTION(mFileTransaction_MoveFile, mPtr<mFileTransaction> &transaction, const mString &target, const mString &source, const bool replaceIfExistent, const std::function<mResult(const size_t transferred, const size_t total)> &progressCallback);
+
 #endif // mFileTransacted_h__

@@ -539,9 +539,14 @@ mFUNCTION(mFile_Copy, const mString &destinationFileName, const mString &sourceF
       mERROR_IF(fileHandle == INVALID_HANDLE_VALUE, mR_InternalError);
       CloseHandle(fileHandle);
 
+      canceled = FALSE;
+
       if (0 == CopyFileExW(source, target, &mFile_ProgressCallback_Internal::Callback, reinterpret_cast<void *>(&parameters), &canceled, COPY_FILE_NO_BUFFERING))
       {
         error = GetLastError();
+
+        if (canceled == TRUE || error == ERROR_REQUEST_ABORTED)
+          mRETURN_RESULT(mFAILED(parameters.innerResult) ? parameters.innerResult : mR_Break);
 
         mRETURN_RESULT(mR_ResourceNotFound);
       }
@@ -651,9 +656,6 @@ mFUNCTION(mFile_Move, const mString &destinationFileName, const mString &sourceF
 
   if (0 == MoveFileWithProgressW(source, target, &mFile_ProgressCallback_Internal::Callback, reinterpret_cast<void *>(&parameters), (overrideFileIfExistent ? MOVEFILE_REPLACE_EXISTING : 0) | MOVEFILE_COPY_ALLOWED))
   {
-    if (canceled == TRUE)
-      mRETURN_RESULT(mFAILED(parameters.innerResult) ? parameters.innerResult : mR_Break);
-
     DWORD error = GetLastError();
 
     switch (error)
@@ -708,6 +710,9 @@ mFUNCTION(mFile_Move, const mString &destinationFileName, const mString &sourceF
       if (0 == MoveFileWithProgressW(source, target, &mFile_ProgressCallback_Internal::Callback, reinterpret_cast<void *>(&parameters), MOVEFILE_REPLACE_EXISTING | MOVEFILE_COPY_ALLOWED))
       {
         error = GetLastError();
+
+        if (error == ERROR_REQUEST_ABORTED)
+          mRETURN_RESULT(mFAILED(parameters.innerResult) ? parameters.innerResult : mR_Break);
 
         mRETURN_RESULT(mR_ResourceNotFound);
       }
@@ -1800,46 +1805,13 @@ mFUNCTION(mFile_GetFolderSize, const mString &directoryPath, OUT size_t *pFolder
   mERROR_IF(directoryPath.hasFailed, mR_InvalidParameter);
   mERROR_IF(pFolderSize == nullptr, mR_ArgumentNull);
 
+  mPtr<mQueue<mFileInfo>> fileInfo;
+  mERROR_CHECK(mFile_GetDirectoryContents(directoryPath, true, &fileInfo, &mDefaultTempAllocator));
+
   *pFolderSize = 0;
 
-  mString actualFolderPath;
-  mERROR_CHECK(mString_ToDirectoryPath(&actualFolderPath, directoryPath));
-
-  mERROR_CHECK(mString_Append(actualFolderPath, "*", 2));
-
-  wchar_t folderPath[MAX_PATH];
-  mERROR_CHECK(mString_ToWideString(actualFolderPath, folderPath, mARRAYSIZE(folderPath)));
-
-  wchar_t absolutePath[MAX_PATH];
-  const DWORD length = GetFullPathNameW(folderPath, mARRAYSIZE(absolutePath), absolutePath, nullptr);
-  mERROR_IF(length == 0, mR_InternalError);
-
-  WIN32_FIND_DATAW fileData;
-  const HANDLE handle = FindFirstFileExW(absolutePath, FindExInfoBasic, &fileData, FindExSearchNameMatch, NULL, FIND_FIRST_EX_LARGE_FETCH);
-
-  if (handle == INVALID_HANDLE_VALUE)
-  {
-    const DWORD error = GetLastError();
-
-    switch (error)
-    {
-    case ERROR_FILE_NOT_FOUND:
-    case ERROR_PATH_NOT_FOUND:
-    case ERROR_BAD_NETPATH:
-      mRETURN_RESULT(mR_ResourceNotFound);
-
-    case ERROR_DIRECTORY:
-    default:
-      mRETURN_RESULT(mR_InternalError);
-    }
-  }
-
-  mDEFER(FindClose(handle));
-
-  do
-  {
-    *pFolderSize += ((size_t)fileData.nFileSizeHigh * (size_t)(MAXDWORD + 1ULL)) + (size_t)fileData.nFileSizeLow;
-  } while (FindNextFileW(handle, &fileData));
+  for (const auto &_file : fileInfo->Iterate())
+    *pFolderSize += _file.size;
 
   mRETURN_SUCCESS();
 }

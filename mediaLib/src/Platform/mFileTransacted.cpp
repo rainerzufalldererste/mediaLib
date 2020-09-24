@@ -568,6 +568,210 @@ mFUNCTION(mFileTransaction_SetRegistryKeyAccessibleToAllUsers, mPtr<mFileTransac
 
 //////////////////////////////////////////////////////////////////////////
 
+struct mFileTransacted_ProgressCallbackParams
+{
+  const std::function<mResult(const size_t transferred, const size_t total)> &func;
+  BOOL *pCanceled;
+  mResult innerResult;
+
+  mFileTransacted_ProgressCallbackParams(BOOL *pCanceled, const std::function<mResult(const size_t transferred, const size_t total)> &func) :
+    pCanceled(pCanceled),
+    func(func)
+  { }
+};
+
+struct mFileTransacted_ProgressCallback_Internal
+{
+  static DWORD WINAPI Callback(
+    _In_     LARGE_INTEGER TotalFileSize,
+    _In_     LARGE_INTEGER TotalBytesTransferred,
+    _In_     LARGE_INTEGER /* StreamSize */,
+    _In_     LARGE_INTEGER /* StreamBytesTransferred */,
+    _In_     DWORD /* dwStreamNumber */,
+    _In_     DWORD /* dwCallbackReason */,
+    _In_     HANDLE /* hSourceFile */,
+    _In_     HANDLE /* hDestinationFile */,
+    _In_opt_ LPVOID lpData)
+  {
+    mFileTransacted_ProgressCallbackParams *pParams = reinterpret_cast<mFileTransacted_ProgressCallbackParams *>(lpData);
+
+    if (mFAILED(pParams->innerResult = pParams->func((size_t)TotalBytesTransferred.QuadPart, (size_t)TotalFileSize.QuadPart)))
+    {
+      *pParams->pCanceled = TRUE;
+      return PROGRESS_CANCEL;
+    }
+
+    return ERROR_SUCCESS;
+  }
+};
+
+mFUNCTION(mFileTransaction_CopyFile, mPtr<mFileTransaction> &transaction, const mString &target, const mString &source, const bool replaceIfExistent, const std::function<mResult(const size_t transferred, const size_t total)> &progressCallback)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(transaction == nullptr, mR_ArgumentNull);
+  mERROR_IF(transaction->hasBeenTransacted, mR_ResourceStateInvalid);
+  mERROR_IF(target.hasFailed || source.hasFailed || target.bytes <= 1 || source.bytes <= 1, mR_InvalidParameter);
+
+  wchar_t wSource[MAX_PATH];
+  mERROR_CHECK(mString_ToWideString(source, wSource, mARRAYSIZE(wSource)));
+
+  wchar_t wTarget[MAX_PATH];
+  mERROR_CHECK(mString_ToWideString(target, wTarget, mARRAYSIZE(wSource)));
+
+  BOOL canceled = FALSE;
+  mFileTransacted_ProgressCallbackParams parameters(&canceled, progressCallback);
+
+  if (0 == CopyFileTransactedW(wSource, wTarget, &mFileTransacted_ProgressCallback_Internal::Callback, reinterpret_cast<void *>(&parameters), &canceled, replaceIfExistent ? 0 : COPY_FILE_FAIL_IF_EXISTS, transaction->transactionHandle))
+  {
+    if (canceled == TRUE)
+      mRETURN_RESULT(mFAILED(parameters.innerResult) ? parameters.innerResult : mR_Break);
+
+    DWORD error = GetLastError();
+
+    mERROR_IF(error == ERROR_ALREADY_EXISTS && !replaceIfExistent, mR_Failure);
+
+    if (error == ERROR_REQUEST_ABORTED)
+    {
+      mRETURN_RESULT(mFAILED(parameters.innerResult) ? parameters.innerResult : mR_Break);
+    }
+    else if (error == ERROR_PATH_NOT_FOUND)
+    {
+      HANDLE fileHandle = CreateFileTransactedW(wTarget, GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr, transaction->transactionHandle, nullptr, nullptr);
+      error = GetLastError(); // Might be `ERROR_ALREADY_EXISTS` even if the `fileHandle` is valid.
+
+      mERROR_IF(error == ERROR_ALREADY_EXISTS && !replaceIfExistent, mR_Failure);
+
+      if (fileHandle == INVALID_HANDLE_VALUE && error == ERROR_PATH_NOT_FOUND)
+      {
+        wchar_t parentDirectory[MAX_PATH];
+        mERROR_CHECK(mStringCopy(parentDirectory, mARRAYSIZE(parentDirectory), wTarget, MAX_PATH));
+
+#if (NTDDI_VERSION >= NTDDI_WIN8)
+        HRESULT hr = S_OK;
+
+        // Requires `pathcch.h` && `Pathcch.lib`.
+        mERROR_IF(FAILED(hr = PathCchRemoveFileSpec(parentDirectory, mARRAYSIZE(parentDirectory))), mR_InternalError);
+        mERROR_IF(hr == S_FALSE, mR_InvalidParameter);
+#else
+        // deprecated since windows 8.
+        mERROR_IF(PathRemoveFileSpecW(parentDirectory), mR_InvalidParameter);
+#endif
+
+        mERROR_CHECK(mFileTransaction_CreateDirectoryRecursive_Internal(transaction, parentDirectory));
+
+        fileHandle = CreateFileTransactedW(wTarget, GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr, transaction->transactionHandle, nullptr, nullptr);
+        error = GetLastError(); // Might be `ERROR_ALREADY_EXISTS` even if the `fileHandle` is valid.
+      }
+
+      mERROR_IF(fileHandle == INVALID_HANDLE_VALUE, mR_InternalError);
+      CloseHandle(fileHandle);
+
+      canceled = FALSE;
+
+      if (0 == CopyFileTransactedW(wSource, wTarget, &mFileTransacted_ProgressCallback_Internal::Callback, reinterpret_cast<void *>(&parameters), &canceled, 0, transaction->transactionHandle))
+      {
+        error = GetLastError();
+
+        if (canceled == TRUE || error == ERROR_REQUEST_ABORTED)
+          mRETURN_RESULT(mFAILED(parameters.innerResult) ? parameters.innerResult : mR_Break);
+
+        mRETURN_RESULT(mR_ResourceNotFound);
+      }
+      else
+      {
+        mRETURN_SUCCESS();
+      }
+    }
+
+    mRETURN_RESULT(mR_IOFailure);
+  }
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mFileTransaction_MoveFile, mPtr<mFileTransaction> &transaction, const mString &target, const mString &source, const bool replaceIfExistent, const std::function<mResult(const size_t transferred, const size_t total)> &progressCallback)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(transaction == nullptr, mR_ArgumentNull);
+  mERROR_IF(transaction->hasBeenTransacted, mR_ResourceStateInvalid);
+  mERROR_IF(target.hasFailed || source.hasFailed || target.bytes <= 1 || source.bytes <= 1, mR_InvalidParameter);
+
+  wchar_t wSource[MAX_PATH];
+  mERROR_CHECK(mString_ToWideString(source, wSource, mARRAYSIZE(wSource)));
+
+  wchar_t wTarget[MAX_PATH];
+  mERROR_CHECK(mString_ToWideString(target, wTarget, mARRAYSIZE(wSource)));
+
+  BOOL canceled = FALSE;
+  mFileTransacted_ProgressCallbackParams parameters(&canceled, progressCallback);
+
+  if (0 == MoveFileTransactedW(wSource, wTarget, &mFileTransacted_ProgressCallback_Internal::Callback, reinterpret_cast<void *>(&parameters), MOVEFILE_COPY_ALLOWED | (replaceIfExistent ? MOVEFILE_REPLACE_EXISTING : 0), transaction->transactionHandle))
+  {
+    DWORD error = GetLastError();
+
+    mERROR_IF(error == ERROR_ALREADY_EXISTS && !replaceIfExistent, mR_Failure);
+
+    if (error == ERROR_REQUEST_ABORTED)
+    {
+      mRETURN_RESULT(mFAILED(parameters.innerResult) ? parameters.innerResult : mR_Break);
+    }
+    else if (error == ERROR_PATH_NOT_FOUND)
+    {
+      HANDLE fileHandle = CreateFileTransactedW(wTarget, GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr, transaction->transactionHandle, nullptr, nullptr);
+      error = GetLastError(); // Might be `ERROR_ALREADY_EXISTS` even if the `fileHandle` is valid.
+
+      mERROR_IF(error == ERROR_ALREADY_EXISTS && !replaceIfExistent, mR_Failure);
+
+      if (fileHandle == INVALID_HANDLE_VALUE && error == ERROR_PATH_NOT_FOUND)
+      {
+        wchar_t parentDirectory[MAX_PATH];
+        mERROR_CHECK(mStringCopy(parentDirectory, mARRAYSIZE(parentDirectory), wTarget, MAX_PATH));
+
+#if (NTDDI_VERSION >= NTDDI_WIN8)
+        HRESULT hr = S_OK;
+
+        // Requires `pathcch.h` && `Pathcch.lib`.
+        mERROR_IF(FAILED(hr = PathCchRemoveFileSpec(parentDirectory, mARRAYSIZE(parentDirectory))), mR_InternalError);
+        mERROR_IF(hr == S_FALSE, mR_InvalidParameter);
+#else
+        // deprecated since windows 8.
+        mERROR_IF(PathRemoveFileSpecW(parentDirectory), mR_InvalidParameter);
+#endif
+
+        mERROR_CHECK(mFileTransaction_CreateDirectoryRecursive_Internal(transaction, parentDirectory));
+
+        fileHandle = CreateFileTransactedW(wTarget, GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr, transaction->transactionHandle, nullptr, nullptr);
+        error = GetLastError(); // Might be `ERROR_ALREADY_EXISTS` even if the `fileHandle` is valid.
+      }
+
+      mERROR_IF(fileHandle == INVALID_HANDLE_VALUE, mR_InternalError);
+      CloseHandle(fileHandle);
+
+      if (0 == MoveFileTransactedW(wSource, wTarget, &mFileTransacted_ProgressCallback_Internal::Callback, reinterpret_cast<void *>(&parameters), MOVEFILE_COPY_ALLOWED | MOVEFILE_REPLACE_EXISTING, transaction->transactionHandle))
+      {
+        error = GetLastError();
+
+        if (error == ERROR_REQUEST_ABORTED)
+          mRETURN_RESULT(mFAILED(parameters.innerResult) ? parameters.innerResult : mR_Break);
+
+        mRETURN_RESULT(mR_ResourceNotFound);
+      }
+      else
+      {
+        mRETURN_SUCCESS();
+      }
+    }
+
+    mRETURN_RESULT(mR_IOFailure);
+  }
+
+  mRETURN_SUCCESS();
+}
+
+//////////////////////////////////////////////////////////////////////////
+
 mFUNCTION(mFileTransaction_Destroy_Internal, IN_OUT mFileTransaction *pTransaction)
 {
   mFUNCTION_SETUP();
