@@ -164,6 +164,10 @@ mFUNCTION(mQueue_PopAt, mPtr<mQueue<T>> &queue, size_t index, OUT T *pItem);
 template <typename T>
 mFUNCTION(mQueue_PointerAt, mPtr<mQueue<T>> &queue, const size_t index, OUT T **ppItem);
 
+// Handle with care. The retrieved pointer will just be valid until the size changes or an element is removed.
+template <typename T>
+mFUNCTION(mQueue_PointerAt, const mPtr<mQueue<T>> &queue, const size_t index, OUT T const **ppItem);
+
 template <typename T, typename ...Args>
 mFUNCTION(mQueue_EmplaceBack, mPtr<mQueue<T>> &queue, Args && ...args);
 
@@ -558,6 +562,21 @@ inline mFUNCTION(mQueue_PopAt, mPtr<mQueue<T>> &queue, size_t index, OUT T *pIte
 
 template<typename T>
 inline mFUNCTION(mQueue_PointerAt, mPtr<mQueue<T>> &queue, const size_t index, OUT T **ppItem)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(queue == nullptr || ppItem == nullptr, mR_ArgumentNull);
+  mERROR_IF(queue->count <= index, mR_IndexOutOfBounds);
+
+  const size_t queueIndex = (queue->startIndex + index) % queue->size;
+
+  *ppItem = &queue->pData[queueIndex];
+
+  mRETURN_SUCCESS();
+}
+
+template<typename T>
+inline mFUNCTION(mQueue_PointerAt, const mPtr<mQueue<T>> &queue, const size_t index, OUT T const **ppItem)
 {
   mFUNCTION_SETUP();
 
