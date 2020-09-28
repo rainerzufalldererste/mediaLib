@@ -278,6 +278,17 @@ mFUNCTION(mHardwareWindow_RestoreWindow, mPtr<mHardwareWindow> &window)
   mRETURN_SUCCESS();
 }
 
+mFUNCTION(mHardwareWindow_SetResizable, mPtr<mHardwareWindow> &window, const bool resizable)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(window == nullptr, mR_ArgumentNull);
+
+  SDL_SetWindowResizable(window->pWindow, resizable ? SDL_TRUE : SDL_FALSE);
+
+  mRETURN_SUCCESS();
+}
+
 mFUNCTION(mHardwareWindow_AddOnResizeEvent, mPtr<mHardwareWindow> &window, const std::function<mResult(const mVec2s&)> &callback)
 {
   mFUNCTION_SETUP();
