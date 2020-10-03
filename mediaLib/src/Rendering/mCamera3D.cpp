@@ -41,6 +41,16 @@ void mCamera3D_Move(mCamera3D &camera, const mVec3f movement)
   camera.viewMatrix *= mMatrix::TranslationFromVector(movement.xzy() * -1.f);
 }
 
+void mCamera3D_SetLookFromAt(mCamera3D &camera, const mVec3f position, const mVec3f lookAt, const mVec3f up /* = mVec3f(0, 0, 1) */)
+{
+  camera.viewMatrix = mMatrix::LookAtRH((mVector)position, (mVector)lookAt, (mVector)up);
+}
+
+void mCamera3D_SetLookFromTo(mCamera3D &camera, const mVec3f position, const mVec3f direction, const mVec3f up /* = mVec3f(0, 0, 1) */)
+{
+  camera.viewMatrix = mMatrix::LookToRH((mVector)position, (mVector)direction, (mVector)up);
+}
+
 void mCamera3D_Finalize(mCamera3D &camera)
 {
   camera.viewProjectionMatrix = camera.viewMatrix * camera.projectionMatrix;

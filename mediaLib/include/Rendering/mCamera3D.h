@@ -22,6 +22,9 @@ void mCamera3D_Rotate(mCamera3D &camera, const mQuaternion quaternion);
 
 void mCamera3D_Move(mCamera3D &camera, const mVec3f movement);
 
+void mCamera3D_SetLookFromAt(mCamera3D &camera, const mVec3f position, const mVec3f lookAt, const mVec3f up = mVec3f(0, 0, 1));
+void mCamera3D_SetLookFromTo(mCamera3D &camera, const mVec3f position, const mVec3f direction, const mVec3f up = mVec3f(0, 0, 1));
+
 void mCamera3D_Finalize(mCamera3D &camera);
 
 #endif // mCamera3D_h__
