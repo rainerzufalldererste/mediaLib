@@ -23,6 +23,10 @@ enum mPixelFormat
   mPF_YUV420,
   mPF_Monochrome8,
   mPF_Monochrome16,
+  mPF_Rf16Gf16Bf16Af16,
+  mPF_Rf16Gf16Bf16,
+  mPF_Rf32Gf32Bf32Af32,
+  mPF_Rf32Gf32Bf32,
 
   mPixelFormat_Count,
 };

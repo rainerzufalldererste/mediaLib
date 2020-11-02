@@ -21,7 +21,8 @@ mFUNCTION(mFramebuffer_Create_Internal, OUT mFramebuffer *pFramebuffer, const mV
 mFUNCTION(mFramebuffer_Destroy_Internal, IN mFramebuffer *pFramebuffer);
 
 #ifdef mRENDERER_OPENGL
-mFUNCTION(mFramebuffer_PixelFormatToGLenum_Internal, const mPixelFormat pixelFormat, OUT GLenum *pPixelFormat);
+mFUNCTION(mFramebuffer_PixelFormatToGLenumChannels_Internal, const mPixelFormat pixelFormat, OUT GLenum *pPixelFormat);
+mFUNCTION(mFramebuffer_PixelFormatToGLenumDataType_Internal, const mPixelFormat pixelFormat, OUT GLenum *pPixelFormat);
 #endif
 
 //////////////////////////////////////////////////////////////////////////
@@ -180,7 +181,7 @@ mFUNCTION(mFramebuffer_SetResolution, mPtr<mFramebuffer> &framebuffer, const mVe
   mERROR_IF(framebuffer->size == size, mR_Success);
 
   GLenum glPixelFormat = GL_RGBA;
-  mERROR_CHECK(mFramebuffer_PixelFormatToGLenum_Internal(framebuffer->pixelFormat, &glPixelFormat));
+  mERROR_CHECK(mFramebuffer_PixelFormatToGLenumChannels_Internal(framebuffer->pixelFormat, &glPixelFormat));
 
   framebuffer->allocatedSize = framebuffer->size = size;
 
@@ -209,14 +210,19 @@ mFUNCTION(mFramebuffer_Download, mPtr<mFramebuffer> &framebuffer, OUT mPtr<mImag
 #if defined(mRENDERER_OPENGL)
 
   GLenum glPixelFormat;
+  GLenum type = GL_UNSIGNED_BYTE;
 
   switch (pixelFormat)
   {
   case mPF_R8G8B8A8:
+  case mPF_Rf16Gf16Bf16Af16:
+  case mPF_Rf32Gf32Bf32Af32:
     glPixelFormat = GL_RGBA;
     break;
 
   case mPF_R8G8B8:
+  case mPF_Rf16Gf16Bf16:
+  case mPF_Rf32Gf32Bf32:
     glPixelFormat = GL_RGB;
     break;
 
@@ -234,6 +240,22 @@ mFUNCTION(mFramebuffer_Download, mPtr<mFramebuffer> &framebuffer, OUT mPtr<mImag
 
   default:
     mRETURN_RESULT(mR_NotSupported);
+    break;
+  }
+
+  switch (pixelFormat)
+  {
+  case mPF_Rf16Gf16Bf16:
+  case mPF_Rf16Gf16Bf16Af16:
+    type = GL_HALF_FLOAT;
+    break;
+
+  case mPF_Rf32Gf32Bf32:
+  case mPF_Rf32Gf32Bf32Af32:
+    type = GL_FLOAT;
+    break;
+
+  default:
     break;
   }
 
@@ -256,7 +278,7 @@ mFUNCTION(mFramebuffer_Download, mPtr<mFramebuffer> &framebuffer, OUT mPtr<mImag
 
     mGL_ERROR_CHECK();
 
-    glGetTexImage(GL_TEXTURE_2D, 0, glPixelFormat, GL_UNSIGNED_BYTE, (*pImageBuffer)->pPixels);
+    glGetTexImage(GL_TEXTURE_2D, 0, glPixelFormat, type, (*pImageBuffer)->pPixels);
 
     mGL_ERROR_CHECK();
   }
@@ -442,7 +464,10 @@ mFUNCTION(mFramebuffer_Create_Internal, mFramebuffer *pFramebuffer, const mVec2s
   mGL_ERROR_CHECK();
 
   GLenum glPixelFormat = GL_RGBA;
-  mERROR_CHECK(mFramebuffer_PixelFormatToGLenum_Internal(pixelFormat, &glPixelFormat));
+  mERROR_CHECK(mFramebuffer_PixelFormatToGLenumChannels_Internal(pixelFormat, &glPixelFormat));
+
+  GLenum glType = GL_UNSIGNED_BYTE;
+  mERROR_CHECK(mFramebuffer_PixelFormatToGLenumDataType_Internal(pixelFormat, &glType));
 
   glGenFramebuffers(1, &pFramebuffer->frameBufferHandle);
   glBindFramebuffer(GL_FRAMEBUFFER, pFramebuffer->frameBufferHandle);
@@ -452,7 +477,7 @@ mFUNCTION(mFramebuffer_Create_Internal, mFramebuffer *pFramebuffer, const mVec2s
   if (pFramebuffer->sampleCount > 0)
     glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, (GLsizei)sampleCount, glPixelFormat, (GLsizei)size.x, (GLsizei)size.y, false);
   else
-    glTexImage2D(GL_TEXTURE_2D, 0, glPixelFormat, (GLsizei)size.x, (GLsizei)size.y, 0, glPixelFormat, GL_UNSIGNED_BYTE, nullptr);
+    glTexImage2D(GL_TEXTURE_2D, 0, glPixelFormat, (GLsizei)size.x, (GLsizei)size.y, 0, glPixelFormat, glType, nullptr);
 
   mERROR_CHECK(mTexture2DParams_ApplyToBoundTexture(params, pFramebuffer->sampleCount > 0));
   
@@ -519,17 +544,21 @@ mFUNCTION(mFramebuffer_Destroy_Internal, IN mFramebuffer *pFramebuffer)
 }
 
 #ifdef mRENDERER_OPENGL
-mFUNCTION(mFramebuffer_PixelFormatToGLenum_Internal, const mPixelFormat pixelFormat, OUT GLenum *pPixelFormat)
+mFUNCTION(mFramebuffer_PixelFormatToGLenumChannels_Internal, const mPixelFormat pixelFormat, OUT GLenum *pPixelFormat)
 {
   mFUNCTION_SETUP();
 
   switch (pixelFormat)
   {
   case mPF_R8G8B8:
+  case mPF_Rf16Gf16Bf16:
+  case mPF_Rf32Gf32Bf32:
     *pPixelFormat = GL_RGB;
     break;
 
   case mPF_R8G8B8A8:
+  case mPF_Rf16Gf16Bf16Af16:
+  case mPF_Rf32Gf32Bf32Af32:
     *pPixelFormat = GL_RGBA;
     break;
 
@@ -539,6 +568,29 @@ mFUNCTION(mFramebuffer_PixelFormatToGLenum_Internal, const mPixelFormat pixelFor
 
   default:
     mRETURN_RESULT(mR_InvalidParameter);
+  }
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mFramebuffer_PixelFormatToGLenumDataType_Internal, const mPixelFormat pixelFormat, OUT GLenum *pPixelFormat)
+{
+  mFUNCTION_SETUP();
+
+  switch (pixelFormat)
+  {
+  case mPF_Rf16Gf16Bf16:
+  case mPF_Rf16Gf16Bf16Af16:
+    *pPixelFormat = GL_HALF_FLOAT;
+    break;
+
+  case mPF_Rf32Gf32Bf32:
+  case mPF_Rf32Gf32Bf32Af32:
+    *pPixelFormat = GL_FLOAT;
+    break;
+
+  default:
+    *pPixelFormat = GL_UNSIGNED_BYTE;
   }
 
   mRETURN_SUCCESS();

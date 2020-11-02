@@ -25,7 +25,7 @@ struct mShader
 };
 
 #if defined(mRENDERER_OPENGL)
-#define mGLSL(src) "#version 150 core\n" #src
+#define mGLSL(...) "#version 150 core\n" #__VA_ARGS__
 #endif
 
 mFUNCTION(mShader_Allocate, OUT mPtr<mShader> *pShader, mAllocator *pAllocator);

@@ -172,6 +172,40 @@ bool mIsPrime(const size_t n);
 
 //////////////////////////////////////////////////////////////////////////
 
+// 16 bit float.
+struct half_t
+{
+  uint16_t data;
+
+  inline explicit half_t(const uint16_t value) :
+    data(value)
+  { }
+
+  inline half_t(const float_t value)
+  {
+    int32_t storage;
+    memcpy(&storage, &value, sizeof(float_t));
+    
+    data = (uint16_t)(((storage & 0x7fffffff) >> 13) - (0x38000000 >> 13));
+    data |= (uint16_t)(((storage & 0x80000000) >> 16));
+  }
+
+  inline operator float_t() const
+  {
+    int32_t storage = ((data & 0x8000) << 16);
+    storage |= ((data & 0x7fff) << 13) + 0x38000000;
+
+    float_t ret;
+    memcpy(&ret, &storage, sizeof(float_t));
+
+    return ret;
+  }
+};
+
+static_assert(sizeof(half_t) == sizeof(uint16_t), "Invalid Padding.");
+
+//////////////////////////////////////////////////////////////////////////
+
 template <typename T>
 struct mMath_DistanceTypeOf
 {

@@ -22,6 +22,10 @@ mFUNCTION(mPixelFormat_HasSubBuffers, const mPixelFormat pixelFormat, OUT bool *
   case mPF_R8G8B8A8:
   case mPF_Monochrome8:
   case mPF_Monochrome16:
+  case mPF_Rf16Gf16Bf16Af16:
+  case mPF_Rf16Gf16Bf16:
+  case mPF_Rf32Gf32Bf32Af32:
+  case mPF_Rf32Gf32Bf32:
     *pValue = false;
     break;
 
@@ -51,6 +55,10 @@ mFUNCTION(mPixelFormat_IsChromaSubsampled, const mPixelFormat pixelFormat, OUT b
   case mPF_R8G8B8A8:
   case mPF_Monochrome8:
   case mPF_Monochrome16:
+  case mPF_Rf16Gf16Bf16Af16:
+  case mPF_Rf16Gf16Bf16:
+  case mPF_Rf32Gf32Bf32Af32:
+  case mPF_Rf32Gf32Bf32:
     *pValue = false;
     break;
 
@@ -100,6 +108,22 @@ mFUNCTION(mPixelFormat_GetSize, const mPixelFormat pixelFormat, const mVec2s &si
     *pBytes = sizeof(uint16_t) * size.x * size.y;
     break;
 
+  case mPF_Rf16Gf16Bf16Af16:
+    *pBytes = sizeof(half_t) * 4 * size.x * size.y;
+    break;
+
+  case mPF_Rf16Gf16Bf16:
+    *pBytes = sizeof(half_t) * 3 * size.x * size.y;
+    break;
+
+  case mPF_Rf32Gf32Bf32Af32:
+    *pBytes = sizeof(float_t) * 4 * size.x * size.y;
+    break;
+
+  case mPF_Rf32Gf32Bf32:
+    *pBytes = sizeof(float_t) * 3 * size.x * size.y;
+    break;
+
   default:
     mRETURN_RESULT(mR_InvalidParameter);
   }
@@ -133,6 +157,22 @@ mFUNCTION(mPixelFormat_GetUnitSize, const mPixelFormat pixelFormat, OUT size_t *
     *pBytes = sizeof(uint16_t);
     break;
 
+  case mPF_Rf16Gf16Bf16Af16:
+    *pBytes = sizeof(half_t) * 4;
+    break;
+
+  case mPF_Rf16Gf16Bf16:
+    *pBytes = sizeof(half_t) * 3;
+    break;
+
+  case mPF_Rf32Gf32Bf32Af32:
+    *pBytes = sizeof(float_t) * 4;
+    break;
+
+  case mPF_Rf32Gf32Bf32:
+    *pBytes = sizeof(float_t) * 3;
+    break;
+
   default:
     mRETURN_RESULT(mR_InvalidParameter);
   }
@@ -154,6 +194,10 @@ mFUNCTION(mPixelFormat_GetSubBufferCount, const mPixelFormat pixelFormat, OUT si
   case mPF_R8G8B8A8:
   case mPF_Monochrome8:
   case mPF_Monochrome16:
+  case mPF_Rf16Gf16Bf16Af16:
+  case mPF_Rf16Gf16Bf16:
+  case mPF_Rf32Gf32Bf32Af32:
+  case mPF_Rf32Gf32Bf32:
     *pBufferCount = 1;
     break;
 
@@ -253,6 +297,10 @@ mFUNCTION(mPixelFormat_GetSubBufferSize, const mPixelFormat pixelFormat, const s
   case mPF_R8G8B8A8:
   case mPF_Monochrome8:
   case mPF_Monochrome16:
+  case mPF_Rf16Gf16Bf16Af16:
+  case mPF_Rf16Gf16Bf16:
+  case mPF_Rf32Gf32Bf32Af32:
+  case mPF_Rf32Gf32Bf32:
     *pSubBufferSize = size;
     break;
 
@@ -287,6 +335,10 @@ mFUNCTION(mPixelFormat_GetSubBufferPixelFormat, const mPixelFormat pixelFormat, 
   case mPF_R8G8B8A8:
   case mPF_Monochrome8:
   case mPF_Monochrome16:
+  case mPF_Rf16Gf16Bf16Af16:
+  case mPF_Rf16Gf16Bf16:
+  case mPF_Rf32Gf32Bf32Af32:
+  case mPF_Rf32Gf32Bf32:
     *pSubBufferPixelFormat = pixelFormat;
     break;
 
@@ -324,6 +376,10 @@ mFUNCTION(mPixelFormat_GetSubBufferStride, const mPixelFormat pixelFormat, const
   case mPF_R8G8B8A8:
   case mPF_Monochrome8:
   case mPF_Monochrome16:
+  case mPF_Rf16Gf16Bf16Af16:
+  case mPF_Rf16Gf16Bf16:
+  case mPF_Rf32Gf32Bf32Af32:
+  case mPF_Rf32Gf32Bf32:
     *pSubBufferLineStride = originalLineStride;
     break;
 
@@ -1181,6 +1237,10 @@ mFUNCTION(mPixelFormat_TransformBuffer, mPtr<mImageBuffer> &source, mPtr<mImageB
     case mPF_Monochrome8:
     case mPF_Monochrome16:
     case mPF_YUV422:
+    case mPF_Rf16Gf16Bf16Af16:
+    case mPF_Rf16Gf16Bf16:
+    case mPF_Rf32Gf32Bf32Af32:
+    case mPF_Rf32Gf32Bf32:
     {
       mRETURN_RESULT(mR_NotImplemented);
     }
@@ -1212,6 +1272,10 @@ mFUNCTION(mPixelFormat_TransformBuffer, mPtr<mImageBuffer> &source, mPtr<mImageB
     case mPF_YUV420:
     case mPF_Monochrome8:
     case mPF_Monochrome16:
+    case mPF_Rf16Gf16Bf16Af16:
+    case mPF_Rf16Gf16Bf16:
+    case mPF_Rf32Gf32Bf32Af32:
+    case mPF_Rf32Gf32Bf32:
     {
       mRETURN_RESULT(mR_NotImplemented);
     }
@@ -1248,6 +1312,10 @@ mFUNCTION(mPixelFormat_TransformBuffer, mPtr<mImageBuffer> &source, mPtr<mImageB
   case mPF_Monochrome16:
   case mPF_YUV422:
   case mPF_YUV420:
+  case mPF_Rf16Gf16Bf16Af16:
+  case mPF_Rf16Gf16Bf16:
+  case mPF_Rf32Gf32Bf32Af32:
+  case mPF_Rf32Gf32Bf32:
   {
     mRETURN_RESULT(mR_NotImplemented);
   }
