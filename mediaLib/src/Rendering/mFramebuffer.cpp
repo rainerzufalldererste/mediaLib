@@ -17,12 +17,12 @@ GLuint mFrameBuffer_ActiveFrameBufferHandle = 0;
 
 mPtr<mQueue<mPtr<mFramebuffer>>> mFramebuffer_Queue = nullptr;
 
-mFUNCTION(mFramebuffer_Create_Internal, OUT mFramebuffer *pFramebuffer, const mVec2s &size, const mTexture2DParams &params, const size_t sampleCount, const mPixelFormat pixelFormat);
-mFUNCTION(mFramebuffer_Destroy_Internal, IN mFramebuffer *pFramebuffer);
+static mFUNCTION(mFramebuffer_Create_Internal, OUT mFramebuffer *pFramebuffer, const mVec2s &size, const mTexture2DParams &params, const size_t sampleCount, const mPixelFormat pixelFormat);
+static mFUNCTION(mFramebuffer_Destroy_Internal, IN mFramebuffer *pFramebuffer);
 
 #ifdef mRENDERER_OPENGL
-mFUNCTION(mFramebuffer_PixelFormatToGLenumChannels_Internal, const mPixelFormat pixelFormat, OUT GLenum *pPixelFormat);
-mFUNCTION(mFramebuffer_PixelFormatToGLenumDataType_Internal, const mPixelFormat pixelFormat, OUT GLenum *pPixelFormat);
+static mFUNCTION(mFramebuffer_PixelFormatToGLenumChannels_Internal, const mPixelFormat pixelFormat, OUT GLenum *pPixelFormat);
+static mFUNCTION(mFramebuffer_PixelFormatToGLenumDataType_Internal, const mPixelFormat pixelFormat, OUT GLenum *pPixelFormat);
 #endif
 
 //////////////////////////////////////////////////////////////////////////
@@ -447,7 +447,7 @@ mFUNCTION(mTexture_Copy, mTexture &destination, mPtr<mFramebuffer> &source)
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mFramebuffer_Create_Internal, mFramebuffer *pFramebuffer, const mVec2s &size, const mTexture2DParams &params, const size_t sampleCount, const mPixelFormat pixelFormat)
+static mFUNCTION(mFramebuffer_Create_Internal, mFramebuffer *pFramebuffer, const mVec2s &size, const mTexture2DParams &params, const size_t sampleCount, const mPixelFormat pixelFormat)
 {
   mFUNCTION_SETUP();
 
@@ -520,7 +520,7 @@ mFUNCTION(mFramebuffer_Create_Internal, mFramebuffer *pFramebuffer, const mVec2s
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mFramebuffer_Destroy_Internal, IN mFramebuffer *pFramebuffer)
+static mFUNCTION(mFramebuffer_Destroy_Internal, IN mFramebuffer *pFramebuffer)
 {
   mFUNCTION_SETUP();
 
@@ -544,7 +544,7 @@ mFUNCTION(mFramebuffer_Destroy_Internal, IN mFramebuffer *pFramebuffer)
 }
 
 #ifdef mRENDERER_OPENGL
-mFUNCTION(mFramebuffer_PixelFormatToGLenumChannels_Internal, const mPixelFormat pixelFormat, OUT GLenum *pPixelFormat)
+static mFUNCTION(mFramebuffer_PixelFormatToGLenumChannels_Internal, const mPixelFormat pixelFormat, OUT GLenum *pPixelFormat)
 {
   mFUNCTION_SETUP();
 
@@ -573,7 +573,7 @@ mFUNCTION(mFramebuffer_PixelFormatToGLenumChannels_Internal, const mPixelFormat 
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mFramebuffer_PixelFormatToGLenumDataType_Internal, const mPixelFormat pixelFormat, OUT GLenum *pPixelFormat)
+static mFUNCTION(mFramebuffer_PixelFormatToGLenumDataType_Internal, const mPixelFormat pixelFormat, OUT GLenum *pPixelFormat)
 {
   mFUNCTION_SETUP();
 

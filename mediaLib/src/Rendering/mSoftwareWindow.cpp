@@ -16,8 +16,8 @@ struct mSoftwareWindow
   mPtr<mQueue<std::function<mResult(const mVec2s &)>>> onResizeCallbacks;
 };
 
-mFUNCTION(mSoftwareWindow_Create_Internal, IN mSoftwareWindow *pWindow, IN mAllocator *pAllocator, const mString &title, const mVec2s &size, const mSoftwareWindow_DisplayMode displaymode);
-mFUNCTION(mSoftwareWindow_Destroy_Internal, IN mSoftwareWindow *pWindow);
+static mFUNCTION(mSoftwareWindow_Create_Internal, IN mSoftwareWindow *pWindow, IN mAllocator *pAllocator, const mString &title, const mVec2s &size, const mSoftwareWindow_DisplayMode displaymode);
+static mFUNCTION(mSoftwareWindow_Destroy_Internal, IN mSoftwareWindow *pWindow);
 
 mFUNCTION(mSoftwareWindow_Create, OUT mPtr<mSoftwareWindow> *pWindow, IN mAllocator *pAllocator, const mString &title, const mVec2s &size, const mSoftwareWindow_DisplayMode displaymode /* = mSW_DM_Windowed */)
 {
@@ -253,7 +253,7 @@ mFUNCTION(mSoftwareWindow_ClearEventHandlers, mPtr<mSoftwareWindow> &window)
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mSoftwareWindow_Create_Internal, IN mSoftwareWindow *pWindow, IN mAllocator *pAllocator, const mString &title, const mVec2s &size, const mSoftwareWindow_DisplayMode displaymode)
+static mFUNCTION(mSoftwareWindow_Create_Internal, IN mSoftwareWindow *pWindow, IN mAllocator *pAllocator, const mString &title, const mVec2s &size, const mSoftwareWindow_DisplayMode displaymode)
 {
   mFUNCTION_SETUP();
 
@@ -271,7 +271,7 @@ mFUNCTION(mSoftwareWindow_Create_Internal, IN mSoftwareWindow *pWindow, IN mAllo
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mSoftwareWindow_Destroy_Internal, IN mSoftwareWindow *pWindow)
+static mFUNCTION(mSoftwareWindow_Destroy_Internal, IN mSoftwareWindow *pWindow)
 {
   mFUNCTION_SETUP();
 

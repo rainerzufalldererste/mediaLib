@@ -11,8 +11,8 @@
   #define __M_FILE__ "ioOl6vLwfcHaWvhWPPRUDTqP790J4x2+bly/0oxdIqcBttnfhibZOiM0F7O5DnXLiBb8Dt5KycTNTKJP"
 #endif
 
-mFUNCTION(mCachedFileReader_Destroy_Internal, mCachedFileReader *pCachedFileReader);
-mFUNCTION(mCachedFileReader_ReadFrom_Internal, mPtr<mCachedFileReader> &cachedFileReader, const size_t location, const size_t requestedSize);
+static mFUNCTION(mCachedFileReader_Destroy_Internal, mCachedFileReader *pCachedFileReader);
+static mFUNCTION(mCachedFileReader_ReadFrom_Internal, mPtr<mCachedFileReader> &cachedFileReader, const size_t location, const size_t requestedSize);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -158,7 +158,7 @@ mFUNCTION(mCachedFileReader_PointerAt, mPtr<mCachedFileReader> &cachedFileReader
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mCachedFileReader_Destroy_Internal, mCachedFileReader *pCachedFileReader)
+static mFUNCTION(mCachedFileReader_Destroy_Internal, mCachedFileReader *pCachedFileReader)
 {
   mFUNCTION_SETUP();
 
@@ -172,7 +172,7 @@ mFUNCTION(mCachedFileReader_Destroy_Internal, mCachedFileReader *pCachedFileRead
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mCachedFileReader_ReadFrom_Internal, mPtr<mCachedFileReader> &cachedFileReader, const size_t location, const size_t requestedSize)
+static mFUNCTION(mCachedFileReader_ReadFrom_Internal, mPtr<mCachedFileReader> &cachedFileReader, const size_t location, const size_t requestedSize)
 {
   mFUNCTION_SETUP();
 

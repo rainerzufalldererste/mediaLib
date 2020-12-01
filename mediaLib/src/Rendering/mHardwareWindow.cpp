@@ -19,8 +19,8 @@ struct mHardwareWindow
   mUniqueContainer<mFramebuffer> fakeFramebuffer;
 };
 
-mFUNCTION(mHardwareWindow_Create_Internal, IN_OUT mHardwareWindow *pWindow, IN mAllocator *pAllocator, const mString &title, const mVec2s &size, const mHardwareWindow_DisplayMode displaymode, const bool stereo3dIfAvailable);
-mFUNCTION(mHardwareWindow_Destroy_Internal, IN mHardwareWindow *pWindow);
+static mFUNCTION(mHardwareWindow_Create_Internal, IN_OUT mHardwareWindow *pWindow, IN mAllocator *pAllocator, const mString &title, const mVec2s &size, const mHardwareWindow_DisplayMode displaymode, const bool stereo3dIfAvailable);
+static mFUNCTION(mHardwareWindow_Destroy_Internal, IN mHardwareWindow *pWindow);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -354,7 +354,7 @@ mFUNCTION(mHardwareWindow_SetActive, mPtr<mHardwareWindow> &window)
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mHardwareWindow_Create_Internal, IN_OUT mHardwareWindow *pWindow, IN mAllocator *pAllocator, const mString &title, const mVec2s &size, const mHardwareWindow_DisplayMode displaymode, const bool stereo3dIfAvailable)
+static mFUNCTION(mHardwareWindow_Create_Internal, IN_OUT mHardwareWindow *pWindow, IN mAllocator *pAllocator, const mString &title, const mVec2s &size, const mHardwareWindow_DisplayMode displaymode, const bool stereo3dIfAvailable)
 {
   mFUNCTION_SETUP();
   mUnused(displaymode);
@@ -400,7 +400,7 @@ retry_without_3d:
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mHardwareWindow_Destroy_Internal, IN mHardwareWindow *pWindow)
+static mFUNCTION(mHardwareWindow_Destroy_Internal, IN mHardwareWindow *pWindow)
 {
   mFUNCTION_SETUP();
 

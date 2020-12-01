@@ -26,7 +26,7 @@ struct mOpusEncoder
   bool addedSamples;
 };
 
-mFUNCTION(mOpusEncoder_Destroy_Internal, IN_OUT mOpusEncoder *pEncoder);
+static mFUNCTION(mOpusEncoder_Destroy_Internal, IN_OUT mOpusEncoder *pEncoder);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -134,7 +134,7 @@ mFUNCTION(mOpusEncoder_Destroy, IN_OUT mPtr<mOpusEncoder> *pEncoder)
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mOpusEncoder_Destroy_Internal, IN_OUT mOpusEncoder *pEncoder)
+static mFUNCTION(mOpusEncoder_Destroy_Internal, IN_OUT mOpusEncoder *pEncoder)
 {
   mFUNCTION_SETUP();
 
@@ -169,7 +169,7 @@ struct mOpusEncoderPassive
   bool addedSamples;
 };
 
-mFUNCTION(mOpusEncoderPassive_Destroy_Internal, IN_OUT mOpusEncoderPassive *pEncoder);
+static mFUNCTION(mOpusEncoderPassive_Destroy_Internal, IN_OUT mOpusEncoderPassive *pEncoder);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -235,7 +235,7 @@ mFUNCTION(mOpusEncoderPassive_Destroy, IN_OUT mPtr<mOpusEncoderPassive> *pEncode
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mOpusEncoderPassive_Destroy_Internal, IN_OUT mOpusEncoderPassive *pEncoder)
+static mFUNCTION(mOpusEncoderPassive_Destroy_Internal, IN_OUT mOpusEncoderPassive *pEncoder)
 {
   mFUNCTION_SETUP();
 
@@ -272,12 +272,12 @@ struct mOpusFileAudioSource : mAudioSource
   volatile bool paused, nextPaused, startedPlaying;
 };
 
-mFUNCTION(mOpusFileAudioSource_Destroy_Internal, mOpusFileAudioSource *pAudioSource);
-mFUNCTION(mOpusFileAudioSource_GetBuffer_Internal, mPtr<mAudioSource> &audioSource, OUT float_t *pBuffer, const size_t bufferLength, const size_t channelIndex, OUT size_t *pBufferCount);
-mFUNCTION(mOpusFileAudioSource_MoveToNextBuffer_Internal, mPtr<mAudioSource> &audioSource, const size_t samples);
-mFUNCTION(mOpusFileAudioSource_SeekSample_Internal, mPtr<mAudioSource> &audioSource, const size_t sample);
-mFUNCTION(mOpusFileAudioSource_ConsumeBuffer_Internal, IN mOpusFileAudioSource *pAudioSource, const size_t samples);
-mFUNCTION(mOpusFileAudioSource_ReadBuffer_Internal, IN mOpusFileAudioSource *pAudioSource, const size_t samplesToLoad);
+static mFUNCTION(mOpusFileAudioSource_Destroy_Internal, mOpusFileAudioSource *pAudioSource);
+static mFUNCTION(mOpusFileAudioSource_GetBuffer_Internal, mPtr<mAudioSource> &audioSource, OUT float_t *pBuffer, const size_t bufferLength, const size_t channelIndex, OUT size_t *pBufferCount);
+static mFUNCTION(mOpusFileAudioSource_MoveToNextBuffer_Internal, mPtr<mAudioSource> &audioSource, const size_t samples);
+static mFUNCTION(mOpusFileAudioSource_SeekSample_Internal, mPtr<mAudioSource> &audioSource, const size_t sample);
+static mFUNCTION(mOpusFileAudioSource_ConsumeBuffer_Internal, IN mOpusFileAudioSource *pAudioSource, const size_t samples);
+static mFUNCTION(mOpusFileAudioSource_ReadBuffer_Internal, IN mOpusFileAudioSource *pAudioSource, const size_t samplesToLoad);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -395,7 +395,7 @@ mFUNCTION(mOpusFileAudioSource_IsPaused, OUT mPtr<mAudioSource> &audioSource, OU
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mOpusFileAudioSource_Destroy_Internal, mOpusFileAudioSource *pAudioSource)
+static mFUNCTION(mOpusFileAudioSource_Destroy_Internal, mOpusFileAudioSource *pAudioSource)
 {
   mFUNCTION_SETUP();
 
@@ -424,7 +424,7 @@ mFUNCTION(mOpusFileAudioSource_Destroy_Internal, mOpusFileAudioSource *pAudioSou
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mOpusFileAudioSource_GetBuffer_Internal, mPtr<mAudioSource> &audioSource, OUT float_t *pBuffer, const size_t bufferLength, const size_t channelIndex, OUT size_t *pBufferCount)
+static mFUNCTION(mOpusFileAudioSource_GetBuffer_Internal, mPtr<mAudioSource> &audioSource, OUT float_t *pBuffer, const size_t bufferLength, const size_t channelIndex, OUT size_t *pBufferCount)
 {
   mFUNCTION_SETUP();
 
@@ -467,7 +467,7 @@ mFUNCTION(mOpusFileAudioSource_GetBuffer_Internal, mPtr<mAudioSource> &audioSour
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mOpusFileAudioSource_MoveToNextBuffer_Internal, mPtr<mAudioSource> &audioSource, const size_t samples)
+static mFUNCTION(mOpusFileAudioSource_MoveToNextBuffer_Internal, mPtr<mAudioSource> &audioSource, const size_t samples)
 {
   mFUNCTION_SETUP();
 
@@ -501,7 +501,7 @@ mFUNCTION(mOpusFileAudioSource_MoveToNextBuffer_Internal, mPtr<mAudioSource> &au
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mOpusFileAudioSource_SeekSample_Internal, mPtr<mAudioSource> &audioSource, const size_t sample)
+static mFUNCTION(mOpusFileAudioSource_SeekSample_Internal, mPtr<mAudioSource> &audioSource, const size_t sample)
 {
   mFUNCTION_SETUP();
 
@@ -519,7 +519,7 @@ mFUNCTION(mOpusFileAudioSource_SeekSample_Internal, mPtr<mAudioSource> &audioSou
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mOpusFileAudioSource_ConsumeBuffer_Internal, IN mOpusFileAudioSource *pAudioSource, const size_t samples)
+static mFUNCTION(mOpusFileAudioSource_ConsumeBuffer_Internal, IN mOpusFileAudioSource *pAudioSource, const size_t samples)
 {
   mFUNCTION_SETUP();
 
@@ -538,7 +538,7 @@ mFUNCTION(mOpusFileAudioSource_ConsumeBuffer_Internal, IN mOpusFileAudioSource *
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mOpusFileAudioSource_ReadBuffer_Internal, IN mOpusFileAudioSource *pAudioSource, const size_t samplesToLoad)
+static mFUNCTION(mOpusFileAudioSource_ReadBuffer_Internal, IN mOpusFileAudioSource *pAudioSource, const size_t samplesToLoad)
 {
   mFUNCTION_SETUP();
 

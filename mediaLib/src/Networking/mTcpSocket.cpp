@@ -26,9 +26,9 @@ struct mTcpClient
   SOCKET socket;
 };
 
-mFUNCTION(mTcpServer_Destroy_Internal, IN_OUT mTcpServer *pTcpServer);
-mFUNCTION(mTcpClient_Destroy_Internal, IN_OUT mTcpClient *pTcpClient);
-mFUNCTION(mTcpClient_Create_Internal, OUT mPtr<mTcpClient> *pClient, IN mAllocator *pAllocator, const char *address, const uint16_t port);
+static mFUNCTION(mTcpServer_Destroy_Internal, IN_OUT mTcpServer *pTcpServer);
+static mFUNCTION(mTcpClient_Destroy_Internal, IN_OUT mTcpClient *pTcpClient);
+static mFUNCTION(mTcpClient_Create_Internal, OUT mPtr<mTcpClient> *pClient, IN mAllocator *pAllocator, const char *address, const uint16_t port);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -310,7 +310,7 @@ mFUNCTION(mTcpClient_GetConnectionInfo, mPtr<mTcpClient> &tcpClient, OUT mTcpCon
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mTcpServer_Destroy_Internal, IN_OUT mTcpServer *pTcpServer)
+static mFUNCTION(mTcpServer_Destroy_Internal, IN_OUT mTcpServer *pTcpServer)
 {
   mFUNCTION_SETUP();
 
@@ -325,7 +325,7 @@ mFUNCTION(mTcpServer_Destroy_Internal, IN_OUT mTcpServer *pTcpServer)
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mTcpClient_Destroy_Internal, IN_OUT mTcpClient *pTcpClient)
+static mFUNCTION(mTcpClient_Destroy_Internal, IN_OUT mTcpClient *pTcpClient)
 {
   mFUNCTION_SETUP();
 
@@ -341,7 +341,7 @@ mFUNCTION(mTcpClient_Destroy_Internal, IN_OUT mTcpClient *pTcpClient)
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mTcpClient_Create_Internal, OUT mPtr<mTcpClient> *pClient, IN mAllocator *pAllocator, const char *address, const uint16_t port)
+static mFUNCTION(mTcpClient_Create_Internal, OUT mPtr<mTcpClient> *pClient, IN mAllocator *pAllocator, const char *address, const uint16_t port)
 {
   mFUNCTION_SETUP();
 

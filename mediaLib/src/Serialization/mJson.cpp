@@ -17,7 +17,7 @@
   #define __M_FILE__ "De0D1tAMyKnzTHdrG4KZ9p4Y2DjGMjOlCVpcZqqAJdRR23n2graeeTdVxjda7dN2dYL+UVG+YMXrnVHI"
 #endif
 
-mFUNCTION(mJson_CheckError_Internal, IN cJSON *pJson);
+static mFUNCTION(mJson_CheckError_Internal, IN cJSON *pJson);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -36,11 +36,11 @@ struct mJsonWriter
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mJsonWriter_Destroy_Internal, IN mJsonWriter *pJsonWriter);
-mFUNCTION(mJsonWriter_GetLastInQueue_Internal, mPtr<mJsonWriter> &jsonWriter, OUT cJSON **ppJsonElement);
-mFUNCTION(mJsonWriter_GetLastInTypeQueue_Internal, mPtr<mJsonWriter> &jsonWriter, OUT mJsonWriterEntryType *pJsonElement);
-mFUNCTION(mJsonWriter_PopQueue_Internal, mPtr<mJsonWriter> &jsonWriter);
-mFUNCTION(mJsonWriter_PushQueue_Internal, mPtr<mJsonWriter> &jsonWriter, IN cJSON *pJsonElement, const mJsonWriterEntryType type);
+static mFUNCTION(mJsonWriter_Destroy_Internal, IN mJsonWriter *pJsonWriter);
+static mFUNCTION(mJsonWriter_GetLastInQueue_Internal, mPtr<mJsonWriter> &jsonWriter, OUT cJSON **ppJsonElement);
+static mFUNCTION(mJsonWriter_GetLastInTypeQueue_Internal, mPtr<mJsonWriter> &jsonWriter, OUT mJsonWriterEntryType *pJsonElement);
+static mFUNCTION(mJsonWriter_PopQueue_Internal, mPtr<mJsonWriter> &jsonWriter);
+static mFUNCTION(mJsonWriter_PushQueue_Internal, mPtr<mJsonWriter> &jsonWriter, IN cJSON *pJsonElement, const mJsonWriterEntryType type);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -654,7 +654,7 @@ mFUNCTION(mJsonWriter_ToFile, mPtr<mJsonWriter> &jsonWriter, const mString &file
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mJsonWriter_Destroy_Internal, IN mJsonWriter *pJsonWriter)
+static mFUNCTION(mJsonWriter_Destroy_Internal, IN mJsonWriter *pJsonWriter)
 {
   mFUNCTION_SETUP();
 
@@ -677,7 +677,7 @@ mFUNCTION(mJsonWriter_Destroy_Internal, IN mJsonWriter *pJsonWriter)
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mJsonWriter_GetLastInQueue_Internal, mPtr<mJsonWriter> &jsonWriter, OUT cJSON **ppJsonElement)
+static mFUNCTION(mJsonWriter_GetLastInQueue_Internal, mPtr<mJsonWriter> &jsonWriter, OUT cJSON **ppJsonElement)
 {
   mFUNCTION_SETUP();
 
@@ -692,7 +692,7 @@ mFUNCTION(mJsonWriter_GetLastInQueue_Internal, mPtr<mJsonWriter> &jsonWriter, OU
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mJsonWriter_GetLastInTypeQueue_Internal, mPtr<mJsonWriter> &jsonWriter, OUT mJsonWriterEntryType *pJsonElement)
+static mFUNCTION(mJsonWriter_GetLastInTypeQueue_Internal, mPtr<mJsonWriter> &jsonWriter, OUT mJsonWriterEntryType *pJsonElement)
 {
   mFUNCTION_SETUP();
 
@@ -707,7 +707,7 @@ mFUNCTION(mJsonWriter_GetLastInTypeQueue_Internal, mPtr<mJsonWriter> &jsonWriter
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mJsonWriter_PopQueue_Internal, mPtr<mJsonWriter> &jsonWriter)
+static mFUNCTION(mJsonWriter_PopQueue_Internal, mPtr<mJsonWriter> &jsonWriter)
 {
   mFUNCTION_SETUP();
 
@@ -729,7 +729,7 @@ mFUNCTION(mJsonWriter_PopQueue_Internal, mPtr<mJsonWriter> &jsonWriter)
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mJsonWriter_PushQueue_Internal, mPtr<mJsonWriter> &jsonWriter, IN cJSON *pJsonElement, const mJsonWriterEntryType type)
+static mFUNCTION(mJsonWriter_PushQueue_Internal, mPtr<mJsonWriter> &jsonWriter, IN cJSON *pJsonElement, const mJsonWriterEntryType type)
 {
   mFUNCTION_SETUP();
 
@@ -747,15 +747,15 @@ struct mJsonReader
   mPtr<mQueue<cJSON *>> currentBlock;
 };
 
-mFUNCTION(mJsonReader_Create_Internal, OUT mPtr<mJsonReader> *pJsonReader, IN mAllocator *pAllocator);
-mFUNCTION(mJsonReader_Destroy_Internal, IN_OUT mJsonReader *pJsonReader);
-mFUNCTION(mJsonReader_PeekLast_Internal, mPtr<mJsonReader> &jsonReader, OUT cJSON **ppJson);
-mFUNCTION(mJsonReader_PopLast_Internal, mPtr<mJsonReader> &jsonReader);
-mFUNCTION(mJsonReader_PushValue_Internal, mPtr<mJsonReader> &jsonReader, IN cJSON *pJson);
+static mFUNCTION(mJsonReader_Create_Internal, OUT mPtr<mJsonReader> *pJsonReader, IN mAllocator *pAllocator);
+static mFUNCTION(mJsonReader_Destroy_Internal, IN_OUT mJsonReader *pJsonReader);
+static mFUNCTION(mJsonReader_PeekLast_Internal, mPtr<mJsonReader> &jsonReader, OUT cJSON **ppJson);
+static mFUNCTION(mJsonReader_PopLast_Internal, mPtr<mJsonReader> &jsonReader);
+static mFUNCTION(mJsonReader_PushValue_Internal, mPtr<mJsonReader> &jsonReader, IN cJSON *pJson);
 
-mFUNCTION(mJsonReader_ReadVec2_Internal, mPtr<mJsonReader> &jsonReader, OUT mVec2f *pVec2);
-mFUNCTION(mJsonReader_ReadVec3_Internal, mPtr<mJsonReader> &jsonReader, OUT mVec3f *pVec3);
-mFUNCTION(mJsonReader_ReadVec4_Internal, mPtr<mJsonReader> &jsonReader, OUT mVec4f *pVec4);
+static mFUNCTION(mJsonReader_ReadVec2_Internal, mPtr<mJsonReader> &jsonReader, OUT mVec2f *pVec2);
+static mFUNCTION(mJsonReader_ReadVec3_Internal, mPtr<mJsonReader> &jsonReader, OUT mVec3f *pVec3);
+static mFUNCTION(mJsonReader_ReadVec4_Internal, mPtr<mJsonReader> &jsonReader, OUT mVec4f *pVec4);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -1221,7 +1221,7 @@ mFUNCTION(mJsonReader_ArrayForEach, mPtr<mJsonReader> &jsonReader, const std::fu
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mJsonReader_Create_Internal, OUT mPtr<mJsonReader> *pJsonReader, IN mAllocator *pAllocator)
+static mFUNCTION(mJsonReader_Create_Internal, OUT mPtr<mJsonReader> *pJsonReader, IN mAllocator *pAllocator)
 {
   mFUNCTION_SETUP();
 
@@ -1234,7 +1234,7 @@ mFUNCTION(mJsonReader_Create_Internal, OUT mPtr<mJsonReader> *pJsonReader, IN mA
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mJsonReader_Destroy_Internal, IN_OUT mJsonReader *pJsonReader)
+static mFUNCTION(mJsonReader_Destroy_Internal, IN_OUT mJsonReader *pJsonReader)
 {
   mFUNCTION_SETUP();
 
@@ -1256,7 +1256,7 @@ mFUNCTION(mJsonReader_Destroy_Internal, IN_OUT mJsonReader *pJsonReader)
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mJsonReader_PeekLast_Internal, mPtr<mJsonReader> &jsonReader, OUT cJSON **ppJson)
+static mFUNCTION(mJsonReader_PeekLast_Internal, mPtr<mJsonReader> &jsonReader, OUT cJSON **ppJson)
 {
   mFUNCTION_SETUP();
 
@@ -1271,7 +1271,7 @@ mFUNCTION(mJsonReader_PeekLast_Internal, mPtr<mJsonReader> &jsonReader, OUT cJSO
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mJsonReader_PopLast_Internal, mPtr<mJsonReader> &jsonReader)
+static mFUNCTION(mJsonReader_PopLast_Internal, mPtr<mJsonReader> &jsonReader)
 {
   mFUNCTION_SETUP();
 
@@ -1287,7 +1287,7 @@ mFUNCTION(mJsonReader_PopLast_Internal, mPtr<mJsonReader> &jsonReader)
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mJsonReader_PushValue_Internal, mPtr<mJsonReader> &jsonReader, IN cJSON *pJson)
+static mFUNCTION(mJsonReader_PushValue_Internal, mPtr<mJsonReader> &jsonReader, IN cJSON *pJson)
 {
   mFUNCTION_SETUP();
 
@@ -1298,7 +1298,7 @@ mFUNCTION(mJsonReader_PushValue_Internal, mPtr<mJsonReader> &jsonReader, IN cJSO
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mJson_CheckError_Internal, IN cJSON *pJson)
+static mFUNCTION(mJson_CheckError_Internal, IN cJSON *pJson)
 {
   mFUNCTION_SETUP();
 
@@ -1315,7 +1315,7 @@ mFUNCTION(mJson_CheckError_Internal, IN cJSON *pJson)
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mJsonReader_ReadVec2_Internal, mPtr<mJsonReader> &jsonReader, OUT mVec2f *pVec2)
+static mFUNCTION(mJsonReader_ReadVec2_Internal, mPtr<mJsonReader> &jsonReader, OUT mVec2f *pVec2)
 {
   mFUNCTION_SETUP();
 
@@ -1330,7 +1330,7 @@ mFUNCTION(mJsonReader_ReadVec2_Internal, mPtr<mJsonReader> &jsonReader, OUT mVec
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mJsonReader_ReadVec3_Internal, mPtr<mJsonReader> &jsonReader, OUT mVec3f *pVec3)
+static mFUNCTION(mJsonReader_ReadVec3_Internal, mPtr<mJsonReader> &jsonReader, OUT mVec3f *pVec3)
 {
   mFUNCTION_SETUP();
 
@@ -1347,7 +1347,7 @@ mFUNCTION(mJsonReader_ReadVec3_Internal, mPtr<mJsonReader> &jsonReader, OUT mVec
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mJsonReader_ReadVec4_Internal, mPtr<mJsonReader> &jsonReader, OUT mVec4f *pVec4)
+static mFUNCTION(mJsonReader_ReadVec4_Internal, mPtr<mJsonReader> &jsonReader, OUT mVec4f *pVec4)
 {
   mFUNCTION_SETUP();
 

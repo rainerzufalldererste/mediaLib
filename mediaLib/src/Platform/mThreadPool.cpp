@@ -19,7 +19,7 @@ struct mTask
   bool isAllocated = false;
 };
 
-mFUNCTION(mTask_Destroy_Internal, IN mTask *pTask);
+static mFUNCTION(mTask_Destroy_Internal, IN mTask *pTask);
 
 mFUNCTION(mTask_CreateWithLambda, OUT mTask **ppTask, IN OPTIONAL mAllocator *pAllocator, const std::function<mResult(void)> &function)
 {
@@ -216,7 +216,7 @@ mFUNCTION(mTask_GetState, IN mTask *pTask, OUT mTask_State *pTaskState)
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mTask_Destroy_Internal, IN mTask *pTask)
+static mFUNCTION(mTask_Destroy_Internal, IN mTask *pTask)
 {
   mFUNCTION_SETUP();
 
@@ -247,8 +247,8 @@ struct mThreadPool
   mPtr<mQueue<mTask *>> queue;
 };
 
-mFUNCTION(mThreadPool_Create_Internal, mThreadPool *pThreadPool, IN OPTIONAL mAllocator *pAllocator, const size_t threads);
-mFUNCTION(mThreadPool_Destroy_Internal, mThreadPool *pThreadPool);
+static mFUNCTION(mThreadPool_Create_Internal, mThreadPool *pThreadPool, IN OPTIONAL mAllocator *pAllocator, const size_t threads);
+static mFUNCTION(mThreadPool_Destroy_Internal, mThreadPool *pThreadPool);
 
 void mThreadPool_WorkerThread(mThreadPool *pThreadPool)
 {
@@ -377,7 +377,7 @@ mFUNCTION(mThreadPool_GetThreadCount, mPtr<mThreadPool> &asyncTaskHandler, OUT s
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mThreadPool_Create_Internal, mThreadPool *pThreadPool, IN OPTIONAL mAllocator *pAllocator, const size_t threads)
+static mFUNCTION(mThreadPool_Create_Internal, mThreadPool *pThreadPool, IN OPTIONAL mAllocator *pAllocator, const size_t threads)
 {
   mFUNCTION_SETUP();
 
@@ -417,7 +417,7 @@ mFUNCTION(mThreadPool_Create_Internal, mThreadPool *pThreadPool, IN OPTIONAL mAl
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mThreadPool_Destroy_Internal, mThreadPool *pThreadPool)
+static mFUNCTION(mThreadPool_Destroy_Internal, mThreadPool *pThreadPool)
 {
   mFUNCTION_SETUP();
 
@@ -486,7 +486,7 @@ struct mTasklessThreadPool
 };
 
 void mTasklessThreadPool_Destroy_Internal(IN_OUT mTasklessThreadPool *pThreadPool);
-mFUNCTION(mTasklessThreadPool_WaitForAll_Internal, mTasklessThreadPool *pThreadPool);
+static mFUNCTION(mTasklessThreadPool_WaitForAll_Internal, mTasklessThreadPool *pThreadPool);
 void mTasklessThreadPool_ThreadFunc_Internal(mTasklessThreadPool *pThreadPool, const size_t threadIndex);
 
 //////////////////////////////////////////////////////////////////////////
@@ -585,7 +585,7 @@ void mTasklessThreadPool_Destroy_Internal(IN_OUT mTasklessThreadPool *pThreadPoo
   pThreadPool->~mTasklessThreadPool();
 }
 
-mFUNCTION(mTasklessThreadPool_WaitForAll_Internal, mTasklessThreadPool *pThreadPool)
+static mFUNCTION(mTasklessThreadPool_WaitForAll_Internal, mTasklessThreadPool *pThreadPool)
 {
   mFUNCTION_SETUP();
 

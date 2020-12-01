@@ -37,10 +37,10 @@ struct mAudioEngine
   volatile float_t masterVolume;
 };
 
-mFUNCTION(mAudioEngine_Destroy_Internal, IN_OUT mAudioEngine *pAudioEngine);
-void SDLCALL mAudioEngine_AudioCallback_Internal(IN void *pUserData, OUT uint8_t *pStream, const int32_t length);
-mFUNCTION(mAudioEngine_ManagedAudioCallback_Internal, IN mAudioEngine *pAudioEngine, OUT float_t *pStream, const size_t length);
-mFUNCTION(mAudioEngine_PrepareNextAudioBuffer_Internal, IN mAudioEngine *pAudioEngine);
+static mFUNCTION(mAudioEngine_Destroy_Internal, IN_OUT mAudioEngine *pAudioEngine);
+static void SDLCALL mAudioEngine_AudioCallback_Internal(IN void *pUserData, OUT uint8_t *pStream, const int32_t length);
+static mFUNCTION(mAudioEngine_ManagedAudioCallback_Internal, IN mAudioEngine *pAudioEngine, OUT float_t *pStream, const size_t length);
+static mFUNCTION(mAudioEngine_PrepareNextAudioBuffer_Internal, IN mAudioEngine *pAudioEngine);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -160,7 +160,7 @@ mFUNCTION(mAudioEngine_AddAudioSource, mPtr<mAudioEngine> &audioEngine, mPtr<mAu
 
 //////////////////////////////////////////////////////////////////////////
 
-void SDLCALL mAudioEngine_AudioCallback_Internal(IN void *pUserData, OUT uint8_t *pStream, const int32_t length)
+static void SDLCALL mAudioEngine_AudioCallback_Internal(IN void *pUserData, OUT uint8_t *pStream, const int32_t length)
 {
   mAudioEngine *pAudioEngine = (mAudioEngine *)pUserData;
 
@@ -198,7 +198,7 @@ epilogue:
   mASSERT_DEBUG(mSUCCEEDED(mSTDRESULT), "Audio Engine Callback failed with error code %" PRIx64 ".", (uint64_t)mSTDRESULT);
 }
 
-mFUNCTION(mAudioEngine_PrepareNextAudioBuffer_Internal, IN mAudioEngine *pAudioEngine)
+static mFUNCTION(mAudioEngine_PrepareNextAudioBuffer_Internal, IN mAudioEngine *pAudioEngine)
 {
   mFUNCTION_SETUP();
 
@@ -247,7 +247,7 @@ mFUNCTION(mAudioEngine_PrepareNextAudioBuffer_Internal, IN mAudioEngine *pAudioE
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mAudioEngine_ManagedAudioCallback_Internal, IN mAudioEngine *pAudioEngine, OUT float_t *pStream, const size_t length)
+static mFUNCTION(mAudioEngine_ManagedAudioCallback_Internal, IN mAudioEngine *pAudioEngine, OUT float_t *pStream, const size_t length)
 {
   mFUNCTION_SETUP();
 
@@ -354,7 +354,7 @@ mFUNCTION(mAudioEngine_ManagedAudioCallback_Internal, IN mAudioEngine *pAudioEng
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mAudioEngine_Destroy_Internal, IN_OUT mAudioEngine *pAudioEngine)
+static mFUNCTION(mAudioEngine_Destroy_Internal, IN_OUT mAudioEngine *pAudioEngine)
 {
   mFUNCTION_SETUP();
 

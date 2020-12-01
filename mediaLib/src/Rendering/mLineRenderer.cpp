@@ -54,7 +54,7 @@ static const char mLineRenderer_FragmentShader[] = mGLSL(
   }
 );
 
-mFUNCTION(mLineRenderer_Destroy_Internal, OUT mLineRenderer *pLineRenderer);
+static mFUNCTION(mLineRenderer_Destroy_Internal, OUT mLineRenderer *pLineRenderer);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -332,7 +332,7 @@ mFUNCTION(mLineRenderer_End, mPtr<mLineRenderer> &lineRenderer)
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mLineRenderer_Destroy_Internal, OUT mLineRenderer *pLineRenderer)
+static mFUNCTION(mLineRenderer_Destroy_Internal, OUT mLineRenderer *pLineRenderer)
 {
   mFUNCTION_SETUP();
 

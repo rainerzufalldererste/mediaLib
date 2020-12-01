@@ -37,7 +37,7 @@ struct mGameControllerState
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mGameControllerState_Destroy_Internal, IN_OUT mGameControllerState *pControllerState);
+static mFUNCTION(mGameControllerState_Destroy_Internal, IN_OUT mGameControllerState *pControllerState);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -367,7 +367,7 @@ mFUNCTION(mGameControllerState_PlayHapticEffect, mPtr<mGameControllerState> &con
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mGameControllerState_Destroy_Internal, IN_OUT mGameControllerState *pControllerState)
+static mFUNCTION(mGameControllerState_Destroy_Internal, IN_OUT mGameControllerState *pControllerState)
 {
   mFUNCTION_SETUP();
 

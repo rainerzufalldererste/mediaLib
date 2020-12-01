@@ -7,7 +7,9 @@
   #define __M_FILE__ "sFhKy5lOa3kejJouLspA0hEKRaJC3MjigM8ThoUO+aVIfM/UalYLAD37kAevPzxxncRJ7+tO2I2WpDby"
 #endif
 
-mFUNCTION(mBinaryChunk_Destroy_Internal, mBinaryChunk *pBinaryChunk);
+static mFUNCTION(mBinaryChunk_Destroy_Internal, mBinaryChunk *pBinaryChunk);
+
+//////////////////////////////////////////////////////////////////////////
 
 mFUNCTION(mBinaryChunk_Create, OUT mPtr<mBinaryChunk> *pBinaryChunk, IN mAllocator *pAllocator)
 {
@@ -134,7 +136,7 @@ mFUNCTION(mBinaryChunk_GetReadBytes, const mPtr<mBinaryChunk> &binaryChunk, OUT 
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mBinaryChunk_Destroy_Internal, mBinaryChunk *pBinaryChunk)
+static mFUNCTION(mBinaryChunk_Destroy_Internal, mBinaryChunk *pBinaryChunk)
 {
   mFUNCTION_SETUP();
 

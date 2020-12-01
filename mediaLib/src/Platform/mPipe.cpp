@@ -14,7 +14,7 @@ struct mPipe
 
 volatile int64_t PipeIndex = 0;
 
-mFUNCTION(mPipe_Destroy_Internal, IN_OUT mPipe *pPipe);
+static mFUNCTION(mPipe_Destroy_Internal, IN_OUT mPipe *pPipe);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -215,7 +215,7 @@ mFUNCTION(mPipe_GetWriteHandle, mPtr<mPipe> &pipe, OUT HANDLE *pWriteHandle)
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mPipe_Destroy_Internal, IN_OUT mPipe *pPipe)
+static mFUNCTION(mPipe_Destroy_Internal, IN_OUT mPipe *pPipe)
 {
   mFUNCTION_SETUP();
 

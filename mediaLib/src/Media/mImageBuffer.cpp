@@ -41,8 +41,10 @@ struct WriteFuncData
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mImageBuffer_Create_Iternal, mPtr<mImageBuffer> *pImageBuffer, IN OPTIONAL mAllocator *pAllocator);
-mFUNCTION(mImageBuffer_Destroy_Iternal, mImageBuffer *pImageBuffer);
+static mFUNCTION(mImageBuffer_Create_Iternal, mPtr<mImageBuffer> *pImageBuffer, IN OPTIONAL mAllocator *pAllocator);
+static mFUNCTION(mImageBuffer_Destroy_Iternal, mImageBuffer *pImageBuffer);
+
+//////////////////////////////////////////////////////////////////////////
 
 mFUNCTION(mImageBuffer_Create, OUT mPtr<mImageBuffer> *pImageBuffer, IN OPTIONAL mAllocator *pAllocator)
 {
@@ -690,7 +692,7 @@ mFUNCTION(mImageBuffer_FlipY, mPtr<mImageBuffer> &imageBuffer)
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mImageBuffer_Destroy_Iternal, mImageBuffer *pImageBuffer)
+static mFUNCTION(mImageBuffer_Destroy_Iternal, mImageBuffer *pImageBuffer)
 {
   mFUNCTION_SETUP();
 
@@ -710,7 +712,7 @@ mFUNCTION(mImageBuffer_Destroy_Iternal, mImageBuffer *pImageBuffer)
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mImageBuffer_Create_Iternal, mPtr<mImageBuffer> *pImageBuffer, IN OPTIONAL mAllocator *pAllocator)
+static mFUNCTION(mImageBuffer_Create_Iternal, mPtr<mImageBuffer> *pImageBuffer, IN OPTIONAL mAllocator *pAllocator)
 {
   mFUNCTION_SETUP();
 

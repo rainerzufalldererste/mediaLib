@@ -78,8 +78,8 @@ mFUNCTION(mProcess_GetRunningProcesses, OUT mPtr<mQueue<mProcessInfo>> *pProcess
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mProcess_Destroy_Internal, IN_OUT mProcess *pProcess);
-mFUNCTION(mProcess_Run_Internal, const mString &executable, const mString &workingDirectory, const mString &params, OPTIONAL mPtr<mPipe> stdinPipe, OPTIONAL mPtr<mPipe> stdoutPipe, OPTIONAL mPtr<mPipe> stderrPipe, OUT OPTIONAL HANDLE *pProcessHandle, const mProcess_CreationFlags flags);
+static mFUNCTION(mProcess_Destroy_Internal, IN_OUT mProcess *pProcess);
+static mFUNCTION(mProcess_Run_Internal, const mString &executable, const mString &workingDirectory, const mString &params, OPTIONAL mPtr<mPipe> stdinPipe, OPTIONAL mPtr<mPipe> stdoutPipe, OPTIONAL mPtr<mPipe> stderrPipe, OUT OPTIONAL HANDLE *pProcessHandle, const mProcess_CreationFlags flags);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -309,7 +309,7 @@ mFUNCTION(mProcess_RunAsElevated, const mString &executable, const mString &work
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mProcess_Destroy_Internal, IN_OUT mProcess *pProcess)
+static mFUNCTION(mProcess_Destroy_Internal, IN_OUT mProcess *pProcess)
 {
   mFUNCTION_SETUP();
 
@@ -324,7 +324,7 @@ mFUNCTION(mProcess_Destroy_Internal, IN_OUT mProcess *pProcess)
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mProcess_Run_Internal, const mString &executable, const mString &workingDirectory, const mString &params, OPTIONAL mPtr<mPipe> stdinPipe, OPTIONAL mPtr<mPipe> stdoutPipe, OPTIONAL mPtr<mPipe> stderrPipe, OUT OPTIONAL HANDLE *pProcessHandle, const mProcess_CreationFlags flags)
+static mFUNCTION(mProcess_Run_Internal, const mString &executable, const mString &workingDirectory, const mString &params, OPTIONAL mPtr<mPipe> stdinPipe, OPTIONAL mPtr<mPipe> stdoutPipe, OPTIONAL mPtr<mPipe> stderrPipe, OUT OPTIONAL HANDLE *pProcessHandle, const mProcess_CreationFlags flags)
 {
   mFUNCTION_SETUP();
 

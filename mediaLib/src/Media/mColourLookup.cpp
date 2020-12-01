@@ -9,7 +9,7 @@
   #define __M_FILE__ "7i1fMiMlihfUmO475fdfoo8P8x+ExWgNW3dx4SdnDn0TEzWzrVfbA8E939cVxWSuz39b+0HyBiB9gcq6"
 #endif
 
-mFUNCTION(mColourLookup_Destroy_Internal, IN mColourLookup *pColourLookup);
+static mFUNCTION(mColourLookup_Destroy_Internal, IN mColourLookup *pColourLookup);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -217,7 +217,7 @@ mFUNCTION(mColourLookup_WriteToFile, mPtr<mColourLookup> &colourLookup, const mS
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mColourLookup_Destroy_Internal, IN mColourLookup *pColourLookup)
+static mFUNCTION(mColourLookup_Destroy_Internal, IN mColourLookup *pColourLookup)
 {
   mFUNCTION_SETUP();
 

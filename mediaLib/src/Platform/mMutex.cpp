@@ -14,7 +14,7 @@ struct mMutex
   mAllocator *pAllocator;
 };
 
-mFUNCTION(mMutex_Destroy_Internal, IN mMutex *pMutex);
+static mFUNCTION(mMutex_Destroy_Internal, IN mMutex *pMutex);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -71,7 +71,7 @@ mFUNCTION(mMutex_Unlock, IN mMutex *pMutex)
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mMutex_Destroy_Internal, IN mMutex *pMutex)
+static mFUNCTION(mMutex_Destroy_Internal, IN mMutex *pMutex)
 {
   mFUNCTION_SETUP();
 
@@ -90,7 +90,7 @@ struct mRecursiveMutex
   mAllocator *pAllocator;
 };
 
-mFUNCTION(mRecursiveMutex_Destroy_Internal, IN mRecursiveMutex *pMutex);
+static mFUNCTION(mRecursiveMutex_Destroy_Internal, IN mRecursiveMutex *pMutex);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -147,7 +147,7 @@ mFUNCTION(mRecursiveMutex_Unlock, IN mRecursiveMutex *pMutex)
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mRecursiveMutex_Destroy_Internal, IN mRecursiveMutex *pMutex)
+static mFUNCTION(mRecursiveMutex_Destroy_Internal, IN mRecursiveMutex *pMutex)
 {
   mFUNCTION_SETUP();
 

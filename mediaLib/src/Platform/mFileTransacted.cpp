@@ -29,9 +29,9 @@ struct mFileTransaction
   bool hasBeenTransacted;
 };
 
-mFUNCTION(mFileTransaction_Destroy_Internal, IN_OUT mFileTransaction *pTransaction);
+static mFUNCTION(mFileTransaction_Destroy_Internal, IN_OUT mFileTransaction *pTransaction);
 
-mFUNCTION(mFileTransaction_CreateDirectoryRecursive_Internal, mPtr<mFileTransaction> &transaction, const wchar_t *directoryPath);
+static mFUNCTION(mFileTransaction_CreateDirectoryRecursive_Internal, mPtr<mFileTransaction> &transaction, const wchar_t *directoryPath);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -772,7 +772,7 @@ mFUNCTION(mFileTransaction_MoveFile, mPtr<mFileTransaction> &transaction, const 
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mFileTransaction_Destroy_Internal, IN_OUT mFileTransaction *pTransaction)
+static mFUNCTION(mFileTransaction_Destroy_Internal, IN_OUT mFileTransaction *pTransaction)
 {
   mFUNCTION_SETUP();
 
@@ -785,7 +785,7 @@ mFUNCTION(mFileTransaction_Destroy_Internal, IN_OUT mFileTransaction *pTransacti
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mFileTransaction_CreateDirectoryRecursive_Internal, mPtr<mFileTransaction> &transaction, const wchar_t *directoryPath)
+static mFUNCTION(mFileTransaction_CreateDirectoryRecursive_Internal, mPtr<mFileTransaction> &transaction, const wchar_t *directoryPath)
 {
   mFUNCTION_SETUP();
 

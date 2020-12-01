@@ -16,7 +16,7 @@
   #define __M_FILE__ "YB7sS5KIxXOP9uQiEc357/Krmb8HcPP8fm5dXyPXgickcXLGZ6lez92bt71hXzGqP9KGuQ36EFUzh8Hq"
 #endif
 
-void mAudio_ExtractFloatChannelFromInterleavedFloat_AVX2(size_t &sampleIndex, const size_t sampleCount, OUT float_t *pChannel, const size_t channelIndex, IN float_t *pInterleaved)
+static void mAudio_ExtractFloatChannelFromInterleavedFloat_AVX2(size_t &sampleIndex, const size_t sampleCount, OUT float_t *pChannel, const size_t channelIndex, IN float_t *pInterleaved)
 {
   for (; sampleIndex < sampleCount - 7; sampleIndex += 8)
   {
@@ -76,7 +76,7 @@ mFUNCTION(mAudio_ExtractFloatChannelFromInterleavedFloat, OUT float_t *pChannel,
   mRETURN_SUCCESS();
 }
 
-void mAudio_ExtractFloatChannelFromInterleavedInt16_SSE41(size_t &sample, OUT float_t *pChannel, IN int16_t *pInterleaved, const size_t sampleCount)
+static void mAudio_ExtractFloatChannelFromInterleavedInt16_SSE41(size_t &sample, OUT float_t *pChannel, IN int16_t *pInterleaved, const size_t sampleCount)
 {
   const __m128 div = _mm_set1_ps(1.f / (float_t)(INT16_MAX));
   constexpr size_t loopSize = (sizeof(__m128i) / sizeof(int16_t));
@@ -136,7 +136,7 @@ mFUNCTION(mAudio_ExtractFloatChannelFromInterleavedInt16, OUT float_t *pChannel,
   mRETURN_SUCCESS();
 }
 
-void mAudio_ConvertInt16ToFloat_AVX2(OUT float_t *pDestination, IN const int16_t *pSource, const size_t sampleCount)
+static void mAudio_ConvertInt16ToFloat_AVX2(OUT float_t *pDestination, IN const int16_t *pSource, const size_t sampleCount)
 {
   const float_t div = 1.f / mMaxValue<int16_t>();
   const __m256 mmdiv = _mm256_set1_ps(div);
@@ -155,7 +155,7 @@ void mAudio_ConvertInt16ToFloat_AVX2(OUT float_t *pDestination, IN const int16_t
     pDestination[sampleIndex] = (float_t)pSource[sampleIndex] * div;
 }
 
-void mAudio_ConvertInt16ToFloat_SSE41(OUT float_t *pDestination, IN const int16_t *pSource, const size_t sampleCount)
+static void mAudio_ConvertInt16ToFloat_SSE41(OUT float_t *pDestination, IN const int16_t *pSource, const size_t sampleCount)
 {
   const float_t div = 1.f / mMaxValue<int16_t>();
   const __m128 mmdiv = _mm_set1_ps(div);
@@ -201,7 +201,7 @@ mFUNCTION(mAudio_ConvertInt16ToFloat, OUT float_t *pDestination, IN const int16_
   mRETURN_SUCCESS();
 }
 
-void mAudio_ConvertFloatToInt16WithDithering_AVX2(size_t &sampleIndex, IN int16_t *pDestination, OUT const float_t *pSource, const size_t sampleCount)
+static void mAudio_ConvertFloatToInt16WithDithering_AVX2(size_t &sampleIndex, IN int16_t *pDestination, OUT const float_t *pSource, const size_t sampleCount)
 {
   const float_t mul = mMaxValue<int16_t>();
 
@@ -236,7 +236,7 @@ void mAudio_ConvertFloatToInt16WithDithering_AVX2(size_t &sampleIndex, IN int16_
     pDestination[sampleIndex] = mClamp((int16_t)roundf(pSource[sampleIndex] * mul), mMinValue<int16_t>(), mMaxValue<int16_t>());
 }
 
-void mAudio_ConvertFloatToInt16WithDithering_SSE41(size_t &sampleIndex, IN int16_t *pDestination, OUT const float_t *pSource, const size_t sampleCount)
+static void mAudio_ConvertFloatToInt16WithDithering_SSE41(size_t &sampleIndex, IN int16_t *pDestination, OUT const float_t *pSource, const size_t sampleCount)
 {
   typedef __m128 simd_t;
   typedef __m128i isimd_t;
@@ -320,7 +320,7 @@ mFUNCTION(mAudio_ConvertFloatToInt16WithDithering, IN int16_t *pDestination, OUT
   mRETURN_SUCCESS();
 }
 
-void mAudio_ConvertFloatToInt16WithDitheringAndFactor_AVX2(size_t &sampleIndex, IN int16_t *pDestination, OUT const float_t *pSource, const size_t sampleCount, const float_t factor)
+static void mAudio_ConvertFloatToInt16WithDitheringAndFactor_AVX2(size_t &sampleIndex, IN int16_t *pDestination, OUT const float_t *pSource, const size_t sampleCount, const float_t factor)
 {
   const float_t mul = mMaxValue<int16_t>() * factor;
 
@@ -355,7 +355,7 @@ void mAudio_ConvertFloatToInt16WithDitheringAndFactor_AVX2(size_t &sampleIndex, 
     pDestination[sampleIndex] = mClamp((int16_t)roundf(pSource[sampleIndex] * mul), mMinValue<int16_t>(), mMaxValue<int16_t>());
 }
 
-void mAudio_ConvertFloatToInt16WithDitheringAndFactor_SSE41(size_t &sampleIndex, IN int16_t *pDestination, OUT const float_t *pSource, const size_t sampleCount, const float_t factor)
+static void mAudio_ConvertFloatToInt16WithDitheringAndFactor_SSE41(size_t &sampleIndex, IN int16_t *pDestination, OUT const float_t *pSource, const size_t sampleCount, const float_t factor)
 {
   typedef __m128 simd_t;
   typedef __m128i isimd_t;
@@ -764,7 +764,7 @@ mFUNCTION(mAudio_ApplyVolumeFloat, OUT float_t *pAudio, const float_t volume, co
   mRETURN_SUCCESS();
 }
 
-void mAudio_AddWithVolumeFloat_AVX(OUT float_t *pDestination, IN float_t *pSource, const float_t volume, const size_t sampleCount)
+static void mAudio_AddWithVolumeFloat_AVX(OUT float_t *pDestination, IN float_t *pSource, const float_t volume, const size_t sampleCount)
 {
   size_t sampleIndex = 0;
 
@@ -996,7 +996,7 @@ mFUNCTION(mAudio_ResampleMonoToMonoWithVolume, OUT float_t *pDestination, IN flo
   mRETURN_SUCCESS();
 }
 
-void mAudio_InplaceMidSideToStereo_AVX(IN_OUT float_t *pMidToLeft, IN_OUT float_t *pSideToRight, const size_t sampleCount)
+static void mAudio_InplaceMidSideToStereo_AVX(IN_OUT float_t *pMidToLeft, IN_OUT float_t *pSideToRight, const size_t sampleCount)
 {
   size_t sampleIndex = 0;
 
@@ -1097,7 +1097,7 @@ mFUNCTION(mAudio_InplaceMidSideToStereo, IN_OUT float_t *pMidToLeft, IN_OUT floa
   mRETURN_SUCCESS();
 }
 
-void mAudio_InplaceMidLateralLongitudinalToQuadro_AVX(IN_OUT float_t *pMidToFrontLeft, IN_OUT float_t *pLateralToFrontRight, IN_OUT float_t *pLongitudinalToBackLeft, OUT float_t *pBackRight, const size_t sampleCount)
+static void mAudio_InplaceMidLateralLongitudinalToQuadro_AVX(IN_OUT float_t *pMidToFrontLeft, IN_OUT float_t *pLateralToFrontRight, IN_OUT float_t *pLongitudinalToBackLeft, OUT float_t *pBackRight, const size_t sampleCount)
 {
   float_t *pFrontLeft = pMidToFrontLeft;
   float_t *pFrontRight = pLateralToFrontRight;
@@ -1298,7 +1298,7 @@ mFUNCTION(mAudio_InterleavedQuadroMidLateralLFELongitudinalToDualInterleavedSter
   mRETURN_SUCCESS();
 }
 
-void mAudio_GetAbsMax_AVX(IN float_t *pBuffer, const size_t count, OUT float_t *pMax)
+static void mAudio_GetAbsMax_AVX(IN float_t *pBuffer, const size_t count, OUT float_t *pMax)
 {
   if (count * sizeof(float_t) < 64)
   {
@@ -1440,9 +1440,9 @@ struct mAudioSourceWav : mAudioSource
   bool endReached;
 };
 
-mFUNCTION(mAudioSourceWav_Destroy_Internal, IN_OUT mAudioSourceWav *pAudioSource);
-mFUNCTION(mAudioSourceWav_GetBuffer_Internal, mPtr<mAudioSource> &audioSource, OUT float_t *pBuffer, const size_t bufferLength, const size_t channelIndex, OUT size_t *pBufferCount);
-mFUNCTION(mAudioSourceWav_MoveToNextBuffer_Internal, mPtr<mAudioSource> &audioSource, const size_t samples);
+static mFUNCTION(mAudioSourceWav_Destroy_Internal, IN_OUT mAudioSourceWav *pAudioSource);
+static mFUNCTION(mAudioSourceWav_GetBuffer_Internal, mPtr<mAudioSource> &audioSource, OUT float_t *pBuffer, const size_t bufferLength, const size_t channelIndex, OUT size_t *pBufferCount);
+static mFUNCTION(mAudioSourceWav_MoveToNextBuffer_Internal, mPtr<mAudioSource> &audioSource, const size_t samples);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -1495,7 +1495,7 @@ mFUNCTION(mAudioSourceWav_Destroy, IN_OUT mPtr<mAudioSource> *pAudioSource)
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mAudioSourceWav_Destroy_Internal, IN_OUT mAudioSourceWav *pAudioSource)
+static mFUNCTION(mAudioSourceWav_Destroy_Internal, IN_OUT mAudioSourceWav *pAudioSource)
 {
   mFUNCTION_SETUP();
 
@@ -1506,7 +1506,7 @@ mFUNCTION(mAudioSourceWav_Destroy_Internal, IN_OUT mAudioSourceWav *pAudioSource
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mAudioSourceWav_GetBuffer_Internal, mPtr<mAudioSource> &audioSource, OUT float_t *pBuffer, const size_t bufferLength, const size_t channelIndex, OUT size_t *pBufferCount)
+static mFUNCTION(mAudioSourceWav_GetBuffer_Internal, mPtr<mAudioSource> &audioSource, OUT float_t *pBuffer, const size_t bufferLength, const size_t channelIndex, OUT size_t *pBufferCount)
 {
   mFUNCTION_SETUP();
 
@@ -1535,7 +1535,7 @@ mFUNCTION(mAudioSourceWav_GetBuffer_Internal, mPtr<mAudioSource> &audioSource, O
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mAudioSourceWav_MoveToNextBuffer_Internal, mPtr<mAudioSource> &audioSource, const size_t samples)
+static mFUNCTION(mAudioSourceWav_MoveToNextBuffer_Internal, mPtr<mAudioSource> &audioSource, const size_t samples)
 {
   mFUNCTION_SETUP();
 
@@ -1561,10 +1561,10 @@ struct mAudioSourceResampler : mAudioSource
   mAudioSourceResampler_Quality resampleQuality;
 };
 
-mFUNCTION(mAudioSourceResampler_Destroy_Internal, mAudioSourceResampler *pResampler);
-mFUNCTION(mAudioSourceResampler_GetBuffer_Internal, mPtr<mAudioSource> &audioSource, OUT float_t *pBuffer, const size_t bufferLength, const size_t channelIndex, OUT size_t *pBufferCount);
-mFUNCTION(mAudioSourceResampler_MoveToNextBuffer_Internal, mPtr<mAudioSource> &audioSource, const size_t samples);
-mFUNCTION(mAudioSourceResampler_SeekSample_Internal, mPtr<mAudioSource> &audioSource, const size_t sample);
+static mFUNCTION(mAudioSourceResampler_Destroy_Internal, mAudioSourceResampler *pResampler);
+static mFUNCTION(mAudioSourceResampler_GetBuffer_Internal, mPtr<mAudioSource> &audioSource, OUT float_t *pBuffer, const size_t bufferLength, const size_t channelIndex, OUT size_t *pBufferCount);
+static mFUNCTION(mAudioSourceResampler_MoveToNextBuffer_Internal, mPtr<mAudioSource> &audioSource, const size_t samples);
+static mFUNCTION(mAudioSourceResampler_SeekSample_Internal, mPtr<mAudioSource> &audioSource, const size_t sample);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -1632,7 +1632,7 @@ mFUNCTION(mAudioSourceResampler_Create, OUT mPtr<mAudioSource> *pResampler, IN m
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mAudioSourceResampler_Destroy_Internal, mAudioSourceResampler *pResampler)
+static mFUNCTION(mAudioSourceResampler_Destroy_Internal, mAudioSourceResampler *pResampler)
 {
   mFUNCTION_SETUP();
 
@@ -1662,7 +1662,7 @@ mFUNCTION(mAudioSourceResampler_Destroy_Internal, mAudioSourceResampler *pResamp
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mAudioSourceResampler_GetBuffer_Internal, mPtr<mAudioSource> &audioSource, OUT float_t *pBuffer, const size_t bufferLength, const size_t channelIndex, OUT size_t *pBufferCount)
+static mFUNCTION(mAudioSourceResampler_GetBuffer_Internal, mPtr<mAudioSource> &audioSource, OUT float_t *pBuffer, const size_t bufferLength, const size_t channelIndex, OUT size_t *pBufferCount)
 {
   mFUNCTION_SETUP();
 
@@ -1750,7 +1750,7 @@ mFUNCTION(mAudioSourceResampler_GetBuffer_Internal, mPtr<mAudioSource> &audioSou
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mAudioSourceResampler_MoveToNextBuffer_Internal, mPtr<mAudioSource> &audioSource, const size_t samples)
+static mFUNCTION(mAudioSourceResampler_MoveToNextBuffer_Internal, mPtr<mAudioSource> &audioSource, const size_t samples)
 {
   mFUNCTION_SETUP();
 
@@ -1772,7 +1772,7 @@ mFUNCTION(mAudioSourceResampler_MoveToNextBuffer_Internal, mPtr<mAudioSource> &a
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mAudioSourceResampler_SeekSample_Internal, mPtr<mAudioSource> &audioSource, const size_t sample)
+static mFUNCTION(mAudioSourceResampler_SeekSample_Internal, mPtr<mAudioSource> &audioSource, const size_t sample)
 {
   mFUNCTION_SETUP();
 
@@ -1821,10 +1821,10 @@ struct mMidSideStereoDecoder : mAudioSource
   bool retrievedNewBuffersThisFrame;
 };
 
-mFUNCTION(mMidSideStereoDecoder_Destroy_Internal, IN_OUT mMidSideStereoDecoder *pDecoder);
-mFUNCTION(mMidSideStereoDecoder_GetBuffer_Internal, mPtr<mAudioSource> &audioSource, OUT float_t *pBuffer, const size_t bufferLength, const size_t channelIndex, OUT size_t *pBufferCount);
-mFUNCTION(mMidSideStereoDecoder_MoveToNextBuffer_Internal, mPtr<mAudioSource> &audioSource, const size_t samples);
-mFUNCTION(mMidSideStereoDecoder_SeekSample_Internal, mPtr<mAudioSource> &audioSource, const size_t sample);
+static mFUNCTION(mMidSideStereoDecoder_Destroy_Internal, IN_OUT mMidSideStereoDecoder *pDecoder);
+static mFUNCTION(mMidSideStereoDecoder_GetBuffer_Internal, mPtr<mAudioSource> &audioSource, OUT float_t *pBuffer, const size_t bufferLength, const size_t channelIndex, OUT size_t *pBufferCount);
+static mFUNCTION(mMidSideStereoDecoder_MoveToNextBuffer_Internal, mPtr<mAudioSource> &audioSource, const size_t samples);
+static mFUNCTION(mMidSideStereoDecoder_SeekSample_Internal, mPtr<mAudioSource> &audioSource, const size_t sample);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -1860,7 +1860,7 @@ mFUNCTION(mMidSideStereoDecoder_Create, OUT mPtr<mAudioSource> *pMidSideStereoDe
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mMidSideStereoDecoder_Destroy_Internal, IN_OUT mMidSideStereoDecoder *pDecoder)
+static mFUNCTION(mMidSideStereoDecoder_Destroy_Internal, IN_OUT mMidSideStereoDecoder *pDecoder)
 {
   mFUNCTION_SETUP();
 
@@ -1874,7 +1874,7 @@ mFUNCTION(mMidSideStereoDecoder_Destroy_Internal, IN_OUT mMidSideStereoDecoder *
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mMidSideStereoDecoder_GetBuffer_Internal, mPtr<mAudioSource> &audioSource, OUT float_t *pBuffer, const size_t bufferLength, const size_t channelIndex, OUT size_t *pBufferCount)
+static mFUNCTION(mMidSideStereoDecoder_GetBuffer_Internal, mPtr<mAudioSource> &audioSource, OUT float_t *pBuffer, const size_t bufferLength, const size_t channelIndex, OUT size_t *pBufferCount)
 {
   mFUNCTION_SETUP();
 
@@ -1913,7 +1913,7 @@ mFUNCTION(mMidSideStereoDecoder_GetBuffer_Internal, mPtr<mAudioSource> &audioSou
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mMidSideStereoDecoder_MoveToNextBuffer_Internal, mPtr<mAudioSource> &audioSource, const size_t samples)
+static mFUNCTION(mMidSideStereoDecoder_MoveToNextBuffer_Internal, mPtr<mAudioSource> &audioSource, const size_t samples)
 {
   mFUNCTION_SETUP();
 
@@ -1935,7 +1935,7 @@ mFUNCTION(mMidSideStereoDecoder_MoveToNextBuffer_Internal, mPtr<mAudioSource> &a
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mMidSideStereoDecoder_SeekSample_Internal, mPtr<mAudioSource> &audioSource, const size_t sample)
+static mFUNCTION(mMidSideStereoDecoder_SeekSample_Internal, mPtr<mAudioSource> &audioSource, const size_t sample)
 {
   mFUNCTION_SETUP();
 
@@ -1968,9 +1968,9 @@ struct mMidSideSideQuadroDecoder : mAudioSource
   bool retrievedNewBuffersThisFrame;
 };
 
-mFUNCTION(mMidSideSideQuadroDecoder_Destroy_Internal, IN_OUT mMidSideSideQuadroDecoder *pDecoder);
-mFUNCTION(mMidSideSideQuadroDecoder_GetBuffer_Internal, mPtr<mAudioSource> &audioSource, OUT float_t *pBuffer, const size_t bufferLength, const size_t channelIndex, OUT size_t *pBufferCount);
-mFUNCTION(mMidSideSideQuadroDecoder_MoveToNextBuffer_Internal, mPtr<mAudioSource> &audioSource, const size_t samples);
+static mFUNCTION(mMidSideSideQuadroDecoder_Destroy_Internal, IN_OUT mMidSideSideQuadroDecoder *pDecoder);
+static mFUNCTION(mMidSideSideQuadroDecoder_GetBuffer_Internal, mPtr<mAudioSource> &audioSource, OUT float_t *pBuffer, const size_t bufferLength, const size_t channelIndex, OUT size_t *pBufferCount);
+static mFUNCTION(mMidSideSideQuadroDecoder_MoveToNextBuffer_Internal, mPtr<mAudioSource> &audioSource, const size_t samples);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -2011,7 +2011,7 @@ mFUNCTION(mMidSideSideQuadroDecoder_Create, OUT mPtr<mAudioSource> *pMidSideSter
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mMidSideSideQuadroDecoder_Destroy_Internal, IN_OUT mMidSideSideQuadroDecoder *pDecoder)
+static mFUNCTION(mMidSideSideQuadroDecoder_Destroy_Internal, IN_OUT mMidSideSideQuadroDecoder *pDecoder)
 {
   mFUNCTION_SETUP();
 
@@ -2027,7 +2027,7 @@ mFUNCTION(mMidSideSideQuadroDecoder_Destroy_Internal, IN_OUT mMidSideSideQuadroD
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mMidSideSideQuadroDecoder_GetBuffer_Internal, mPtr<mAudioSource> &audioSource, OUT float_t *pBuffer, const size_t bufferLength, const size_t channelIndex, OUT size_t *pBufferCount)
+static mFUNCTION(mMidSideSideQuadroDecoder_GetBuffer_Internal, mPtr<mAudioSource> &audioSource, OUT float_t *pBuffer, const size_t bufferLength, const size_t channelIndex, OUT size_t *pBufferCount)
 {
   mFUNCTION_SETUP();
 
@@ -2082,7 +2082,7 @@ mFUNCTION(mMidSideSideQuadroDecoder_GetBuffer_Internal, mPtr<mAudioSource> &audi
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mMidSideSideQuadroDecoder_MoveToNextBuffer_Internal, mPtr<mAudioSource> &audioSource, const size_t samples)
+static mFUNCTION(mMidSideSideQuadroDecoder_MoveToNextBuffer_Internal, mPtr<mAudioSource> &audioSource, const size_t samples)
 {
   mFUNCTION_SETUP();
 
@@ -2118,8 +2118,8 @@ struct mSinOscillator : mAudioSource
   size_t consumedSamples, samplePosition;
 };
 
-mFUNCTION(mSinOscillator_GetBuffer_Internal, mPtr<mAudioSource> &audioSource, OUT float_t *pBuffer, const size_t bufferLength, const size_t channelIndex, OUT size_t *pBufferCount);
-mFUNCTION(mSinOscillator_MoveToNextBuffer_Internal, mPtr<mAudioSource> &audioSource, const size_t samples);
+static mFUNCTION(mSinOscillator_GetBuffer_Internal, mPtr<mAudioSource> &audioSource, OUT float_t *pBuffer, const size_t bufferLength, const size_t channelIndex, OUT size_t *pBufferCount);
+static mFUNCTION(mSinOscillator_MoveToNextBuffer_Internal, mPtr<mAudioSource> &audioSource, const size_t samples);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -2145,7 +2145,7 @@ mFUNCTION(mSinOscillator_Create, OUT mPtr<mAudioSource> *pOscillator, IN mAlloca
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mSinOscillator_GetBuffer_Internal, mPtr<mAudioSource> &audioSource, OUT float_t *pBuffer, const size_t bufferLength, const size_t channelIndex, OUT size_t *pBufferCount)
+static mFUNCTION(mSinOscillator_GetBuffer_Internal, mPtr<mAudioSource> &audioSource, OUT float_t *pBuffer, const size_t bufferLength, const size_t channelIndex, OUT size_t *pBufferCount)
 {
   mFUNCTION_SETUP();
 
@@ -2163,7 +2163,7 @@ mFUNCTION(mSinOscillator_GetBuffer_Internal, mPtr<mAudioSource> &audioSource, OU
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mSinOscillator_MoveToNextBuffer_Internal, mPtr<mAudioSource> &audioSource, const size_t /* samples */)
+static mFUNCTION(mSinOscillator_MoveToNextBuffer_Internal, mPtr<mAudioSource> &audioSource, const size_t /* samples */)
 {
   mFUNCTION_SETUP();
 
@@ -2190,9 +2190,9 @@ struct mLoopingAudioSource : mAudioSource
   bool firstBuffer;
 };
 
-mFUNCTION(mLoopingAudioSource_Destroy_Internal, IN_OUT mLoopingAudioSource *pAudioSource);
-mFUNCTION(mLoopingAudioSource_GetBuffer_Internal, mPtr<mAudioSource> &audioSource, OUT float_t *pBuffer, const size_t bufferLength, const size_t channelIndex, OUT size_t *pBufferCount);
-mFUNCTION(mLoopingAudioSource_MoveToNextBuffer_Internal, mPtr<mAudioSource> &audioSource, const size_t samples);
+static mFUNCTION(mLoopingAudioSource_Destroy_Internal, IN_OUT mLoopingAudioSource *pAudioSource);
+static mFUNCTION(mLoopingAudioSource_GetBuffer_Internal, mPtr<mAudioSource> &audioSource, OUT float_t *pBuffer, const size_t bufferLength, const size_t channelIndex, OUT size_t *pBufferCount);
+static mFUNCTION(mLoopingAudioSource_MoveToNextBuffer_Internal, mPtr<mAudioSource> &audioSource, const size_t samples);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -2230,7 +2230,7 @@ mFUNCTION(mLoopingAudioSource_Create, OUT mPtr<mAudioSource> *pAudioSource, IN m
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mLoopingAudioSource_Destroy_Internal, IN_OUT mLoopingAudioSource *pAudioSource)
+static mFUNCTION(mLoopingAudioSource_Destroy_Internal, IN_OUT mLoopingAudioSource *pAudioSource)
 {
   mFUNCTION_SETUP();
 
@@ -2249,7 +2249,7 @@ mFUNCTION(mLoopingAudioSource_Destroy_Internal, IN_OUT mLoopingAudioSource *pAud
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mLoopingAudioSource_GetBuffer_Internal, mPtr<mAudioSource> &audioSource, OUT float_t *pBuffer, const size_t bufferLength, const size_t channelIndex, OUT size_t *pBufferCount)
+static mFUNCTION(mLoopingAudioSource_GetBuffer_Internal, mPtr<mAudioSource> &audioSource, OUT float_t *pBuffer, const size_t bufferLength, const size_t channelIndex, OUT size_t *pBufferCount)
 {
   mFUNCTION_SETUP();
 
@@ -2328,7 +2328,7 @@ mFUNCTION(mLoopingAudioSource_GetBuffer_Internal, mPtr<mAudioSource> &audioSourc
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mLoopingAudioSource_MoveToNextBuffer_Internal, mPtr<mAudioSource> &audioSource, const size_t samples)
+static mFUNCTION(mLoopingAudioSource_MoveToNextBuffer_Internal, mPtr<mAudioSource> &audioSource, const size_t samples)
 {
   mFUNCTION_SETUP();
 

@@ -24,10 +24,10 @@
 #endif
 
 HRESULT mFile_CreateAndInitializeFileOperation_Internal(REFIID riid, void **ppFileOperation);
-mFUNCTION(mFile_GetKnownPath_Internal, OUT mString *pString, const GUID &guid);
-mFUNCTION(mFileInfo_FromFindDataWStruct_Internal, IN_OUT mFileInfo *pFileInfo, IN const WIN32_FIND_DATAW *pFileData, IN mAllocator *pAllocator);
-mFUNCTION(mFileInfo_FromByHandleFileInformationStruct_Internal, IN_OUT mFileInfo *pFileInfo, IN const BY_HANDLE_FILE_INFORMATION *pFileData);
-mFUNCTION(mFile_CreateDirectoryRecursive_Internal, const wchar_t *directoryPath);
+static mFUNCTION(mFile_GetKnownPath_Internal, OUT mString *pString, const GUID &guid);
+static mFUNCTION(mFileInfo_FromFindDataWStruct_Internal, IN_OUT mFileInfo *pFileInfo, IN const WIN32_FIND_DATAW *pFileData, IN mAllocator *pAllocator);
+static mFUNCTION(mFileInfo_FromByHandleFileInformationStruct_Internal, IN_OUT mFileInfo *pFileInfo, IN const BY_HANDLE_FILE_INFORMATION *pFileData);
+static mFUNCTION(mFile_CreateDirectoryRecursive_Internal, const wchar_t *directoryPath);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -1818,7 +1818,7 @@ mFUNCTION(mFile_GetFolderSize, const mString &directoryPath, OUT size_t *pFolder
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mFile_CreateDirectoryRecursive_Internal, const wchar_t *directoryPath)
+static mFUNCTION(mFile_CreateDirectoryRecursive_Internal, const wchar_t *directoryPath)
 {
   mFUNCTION_SETUP();
 
@@ -1866,7 +1866,7 @@ mFUNCTION(mFile_CreateDirectoryRecursive_Internal, const wchar_t *directoryPath)
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mFileWriter_Destroy_Internal, IN_OUT mFileWriter *pWriter);
+static mFUNCTION(mFileWriter_Destroy_Internal, IN_OUT mFileWriter *pWriter);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -2030,7 +2030,7 @@ mFUNCTION(mFileWriter_WriteRaw, mPtr<mFileWriter> &writer, const uint8_t *pData,
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mFileWriter_Destroy_Internal, IN_OUT mFileWriter *pWriter)
+static mFUNCTION(mFileWriter_Destroy_Internal, IN_OUT mFileWriter *pWriter)
 {
   mFUNCTION_SETUP();
 
@@ -2078,7 +2078,7 @@ HRESULT mFile_CreateAndInitializeFileOperation_Internal(REFIID riid, void **ppFi
   return hr;
 }
 
-mFUNCTION(mFile_GetKnownPath_Internal, OUT mString *pString, const GUID &guid)
+static mFUNCTION(mFile_GetKnownPath_Internal, OUT mString *pString, const GUID &guid)
 {
   mFUNCTION_SETUP();
 
@@ -2101,7 +2101,7 @@ mFUNCTION(mFile_GetKnownPath_Internal, OUT mString *pString, const GUID &guid)
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mFileInfo_FromFindDataWStruct_Internal, IN_OUT mFileInfo *pFileInfo, IN const WIN32_FIND_DATAW *pFileData, IN mAllocator *pAllocator)
+static mFUNCTION(mFileInfo_FromFindDataWStruct_Internal, IN_OUT mFileInfo *pFileInfo, IN const WIN32_FIND_DATAW *pFileData, IN mAllocator *pAllocator)
 {
   mFUNCTION_SETUP();
   
@@ -2119,7 +2119,7 @@ mFUNCTION(mFileInfo_FromFindDataWStruct_Internal, IN_OUT mFileInfo *pFileInfo, I
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mFileInfo_FromByHandleFileInformationStruct_Internal, IN_OUT mFileInfo *pFileInfo, IN const BY_HANDLE_FILE_INFORMATION *pFileData)
+static mFUNCTION(mFileInfo_FromByHandleFileInformationStruct_Internal, IN_OUT mFileInfo *pFileInfo, IN const BY_HANDLE_FILE_INFORMATION *pFileData)
 {
   mFUNCTION_SETUP();
 

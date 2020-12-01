@@ -17,7 +17,7 @@ struct mSemaphore
   mAllocator *pAllocator;
 };
 
-mFUNCTION(mSemaphore_Destroy_Internal, IN mSemaphore *pSemaphore);
+static mFUNCTION(mSemaphore_Destroy_Internal, IN mSemaphore *pSemaphore);
 
 mFUNCTION(mSemaphore_Create, OUT mSemaphore **ppSemaphore, IN OPTIONAL mAllocator *pAllocator)
 {
@@ -119,7 +119,7 @@ mFUNCTION(mSemaphore_Sleep, IN mSemaphore *pSemaphore, const size_t timeoutMilli
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mSemaphore_Destroy_Internal, IN mSemaphore *pSemaphore)
+static mFUNCTION(mSemaphore_Destroy_Internal, IN mSemaphore *pSemaphore)
 {
   mFUNCTION_SETUP();
 

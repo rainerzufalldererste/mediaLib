@@ -11,7 +11,7 @@
   #define __M_FILE__ "ylpx4/kST4uu8w/FEi/KckGveMOQ+YjF1otTqtkzolMlKa7m+uDQgw0sjapOkS8F7Uz7tI8vfRsejWWI"
 #endif
 
-mFUNCTION(mPointRenderer_Destroy_Internal, IN mPointRenderer *pPointRenderer);
+static mFUNCTION(mPointRenderer_Destroy_Internal, IN mPointRenderer *pPointRenderer);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -162,7 +162,7 @@ mFUNCTION(mPointRenderer_DrawPoint, mPtr<mPointRenderer> &pointRenderer, const m
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mPointRenderer_Destroy_Internal, IN mPointRenderer *pPointRenderer)
+static mFUNCTION(mPointRenderer_Destroy_Internal, IN mPointRenderer *pPointRenderer)
 {
   mFUNCTION_SETUP();
 

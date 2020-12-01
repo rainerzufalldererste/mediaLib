@@ -3,26 +3,20 @@
 #ifdef mPLATFORM_WINDOWS
 #pragma warning (push)
 #pragma warning (disable: 4091)
-#ifdef GIT_BUILD // Define __M_FILE__
-  #ifdef __M_FILE__
-    #undef __M_FILE__
-  #endif
-  #define __M_FILE__ "Lz+UbdaLT6FQVl8t1AIQYpY8QUFIwuLycmTQzNIplNh5yzymY09ZjkpIH6EUFgJXZPKwsG5qpYwtnV4q"
-#endif
 
 extern "C"
 {
   #include "MemoryModulePP/include/MemoryModulePP.h"
   #include "MemoryModulePP/src/MemoryModulePP.c"
+}
+#pragma warning (pop)
+#endif
+
 #ifdef GIT_BUILD // Define __M_FILE__
   #ifdef __M_FILE__
     #undef __M_FILE__
   #endif
   #define __M_FILE__ "Lz+UbdaLT6FQVl8t1AIQYpY8QUFIwuLycmTQzNIplNh5yzymY09ZjkpIH6EUFgJXZPKwsG5qpYwtnV4q"
-#endif
-
-}
-#pragma warning (pop)
 #endif
 
 #ifdef mPLATFORM_WINDOWS

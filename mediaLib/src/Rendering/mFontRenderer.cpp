@@ -137,7 +137,7 @@ struct mFontDescription_Internal
   }
 };
 
-mFUNCTION(mDestruct, mFontDescription_Internal *pFontDescription)
+static mFUNCTION(mDestruct, mFontDescription_Internal *pFontDescription)
 {
   texture_font_delete(pFontDescription->pTextureFont);
   pFontDescription->pTextureFont = nullptr;
@@ -206,24 +206,23 @@ struct mFontRenderer_PhraseRenderGlyphInfo
   mPtr<mFontTextureAtlas> nextTextureAtlas;
 };
 
-mFUNCTION(mFontRenderer_Destroy_Internal, mFontRenderer *pFontRenderer);
-mFUNCTION(mFontRenderer_UpdateFontAtlas_Internal, mPtr<mFontRenderer> &fontRenderer);
-mFUNCTION(mFontRenderer_DrawEnqueuedText_Internal, mPtr<mFontRenderer> &fontRenderer);
-mFUNCTION(mFontRenderer_AddFont_Internal, mPtr<mFontRenderer> &fontRenderer, mPtr<mFontTextureAtlas> &fontTextureAtlas, const mFontDescription &fontDescription, OUT size_t *pIndex, OUT bool *pAdded);
-mFUNCTION(mFontRenderer_FontDescriptionAlreadyContainsChar, mPtr<mFontRenderer> &fontRenderer, mFontDescription_Internal *pFontDescription, const float_t originalFontSize, const mchar_t codePoint, const char *character, OUT bool *pContainsChar);
-mFUNCTION(mFontRenderer_LoadGlyph_Internal, mPtr<mFontRenderer> &fontRenderer, mPtr<mFontTextureAtlas> &fontTextureAtlas, mFontDescription_Internal *pFontDescription, const size_t queueFontIndex, const float_t originalFontSize, const mchar_t codePoint, const char *character, const size_t bytes, OUT bool *pFailedToLoadChar, const bool attemptToLoadFromBackupFont = true);
-mFUNCTION(mFontRenderer_AddCharToFontDescription, mPtr<mFontRenderer> &fontRenderer, mFontDescription_Internal *pFontDescription, const mchar_t codePoint, const char *character);
-mFUNCTION(mFontRenderer_AddCharNotFoundToFontDescription, mPtr<mFontRenderer> &fontRenderer, mFontDescription_Internal *pFontDescription, const mchar_t codePoint, const char *character, texture_glyph_t *pGlyph);
-mFUNCTION(mFontRenderer_LoadGlyphs_Internal, mPtr<mFontRenderer> &fontRenderer, mFontDescription_Internal *pFontDescription, const size_t queueFontIndex, const float_t originalFontSize, const mString &string, OUT bool *pFailedToLoadChars);
-mFUNCTION(mFontRenderer_ClearGlyphs_Internal, mPtr<mFontRenderer> &fontRenderer);
-mFUNCTION(mFontRenderer_GetGlyphInfo_Internal, mPtr<mFontRenderer> &fontRenderer, mFontRenderer_FontInfo **ppFontInfo, const size_t fontInfoIndex, const mFontDescription &fontDescription, mFontDescription_Internal **ppFontDescription, size_t *pQueueFontIndex, const mchar_t codePoint, const char *character, const size_t bytes, const bool checkBackupFonts, OUT mFontRenderer_GlyphInfo **ppGlyphInfo, OUT bool *pRequireAtlasFlush, OUT OPTIONAL bool *pCharNotFound_NullptrIfNotInternalCall = nullptr);
+static mFUNCTION(mFontRenderer_Destroy_Internal, mFontRenderer *pFontRenderer);
+static mFUNCTION(mFontRenderer_UpdateFontAtlas_Internal, mPtr<mFontRenderer> &fontRenderer);
+static mFUNCTION(mFontRenderer_DrawEnqueuedText_Internal, mPtr<mFontRenderer> &fontRenderer);
+static mFUNCTION(mFontRenderer_AddFont_Internal, mPtr<mFontRenderer> &fontRenderer, mPtr<mFontTextureAtlas> &fontTextureAtlas, const mFontDescription &fontDescription, OUT size_t *pIndex, OUT bool *pAdded);
+static mFUNCTION(mFontRenderer_FontDescriptionAlreadyContainsChar, mPtr<mFontRenderer> &fontRenderer, mFontDescription_Internal *pFontDescription, const float_t originalFontSize, const mchar_t codePoint, const char *character, OUT bool *pContainsChar);
+static mFUNCTION(mFontRenderer_LoadGlyph_Internal, mPtr<mFontRenderer> &fontRenderer, mPtr<mFontTextureAtlas> &fontTextureAtlas, mFontDescription_Internal *pFontDescription, const size_t queueFontIndex, const float_t originalFontSize, const mchar_t codePoint, const char *character, const size_t bytes, OUT bool *pFailedToLoadChar, const bool attemptToLoadFromBackupFont = true);
+static mFUNCTION(mFontRenderer_AddCharToFontDescription, mPtr<mFontRenderer> &fontRenderer, mFontDescription_Internal *pFontDescription, const mchar_t codePoint, const char *character);
+static mFUNCTION(mFontRenderer_AddCharNotFoundToFontDescription, mPtr<mFontRenderer> &fontRenderer, mFontDescription_Internal *pFontDescription, const mchar_t codePoint, const char *character, texture_glyph_t *pGlyph);
+static mFUNCTION(mFontRenderer_ClearGlyphs_Internal, mPtr<mFontRenderer> &fontRenderer);
+static mFUNCTION(mFontRenderer_GetGlyphInfo_Internal, mPtr<mFontRenderer> &fontRenderer, mFontRenderer_FontInfo **ppFontInfo, const size_t fontInfoIndex, const mFontDescription &fontDescription, mFontDescription_Internal **ppFontDescription, size_t *pQueueFontIndex, const mchar_t codePoint, const char *character, const size_t bytes, const bool checkBackupFonts, OUT mFontRenderer_GlyphInfo **ppGlyphInfo, OUT bool *pRequireAtlasFlush, OUT OPTIONAL bool *pCharNotFound_NullptrIfNotInternalCall = nullptr);
 mFUNCTION(mFontRenderer_TryRenderPhrase, mPtr<mFontRenderer> &fontRenderer, const mString &phrase, const mFontDescription &fontDescription, OUT mPtr<mQueue<mFontRenderer_PhraseRenderGlyphInfo>> &renderInfo, OUT mVec2f *pSize);
 
 mFUNCTION(mFontTextureAtlas_Create, OUT mPtr<mFontTextureAtlas> *pAtlas, mAllocator *pAllocator, const size_t width, const size_t height);
 mFUNCTION(mFontTextureAtlas_Destroy, IN mFontTextureAtlas *pAtlas);
 mFUNCTION(mFontTextureAtlas_RequiresUpload, mPtr<mFontTextureAtlas> &atlas, OUT bool *pNeedsUpload);
 
-mFUNCTION(mFontRenderable_Destroy_Internal, IN mFontRenderable *pFontRenderable);
+static mFUNCTION(mFontRenderable_Destroy_Internal, IN mFontRenderable *pFontRenderable);
 
 struct mFontRenderable
 {
@@ -1379,7 +1378,7 @@ mFUNCTION(mFontRenderer_GetRenderedWidth, mPtr<mFontRenderer> &fontRenderer, con
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mFontRenderer_Destroy_Internal, mFontRenderer *pFontRenderer)
+static mFUNCTION(mFontRenderer_Destroy_Internal, mFontRenderer *pFontRenderer)
 {
   mFUNCTION_SETUP();
 
@@ -1402,7 +1401,7 @@ mFUNCTION(mFontRenderer_Destroy_Internal, mFontRenderer *pFontRenderer)
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mFontRenderer_UpdateFontAtlas_Internal, mPtr<mFontRenderer> &fontRenderer)
+static mFUNCTION(mFontRenderer_UpdateFontAtlas_Internal, mPtr<mFontRenderer> &fontRenderer)
 {
   mFUNCTION_SETUP();
 
@@ -1424,7 +1423,7 @@ mFUNCTION(mFontRenderer_UpdateFontAtlas_Internal, mPtr<mFontRenderer> &fontRende
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mFontRenderer_DrawEnqueuedText_Internal, mPtr<mFontRenderer> &fontRenderer)
+static mFUNCTION(mFontRenderer_DrawEnqueuedText_Internal, mPtr<mFontRenderer> &fontRenderer)
 {
   mFUNCTION_SETUP();
 
@@ -1495,7 +1494,7 @@ mFUNCTION(mFontRenderer_DrawEnqueuedText_Internal, mPtr<mFontRenderer> &fontRend
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mFontRenderer_AddPersistentFontInfo_Internal, mPtr<mFontRenderer> &fontRenderer, const mFontDescription &fontDescription, OUT size_t *pIndex)
+static mFUNCTION(mFontRenderer_AddPersistentFontInfo_Internal, mPtr<mFontRenderer> &fontRenderer, const mFontDescription &fontDescription, OUT size_t *pIndex)
 {
   mFUNCTION_SETUP();
 
@@ -1521,7 +1520,7 @@ mFUNCTION(mFontRenderer_AddPersistentFontInfo_Internal, mPtr<mFontRenderer> &fon
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mFontRenderer_AddFont_Internal, mPtr<mFontRenderer> &fontRenderer, mPtr<mFontTextureAtlas> &fontTextureAtlas, const mFontDescription &fontDescription, OUT size_t *pIndex, OUT bool *pAdded)
+static mFUNCTION(mFontRenderer_AddFont_Internal, mPtr<mFontRenderer> &fontRenderer, mPtr<mFontTextureAtlas> &fontTextureAtlas, const mFontDescription &fontDescription, OUT size_t *pIndex, OUT bool *pAdded)
 {
   mFUNCTION_SETUP();
 
@@ -1563,7 +1562,7 @@ mFUNCTION(mFontRenderer_AddFont_Internal, mPtr<mFontRenderer> &fontRenderer, mPt
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mFontRenderer_FontDescriptionAlreadyContainsChar, mPtr<mFontRenderer> & /* fontRenderer */, mFontDescription_Internal *pFontDescription, const float_t /* originalFontSize */, const mchar_t codePoint, const char * /* character */, OUT bool *pContainsChar)
+static mFUNCTION(mFontRenderer_FontDescriptionAlreadyContainsChar, mPtr<mFontRenderer> & /* fontRenderer */, mFontDescription_Internal *pFontDescription, const float_t /* originalFontSize */, const mchar_t codePoint, const char * /* character */, OUT bool *pContainsChar)
 {
   mFUNCTION_SETUP();
 
@@ -1602,7 +1601,7 @@ mFUNCTION(mFontRenderer_FontDescriptionKnownToNotContainChar, mPtr<mFontRenderer
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mFontRenderer_AddGlyphToFontInfo, mPtr<mFontRenderer> &fontRenderer, const mFontDescription_Internal *pFontDescription, mFontRenderer_FontInfo *pFontInfo, texture_glyph_t *pGlyph, const mchar_t codePoint, OUT mFontRenderer_GlyphInfo **ppGlyphInfo = nullptr)
+static mFUNCTION(mFontRenderer_AddGlyphToFontInfo, mPtr<mFontRenderer> &fontRenderer, const mFontDescription_Internal *pFontDescription, mFontRenderer_FontInfo *pFontInfo, texture_glyph_t *pGlyph, const mchar_t codePoint, OUT mFontRenderer_GlyphInfo **ppGlyphInfo = nullptr)
 {
   mFUNCTION_SETUP();
 
@@ -1656,7 +1655,7 @@ mFUNCTION(mFontRenderer_AddGlyphToFontInfo, mPtr<mFontRenderer> &fontRenderer, c
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mFontRenderer_LoadGlyph_Internal, mPtr<mFontRenderer> &fontRenderer, mPtr<mFontTextureAtlas> &fontTextureAtlas, mFontDescription_Internal *pFontDescription, const size_t queueFontIndex, const float_t originalFontSize, const mchar_t codePoint, const char *character, const size_t /* bytes */, OUT bool *pFailedToLoadChar, const bool attemptToLoadFromBackupFont /* = true */)
+static mFUNCTION(mFontRenderer_LoadGlyph_Internal, mPtr<mFontRenderer> &fontRenderer, mPtr<mFontTextureAtlas> &fontTextureAtlas, mFontDescription_Internal *pFontDescription, const size_t queueFontIndex, const float_t originalFontSize, const mchar_t codePoint, const char *character, const size_t /* bytes */, OUT bool *pFailedToLoadChar, const bool attemptToLoadFromBackupFont /* = true */)
 {
   mFUNCTION_SETUP();
 
@@ -1814,7 +1813,7 @@ mFUNCTION(mFontRenderer_LoadGlyph_Internal, mPtr<mFontRenderer> &fontRenderer, m
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mFontRenderer_GetGlyphInfo_Internal, mPtr<mFontRenderer> &fontRenderer, mFontRenderer_FontInfo **ppFontInfo, const size_t fontInfoIndex, const mFontDescription &fontDescription, mFontDescription_Internal **ppFontDescription, size_t *pQueueFontIndex, const mchar_t codePoint, const char *character, const size_t bytes, const bool checkBackupFonts, OUT mFontRenderer_GlyphInfo **ppGlyphInfo, OUT bool *pRequireAtlasFlush, OUT OPTIONAL bool *pCharNotFound_NullptrIfNotInternalCall /* = nullptr */)
+static mFUNCTION(mFontRenderer_GetGlyphInfo_Internal, mPtr<mFontRenderer> &fontRenderer, mFontRenderer_FontInfo **ppFontInfo, const size_t fontInfoIndex, const mFontDescription &fontDescription, mFontDescription_Internal **ppFontDescription, size_t *pQueueFontIndex, const mchar_t codePoint, const char *character, const size_t bytes, const bool checkBackupFonts, OUT mFontRenderer_GlyphInfo **ppGlyphInfo, OUT bool *pRequireAtlasFlush, OUT OPTIONAL bool *pCharNotFound_NullptrIfNotInternalCall /* = nullptr */)
 {
   mFUNCTION_SETUP();
 
@@ -1988,7 +1987,7 @@ mFUNCTION(mFontRenderer_GetGlyphInfo_Internal, mPtr<mFontRenderer> &fontRenderer
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mFontRenderer_AddCharToFontDescription, mPtr<mFontRenderer> &fontRenderer, mFontDescription_Internal *pFontDescription, const mchar_t codePoint, const char * /* character */)
+static mFUNCTION(mFontRenderer_AddCharToFontDescription, mPtr<mFontRenderer> &fontRenderer, mFontDescription_Internal *pFontDescription, const mchar_t codePoint, const char * /* character */)
 {
   mFUNCTION_SETUP();
 
@@ -2013,7 +2012,7 @@ mFUNCTION(mFontRenderer_AddCharToFontDescription, mPtr<mFontRenderer> &fontRende
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mFontRenderer_AddCharNotFoundToFontDescription, mPtr<mFontRenderer> &fontRenderer, mFontDescription_Internal *pFontDescription, const mchar_t codePoint, const char * /* character */, texture_glyph_t *pGlyph)
+static mFUNCTION(mFontRenderer_AddCharNotFoundToFontDescription, mPtr<mFontRenderer> &fontRenderer, mFontDescription_Internal *pFontDescription, const mchar_t codePoint, const char * /* character */, texture_glyph_t *pGlyph)
 {
   mFUNCTION_SETUP();
 
@@ -2247,30 +2246,7 @@ mFUNCTION(mFontRenderer_TryRenderPhrase, mPtr<mFontRenderer> &fontRenderer, cons
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mFontRenderer_LoadGlyphs_Internal, mPtr<mFontRenderer> &fontRenderer, mFontDescription_Internal *pFontDescription, const size_t queueFontIndex, const float_t originalFontSize, const mString &string, OUT bool *pFailedToLoadChars)
-{
-  mFUNCTION_SETUP();
-
-  *pFailedToLoadChars = false;
-
-  for (auto &&_char : string)
-  {
-    mFUNCTION_SETUP();
-
-    bool unloadedChar = false;
-    mERROR_CHECK(mFontRenderer_LoadGlyph_Internal(fontRenderer, fontRenderer->textureAtlas, pFontDescription, queueFontIndex, originalFontSize, _char.codePoint, _char.character, _char.characterSize, &unloadedChar));
-
-    if (unloadedChar)
-    {
-      *pFailedToLoadChars = true;
-      mRETURN_SUCCESS();
-    }
-  }
-
-  mRETURN_SUCCESS();
-}
-
-mFUNCTION(mFontRenderer_ClearGlyphs_Internal, mPtr<mFontRenderer> &fontRenderer)
+static mFUNCTION(mFontRenderer_ClearGlyphs_Internal, mPtr<mFontRenderer> &fontRenderer)
 {
   mFUNCTION_SETUP();
 
@@ -2399,7 +2375,7 @@ mFUNCTION(mFontRenderable_Destroy, IN_OUT mPtr<mFontRenderable> *pFontRenderable
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mFontRenderable_Destroy_Internal, IN mFontRenderable *pFontRenderable)
+static mFUNCTION(mFontRenderable_Destroy_Internal, IN mFontRenderable *pFontRenderable)
 {
   mFUNCTION_SETUP();
 

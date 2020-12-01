@@ -220,9 +220,8 @@ float_t GetKeyframeInfluenceFactor(IN const m2DAH_Keyframe *pPrevious, IN const 
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(m2DAH_Sprite_Serialize, IN const m2DAH_Sprite *pSprite, mPtr<mJsonWriter> &jsonWriter);
-mFUNCTION(m2DAH_Sprite_Deserialize, OUT m2DAH_Sprite *pSprite, mPtr<mJsonReader> &jsonReader);
-mFUNCTION(m2DAH_Sprite_Update, IN m2DAH_Sprite *pSprite, const float_t animationPosition);
+static mFUNCTION(m2DAH_Sprite_Serialize, IN const m2DAH_Sprite *pSprite, mPtr<mJsonWriter> &jsonWriter);
+static mFUNCTION(m2DAH_Sprite_Deserialize, OUT m2DAH_Sprite *pSprite, mPtr<mJsonReader> &jsonReader);
 
 const char m2DAH_Sprite_Keyframes[] = "keyframes";
 const char m2DAH_Sprite_Filename[] = "filename";
@@ -381,7 +380,7 @@ mFUNCTION(m2DAH_Sprite_Update, IN m2DAH_Sprite *pSprite, const float_t animation
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(m2DAH_Sprite_Serialize, IN const m2DAH_Sprite *pSprite, mPtr<mJsonWriter> &jsonWriter)
+static mFUNCTION(m2DAH_Sprite_Serialize, IN const m2DAH_Sprite *pSprite, mPtr<mJsonWriter> &jsonWriter)
 {
   mFUNCTION_SETUP();
 
@@ -406,7 +405,7 @@ mFUNCTION(m2DAH_Sprite_Serialize, IN const m2DAH_Sprite *pSprite, mPtr<mJsonWrit
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(m2DAH_Sprite_Deserialize, OUT m2DAH_Sprite *pSprite, mPtr<mJsonReader> &jsonReader)
+static mFUNCTION(m2DAH_Sprite_Deserialize, OUT m2DAH_Sprite *pSprite, mPtr<mJsonReader> &jsonReader)
 {
   mFUNCTION_SETUP();
 
@@ -442,7 +441,7 @@ mFUNCTION(m2DAH_Sprite_Deserialize, OUT m2DAH_Sprite *pSprite, mPtr<mJsonReader>
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(m2DAnimationHandler_Destroy_Internal, IN_OUT m2DAnimationHandler *pAnimationHandler);
+static mFUNCTION(m2DAnimationHandler_Destroy_Internal, IN_OUT m2DAnimationHandler *pAnimationHandler);
 
 const char m2DAnimationHandler_Sprites[] = "sprites";
 
@@ -455,7 +454,7 @@ mFUNCTION(m2DAnimationHandler_Create, OUT mPtr<m2DAnimationHandler> *pAnimationH
   mERROR_IF(pAnimationHandler == nullptr, mR_ArgumentNull);
 
   mDEFER_CALL_ON_ERROR(pAnimationHandler, mSharedPointer_Destroy);
-  mERROR_CHECK(mSharedPointer_Allocate(pAnimationHandler, pAllocator));
+  mERROR_CHECK((mSharedPointer_Allocate<m2DAnimationHandler>(pAnimationHandler, pAllocator, [](m2DAnimationHandler *pData) {m2DAnimationHandler_Destroy_Internal(pData);}, 1)));
 
   mERROR_CHECK(mQueue_Create(&(*pAnimationHandler)->sprites, pAllocator));
 
@@ -686,7 +685,7 @@ mFUNCTION(m2DAnimationHandler_SaveToFile, mPtr<m2DAnimationHandler> &animationHa
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(m2DAnimationHandler_Destroy_Internal, IN_OUT m2DAnimationHandler *pAnimationHandler)
+static mFUNCTION(m2DAnimationHandler_Destroy_Internal, IN_OUT m2DAnimationHandler *pAnimationHandler)
 {
   mFUNCTION_SETUP();
 

@@ -8,7 +8,7 @@
   #define __M_FILE__ "5d1lnZ43s32zNe4MCnudH9RQKWEIA4qdtHyil0o/LYyKKA0s6f7pRXWASgAmdq9IVNcsWmf8pmNHWIyU"
 #endif
 
-mFUNCTION(mScreenQuad_Destroy_Internal, IN mScreenQuad *pScreenQuad);
+static mFUNCTION(mScreenQuad_Destroy_Internal, IN mScreenQuad *pScreenQuad);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -130,7 +130,7 @@ mFUNCTION(mScreenQuad_Render, mPtr<mScreenQuad> &screenQuad)
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mScreenQuad_Destroy_Internal, IN mScreenQuad *pScreenQuad)
+static mFUNCTION(mScreenQuad_Destroy_Internal, IN mScreenQuad *pScreenQuad)
 {
   mFUNCTION_SETUP();
 

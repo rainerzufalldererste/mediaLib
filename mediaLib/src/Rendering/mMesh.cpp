@@ -18,6 +18,8 @@ mFUNCTION(mMeshAttributeContainer_Destroy, IN_OUT mPtr<mMeshAttributeContainer> 
   mRETURN_SUCCESS();
 }
 
+//////////////////////////////////////////////////////////////////////////
+
 mFUNCTION(mMeshAttributeContainer_Destroy_Internal, IN mMeshAttributeContainer *pMeshAttributeContainer)
 {
   mFUNCTION_SETUP();
@@ -28,6 +30,8 @@ mFUNCTION(mMeshAttributeContainer_Destroy_Internal, IN mMeshAttributeContainer *
 
   mRETURN_SUCCESS();
 }
+
+//////////////////////////////////////////////////////////////////////////
 
 mFUNCTION(mMesh_Create, OUT mPtr<mMesh> *pMesh, IN mAllocator *pAllocator, const std::initializer_list<mPtr<mMeshAttributeContainer>> &attributeInformation, mPtr<mShader> &shader, mPtr<mQueue<mKeyValuePair<mString, mPtr<mTexture>>>> &textures, const mRenderParams_VertexRenderMode triangleRenderMode /* = mRP_VRM_TriangleList */)
 {
@@ -226,36 +230,6 @@ mFUNCTION(mMesh_Destroy, IN_OUT mPtr<mMesh> *pMesh)
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mMesh_Destroy_Internal, mMesh *pMesh)
-{
-  mFUNCTION_SETUP();
-
-  mERROR_IF(pMesh == nullptr, mR_ArgumentNull);
-
-#if defined (mRENDERER_OPENGL)
-  if (pMesh->hasVbo)
-  {
-    glDeleteBuffers(1, &pMesh->vbo);
-    pMesh->hasVbo = false;
-  }
-
-  size_t textureCount;
-  mERROR_CHECK(mQueue_GetCount(pMesh->textures, &textureCount));
-
-  for (size_t i = 0; i < textureCount; ++i)
-  {
-    mKeyValuePair<mString, mPtr<mTexture>> texture;
-    mERROR_CHECK(mQueue_PopFront(pMesh->textures, &texture));
-    mERROR_CHECK(mDestruct(&texture));
-  }
-
-  mERROR_CHECK(mQueue_Destroy(&pMesh->textures));
-  mERROR_CHECK(mQueue_Destroy(&pMesh->information));
-#endif
-
-  mRETURN_SUCCESS();
-}
-
 mFUNCTION(mMesh_Upload, mPtr<mMesh> &data)
 {
   mFUNCTION_SETUP();
@@ -407,6 +381,38 @@ mFUNCTION(mMesh_Render, mPtr<mMesh> &data, mMatrix &matrix)
   mERROR_CHECK(mShader_SetUniform(data->shader, "matrix0", matrix));
 
   mERROR_CHECK(mMesh_Render(data));
+
+  mRETURN_SUCCESS();
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+mFUNCTION(mMesh_Destroy_Internal, mMesh *pMesh)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pMesh == nullptr, mR_ArgumentNull);
+
+#if defined (mRENDERER_OPENGL)
+  if (pMesh->hasVbo)
+  {
+    glDeleteBuffers(1, &pMesh->vbo);
+    pMesh->hasVbo = false;
+  }
+
+  size_t textureCount;
+  mERROR_CHECK(mQueue_GetCount(pMesh->textures, &textureCount));
+
+  for (size_t i = 0; i < textureCount; ++i)
+  {
+    mKeyValuePair<mString, mPtr<mTexture>> texture;
+    mERROR_CHECK(mQueue_PopFront(pMesh->textures, &texture));
+    mERROR_CHECK(mDestruct(&texture));
+  }
+
+  mERROR_CHECK(mQueue_Destroy(&pMesh->textures));
+  mERROR_CHECK(mQueue_Destroy(&pMesh->information));
+#endif
 
   mRETURN_SUCCESS();
 }

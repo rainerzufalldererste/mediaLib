@@ -28,11 +28,11 @@ constexpr size_t mHttpRequest_DefaultTimeout = 5000;
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mHttpRequest_Destroy_Internal, mHttpRequest *pHttpRequest);
-mFUNCTION(mHttpRequest_Send_Internal, mPtr<mHttpRequest> &httpRequest);
+static mFUNCTION(mHttpRequest_Destroy_Internal, mHttpRequest *pHttpRequest);
+static mFUNCTION(mHttpRequest_Send_Internal, mPtr<mHttpRequest> &httpRequest);
 
-size_t mHttpRequest_WriteMemoryCallback(const void *pContents, const size_t size, const size_t count, void *pUserData);
-size_t mHttpRequest_WriteMemoryCallbackWithFunc(const void *pContents, const size_t size, const size_t count, void *pUserData);
+static size_t mHttpRequest_WriteMemoryCallback_Internal(const void *pContents, const size_t size, const size_t count, void *pUserData);
+static size_t mHttpRequest_WriteMemoryCallbackWithFunc_Internal(const void *pContents, const size_t size, const size_t count, void *pUserData);
 
 struct mHttpRequest_SendFuncContainer
 {
@@ -193,7 +193,7 @@ mFUNCTION(mHttpRequest_Send, mPtr<mHttpRequest> &httpRequest)
 
   mERROR_IF(httpRequest == nullptr, mR_ArgumentNull);
 
-  mERROR_IF(CURLE_OK != curl_easy_setopt(httpRequest->pCurl, CURLOPT_WRITEFUNCTION, mHttpRequest_WriteMemoryCallback), mR_InternalError);
+  mERROR_IF(CURLE_OK != curl_easy_setopt(httpRequest->pCurl, CURLOPT_WRITEFUNCTION, mHttpRequest_WriteMemoryCallback_Internal), mR_InternalError);
   mERROR_IF(CURLE_OK != curl_easy_setopt(httpRequest->pCurl, CURLOPT_WRITEDATA, reinterpret_cast<void *>(httpRequest.GetPointer())), mR_InternalError);
 
   mERROR_CHECK(mHttpRequest_Send_Internal(httpRequest));
@@ -209,7 +209,7 @@ mFUNCTION(mHttpRequest_Send, mPtr<mHttpRequest> &httpRequest, const std::functio
 
   mHttpRequest_SendFuncContainer sendFuncContainer(httpRequest, callback);
 
-  mERROR_IF(CURLE_OK != curl_easy_setopt(httpRequest->pCurl, CURLOPT_WRITEFUNCTION, mHttpRequest_WriteMemoryCallbackWithFunc), mR_InternalError);
+  mERROR_IF(CURLE_OK != curl_easy_setopt(httpRequest->pCurl, CURLOPT_WRITEFUNCTION, mHttpRequest_WriteMemoryCallbackWithFunc_Internal), mR_InternalError);
   mERROR_IF(CURLE_OK != curl_easy_setopt(httpRequest->pCurl, CURLOPT_WRITEDATA, reinterpret_cast<void *>(&sendFuncContainer)), mR_InternalError);
 
   mERROR_CHECK(mHttpRequest_Send_Internal(httpRequest));
@@ -319,7 +319,7 @@ mFUNCTION(mHttpRequest_GetResponseContentType, mPtr<mHttpRequest> &httpRequest, 
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mHttpRequest_Destroy_Internal, mHttpRequest *pHttpRequest)
+static mFUNCTION(mHttpRequest_Destroy_Internal, mHttpRequest *pHttpRequest)
 {
   mFUNCTION_SETUP();
 
@@ -339,7 +339,7 @@ mFUNCTION(mHttpRequest_Destroy_Internal, mHttpRequest *pHttpRequest)
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mHttpRequest_Send_Internal, mPtr<mHttpRequest> &httpRequest)
+static mFUNCTION(mHttpRequest_Send_Internal, mPtr<mHttpRequest> &httpRequest)
 {
   mFUNCTION_SETUP();
 
@@ -379,7 +379,7 @@ mFUNCTION(mHttpRequest_Send_Internal, mPtr<mHttpRequest> &httpRequest)
   mRETURN_SUCCESS();
 }
 
-size_t mHttpRequest_WriteMemoryCallback(const void *pContents, const size_t size, const size_t count, void *pUserData)
+static size_t mHttpRequest_WriteMemoryCallback_Internal(const void *pContents, const size_t size, const size_t count, void *pUserData)
 {
   mHttpRequest *pHttpRequest = reinterpret_cast<mHttpRequest *>(pUserData);
 
@@ -404,11 +404,11 @@ size_t mHttpRequest_WriteMemoryCallback(const void *pContents, const size_t size
   return additionalSize;
 }
 
-size_t mHttpRequest_WriteMemoryCallbackWithFunc(const void *pContents, const size_t size, const size_t count, void *pUserData)
+static size_t mHttpRequest_WriteMemoryCallbackWithFunc_Internal(const void *pContents, const size_t size, const size_t count, void *pUserData)
 {
   mHttpRequest_SendFuncContainer *pContainer = reinterpret_cast<mHttpRequest_SendFuncContainer *>(pUserData);
 
-  const size_t additionalSize = mHttpRequest_WriteMemoryCallback(pContents, size, count, pContainer->httpRequest.GetPointer());
+  const size_t additionalSize = mHttpRequest_WriteMemoryCallback_Internal(pContents, size, count, pContainer->httpRequest.GetPointer());
 
   if (additionalSize == 0)
     return 0;

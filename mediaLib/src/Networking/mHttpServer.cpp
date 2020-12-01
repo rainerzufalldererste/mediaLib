@@ -21,6 +21,7 @@ struct mHttpServer
   mPtr<mTcpServer> tcpServer;
   http_parser_settings settings;
   mThread *pListenerThread;
+  mThread *pStaleHandlerThread;
   mPtr<mTasklessThreadPool> threadPool;
   volatile bool keepRunning;
 
@@ -28,7 +29,6 @@ struct mHttpServer
   mPtr<mHttpErrorRequestHandler> errorRequestHandler;
   mUniqueContainer<mQueue<mPtr<mTcpClient>>> staleTcpClients;
   mMutex *pStaleTcpClientMutex;
-  mThread *pStaleTcpClientHandlerThread;
 };
 
 struct mHttpRequest_Parser : mHttpRequest
@@ -38,25 +38,26 @@ struct mHttpRequest_Parser : mHttpRequest
   mString body;
 };
 
-mFUNCTION(mHttpServer_Destroy_Internal, IN_OUT mHttpServer *pHttpServer);
-mFUNCTION(mHttpServer_Thread_Internal, mPtr<mHttpServer> &server);
-mFUNCTION(mHttpServer_SendResponsePacket_Internal, mPtr<mTcpClient> &client, const mPtr<mHttpResponse> &response, IN mAllocator *pAllocator);
-mFUNCTION(mHttpServer_RespondWithError_Internal, mPtr<mHttpServer> &server, mPtr<mTcpClient> &client, const mHttpResponseStatusCode statusCode, const mString &errorString, IN mAllocator *pAllocator);
+static mFUNCTION(mHttpServer_Destroy_Internal, IN_OUT mHttpServer *pHttpServer);
+static mFUNCTION(mHttpServer_Thread_Internal, mPtr<mHttpServer> &server);
+static mFUNCTION(mHttpServer_StaleTcpHandlerThread_Internal, mPtr<mHttpServer> &server);
+static mFUNCTION(mHttpServer_SendResponsePacket_Internal, mPtr<mTcpClient> &client, const mPtr<mHttpResponse> &response, IN mAllocator *pAllocator);
+static mFUNCTION(mHttpServer_RespondWithError_Internal, mPtr<mHttpServer> &server, mPtr<mTcpClient> &client, const mHttpResponseStatusCode statusCode, const mString &errorString, IN mAllocator *pAllocator);
 
-int32_t mHttpServer_OnUrl_Internal(http_parser *, const char *at, size_t length);
-int32_t mHttpServer_OnHeaderField_Internal(http_parser *, const char *at, size_t length);
-int32_t mHttpServer_OnHeaderValue_Internal(http_parser *, const char *at, size_t length);
-int32_t mHttpServer_OnBody_Internal(http_parser *, const char *at, size_t length);
+static int32_t mHttpServer_OnUrl_Internal(http_parser *, const char *at, size_t length);
+static int32_t mHttpServer_OnHeaderField_Internal(http_parser *, const char *at, size_t length);
+static int32_t mHttpServer_OnHeaderValue_Internal(http_parser *, const char *at, size_t length);
+static int32_t mHttpServer_OnBody_Internal(http_parser *, const char *at, size_t length);
 
-void mHttpServer_HandleTcpClient_Internal(mPtr<mHttpServer> &server, mPtr<mTcpClient> &client);
+static void mHttpServer_HandleTcpClient_Internal(mPtr<mHttpServer> &server, mPtr<mTcpClient> &client);
 
-mFUNCTION(mHttpRequest_Parser_Init_Internal, mPtr<mHttpRequest_Parser> &request, IN mAllocator *pAllocator, mPtr<mTcpClient> &client);
-void mHttpRequest_Parser_Destroy_Internal(IN_OUT mHttpRequest_Parser *pRequest);
+static mFUNCTION(mHttpRequest_Parser_Init_Internal, mPtr<mHttpRequest_Parser> &request, IN mAllocator *pAllocator, mPtr<mTcpClient> &client);
+static void mHttpRequest_Parser_Destroy_Internal(IN_OUT mHttpRequest_Parser *pRequest);
 
-mFUNCTION(mHttpRequest_ParseArguments, const char *params, OUT mPtr<mQueue<mKeyValuePair<mString, mString>>> &args, IN mAllocator *pAllocator, const bool ignoreFragment);
+static mFUNCTION(mHttpRequest_ParseArguments_Internal, const char *params, OUT mPtr<mQueue<mKeyValuePair<mString, mString>>> &args, IN mAllocator *pAllocator, const bool ignoreFragment);
 
-mFUNCTION(mHttpResponse_Init_Internal, mPtr<mHttpResponse> &response, IN mAllocator *pAllocator);
-void mHttpResponse_Destroy_Internal(IN_OUT mHttpResponse *pResponse);
+static mFUNCTION(mHttpResponse_Init_Internal, mPtr<mHttpResponse> &response, IN mAllocator *pAllocator);
+static void mHttpResponse_Destroy_Internal(IN_OUT mHttpResponse *pResponse);
 
 static const char *mHttpResponse_AsString_100[] = { "100 Continue", "101 Switching Protocols", "", "103 Early Hints" };
 static const char *mHttpResponse_AsString_200[] = { "200 OK", "201 Created", "202 Accepted", "203 Non-Authoritative Information", "204 No Content", "205 Reset Content", "206 Partial Content" };
@@ -154,6 +155,7 @@ mFUNCTION(mHttpServer_Start, mPtr<mHttpServer> &httpServer)
   mERROR_IF(httpServer->pListenerThread != nullptr, mR_ResourceStateInvalid);
 
   mERROR_CHECK(mThread_Create(&httpServer->pListenerThread, httpServer->pAllocator, mHttpServer_Thread_Internal, httpServer));
+  mERROR_CHECK(mThread_Create(&httpServer->pStaleHandlerThread, httpServer->pAllocator, mHttpServer_StaleTcpHandlerThread_Internal, httpServer));
 
   mRETURN_SUCCESS();
 }
@@ -184,7 +186,7 @@ mFUNCTION(mHttpServer_SetErrorRequestHandler, mPtr<mHttpServer> &httpServer, mPt
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mHttpServer_Destroy_Internal, IN_OUT mHttpServer *pHttpServer)
+static mFUNCTION(mHttpServer_Destroy_Internal, IN_OUT mHttpServer *pHttpServer)
 {
   mFUNCTION_SETUP();
 
@@ -194,7 +196,7 @@ mFUNCTION(mHttpServer_Destroy_Internal, IN_OUT mHttpServer *pHttpServer)
 
   mERROR_CHECK(mTasklessThreadPool_Destroy(&pHttpServer->threadPool));
   mERROR_CHECK(mThread_Destroy(&pHttpServer->pListenerThread));
-  mERROR_CHECK(mThread_Destroy(&pHttpServer->pStaleTcpClientHandlerThread));
+  mERROR_CHECK(mThread_Destroy(&pHttpServer->pStaleHandlerThread));
   mERROR_CHECK(mSharedPointer_Destroy(&pHttpServer->tcpServer));
   mERROR_CHECK(mMutex_Destroy(&pHttpServer->pStaleTcpClientMutex));
 
@@ -206,7 +208,7 @@ mFUNCTION(mHttpServer_Destroy_Internal, IN_OUT mHttpServer *pHttpServer)
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mHttpServer_Thread_Internal, mPtr<mHttpServer> &server)
+static mFUNCTION(mHttpServer_Thread_Internal, mPtr<mHttpServer> &server)
 {
   mFUNCTION_SETUP();
 
@@ -221,7 +223,7 @@ mFUNCTION(mHttpServer_Thread_Internal, mPtr<mHttpServer> &server)
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mHttpServer_StaleTcpHandlerThread_Internal, mPtr<mHttpServer> &server)
+static mFUNCTION(mHttpServer_StaleTcpHandlerThread_Internal, mPtr<mHttpServer> &server)
 {
   mFUNCTION_SETUP();
 
@@ -292,7 +294,7 @@ mFUNCTION(mHttpServer_StaleTcpHandlerThread_Internal, mPtr<mHttpServer> &server)
   mRETURN_SUCCESS();
 }
 
-void mHttpServer_HandleTcpClient_Internal(mPtr<mHttpServer> &server, mPtr<mTcpClient> &client)
+static void mHttpServer_HandleTcpClient_Internal(mPtr<mHttpServer> &server, mPtr<mTcpClient> &client)
 {
   // TODO: Use Arena Allocator.
 
@@ -336,7 +338,7 @@ void mHttpServer_HandleTcpClient_Internal(mPtr<mHttpServer> &server, mPtr<mTcpCl
 
     if (request->requestMethod == mHRM_Post && request->body.bytes > 1)
     {
-      if (mFAILED(mHttpRequest_ParseArguments(request->body.c_str(), request->postParameters, server->pAllocator, false)))
+      if (mFAILED(mHttpRequest_ParseArguments_Internal(request->body.c_str(), request->postParameters, server->pAllocator, false)))
       {
         mHttpServer_RespondWithError_Internal(server, client, mHRSC_BadRequest, "Failed to parse POST parameters.", server->pAllocator);
 
@@ -398,7 +400,7 @@ void mHttpServer_HandleTcpClient_Internal(mPtr<mHttpServer> &server, mPtr<mTcpCl
   return;
 }
 
-mFUNCTION(mHttpServer_RespondWithError_Internal, mPtr<mHttpServer> &server, mPtr<mTcpClient> &client, const mHttpResponseStatusCode statusCode, const mString &errorString, IN mAllocator *pAllocator)
+static mFUNCTION(mHttpServer_RespondWithError_Internal, mPtr<mHttpServer> &server, mPtr<mTcpClient> &client, const mHttpResponseStatusCode statusCode, const mString &errorString, IN mAllocator *pAllocator)
 {
   mFUNCTION_SETUP();
 
@@ -421,7 +423,7 @@ mFUNCTION(mHttpServer_RespondWithError_Internal, mPtr<mHttpServer> &server, mPtr
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mHttpServer_SendResponsePacket_Internal, mPtr<mTcpClient> &client, const mPtr<mHttpResponse> &response, IN mAllocator *pAllocator)
+static mFUNCTION(mHttpServer_SendResponsePacket_Internal, mPtr<mTcpClient> &client, const mPtr<mHttpResponse> &response, IN mAllocator *pAllocator)
 {
   mFUNCTION_SETUP();
 
@@ -540,7 +542,7 @@ mFUNCTION(mHttpServer_SendResponsePacket_Internal, mPtr<mTcpClient> &client, con
   mRETURN_SUCCESS();
 }
 
-int32_t mHttpServer_OnUrl_Internal(http_parser *pParser, const char *at, size_t length)
+static int32_t mHttpServer_OnUrl_Internal(http_parser *pParser, const char *at, size_t length)
 {
   mHttpRequest_Parser *pRequest = reinterpret_cast<mHttpRequest_Parser *>(pParser->data);
 
@@ -606,7 +608,7 @@ int32_t mHttpServer_OnUrl_Internal(http_parser *pParser, const char *at, size_t 
       const char previousLastChar = *(at - character + length);
       *const_cast<char *>(at - character + length) = '\0';
 
-      pRequest->result = mHttpRequest_ParseArguments(at + 1, pRequest->headParameters, pRequest->pAllocator, true);
+      pRequest->result = mHttpRequest_ParseArguments_Internal(at + 1, pRequest->headParameters, pRequest->pAllocator, true);
 
       *const_cast<char *>(at - character + length) = previousLastChar;
 
@@ -635,7 +637,7 @@ int32_t mHttpServer_OnUrl_Internal(http_parser *pParser, const char *at, size_t 
   return 0;
 }
 
-int32_t mHttpServer_OnHeaderField_Internal(http_parser *pParser, const char *at, size_t length)
+static int32_t mHttpServer_OnHeaderField_Internal(http_parser *pParser, const char *at, size_t length)
 {
   mHttpRequest_Parser *pRequest = reinterpret_cast<mHttpRequest_Parser *>(pParser->data);
 
@@ -656,7 +658,7 @@ int32_t mHttpServer_OnHeaderField_Internal(http_parser *pParser, const char *at,
   return 0;
 }
 
-int32_t mHttpServer_OnHeaderValue_Internal(http_parser *pParser, const char *at, size_t length)
+static int32_t mHttpServer_OnHeaderValue_Internal(http_parser *pParser, const char *at, size_t length)
 {
   mHttpRequest_Parser *pRequest = reinterpret_cast<mHttpRequest_Parser *>(pParser->data);
 
@@ -677,7 +679,7 @@ int32_t mHttpServer_OnHeaderValue_Internal(http_parser *pParser, const char *at,
   return 0;
 }
 
-int32_t mHttpServer_OnBody_Internal(http_parser *pParser, const char *at, size_t length)
+static int32_t mHttpServer_OnBody_Internal(http_parser *pParser, const char *at, size_t length)
 {
   mHttpRequest_Parser *pRequest = reinterpret_cast<mHttpRequest_Parser *>(pParser->data);
 
@@ -692,7 +694,7 @@ int32_t mHttpServer_OnBody_Internal(http_parser *pParser, const char *at, size_t
   return 0;
 }
 
-mFUNCTION(mHttpRequest_Parser_Init_Internal, mPtr<mHttpRequest_Parser> &request, IN mAllocator *pAllocator, mPtr<mTcpClient> &client)
+static mFUNCTION(mHttpRequest_Parser_Init_Internal, mPtr<mHttpRequest_Parser> &request, IN mAllocator *pAllocator, mPtr<mTcpClient> &client)
 {
   mFUNCTION_SETUP();
 
@@ -708,7 +710,7 @@ mFUNCTION(mHttpRequest_Parser_Init_Internal, mPtr<mHttpRequest_Parser> &request,
   mRETURN_SUCCESS();
 }
 
-void mHttpRequest_Parser_Destroy_Internal(IN_OUT mHttpRequest_Parser *pRequest)
+static void mHttpRequest_Parser_Destroy_Internal(IN_OUT mHttpRequest_Parser *pRequest)
 {
   if (pRequest == nullptr)
     return;
@@ -721,7 +723,7 @@ void mHttpRequest_Parser_Destroy_Internal(IN_OUT mHttpRequest_Parser *pRequest)
   mSharedPointer_Destroy(&pRequest->client);
 }
 
-mFUNCTION(mHttpRequest_ParseArguments, const char *params, OUT mPtr<mQueue<mKeyValuePair<mString, mString>>> &args, IN mAllocator *pAllocator, const bool ignoreFragment)
+static mFUNCTION(mHttpRequest_ParseArguments_Internal, const char *params, OUT mPtr<mQueue<mKeyValuePair<mString, mString>>> &args, IN mAllocator *pAllocator, const bool ignoreFragment)
 {
   mFUNCTION_SETUP();
 
@@ -847,7 +849,7 @@ no_more_params:
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mHttpResponse_Init_Internal, mPtr<mHttpResponse> &response, IN mAllocator *pAllocator)
+static mFUNCTION(mHttpResponse_Init_Internal, mPtr<mHttpResponse> &response, IN mAllocator *pAllocator)
 {
   mFUNCTION_SETUP();
 
@@ -863,7 +865,7 @@ mFUNCTION(mHttpResponse_Init_Internal, mPtr<mHttpResponse> &response, IN mAlloca
   mRETURN_SUCCESS();
 }
 
-void mHttpResponse_Destroy_Internal(IN_OUT mHttpResponse *pResponse)
+static void mHttpResponse_Destroy_Internal(IN_OUT mHttpResponse *pResponse)
 {
   if (pResponse == nullptr)
     return;
