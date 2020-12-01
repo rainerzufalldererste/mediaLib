@@ -72,7 +72,7 @@ template <typename T> constexpr T mMin(const T a, const T b) { return (a <= b) ?
 template <typename T, typename U>
 constexpr auto mLerp(const T a, const T b, const U ratio) -> decltype(a + (b - a) * ratio) { return a + (b - a) * ratio; }
 
-template <typename T, typename U = typename std::conditional_t<std::is_same<T, double_t>::value, T, float_t>>
+template <typename T, typename U = typename std::conditional_t<std::is_integral<T>::value, float_t, T>>
 constexpr U mInverseLerp(const T value, const T min, const T max) { return (U)(value - min) / (U)(max - min); }
 
 template <typename T, typename U>
