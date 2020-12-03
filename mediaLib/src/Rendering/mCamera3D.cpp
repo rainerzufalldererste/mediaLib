@@ -1,7 +1,10 @@
 #include "mCamera3D.h"
 
-#ifdef GIT_BUILD
-#fail "missing mFILE"
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "ByyqEw/J6o3CfA41rnZdMxFit9m3xJ4SMWwxX9UnY/RgKtpDzAstQODyIN7UCRpxaHERO3pZ6zHQ5I+r"
 #endif
 
 mFUNCTION(mCamera3D_CreateWithDirection, OUT mCamera3D *pCamera, const mVec3f position, const mVec3f lookDirection, const float_t verticalFOV, const float_t aspectRatio, const float_t nearPlane, const float_t farPlane, const mVec3f up /* = mVec3f(0, 0, 1) */)

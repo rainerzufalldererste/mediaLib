@@ -3,8 +3,11 @@
 
 #include "mediaLib.h"
 
-#ifdef GIT_BUILD
-#fail "missing mFILE"
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "aflhek23nNRfhAbyPuVk5QS3cSy9JDPtYXzJJoYlSVh0DEr+v5L4q/Hucl8kmj8vu9jCnOTHbdoMycRx"
 #endif
 
 struct mCamera3D
