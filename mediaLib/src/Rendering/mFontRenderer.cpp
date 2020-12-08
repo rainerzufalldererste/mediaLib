@@ -1028,8 +1028,8 @@ mFUNCTION(mFontRenderer_DrawWithLayout, mPtr<mFontRenderer> &fontRenderer, const
               if (first)
               {
                 if (fontDescription.hasBounds && !fontDescription.bounds.Contains(glyphBounds)
-                  // HACK: Sometimes it seems like we're a tiny amount of pixels off, when rendering center- (and probably also right-) aligned.
-                  && (glyphBounds.size.LengthSquared() - fontDescription.bounds.Intersect(glyphBounds).size.LengthSquared() > mVec2f(spaceGlyphInfo.advanceX * .5f, glyphBounds.height).LengthSquared() && fontDescription.bounds.position.y <= glyphBounds.y && fontDescription.bounds.position.y + fontDescription.bounds.height >= glyphBounds.y + glyphBounds.height))
+                  // HACK: Sometimes it seems like we're a tiny amount of pixels off, when rendering center- (and probably also right-) aligned. (But make sure it doesn't render one line before or after the bounds)
+                  && ((glyphBounds.y + glyphBounds.height > fontDescription.bounds.y + fontDescription.bounds.height || glyphBounds.y < fontDescription.bounds.y) || (glyphBounds.size.LengthSquared() - fontDescription.bounds.Intersect(glyphBounds).size.LengthSquared() > mVec2f(spaceGlyphInfo.advanceX * .5f, glyphBounds.height).LengthSquared() && fontDescription.bounds.position.y <= glyphBounds.y && fontDescription.bounds.position.y + fontDescription.bounds.height >= glyphBounds.y + glyphBounds.height)))
                 {
                   fontRenderer->stoppedAtStartX = glyphBounds.x < fontDescription.bounds.x;
                   fontRenderer->stoppedAtStartY = glyphBounds.y < fontDescription.bounds.y;
