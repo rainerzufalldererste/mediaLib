@@ -75,6 +75,7 @@ struct m2DAnimationHandler
 
 mFUNCTION(m2DAnimationHandler_Create, OUT mPtr<m2DAnimationHandler> *pAnimationHandler, IN OPTIONAL mAllocator *pAllocator);
 mFUNCTION(m2DAnimationHandler_CreateFromFile, OUT mPtr<m2DAnimationHandler> *pAnimationHandler, IN OPTIONAL mAllocator *pAllocator, const mString &filename);
+mFUNCTION(m2DAnimationHandler_CreateFromJsonString, OUT mPtr<m2DAnimationHandler> *pAnimationHandler, IN OPTIONAL mAllocator *pAllocator, const mString &jsonString);
 
 mFUNCTION(m2DAnimationHandler_Destroy, IN_OUT mPtr<m2DAnimationHandler> *pAnimationHandler);
 
