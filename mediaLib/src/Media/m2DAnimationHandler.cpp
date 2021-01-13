@@ -653,7 +653,6 @@ mFUNCTION(m2DAnimationHandler_GetLastKeyframeTimestamp, mPtr<m2DAnimationHandler
   mRETURN_SUCCESS();
 }
 
-
 mFUNCTION(m2DAnimationHandler_SaveToFile, mPtr<m2DAnimationHandler> &animationHandler, const mString &filename)
 {
   mFUNCTION_SETUP();
