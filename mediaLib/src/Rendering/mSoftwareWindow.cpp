@@ -251,6 +251,69 @@ mFUNCTION(mSoftwareWindow_ClearEventHandlers, mPtr<mSoftwareWindow> &window)
   mRETURN_SUCCESS();
 }
 
+mFUNCTION(mSoftwareWindow_SetActive, mPtr<mSoftwareWindow> &window)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(window == nullptr, mR_ArgumentNull);
+
+  SDL_RaiseWindow(window->pWindow);
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mSoftwareWindow_IsActive, const mPtr<mSoftwareWindow> &window, OUT bool *pIsActive)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(window == nullptr || pIsActive == nullptr, mR_ArgumentNull);
+
+  const uint32_t flags = SDL_GetWindowFlags(window->pWindow);
+
+  *pIsActive = !!(flags & SDL_WINDOW_INPUT_FOCUS);
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mSoftwareWindow_IsResizable, const mPtr<mSoftwareWindow> &window, OUT bool *pIsResizable)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(window == nullptr || pIsResizable == nullptr, mR_ArgumentNull);
+
+  const uint32_t flags = SDL_GetWindowFlags(window->pWindow);
+
+  *pIsResizable = !!(flags & SDL_WINDOW_RESIZABLE);
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mSoftwareWindow_IsMinimized, const mPtr<mSoftwareWindow> &window, OUT bool *pIsMinimized)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(window == nullptr || pIsMinimized == nullptr, mR_ArgumentNull);
+
+  const uint32_t flags = SDL_GetWindowFlags(window->pWindow);
+
+  *pIsMinimized = !!(flags & SDL_WINDOW_MINIMIZED);
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mSoftwareWindow_IsMaximized, const mPtr<mSoftwareWindow> &window, OUT bool *pIsMaximized)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(window == nullptr || pIsMaximized == nullptr, mR_ArgumentNull);
+
+  const uint32_t flags = SDL_GetWindowFlags(window->pWindow);
+
+  *pIsMaximized = !!(flags & SDL_WINDOW_MAXIMIZED);
+
+  mRETURN_SUCCESS();
+}
+
 //////////////////////////////////////////////////////////////////////////
 
 static mFUNCTION(mSoftwareWindow_Create_Internal, IN mSoftwareWindow *pWindow, IN mAllocator *pAllocator, const mString &title, const mVec2s &size, const mSoftwareWindow_DisplayMode displaymode)

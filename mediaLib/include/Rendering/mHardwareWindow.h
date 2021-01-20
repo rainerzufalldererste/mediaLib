@@ -36,6 +36,11 @@ mFUNCTION(mHardwareWindow_GetRenderContextId, mPtr<mHardwareWindow> &window, OUT
 mFUNCTION(mHardwareWindow_SetFullscreenMode, mPtr<mHardwareWindow> &window, const mHardwareWindow_DisplayMode displayMode);
 mFUNCTION(mHardwareWindow_SetActive, mPtr<mHardwareWindow> &window);
 
+mFUNCTION(mHardwareWindow_IsActive, const mPtr<mHardwareWindow> &window, OUT bool *pIsActive);
+mFUNCTION(mHardwareWindow_IsResizable, const mPtr<mHardwareWindow> &window, OUT bool *pIsResizable);
+mFUNCTION(mHardwareWindow_IsMinimized, const mPtr<mHardwareWindow> &window, OUT bool *pIsMinimized);
+mFUNCTION(mHardwareWindow_IsMaximized, const mPtr<mHardwareWindow> &window, OUT bool *pIsMaximized);
+
 mFUNCTION(mHardwareWindow_MaximizeWindow, mPtr<mHardwareWindow> &window);
 mFUNCTION(mHardwareWindow_MinimizeWindow, mPtr<mHardwareWindow> &window);
 mFUNCTION(mHardwareWindow_RestoreWindow, mPtr<mHardwareWindow> &window);
