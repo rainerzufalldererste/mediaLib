@@ -1478,7 +1478,7 @@ mFUNCTION(mFile_LaunchFile, const mString &filename)
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mFile_LaunchApplication, const mString &applicationFilename, const mString &arguments, const mString &workingDirectory)
+mFUNCTION(mFile_LaunchApplication, const mString &applicationFilename, const mString &arguments, const mString &workingDirectory, const bool elevatePrivileges /* = false */)
 {
   mFUNCTION_SETUP();
 
@@ -1510,7 +1510,7 @@ mFUNCTION(mFile_LaunchApplication, const mString &applicationFilename, const mSt
   mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &wWorkingDirectory, wWorkingDirectoryCount));
   mERROR_CHECK(mString_ToWideString(workingDirectory, wWorkingDirectory, wWorkingDirectoryCount));
 
-  const size_t result = reinterpret_cast<size_t>(ShellExecuteW(nullptr, nullptr, wPath, wArguments, wWorkingDirectory, SW_SHOW));
+  const size_t result = reinterpret_cast<size_t>(ShellExecuteW(nullptr, elevatePrivileges ? L"runas" : nullptr, wPath, wArguments, wWorkingDirectory, SW_SHOW));
 
   if (result <= 32)
   {
