@@ -771,7 +771,7 @@ static void mAudio_AddWithVolumeFloat_AVX(OUT float_t *pDestination, IN float_t 
   typedef __m256 simd_t;
   constexpr size_t loopSize = sizeof(simd_t) / sizeof(float_t);
 
-  if (sampleCount * sizeof(float_t) > loopSize)
+  if (sampleCount > loopSize)
   {
     const simd_t mmvolume = _mm256_set1_ps(volume);
 
@@ -807,7 +807,7 @@ mFUNCTION(mAudio_AddWithVolumeFloat, OUT float_t *pDestination, IN float_t *pSou
     typedef __m128 simd_t;
     constexpr size_t loopSize = sizeof(simd_t) / sizeof(float_t);
 
-    if (sampleCount * sizeof(float_t) > loopSize)
+    if (sampleCount > loopSize)
     {
       const simd_t mmvolume = _mm_set1_ps(volume);
 
@@ -1006,7 +1006,7 @@ static void mAudio_InplaceMidSideToStereo_AVX(IN_OUT float_t *pMidToLeft, IN_OUT
   typedef __m256 simd_t;
   constexpr size_t loopSize = (sizeof(simd_t) / sizeof(float_t));
 
-  if (sampleCount * sizeof(float_t) > loopSize)
+  if (sampleCount > loopSize)
   {
     const simd_t factor = _mm256_set1_ps(.5f);
 
@@ -1061,7 +1061,7 @@ mFUNCTION(mAudio_InplaceMidSideToStereo, IN_OUT float_t *pMidToLeft, IN_OUT floa
     typedef __m128 simd_t;
     constexpr size_t loopSize = (sizeof(simd_t) / sizeof(float_t));
 
-    if (sampleCount * sizeof(float_t) > loopSize)
+    if (sampleCount > loopSize)
     {
       const simd_t factor = _mm_set1_ps(.5f);
 
@@ -1107,7 +1107,7 @@ static void mAudio_InplaceMidLateralLongitudinalToQuadro_AVX(IN_OUT float_t *pMi
   typedef __m256 simd_t;
   constexpr size_t loopSize = (sizeof(simd_t) / sizeof(float_t));
 
-  if (sampleCount * sizeof(float_t) > loopSize)
+  if (sampleCount > loopSize)
   {
     const simd_t factor = _mm256_set1_ps(.5f);
 
@@ -1173,7 +1173,7 @@ mFUNCTION(mAudio_InplaceMidLateralLongitudinalToQuadro, IN_OUT float_t *pMidToFr
     typedef __m128 simd_t;
     constexpr size_t loopSize = (sizeof(simd_t) / sizeof(float_t));
 
-    if (sampleCount * sizeof(float_t) > loopSize)
+    if (sampleCount > loopSize)
     {
       const simd_t factor = _mm_set1_ps(.5f);
 
@@ -1231,7 +1231,7 @@ mFUNCTION(mAudio_InterleavedQuadroMidLateralLFELongitudinalToDualInterleavedSter
   {
     typedef __m128 simd_t;
 
-    if (sampleCount * sizeof(float_t) > 4)
+    if (sampleCount >= 4)
     {
       const simd_t half = _mm_set1_ps(.5f);
 
