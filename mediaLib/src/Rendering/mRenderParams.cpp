@@ -454,7 +454,7 @@ mFUNCTION(mRenderParams_SetBlendFunc, const mRenderParam_BlendFunc blendFunc)
 
   case mRP_BF_AlphaMask:
     mERROR_CHECK(mRenderParams_SetBlendingEnabled(true));
-    glBlendFuncSeparate(GL_ZERO, GL_DST_COLOR, GL_ZERO, GL_SRC_ALPHA);
+    glBlendFuncSeparate(GL_ZERO, GL_ONE, GL_ZERO, GL_SRC_ALPHA);
     glBlendEquation(GL_FUNC_ADD);
     break;
 
