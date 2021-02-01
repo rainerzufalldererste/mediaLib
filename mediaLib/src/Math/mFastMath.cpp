@@ -70,9 +70,20 @@ mResult mVECTORCALL mVector::TransformStream4(OUT DirectX::XMFLOAT4 *pOutputData
   mRETURN_SUCCESS();
 }
 
+mMatrix mVector::OuterProduct4(const mVector a, const mVector b)
+{
+  mMatrix m;
+
+  for (size_t x = 0; x < 4; x++)
+    for (size_t y = 0; y < 4; y++)
+      m._m[x][y] = a._v[x] * b._v[y];
+
+  return m;
+}
+
 //////////////////////////////////////////////////////////////////////////
 
-mResult mQuaternion::SquadSetup(OUT mVector *pA, OUT mVector *pB, OUT mVector *pC, const mQuaternion &q0, const mQuaternion &q1, const mQuaternion &q2, const mQuaternion &q3)
+mResult mQuaternion::SquadSetup(OUT mVector *pA, OUT mVector *pB, OUT mVector *pC, const mQuaternion &q0, const mQuaternion &q1, const mQuaternion &q2, const mQuaternion &q3) const
 {
   mFUNCTION_SETUP();
 
@@ -82,7 +93,7 @@ mResult mQuaternion::SquadSetup(OUT mVector *pA, OUT mVector *pB, OUT mVector *p
   mRETURN_SUCCESS();
 }
 
-mResult mQuaternion::ToAxisAngle(OUT mVector *pAxis, OUT float_t *pAngle)
+mResult mQuaternion::ToAxisAngle(OUT mVector *pAxis, OUT float_t *pAngle) const
 {
   mFUNCTION_SETUP();
 
@@ -92,9 +103,29 @@ mResult mQuaternion::ToAxisAngle(OUT mVector *pAxis, OUT float_t *pAngle)
   mRETURN_SUCCESS();
 }
 
-//////////////////////////////////////////////////////////////////////////
+mResult mQuaternion::GetAverageEst(IN const mQuaternion *pValues, const size_t count, OUT mQuaternion *pAverage)
+{
+  if (pValues == nullptr || pAverage == nullptr)
+    return mR_ArgumentNull;
 
-mVec3f mQuaternion::ToEulerAngles()
+  mVector avg(0, 0, 0, 0);
+
+  for (size_t i = 0; i < count; i++)
+  {
+    const mQuaternion &q = pValues[i];
+
+    if (i > 0 && q.Dot(pValues[0]) < 0.f)
+      avg += -mVector(q.q);
+    else
+      avg += mVector(q.q);
+  }
+
+  *pAverage = mQuaternion(avg.v).Normalize();
+
+  return mR_Success;
+}
+
+mVec3f mQuaternion::ToEulerAngles() const
 {
   // x-axis rotation
   const float_t sinr_cosp = 2.0f * (w * x + y * z);
@@ -118,6 +149,8 @@ mVec3f mQuaternion::ToEulerAngles()
   return mVec3f(yaw, pitch, roll);
 }
 
+//////////////////////////////////////////////////////////////////////////
+
 mResult mMatrix::Decompose(OUT mVector *pOutScale, OUT mQuaternion *pOutRotQuat, OUT mVector *pOutTrans) const
 {
   mFUNCTION_SETUP();
@@ -126,4 +159,48 @@ mResult mMatrix::Decompose(OUT mVector *pOutScale, OUT mQuaternion *pOutRotQuat,
   mERROR_IF(DirectX::XMMatrixDecompose(&pOutScale->v, &pOutRotQuat->q, &pOutTrans->v, m), mR_InternalError);
 
   mRETURN_SUCCESS();
+}
+
+mMatrix mMatrix::AddComponentWise(const mMatrix &a, const mMatrix &b)
+{
+  mMatrix ret;
+
+  for (size_t i = 0; i < 4; i++)
+    for (size_t j = 0; j < 4; j++)
+      ret._m[i][j] = a._m[i][j] + b._m[i][j];
+
+  return ret;
+}
+
+mMatrix mMatrix::SubtractComponentWise(const mMatrix &a, const mMatrix &b)
+{
+  mMatrix ret;
+
+  for (size_t i = 0; i < 4; i++)
+    for (size_t j = 0; j < 4; j++)
+      ret._m[i][j] = a._m[i][j] - b._m[i][j];
+
+  return ret;
+}
+
+mMatrix mMatrix::MultiplyComponentWise(const mMatrix &a, const mMatrix &b)
+{
+  mMatrix ret;
+
+  for (size_t i = 0; i < 4; i++)
+    for (size_t j = 0; j < 4; j++)
+      ret._m[i][j] = a._m[i][j] * b._m[i][j];
+
+  return ret;
+}
+
+mMatrix mMatrix::DivideComponentWise(const mMatrix &a, const mMatrix &b)
+{
+  mMatrix ret;
+
+  for (size_t i = 0; i < 4; i++)
+    for (size_t j = 0; j < 4; j++)
+      ret._m[i][j] = a._m[i][j] / b._m[i][j];
+
+  return ret;
 }

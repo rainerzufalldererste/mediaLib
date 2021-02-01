@@ -283,6 +283,8 @@ struct mVector
   static mResult mVECTORCALL ComponentsFromNormal3(OUT mVector *pParallel, OUT mVector *pPerpendicular, const mVector &v, const mVector &normal);
 
   static mResult mVECTORCALL TransformStream4(OUT DirectX::XMFLOAT4 *pOutputData, const size_t outputStride, IN DirectX::XMFLOAT4 *pInputData, const size_t inputStride, const size_t inputLength, const mMatrix &matrix);
+
+  static mMatrix OuterProduct4(const mVector a, const mVector b);
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -338,9 +340,12 @@ struct mQuaternion
   mINLINE static mQuaternion mVECTORCALL Squad(const mQuaternion q0, const mQuaternion q1, const mQuaternion q2, const mQuaternion q3, const float_t t) { return mQuaternion(DirectX::XMQuaternionSquad(q0.q, q1.q, q2.q, q3.q, t)); }
   mINLINE static mQuaternion mVECTORCALL SquadV(const mQuaternion q0, const mQuaternion q1, const mQuaternion q2, const mQuaternion q3, const mVector t) { return mQuaternion(DirectX::XMQuaternionSquadV(q0.q, q1.q, q2.q, q3.q, t.v)); }
 
-  mVec3f ToEulerAngles();
-  mResult SquadSetup(OUT mVector *pA, OUT mVector *pB, OUT mVector *pC, const mQuaternion &q0, const mQuaternion &q1, const mQuaternion &q2, const mQuaternion &q3);
-  mResult ToAxisAngle(OUT mVector *pAxis, OUT float_t *pAngle);
+  mVec3f ToEulerAngles() const;
+  mResult SquadSetup(OUT mVector *pA, OUT mVector *pB, OUT mVector *pC, const mQuaternion &q0, const mQuaternion &q1, const mQuaternion &q2, const mQuaternion &q3) const;
+  mResult ToAxisAngle(OUT mVector *pAxis, OUT float_t *pAngle) const;
+
+  // This gets very close to the exact value that is way more expensive to calculate.
+  static mResult GetAverageEst(IN const mQuaternion *pValues, const size_t count, OUT mQuaternion *pAverage);
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -430,6 +435,11 @@ struct mMatrix
   mINLINE mMatrix Transpose() const { return mMatrix(DirectX::XMMatrixTranspose(m)); }
   mINLINE mVector mVECTORCALL TransformVector4(const mVector vector4) { return mVector(XMVector4Transform(vector4.v, m)); }
   mINLINE mVector mVECTORCALL TransformVector3(const mVector vector3) { return mVector(XMVector3Transform(vector3.v, m)); }
+
+  static mMatrix AddComponentWise(const mMatrix& a, const mMatrix& b);
+  static mMatrix SubtractComponentWise(const mMatrix& a, const mMatrix& b);
+  static mMatrix MultiplyComponentWise(const mMatrix& a, const mMatrix& b);
+  static mMatrix DivideComponentWise(const mMatrix& a, const mMatrix& b);
 };
 
 //////////////////////////////////////////////////////////////////////////
