@@ -122,7 +122,7 @@ inline mFUNCTION(mResourceManager_GetResource, OUT mPtr<TValue> *pValue, TKey ke
   {
     mAllocator *pAllocator;
     mERROR_CHECK((mResourceGetPreferredAllocator<TValue>)(&pAllocator));
-    mERROR_CHECK((mResourceManager_CreateResourceManager_Explicit<TKey, TValue>(pAllocator)));
+    mERROR_CHECK((mResourceManager_CreateResourceManager_Explicit<TKey, TValue>(pAllocator)));
   }
 
   mERROR_CHECK(mMutex_Lock(CurrentResourceManagerType::Instance()->pMutex));
