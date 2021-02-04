@@ -3,9 +3,19 @@
 #include "mThreading.h"
 #include "mPool.h"
 #include "mQueue.h"
+#include "mProfiler.h"
 
+#define DECLSPEC
 #include "SDL.h"
 #include "SDL_audio.h"
+#undef DECLSPEC
+
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "aGIVr++X05W55RIB3uR2j2dEzsYnRANw7tYm89aUN1Yn0255o0csUlY1oBBwutQhaBbIv2NgHP1eHUQ2"
+#endif
 
 constexpr size_t mAudioEngine_BufferNotReadyTries = 3;
 
@@ -24,12 +34,13 @@ struct mAudioEngine
   mThread *pUpdateThread;
   volatile bool bufferReady;
   volatile bool keepRunning;
+  volatile float_t masterVolume;
 };
 
-mFUNCTION(mAudioEngine_Destroy_Internal, IN_OUT mAudioEngine *pAudioEngine);
-void SDLCALL mAudioEngine_AudioCallback_Internal(IN void *pUserData, OUT uint8_t *pStream, const int32_t length);
-mFUNCTION(mAudioEngine_ManagedAudioCallback_Internal, IN mAudioEngine *pAudioEngine, OUT float_t *pStream, const size_t length);
-mFUNCTION(mAudioEngine_PrepareNextAudioBuffer_Internal, IN mAudioEngine *pAudioEngine);
+static mFUNCTION(mAudioEngine_Destroy_Internal, IN_OUT mAudioEngine *pAudioEngine);
+static void SDLCALL mAudioEngine_AudioCallback_Internal(IN void *pUserData, OUT uint8_t *pStream, const int32_t length);
+static mFUNCTION(mAudioEngine_ManagedAudioCallback_Internal, IN mAudioEngine *pAudioEngine, OUT float_t *pStream, const size_t length);
+static mFUNCTION(mAudioEngine_PrepareNextAudioBuffer_Internal, IN mAudioEngine *pAudioEngine);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -70,6 +81,7 @@ mFUNCTION(mAudioEngine_Create, OUT mPtr<mAudioEngine> *pAudioEngine, IN mAllocat
   (*pAudioEngine)->sampleRate = have.freq;
   (*pAudioEngine)->pAllocator = pAllocator;
   (*pAudioEngine)->keepRunning = true;
+  (*pAudioEngine)->masterVolume = 1.f;
 
   mERROR_CHECK(mThread_Create(&(*pAudioEngine)->pUpdateThread, pAllocator, mAudioEngine_PrepareNextAudioBuffer_Internal, pAudioEngine->GetPointer()));
   mERROR_CHECK(mAudioEngine_SetPaused(*pAudioEngine, false));
@@ -95,6 +107,28 @@ mFUNCTION(mAudioEngine_SetPaused, mPtr<mAudioEngine> &audioEngine, const bool pa
   mERROR_IF(audioEngine == nullptr, mR_ArgumentNull);
 
   SDL_PauseAudioDevice(audioEngine->deviceId, paused ? SDL_TRUE : SDL_FALSE);
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mAudioEngine_SetVolume, mPtr<mAudioEngine> &audioEngine, const float_t volume)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(audioEngine == nullptr, mR_ArgumentNull);
+
+  audioEngine->masterVolume = volume;
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mAudioEngine_GetVolume, mPtr<mAudioEngine> &audioEngine, OUT float_t *pVolume)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(audioEngine == nullptr, mR_ArgumentNull);
+
+  *pVolume = audioEngine->masterVolume;
 
   mRETURN_SUCCESS();
 }
@@ -126,11 +160,13 @@ mFUNCTION(mAudioEngine_AddAudioSource, mPtr<mAudioEngine> &audioEngine, mPtr<mAu
 
 //////////////////////////////////////////////////////////////////////////
 
-void SDLCALL mAudioEngine_AudioCallback_Internal(IN void *pUserData, OUT uint8_t *pStream, const int32_t length)
+static void SDLCALL mAudioEngine_AudioCallback_Internal(IN void *pUserData, OUT uint8_t *pStream, const int32_t length)
 {
   mAudioEngine *pAudioEngine = (mAudioEngine *)pUserData;
 
   mFUNCTION_SETUP();
+
+  mPROFILE_SCOPED("mAudioEngine_AudioCallback");
 
   mERROR_IF_GOTO(length / sizeof(int16_t) != pAudioEngine->bufferSize * pAudioEngine->channelCount, mR_ResourceIncompatible, mSTDRESULT, epilogue);
   
@@ -144,7 +180,7 @@ void SDLCALL mAudioEngine_AudioCallback_Internal(IN void *pUserData, OUT uint8_t
 
       if (pAudioEngine->bufferReady)
       {
-        mERROR_CHECK_GOTO(mAudio_ConvertFloatToInt16WithDithering(reinterpret_cast<int16_t *>(pStream), pAudioEngine->buffer, pAudioEngine->bufferSize * pAudioEngine->channelCount), mSTDRESULT, epilogue);
+        mERROR_CHECK_GOTO(mAudio_ConvertFloatToInt16WithDitheringAndFactor(reinterpret_cast<int16_t *>(pStream), pAudioEngine->buffer, pAudioEngine->bufferSize * pAudioEngine->channelCount, pAudioEngine->masterVolume), mSTDRESULT, epilogue);
         pAudioEngine->bufferReady = false;
         break;
       }
@@ -162,7 +198,7 @@ epilogue:
   mASSERT_DEBUG(mSUCCEEDED(mSTDRESULT), "Audio Engine Callback failed with error code %" PRIx64 ".", (uint64_t)mSTDRESULT);
 }
 
-mFUNCTION(mAudioEngine_PrepareNextAudioBuffer_Internal, IN mAudioEngine *pAudioEngine)
+static mFUNCTION(mAudioEngine_PrepareNextAudioBuffer_Internal, IN mAudioEngine *pAudioEngine)
 {
   mFUNCTION_SETUP();
 
@@ -211,11 +247,13 @@ mFUNCTION(mAudioEngine_PrepareNextAudioBuffer_Internal, IN mAudioEngine *pAudioE
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mAudioEngine_ManagedAudioCallback_Internal, IN mAudioEngine *pAudioEngine, OUT float_t *pStream, const size_t length)
+static mFUNCTION(mAudioEngine_ManagedAudioCallback_Internal, IN mAudioEngine *pAudioEngine, OUT float_t *pStream, const size_t length)
 {
   mFUNCTION_SETUP();
 
   mERROR_IF(pAudioEngine == nullptr || pStream == nullptr, mR_ArgumentNull);
+
+  mPROFILE_SCOPED("mAudioEngine_ManagedAudioCallback");
 
   const size_t perChannelLength = length / pAudioEngine->channelCount;
 
@@ -316,7 +354,7 @@ mFUNCTION(mAudioEngine_ManagedAudioCallback_Internal, IN mAudioEngine *pAudioEng
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mAudioEngine_Destroy_Internal, IN_OUT mAudioEngine *pAudioEngine)
+static mFUNCTION(mAudioEngine_Destroy_Internal, IN_OUT mAudioEngine *pAudioEngine)
 {
   mFUNCTION_SETUP();
 

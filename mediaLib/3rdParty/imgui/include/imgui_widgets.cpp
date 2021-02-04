@@ -2161,7 +2161,7 @@ bool ImGui::SliderScalar(const char* label, ImGuiDataType data_type, void* v, co
     window->DrawList->AddCircleFilled(grab_bb.GetCenter(), min(grab_bb.GetHeight(), grab_bb.GetWidth()) * (g.ActiveId == id ? .5f : (g.HoveredId == id ? .5f : .33f)), GetColorU32(g.ActiveId == id ? ImGuiCol_SliderGrabActive : ImGuiCol_SliderGrab));
     //window->DrawList->AddTriangleFilled(grab_bb.GetCenter(), grab_bb.GetCenter() + grab_bb.GetSize() * .5f, grab_bb.GetCenter() + grab_bb.GetSize() * ImVec2(-.5f, .5f), GetColorU32(g.ActiveId == id ? ImGuiCol_SliderGrabActive : ImGuiCol_SliderGrab));
 
-    if (hovered || g.HoveredId == id || g.ActiveId == id)
+    if ((hovered || g.HoveredId == id || g.ActiveId == id) && (format != nullptr && format[0] != '\0'))
     {
       // Display value using user-provided display format so user can add prefix/suffix/decorations to the value.
       char value_buf[64];

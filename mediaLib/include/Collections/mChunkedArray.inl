@@ -1,3 +1,10 @@
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "VUCC9yjhuc/sHvU3zVDFcO8yG/Ah6TsbpvG63BcSPpDy8Xxsv+tsvuC/kymY+AO1U6UbU4S6qDUJ8Jd5"
+#endif
+
 template <typename T>
 mFUNCTION(mChunkedArray_Destroy_Internal, IN mChunkedArray<T> *pChunkedArray);
 
@@ -67,7 +74,6 @@ mFUNCTION(mChunkedArray_Push, mPtr<mChunkedArray<T>> &chunkedArray, IN T *pItem,
     if (pBlock->blockStartIndex > 0)
     {
       --pBlock->blockStartIndex;
-      index += pBlock->blockStartIndex;
 
       new (&pBlock->pData[pBlock->blockStartIndex]) T (*pItem);
 
@@ -101,10 +107,27 @@ mFUNCTION(mChunkedArray_PushBack, mPtr<mChunkedArray<T>> &chunkedArray, IN T *pI
   mERROR_IF(chunkedArray == nullptr || pItem == nullptr, mR_ArgumentNull);
 
   if (chunkedArray->pBlocks == nullptr || chunkedArray->pBlocks[chunkedArray->blockCount - 1].blockEndIndex >= chunkedArray->blockSize || chunkedArray->itemCapacity <= chunkedArray->itemCount)
-    mERROR_CHECK(mChunkedArray_Grow_Internal(chunkedArray));
+  {
+    if (chunkedArray->pBlocks == nullptr || chunkedArray->blockCount == 0 || chunkedArray->pBlocks[chunkedArray->blockCount - 1].blockStartIndex == 0)
+    {
+      mERROR_CHECK(mChunkedArray_Grow_Internal(chunkedArray));
+    }
+    else // move entries of the last block to the beginning of the block.
+    {
+      const size_t blockCount = chunkedArray->pBlocks[chunkedArray->blockCount - 1].blockEndIndex - chunkedArray->pBlocks[chunkedArray->blockCount - 1].blockStartIndex;
+      const size_t oldBlockStartIndex = chunkedArray->pBlocks[chunkedArray->blockCount - 1].blockStartIndex;
 
-  new (&chunkedArray->pBlocks[chunkedArray->blockCount - 1].pData[chunkedArray->pBlocks[chunkedArray->blockCount - 1].blockEndIndex]) T(*pItem);
-  ++chunkedArray->pBlocks[chunkedArray->blockCount - 1].blockEndIndex;
+      chunkedArray->pBlocks[chunkedArray->blockCount - 1].blockStartIndex = 0;
+      chunkedArray->pBlocks[chunkedArray->blockCount - 1].blockEndIndex = blockCount;
+
+      mERROR_CHECK(mMove(chunkedArray->pBlocks[chunkedArray->blockCount - 1].pData, chunkedArray->pBlocks[chunkedArray->blockCount - 1].pData + oldBlockStartIndex, blockCount));
+    }
+  }
+
+  auto &lastBlock = chunkedArray->pBlocks[chunkedArray->blockCount - 1];
+
+  new (&lastBlock.pData[lastBlock.blockEndIndex]) T(*pItem);
+  ++lastBlock.blockEndIndex;
   ++chunkedArray->itemCount;
 
   mRETURN_SUCCESS();
@@ -185,14 +208,14 @@ mFUNCTION(mChunkedArray_PopAt, mPtr<mChunkedArray<T>> &chunkedArray, const size_
     if (innerItemIndex - pBlock->blockStartIndex <= pBlock->blockEndIndex - innerItemIndex)
     {
       if (innerItemIndex - pBlock->blockStartIndex > 0)
-        mERROR_CHECK(mAllocator_Move(chunkedArray->pAllocator, &pBlock->pData[pBlock->blockStartIndex + 1], &pBlock->pData[pBlock->blockStartIndex], innerItemIndex - pBlock->blockStartIndex));
+        mERROR_CHECK(mMove(&pBlock->pData[pBlock->blockStartIndex + 1], &pBlock->pData[pBlock->blockStartIndex], innerItemIndex - pBlock->blockStartIndex));
 
       ++pBlock->blockStartIndex;
     }
     else
     {
       if (pBlock->blockEndIndex - innerItemIndex - 1 > 0)
-        mERROR_CHECK(mAllocator_Move(chunkedArray->pAllocator, &pBlock->pData[innerItemIndex], &pBlock->pData[innerItemIndex + 1], pBlock->blockEndIndex - innerItemIndex - 1));
+        mERROR_CHECK(mMove(&pBlock->pData[innerItemIndex], &pBlock->pData[innerItemIndex + 1], pBlock->blockEndIndex - innerItemIndex - 1));
 
       --pBlock->blockEndIndex;
     }
@@ -200,20 +223,21 @@ mFUNCTION(mChunkedArray_PopAt, mPtr<mChunkedArray<T>> &chunkedArray, const size_
     // Cleanup if block empty.
     if (pBlock->blockStartIndex == pBlock->blockEndIndex)
     {
-      mERROR_CHECK(mAllocator_FreePtr(chunkedArray->pAllocator, &pBlock->pData));
-
       if (blockIndex < chunkedArray->blockCount - 1)
-        mERROR_CHECK(mAllocator_Move(chunkedArray->pAllocator, pBlock, pBlock + 1, chunkedArray->blockCount - blockIndex - 1));
-
-      chunkedArray->itemCapacity -= pBlock->blockSize;
-      --chunkedArray->blockCount;
+      {
+        mChunkedArray<T>::mChunkedArrayBlock currentBlock = *pBlock;
+        const size_t activeBlocksAfterwards = chunkedArray->blockCount - blockIndex - 1;
+        
+        mERROR_CHECK(mMove(pBlock, pBlock + 1, activeBlocksAfterwards)); // only move active blocks forward.
+        pBlock[activeBlocksAfterwards] = currentBlock; // move current block to the end of the blocks in use.
+      }
     }
 
     --chunkedArray->itemCount;
-    break;
+    mRETURN_SUCCESS();
   }
 
-  mRETURN_SUCCESS();
+  mRETURN_RESULT(mR_ResourceStateInvalid);
 }
 
 template <typename T>
@@ -245,6 +269,35 @@ mFUNCTION(mChunkedArray_PointerAt, mPtr<mChunkedArray<T>> &chunkedArray, const s
   mRETURN_SUCCESS();
 }
 
+template <typename T>
+mFUNCTION(mChunkedArray_ConstPointerAt, const mPtr<mChunkedArray<T>> &chunkedArray, const size_t index, OUT const T **ppItem)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(chunkedArray == nullptr || ppItem == nullptr, mR_ArgumentNull);
+  mERROR_IF(chunkedArray->itemCount <= index, mR_IndexOutOfBounds);
+
+  size_t currentIndex = 0;
+
+  for (size_t blockIndex = 0; blockIndex < chunkedArray->blockCount; ++blockIndex)
+  {
+    const mChunkedArray<T>::mChunkedArrayBlock *pBlock = &chunkedArray->pBlocks[blockIndex];
+
+    const size_t blockSize = pBlock->blockEndIndex - pBlock->blockStartIndex;
+
+    if (currentIndex + blockSize <= index)
+    {
+      currentIndex += blockSize;
+      continue;
+    }
+
+    *ppItem = &pBlock->pData[pBlock->blockStartIndex + index - currentIndex];
+    break;
+  }
+
+  mRETURN_SUCCESS();
+}
+
 template<typename T>
 inline mFUNCTION(mChunkedArray_SetDestructionFunction, mPtr<mChunkedArray<T>> &chunkedArray, const std::function<mResult(T *)> &destructionFunction)
 {
@@ -253,6 +306,34 @@ inline mFUNCTION(mChunkedArray_SetDestructionFunction, mPtr<mChunkedArray<T>> &c
   mERROR_IF(chunkedArray == nullptr || ppItem == nullptr, mR_ArgumentNull);
 
   chunkedArray->destructionFunction = destructionFunction;
+
+  mRETURN_SUCCESS();
+}
+
+template <typename T>
+mFUNCTION(mChunkedArray_Clear, mPtr<mChunkedArray<T>> &chunkedArray)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(chunkedArray == nullptr, mR_ArgumentNull);
+
+  for (size_t i = 0; i < chunkedArray->blockCount; ++i)
+  {
+    for (size_t index = chunkedArray->pBlocks[i].blockStartIndex; index < chunkedArray->pBlocks[i].blockEndIndex; ++index)
+    {
+      if (chunkedArray->destructionFunction)
+        mERROR_CHECK(chunkedArray->destructionFunction(&chunkedArray->pBlocks[i].pData[index]));
+      else
+        mERROR_CHECK(mDestruct(&chunkedArray->pBlocks[i].pData[index]));
+    }
+
+    chunkedArray->pBlocks[i].blockStartIndex = chunkedArray->pBlocks[i].blockEndIndex = 0;
+  }
+
+  chunkedArray->itemCount = 0;
+
+  if (chunkedArray->blockCount >= 1)
+    chunkedArray->blockCount = 1;
 
   mRETURN_SUCCESS();
 }
@@ -266,7 +347,7 @@ inline mFUNCTION(mChunkedArray_Destroy_Internal, IN mChunkedArray<T> *pChunkedAr
 
   mERROR_IF(pChunkedArray == nullptr, mR_ArgumentNull);
   
-  for (size_t i = 0; i < pChunkedArray->blockCount; ++i)
+  for (size_t i = 0; i < pChunkedArray->blockCapacity; ++i)
   {
     for (size_t index = pChunkedArray->pBlocks[i].blockStartIndex; index < pChunkedArray->pBlocks[i].blockEndIndex; ++index)
     {
@@ -301,24 +382,27 @@ inline mFUNCTION(mChunkedArray_Grow_Internal, mPtr<mChunkedArray<T>> &chunkedArr
   {
     // No need to allocate.
   }
-  else if (chunkedArray->itemCapacity == chunkedArray->itemCount)
+  else
   {
     const size_t newBlockCapacity = chunkedArray->blockCapacity * 2;
     mERROR_CHECK(mAllocator_Reallocate(chunkedArray->pAllocator, &chunkedArray->pBlocks, newBlockCapacity));
+    mZeroMemory(chunkedArray->pBlocks + chunkedArray->blockCapacity, newBlockCapacity - chunkedArray->blockCapacity);
     chunkedArray->blockCapacity = newBlockCapacity;
   }
-  else
-  {
-    mRETURN_SUCCESS();
-  }
 
+  // technically we could try and squeeze items into the existing blocks here if itemCapacity > itemCount.
+  
   ++chunkedArray->blockCount;
   mDEFER_ON_ERROR(--chunkedArray->blockCount);
-  mERROR_CHECK(mAllocator_AllocateZero(chunkedArray->pAllocator, &chunkedArray->pBlocks[chunkedArray->blockCount - 1].pData, chunkedArray->blockSize));
-  chunkedArray->pBlocks[chunkedArray->blockCount - 1].blockSize = chunkedArray->blockSize;
-  chunkedArray->pBlocks[chunkedArray->blockCount - 1].blockStartIndex = 0;
-  chunkedArray->pBlocks[chunkedArray->blockCount - 1].blockEndIndex = 0;
-  chunkedArray->itemCapacity += chunkedArray->blockSize;
+
+  if (chunkedArray->pBlocks[chunkedArray->blockCount - 1].pData == nullptr)
+  {
+    mERROR_CHECK(mAllocator_AllocateZero(chunkedArray->pAllocator, &chunkedArray->pBlocks[chunkedArray->blockCount - 1].pData, chunkedArray->blockSize));
+    chunkedArray->pBlocks[chunkedArray->blockCount - 1].blockSize = chunkedArray->blockSize;
+    chunkedArray->pBlocks[chunkedArray->blockCount - 1].blockStartIndex = 0;
+    chunkedArray->pBlocks[chunkedArray->blockCount - 1].blockEndIndex = 0;
+    chunkedArray->itemCapacity += chunkedArray->blockSize;
+  }
 
   mRETURN_SUCCESS();
 }

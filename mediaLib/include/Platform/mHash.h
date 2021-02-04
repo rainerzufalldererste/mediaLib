@@ -3,6 +3,13 @@
 
 #include "mediaLib.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "RDGvV3JTRhXe31P8rYuwZpYoIe8YT0qpYZvrJ1PPpQb49Gbjc5TqkMS3Qs0FV2Rlj6LGmJmW838JyE4L"
+#endif
+
 template<typename T>
 mFUNCTION(mHash, mPtr<T> *pData, OUT uint64_t *pHash);
 

@@ -2,6 +2,13 @@
 #include "mFramebuffer.h"
 #include "mChunkedArray.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "uH9cesumuC4LRBXN9mdn+OhJb7RQbWTxufxBomi9I0ZjgSTunXjoEOf8H6Azc0p7O0xvz68h9B4SzPx6"
+#endif
+
 struct mHardwareWindow
 {
   SDL_Window *pWindow;
@@ -9,10 +16,11 @@ struct mHardwareWindow
   mPtr<mQueue<std::function<mResult (IN SDL_Event *)>>> onEventCallbacks;
   mPtr<mQueue<std::function<mResult (void)>>> onExitCallbacks;
   mPtr<mQueue<std::function<mResult(const mVec2s &)>>> onResizeCallbacks;
+  mUniqueContainer<mFramebuffer> fakeFramebuffer;
 };
 
-mFUNCTION(mHardwareWindow_Create_Internal, IN_OUT mHardwareWindow *pWindow, IN mAllocator *pAllocator, const mString &title, const mVec2s &size, const mHardwareWindow_DisplayMode displaymode, const bool stereo3dIfAvailable);
-mFUNCTION(mHardwareWindow_Destroy_Internal, IN mHardwareWindow *pWindow);
+static mFUNCTION(mHardwareWindow_Create_Internal, IN_OUT mHardwareWindow *pWindow, IN mAllocator *pAllocator, const mString &title, const mVec2s &size, const mHardwareWindow_DisplayMode displaymode, const bool stereo3dIfAvailable);
+static mFUNCTION(mHardwareWindow_Destroy_Internal, IN mHardwareWindow *pWindow);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -28,13 +36,28 @@ mFUNCTION(mHardwareWindow_Create, OUT mPtr<mHardwareWindow> *pWindow, IN mAlloca
 
   mERROR_CHECK(mRenderParams_CreateRenderContext(&(*pWindow)->renderContextID, *pWindow));
 
+  mRenderParams_PrintRenderState(false, true);
+
   mGL_ERROR_CHECK();
+
+  mUniqueContainer<mFramebuffer>::CreateWithCleanupFunction(&(*pWindow)->fakeFramebuffer, nullptr);
+  (*pWindow)->fakeFramebuffer->pixelFormat = mPF_R8G8B8;
+  (*pWindow)->fakeFramebuffer->sampleCount = 1;
 
   mERROR_CHECK(mHardwareWindow_SetAsActiveRenderTarget(*pWindow));
 
-  mDebugOut("GPU: %s %s\nDriver Version: %s\nGLSL Version: %s\n", glGetString(GL_VENDOR), glGetString(GL_RENDERER), glGetString(GL_VERSION), glGetString(GL_SHADING_LANGUAGE_VERSION));
+  mPRINT("GPU: %s %s\nDriver Version: %s\nGLSL Version: %s\n", glGetString(GL_VENDOR), glGetString(GL_RENDERER), glGetString(GL_VERSION), glGetString(GL_SHADING_LANGUAGE_VERSION));
 
   mGL_ERROR_CHECK();
+
+  // Update Back Buffer Resolution.
+  {
+    mVec2s _size;
+    mERROR_CHECK(mHardwareWindow_GetSize(*pWindow, &_size));
+
+    mRenderParams_BackBufferResolution = _size;
+    mRenderParams_BackBufferResolutionF = mVec2f(_size);
+  }
 
   mRETURN_SUCCESS();
 }
@@ -56,10 +79,10 @@ mFUNCTION(mHardwareWindow_GetSize, mPtr<mHardwareWindow> &window, OUT mVec2s *pS
 
   mERROR_IF(window == nullptr || pSize == nullptr, mR_ArgumentNull);
 
-  int w, h;
-  SDL_GetWindowSize(window->pWindow, &w, &h);
+  int32_t width, height;
+  SDL_GetWindowSize(window->pWindow, &width, &height);
 
-  *pSize = mVec2s(w, h);
+  *pSize = mVec2s(width, height);
 
   mRETURN_SUCCESS();
 }
@@ -124,6 +147,9 @@ mFUNCTION(mHardwareWindow_Swap, mPtr<mHardwareWindow> &window)
       mVec2s size;
       mERROR_CHECK(mHardwareWindow_GetSize(window, &size));
 
+      mRenderParams_BackBufferResolution = size;
+      mRenderParams_BackBufferResolutionF = mVec2f(size);
+
       mERROR_CHECK(mHardwareWindow_SetAsActiveRenderTarget(window));
 
       size_t onResizeCallbackCount = 0;
@@ -159,6 +185,15 @@ mFUNCTION(mHardwareWindow_SetSize, mPtr<mHardwareWindow> &window, const mVec2s &
 
   SDL_SetWindowSize(window->pWindow, (int)size.x, (int)size.y);
 
+  // Update Back Buffer Resolution.
+  {
+    mVec2s _size;
+    mERROR_CHECK(mHardwareWindow_GetSize(window, &_size));
+
+    mRenderParams_BackBufferResolution = _size;
+    mRenderParams_BackBufferResolutionF = mVec2f(_size);
+  }
+
   mRETURN_SUCCESS();
 }
 
@@ -171,9 +206,8 @@ mFUNCTION(mHardwareWindow_SetAsActiveRenderTarget, mPtr<mHardwareWindow> &window
   mERROR_CHECK(mFramebuffer_Unbind());
   mERROR_CHECK(mRenderParams_ActivateRenderContext(window, window->renderContextID));
 
-  mVec2s resolution;
-  mERROR_CHECK(mHardwareWindow_GetSize(window, &resolution));
-  mERROR_CHECK(mRenderParams_SetCurrentRenderResolution(resolution));
+  mERROR_CHECK(mHardwareWindow_GetSize(window, &window->fakeFramebuffer->size));
+  mERROR_CHECK(mFramebuffer_Push(window->fakeFramebuffer));
 
   mRETURN_SUCCESS();
 }
@@ -207,6 +241,50 @@ mFUNCTION(mHardwareWindow_SetFullscreenMode, mPtr<mHardwareWindow> &window, cons
   mERROR_IF(window == nullptr, mR_ArgumentNull);
 
   mERROR_IF(0 != SDL_SetWindowFullscreen(window->pWindow, displayMode), mR_NotSupported);
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mHardwareWindow_MaximizeWindow, mPtr<mHardwareWindow> &window)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(window == nullptr, mR_ArgumentNull);
+
+  SDL_MaximizeWindow(window->pWindow);
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mHardwareWindow_MinimizeWindow, mPtr<mHardwareWindow> &window)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(window == nullptr, mR_ArgumentNull);
+
+  SDL_MinimizeWindow(window->pWindow);
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mHardwareWindow_RestoreWindow, mPtr<mHardwareWindow> &window)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(window == nullptr, mR_ArgumentNull);
+
+  SDL_RestoreWindow(window->pWindow);
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mHardwareWindow_SetResizable, mPtr<mHardwareWindow> &window, const bool resizable)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(window == nullptr, mR_ArgumentNull);
+
+  SDL_SetWindowResizable(window->pWindow, resizable ? SDL_TRUE : SDL_FALSE);
 
   mRETURN_SUCCESS();
 }
@@ -263,14 +341,79 @@ mFUNCTION(mHardwareWindow_ClearEventHandlers, mPtr<mHardwareWindow> &window)
   mRETURN_SUCCESS();
 }
 
+mFUNCTION(mHardwareWindow_SetActive, mPtr<mHardwareWindow> &window)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(window == nullptr, mR_ArgumentNull);
+
+  SDL_RaiseWindow(window->pWindow);
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mHardwareWindow_IsActive, const mPtr<mHardwareWindow> &window, OUT bool *pIsActive)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(window == nullptr || pIsActive == nullptr, mR_ArgumentNull);
+
+  const uint32_t flags = SDL_GetWindowFlags(window->pWindow);
+
+  *pIsActive = !!(flags & SDL_WINDOW_INPUT_FOCUS);
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mHardwareWindow_IsResizable, const mPtr<mHardwareWindow> &window, OUT bool *pIsResizable)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(window == nullptr || pIsResizable == nullptr, mR_ArgumentNull);
+
+  const uint32_t flags = SDL_GetWindowFlags(window->pWindow);
+
+  *pIsResizable = !!(flags & SDL_WINDOW_RESIZABLE);
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mHardwareWindow_IsMinimized, const mPtr<mHardwareWindow> &window, OUT bool *pIsMinimized)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(window == nullptr || pIsMinimized == nullptr, mR_ArgumentNull);
+
+  const uint32_t flags = SDL_GetWindowFlags(window->pWindow);
+
+  *pIsMinimized = !!(flags & SDL_WINDOW_MINIMIZED);
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mHardwareWindow_IsMaximized, const mPtr<mHardwareWindow> &window, OUT bool *pIsMaximized)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(window == nullptr || pIsMaximized == nullptr, mR_ArgumentNull);
+
+  const uint32_t flags = SDL_GetWindowFlags(window->pWindow);
+
+  *pIsMaximized = !!(flags & SDL_WINDOW_MAXIMIZED);
+
+  mRETURN_SUCCESS();
+}
+
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mHardwareWindow_Create_Internal, IN_OUT mHardwareWindow *pWindow, IN mAllocator *pAllocator, const mString &title, const mVec2s &size, const mHardwareWindow_DisplayMode displaymode, const bool stereo3dIfAvailable)
+static mFUNCTION(mHardwareWindow_Create_Internal, IN_OUT mHardwareWindow *pWindow, IN mAllocator *pAllocator, const mString &title, const mVec2s &size, const mHardwareWindow_DisplayMode displaymode, const bool stereo3dIfAvailable)
 {
   mFUNCTION_SETUP();
   mUnused(displaymode);
 
   mERROR_IF(size.x > INT_MAX || size.y > INT_MAX, mR_ArgumentOutOfBounds);
+
+  const mHardwareWindow_DisplayMode innerDisplayMode = ((displaymode & SDL_WINDOW_FULLSCREEN_DESKTOP) == SDL_WINDOW_FULLSCREEN_DESKTOP) ? (mHardwareWindow_DisplayMode)((displaymode ^ SDL_WINDOW_FULLSCREEN_DESKTOP) | SDL_WINDOW_MAXIMIZED | SDL_WINDOW_BORDERLESS | SDL_WINDOW_RESIZABLE) : displaymode;
 
   bool try3d = stereo3dIfAvailable;
 retry_without_3d:
@@ -281,7 +424,7 @@ retry_without_3d:
 #if defined(mRENDERER_OPENGL)
     SDL_WINDOW_OPENGL |
 #endif
-    displaymode);
+    innerDisplayMode);
 
   if (pWindow->pWindow == nullptr && try3d)
   {
@@ -291,6 +434,17 @@ retry_without_3d:
 
   mERROR_IF(pWindow->pWindow == nullptr, mR_InternalError);
 
+  if (displaymode != innerDisplayMode)
+  {
+    if ((displaymode & SDL_WINDOW_RESIZABLE) == 0)
+      SDL_SetWindowResizable(pWindow->pWindow, SDL_FALSE);
+
+    SDL_MaximizeWindow(pWindow->pWindow);
+  }
+
+  if ((displaymode & (SDL_WINDOW_FULLSCREEN | SDL_WINDOW_FULLSCREEN_DESKTOP)) != 0)
+    SDL_RaiseWindow(pWindow->pWindow);
+
   mERROR_CHECK(mQueue_Create(&pWindow->onEventCallbacks, pAllocator));
   mERROR_CHECK(mQueue_Create(&pWindow->onResizeCallbacks, pAllocator));
   mERROR_CHECK(mQueue_Create(&pWindow->onExitCallbacks, pAllocator));
@@ -298,7 +452,7 @@ retry_without_3d:
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mHardwareWindow_Destroy_Internal, IN mHardwareWindow *pWindow)
+static mFUNCTION(mHardwareWindow_Destroy_Internal, IN mHardwareWindow *pWindow)
 {
   mFUNCTION_SETUP();
 

@@ -3,6 +3,13 @@
 
 #include "mediaLib.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "9I0daDxbMuepJLcCeR508Ighw+sqIqn/Qk8ljesIRik2s4Jf/ZIxKpBzkPfqj2ogjz0g9VVFYEgvQJqM"
+#endif
+
 template <typename T>
 struct mArray
 {

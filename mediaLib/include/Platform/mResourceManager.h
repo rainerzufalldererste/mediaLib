@@ -8,6 +8,13 @@
 
 //#define mPRINT_RESOURCE_MANAGER_LOG
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "L+mccbLatVeA9C0qozCjFQpeksOPalBEVg5BZlw3jv6uL28XBH5dLeP6t40Ch0OvhhvpBhoIVIItnMR7"
+#endif
+
 template <typename TValue, typename TKey>
 mFUNCTION(mCreateResource, OUT TValue *pResource, TKey param);
 
@@ -115,7 +122,7 @@ inline mFUNCTION(mResourceManager_GetResource, OUT mPtr<TValue> *pValue, TKey ke
   {
     mAllocator *pAllocator;
     mERROR_CHECK((mResourceGetPreferredAllocator<TValue>)(&pAllocator));
-    mERROR_CHECK((mResourceManager_CreateResourceManager_Explicit<TKey, TValue>(pAllocator)));
+    mERROR_CHECK((mResourceManager_CreateResourceManager_Explicit<TKey, TValue>(pAllocator)));
   }
 
   mERROR_CHECK(mMutex_Lock(CurrentResourceManagerType::Instance()->pMutex));

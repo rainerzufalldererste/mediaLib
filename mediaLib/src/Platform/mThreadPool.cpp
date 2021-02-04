@@ -1,6 +1,13 @@
 #include "mThreadPool.h"
 #include "mQueue.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "GpZR7lIVJraLZVrxePJ4x2f1wEbA2DaftVdVLhE6iuhe3LxcRDUIHEU0pvcIc9PAswU9VtmNONizhgPO"
+#endif
+
 struct mTask
 {
   std::function<mResult(void)> function;
@@ -12,7 +19,7 @@ struct mTask
   bool isAllocated = false;
 };
 
-mFUNCTION(mTask_Destroy_Internal, IN mTask *pTask);
+static mFUNCTION(mTask_Destroy_Internal, IN mTask *pTask);
 
 mFUNCTION(mTask_CreateWithLambda, OUT mTask **ppTask, IN OPTIONAL mAllocator *pAllocator, const std::function<mResult(void)> &function)
 {
@@ -170,7 +177,7 @@ mFUNCTION(mTask_Abort, IN mTask *pTask)
 
   mERROR_IF(pTask == nullptr, mR_ArgumentNull);
 
-  if (pTask->state < mTask_State::mT_S_Running)
+  if (pTask->state < mTask_State::mT_S_Running && pTask->state != mTask_State::mT_S_NotInitialized)
   {
     if (pTask->pSemaphore != nullptr)
       mERROR_CHECK(mSemaphore_Lock(pTask->pSemaphore));
@@ -209,7 +216,7 @@ mFUNCTION(mTask_GetState, IN mTask *pTask, OUT mTask_State *pTaskState)
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mTask_Destroy_Internal, IN mTask *pTask)
+static mFUNCTION(mTask_Destroy_Internal, IN mTask *pTask)
 {
   mFUNCTION_SETUP();
 
@@ -240,8 +247,8 @@ struct mThreadPool
   mPtr<mQueue<mTask *>> queue;
 };
 
-mFUNCTION(mThreadPool_Create_Internal, mThreadPool *pThreadPool, IN OPTIONAL mAllocator *pAllocator, const size_t threads);
-mFUNCTION(mThreadPool_Destroy_Internal, mThreadPool *pThreadPool);
+static mFUNCTION(mThreadPool_Create_Internal, mThreadPool *pThreadPool, IN OPTIONAL mAllocator *pAllocator, const size_t threads);
+static mFUNCTION(mThreadPool_Destroy_Internal, mThreadPool *pThreadPool);
 
 void mThreadPool_WorkerThread(mThreadPool *pThreadPool)
 {
@@ -370,7 +377,7 @@ mFUNCTION(mThreadPool_GetThreadCount, mPtr<mThreadPool> &asyncTaskHandler, OUT s
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mThreadPool_Create_Internal, mThreadPool *pThreadPool, IN OPTIONAL mAllocator *pAllocator, const size_t threads)
+static mFUNCTION(mThreadPool_Create_Internal, mThreadPool *pThreadPool, IN OPTIONAL mAllocator *pAllocator, const size_t threads)
 {
   mFUNCTION_SETUP();
 
@@ -410,7 +417,7 @@ mFUNCTION(mThreadPool_Create_Internal, mThreadPool *pThreadPool, IN OPTIONAL mAl
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mThreadPool_Destroy_Internal, mThreadPool *pThreadPool)
+static mFUNCTION(mThreadPool_Destroy_Internal, mThreadPool *pThreadPool)
 {
   mFUNCTION_SETUP();
 
@@ -458,4 +465,194 @@ mFUNCTION(mThreadPool_Destroy_Internal, mThreadPool *pThreadPool)
     mERROR_CHECK(mQueue_Destroy(&pThreadPool->queue));
 
   mRETURN_SUCCESS();
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+#include <mutex>
+#include <condition_variable>
+
+struct mTasklessThreadPool
+{
+  mUniqueContainer<mQueue<std::function<void(void)>>> tasks;
+  std::atomic<bool> isRunning;
+  std::thread *pThreads;
+  size_t threadCount;
+  std::atomic<size_t> taskCount;
+  mAllocator *pAllocator;
+
+  std::mutex mutex;
+  std::condition_variable conditionVariable;
+};
+
+void mTasklessThreadPool_Destroy_Internal(IN_OUT mTasklessThreadPool *pThreadPool);
+static mFUNCTION(mTasklessThreadPool_WaitForAll_Internal, mTasklessThreadPool *pThreadPool);
+void mTasklessThreadPool_ThreadFunc_Internal(mTasklessThreadPool *pThreadPool, const size_t threadIndex);
+
+//////////////////////////////////////////////////////////////////////////
+
+mFUNCTION(mTasklessThreadPool_Create, OUT mPtr<mTasklessThreadPool> *pThreadPool, IN mAllocator *pAllocator, const size_t threadCount)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pThreadPool == nullptr, mR_ArgumentNull);
+  mERROR_IF(threadCount == 0, mR_InvalidParameter);
+
+  *pThreadPool = nullptr;
+
+  mERROR_CHECK(mSharedPointer_Allocate<mTasklessThreadPool>(pThreadPool, pAllocator, mTasklessThreadPool_Destroy_Internal, 1));
+
+  new (pThreadPool->GetPointer()) mTasklessThreadPool();
+
+  (*pThreadPool)->pAllocator = pAllocator;
+  (*pThreadPool)->taskCount = 0;
+  (*pThreadPool)->threadCount = threadCount;
+  (*pThreadPool)->isRunning = true;
+
+  mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &(*pThreadPool)->pThreads, threadCount));
+  mERROR_CHECK(mQueue_Create(&(*pThreadPool)->tasks, pAllocator));
+
+  for (size_t i = 0; i < threadCount; i++)
+    new ((*pThreadPool)->pThreads + i) std::thread(mTasklessThreadPool_ThreadFunc_Internal, pThreadPool->GetPointer(), i);
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mTasklessThreadPool_Destroy, IN_OUT mPtr<mTasklessThreadPool> *pThreadPool)
+{
+  return mSharedPointer_Destroy(pThreadPool);
+}
+
+mFUNCTION(mTasklessThreadPool_EnqueueTask, mPtr<mTasklessThreadPool> &threadPool, const std::function<void(void)> &taskHandle)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(threadPool == nullptr, mR_ArgumentNull);
+  mERROR_IF(taskHandle == nullptr, mR_InvalidParameter);
+
+  ++threadPool->taskCount;
+
+  threadPool->mutex.lock();
+  const mResult result = mQueue_PushBack(threadPool->tasks, taskHandle);
+  threadPool->mutex.unlock();
+
+  threadPool->conditionVariable.notify_one();
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mTasklessThreadPool_WaitForAll, mPtr<mTasklessThreadPool> &threadPool)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(threadPool == nullptr, mR_ArgumentNull);
+
+  return mTasklessThreadPool_WaitForAll_Internal(threadPool.GetPointer());
+}
+
+mFUNCTION(htCodecThreadPool_GetWorkerThreadCount, const mPtr<mTasklessThreadPool> &threadPool, OUT size_t *pCount)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(threadPool == nullptr || pCount == nullptr, mR_ArgumentNull);
+
+  *pCount = threadPool->threadCount;
+
+  mRETURN_SUCCESS();
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+void mTasklessThreadPool_Destroy_Internal(IN_OUT mTasklessThreadPool *pThreadPool)
+{
+  if (pThreadPool == nullptr)
+    return;
+
+  pThreadPool->isRunning = false;
+
+  pThreadPool->conditionVariable.notify_all();
+
+  for (size_t i = 0; i < pThreadPool->threadCount; i++)
+  {
+    pThreadPool->pThreads[i].join();
+    pThreadPool->pThreads[i].~thread();
+  }
+
+  mAllocator_FreePtr(pThreadPool->pAllocator, &pThreadPool->pThreads);
+
+  mQueue_Destroy(&pThreadPool->tasks);
+
+  pThreadPool->~mTasklessThreadPool();
+}
+
+static mFUNCTION(mTasklessThreadPool_WaitForAll_Internal, mTasklessThreadPool *pThreadPool)
+{
+  mFUNCTION_SETUP();
+
+  while (true)
+  {
+    std::function<void(void)> task = nullptr;
+
+    {
+      pThreadPool->mutex.lock();
+
+      bool any = true;
+      mResult result = mQueue_Any(pThreadPool->tasks, &any);
+
+      if (mSUCCEEDED(result) && any)
+        result = mQueue_PopFront(pThreadPool->tasks, &task);
+
+      pThreadPool->mutex.unlock();
+
+      mERROR_IF(mFAILED(result), result);
+    }
+
+    if (task)
+    {
+      task();
+      --pThreadPool->taskCount;
+    }
+    else
+    {
+      break;
+    }
+  }
+
+  while (pThreadPool->taskCount > 0)
+    std::this_thread::yield(); // wait for other threads to finish their tasks.
+
+  mRETURN_SUCCESS();
+}
+
+void mTasklessThreadPool_ThreadFunc_Internal(mTasklessThreadPool *pThreadPool, const size_t threadIndex)
+{
+#ifdef _WIN32
+  if ((DWORD)-1 == SetThreadIdealProcessor(GetCurrentThread(), (DWORD)threadIndex))
+    mPRINT_ERROR("Failed to set thread affinity mask for thread %" PRIu64 " with error code 0x%" PRIX64 ".", threadIndex, (uint64_t)GetLastError());
+#else
+  htcUnused(threadIndex);
+#endif
+
+  while (pThreadPool->isRunning)
+  {
+    std::function<void(void)> task = nullptr;
+
+    {
+      std::unique_lock<std::mutex> lock(pThreadPool->mutex);
+      /*std::cv_status result = */pThreadPool->conditionVariable.wait_for(lock, std::chrono::milliseconds(1));
+
+      bool any = true;
+      mResult result = mQueue_Any(pThreadPool->tasks, &any);
+
+      if (mSUCCEEDED(result) && any)
+        result = mQueue_PopFront(pThreadPool->tasks, &task);
+    }
+
+    if (task)
+    {
+      task();
+      --pThreadPool->taskCount;
+      continue;
+    }
+  }
 }

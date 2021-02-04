@@ -1,5 +1,21 @@
 #include "mTestLib.h"
 
+mTEST(mMath, TestIsPrime)
+{
+  // https://oeis.org/A010051
+  const bool isPrime[] = { 0, 0, 1, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, };
+
+  for (size_t i = 0; i < mARRAYSIZE(isPrime); i++)
+    if (isPrime[i] != mIsPrime(i))
+      __debugbreak();
+
+  mTEST_ASSERT_TRUE(mIsPrime(0x10001));
+  mTEST_ASSERT_FALSE(mIsPrime(0x10000));
+  mTEST_ASSERT_FALSE(mIsPrime(0xFFFF));
+
+  mTEST_RETURN_SUCCESS();
+}
+
 mTEST(mMath, TestVec2Constuct)
 {
   const mVec2f v = mVec2f(0, FLT_MAX);

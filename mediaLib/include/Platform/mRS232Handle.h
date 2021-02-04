@@ -4,6 +4,13 @@
 #include "mediaLib.h"
 #include "mQueue.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "XBhvW7+Yc5ocljwJDvKnLNgtObuU3qQ6xzA8OzZOD5omN6L3lgcAKyTyRXTJeeCDBaPfR9sobrCHhDH0"
+#endif
+
 struct mRS232Handle;
 
 mFUNCTION(mRS232Handle_Create, OUT mRS232Handle **ppHandle, IN mAllocator *pAllocator, const char *name, const size_t baudrate);

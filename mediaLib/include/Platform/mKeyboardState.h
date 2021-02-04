@@ -4,6 +4,13 @@
 #include "mediaLib.h"
 
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "whWTaA4ClM03L14ux8pTlNy9Nh6E52xfnSexET7VEu1G6R+lQUv4X7ge6TkZa8IUwSOQBPSyl20/2eZS"
+#endif
+
 /**
 *  \brief The SDL keyboard scancode representation.
 *

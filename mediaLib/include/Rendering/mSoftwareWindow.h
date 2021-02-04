@@ -4,6 +4,13 @@
 #include "mRenderParams.h"
 #include "mImageBuffer.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "hGKWevg/MenOK92GMn5+nyA7zduBv5t/0F01FJFdg+E8e9tsTU17DSf9QIHLBDWCHfiP9wAkVJChA66s"
+#endif
+
 enum mSoftwareWindow_DisplayMode
 {
   mSW_DM_Windowed = 0,
@@ -25,5 +32,10 @@ mFUNCTION(mSoftwareWindow_AddOnAnyEvent, mPtr<mSoftwareWindow> &window, const st
 mFUNCTION(mSoftwareWindow_AddOnCloseEvent, mPtr<mSoftwareWindow> &window, const std::function<mResult(void)> &callback);
 mFUNCTION(mSoftwareWindow_ClearEventHandlers, mPtr<mSoftwareWindow> &window);
 mFUNCTION(mSoftwareWindow_GetSdlWindowPtr, mPtr<mSoftwareWindow> &window, OUT SDL_Window **ppSdlWindow);
+
+mFUNCTION(mSoftwareWindow_IsActive, const mPtr<mSoftwareWindow> &window, OUT bool *pIsActive);
+mFUNCTION(mSoftwareWindow_IsResizable, const mPtr<mSoftwareWindow> &window, OUT bool *pIsResizable);
+mFUNCTION(mSoftwareWindow_IsMinimized, const mPtr<mSoftwareWindow> &window, OUT bool *pIsMinimized);
+mFUNCTION(mSoftwareWindow_IsMaximized, const mPtr<mSoftwareWindow> &window, OUT bool *pIsMaximized);
 
 #endif // mSoftwareWindow_h__

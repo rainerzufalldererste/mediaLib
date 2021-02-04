@@ -1,7 +1,14 @@
 #include "mScreenQuad.h"
 #include "mFile.h"
 
-mFUNCTION(mScreenQuad_Destroy_Internal, IN mScreenQuad *pScreenQuad);
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "5d1lnZ43s32zNe4MCnudH9RQKWEIA4qdtHyil0o/LYyKKA0s6f7pRXWASgAmdq9IVNcsWmf8pmNHWIyU"
+#endif
+
+static mFUNCTION(mScreenQuad_Destroy_Internal, IN mScreenQuad *pScreenQuad);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -12,6 +19,8 @@ mFUNCTION(mScreenQuad_Create, OUT mPtr<mScreenQuad> *pScreenQuad, IN mAllocator 
   mERROR_CHECK(mSharedPointer_Allocate(pScreenQuad, pAllocator, (std::function<void(mScreenQuad *)>)[](mScreenQuad *pData) {mScreenQuad_Destroy_Internal(pData);}, 1));
 
 #if defined(mRENDERER_OPENGL)
+  mGL_ERROR_CHECK();
+
   char vertexShader[2048] = "#version 150 core\n\nin vec2 position0;";
 
   for (size_t i = 0; i < textureCount; ++i)
@@ -121,7 +130,7 @@ mFUNCTION(mScreenQuad_Render, mPtr<mScreenQuad> &screenQuad)
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mScreenQuad_Destroy_Internal, IN mScreenQuad *pScreenQuad)
+static mFUNCTION(mScreenQuad_Destroy_Internal, IN mScreenQuad *pScreenQuad)
 {
   mFUNCTION_SETUP();
 

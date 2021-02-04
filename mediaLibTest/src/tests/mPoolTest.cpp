@@ -133,9 +133,50 @@ mTEST(mPool, TestIterate)
 
   for (auto &&_index : pool->Iterate())
   {
-    mTEST_ASSERT_EQUAL(_index.index, (count << 1) + 1);
-    mTEST_ASSERT_EQUAL(*_index.pData, (count << 1) + 1);
-    mTEST_ASSERT_EQUAL(*_index, (count << 1) + 1);
+    mTEST_ASSERT_EQUAL(_index.index, count * 2 + 1);
+    mTEST_ASSERT_EQUAL(*_index.pData, count * 2 + 1);
+    mTEST_ASSERT_EQUAL(*_index, count * 2 + 1);
+    ++count;
+  }
+
+  mTEST_ASSERT_EQUAL(count, testSize / 2);
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}
+
+mTEST(mPool, TestIterateConstPool)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  mPtr<mPool<size_t>> pool;
+  mDEFER_CALL(&pool, mPool_Destroy);
+  mTEST_ASSERT_SUCCESS(mPool_Create(&pool, pAllocator));
+
+  const size_t testSize = 100;
+
+  for (size_t i = 0; i < testSize; i++)
+  {
+    size_t index = 0;
+    mTEST_ASSERT_SUCCESS(mPool_Add(pool, &i, &index));
+    mTEST_ASSERT_EQUAL(i, index);
+  }
+
+  for (size_t i = 0; i < testSize; i += 2)
+  {
+    size_t element;
+    mTEST_ASSERT_SUCCESS(mPool_RemoveAt(pool, i, &element));
+    mTEST_ASSERT_EQUAL(element, i);
+  }
+
+  size_t count = 0;
+
+  const mPtr<mPool<size_t>> constPool = pool;
+
+  for (const auto &&_index : constPool->Iterate())
+  {
+    mTEST_ASSERT_EQUAL(_index.index, count * 2 + 1);
+    mTEST_ASSERT_EQUAL(*_index.pData, count * 2 + 1);
+    mTEST_ASSERT_EQUAL(*_index, count * 2 + 1);
     ++count;
   }
 
@@ -241,6 +282,312 @@ mTEST(mPool, TestContainsIndex)
         }
       }
     }
+  }
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}
+
+mTEST(mPool, TestClear)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  mPtr<mPool<mString>> pool;
+  mDEFER_CALL(&pool, mPool_Destroy);
+  mTEST_ASSERT_SUCCESS(mPool_Create(&pool, pAllocator));
+
+  constexpr size_t size = 256;
+
+  for (size_t i = 0; i < 4; i++)
+  {
+    for (size_t j = 0; j < size; j++)
+    {
+      mString data;
+      mTEST_ASSERT_SUCCESS(mString_CreateFormat(&data, pAllocator, "#TEST %" PRIu64, j));
+
+      size_t index;
+      mTEST_ASSERT_SUCCESS(mPool_Add(pool, &data, &index));
+
+      mString *pData = nullptr;
+      mTEST_ASSERT_SUCCESS(mPool_PointerAt(pool, index, &pData));
+      mTEST_ASSERT_SUCCESS(mString_CreateFormat(pData, pAllocator, "%" PRIu64, index));
+
+      mTEST_ASSERT_TRUE(index < size);
+    }
+
+    size_t count;
+    mTEST_ASSERT_SUCCESS(mPool_GetCount(pool, &count));
+
+    mTEST_ASSERT_EQUAL(count, size);
+
+    size_t expectedCount = size;
+
+    for (size_t j = 0; j < size; j += (j + 1))
+    {
+      expectedCount--;
+
+      mString data;
+      mTEST_ASSERT_SUCCESS(mPool_RemoveAt(pool, j, &data));
+
+      mString cmpData;
+      mTEST_ASSERT_SUCCESS(mString_CreateFormat(&cmpData, pAllocator, "%" PRIu64, j));
+
+      mTEST_ASSERT_EQUAL(data, cmpData);
+    }
+
+    mTEST_ASSERT_SUCCESS(mPool_GetCount(pool, &count));
+
+    mTEST_ASSERT_EQUAL(count, expectedCount);
+
+    for (const auto &&_item : pool->Iterate())
+    {
+      mString cmpData;
+      mTEST_ASSERT_SUCCESS(mString_CreateFormat(&cmpData, pAllocator, "%" PRIu64, _item.index));
+
+      mTEST_ASSERT_EQUAL((*_item), cmpData);
+    }
+
+    for (size_t j = expectedCount; j < size; j++)
+    {
+      mString data;
+      mTEST_ASSERT_SUCCESS(mString_CreateFormat(&data, pAllocator, "#TEST %" PRIu64, j));
+
+      size_t index;
+      mTEST_ASSERT_SUCCESS(mPool_Add(pool, &data, &index));
+
+      mString *pData = nullptr;
+      mTEST_ASSERT_SUCCESS(mPool_PointerAt(pool, index, &pData));
+      mTEST_ASSERT_SUCCESS(mString_CreateFormat(pData, pAllocator, "%" PRIu64, index));
+
+      mTEST_ASSERT_TRUE(index < size);
+    }
+
+    mTEST_ASSERT_SUCCESS(mPool_GetCount(pool, &count));
+
+    mTEST_ASSERT_EQUAL(count, size);
+
+    for (const auto &&_item : pool->Iterate())
+    {
+      mString cmpData;
+      mTEST_ASSERT_SUCCESS(mString_CreateFormat(&cmpData, pAllocator, "%" PRIu64, _item.index));
+
+      mTEST_ASSERT_EQUAL((*_item), cmpData);
+    }
+
+    mTEST_ASSERT_SUCCESS(mPool_Clear(pool));
+    mTEST_ASSERT_SUCCESS(mPool_Clear(pool));
+  }
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}
+
+mTEST(mPool, TestEquals)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  {
+    mPtr<mPool<size_t>> a;
+    mPtr<mPool<size_t>> b;
+    mTEST_ASSERT_TRUE(mPool_Equals(a, b));
+
+    mDEFER_CALL(&a, mPool_Destroy);
+    mTEST_ASSERT_SUCCESS(mPool_Create(&a, pAllocator));
+    mTEST_ASSERT_FALSE(mPool_Equals(a, b));
+    mTEST_ASSERT_FALSE(mPool_Equals(b, a));
+
+    mDEFER_CALL(&b, mPool_Destroy);
+    mTEST_ASSERT_SUCCESS(mPool_Create(&b, pAllocator));
+
+    mTEST_ASSERT_TRUE(mPool_Equals(a, b));
+  }
+
+  {
+    mPtr<mPool<size_t>> a;
+    mPtr<mPool<size_t>> b;
+    mTEST_ASSERT_TRUE(mPool_Equals(a, b));
+    mTEST_ASSERT_TRUE(mPool_Equals(b, a));
+
+    mDEFER_CALL(&a, mPool_Destroy);
+    mTEST_ASSERT_SUCCESS(mPool_Create(&a, pAllocator));
+    mTEST_ASSERT_FALSE(mPool_Equals(a, b));
+    mTEST_ASSERT_FALSE(mPool_Equals(b, a));
+
+    mDEFER_CALL(&b, mPool_Destroy);
+    mTEST_ASSERT_SUCCESS(mPool_Create(&b, pAllocator));
+
+    mTEST_ASSERT_TRUE(mPool_Equals(a, b));
+    mTEST_ASSERT_TRUE(mPool_Equals(b, a));
+
+    size_t index;
+
+    mTEST_ASSERT_SUCCESS(mPool_Add(a, (size_t)0, &index));
+    mTEST_ASSERT_FALSE(mPool_Equals(a, b));
+    mTEST_ASSERT_FALSE(mPool_Equals(b, a));
+
+    mTEST_ASSERT_SUCCESS(mPool_Add(b, (size_t)1, &index));
+    mTEST_ASSERT_FALSE(mPool_Equals(a, b));
+    mTEST_ASSERT_FALSE(mPool_Equals(b, a));
+
+    mTEST_ASSERT_SUCCESS(mPool_Add(b, (size_t)1, &index));
+    mTEST_ASSERT_FALSE(mPool_Equals(a, b));
+    mTEST_ASSERT_FALSE(mPool_Equals(b, a));
+
+    size_t *pValue = nullptr;
+    mTEST_ASSERT_SUCCESS(mPool_PointerAt(b, 0, &pValue));
+    *pValue = 0;
+    mTEST_ASSERT_FALSE(mPool_Equals(a, b));
+    mTEST_ASSERT_FALSE(mPool_Equals(b, a));
+
+    mTEST_ASSERT_SUCCESS(mPool_Add(a, (size_t)1, &index));
+    mTEST_ASSERT_TRUE(mPool_Equals(a, b));
+    mTEST_ASSERT_TRUE(mPool_Equals(b, a));
+
+    mTEST_ASSERT_SUCCESS(mPool_Add(a, (size_t)2, &index));
+    mTEST_ASSERT_FALSE(mPool_Equals(a, b));
+    mTEST_ASSERT_FALSE(mPool_Equals(b, a));
+
+    mTEST_ASSERT_SUCCESS(mPool_Add(b, (size_t)2, &index));
+    mTEST_ASSERT_TRUE(mPool_Equals(a, b));
+    mTEST_ASSERT_TRUE(mPool_Equals(b, a));
+  }
+
+  struct _inner
+  {
+    static bool IsNotZero(const size_t *pA)
+    {
+      return *pA != 0;
+    }
+  };
+
+  constexpr size_t x = (size_t)-1;
+
+  const auto &cmpFunc = [pAllocator, x](const size_t *pA, const size_t aCount, const size_t *pB, const size_t bCount)
+  {
+    mPtr<mPool<size_t>> a, b;
+    mASSERT(mSUCCEEDED(mPool_Create(&a, pAllocator)), "");
+    mASSERT(mSUCCEEDED(mPool_Create(&b, pAllocator)), "");
+
+    size_t index;
+
+    for (size_t i = 0; i < aCount; i++)
+    {
+      size_t j = pA[i];
+      mASSERT(mSUCCEEDED(mPool_Add(a, &j, &index)), "");
+    }
+
+    for (size_t i = 0; i < aCount; i++)
+      if (pA[i] == x)
+        mASSERT(mSUCCEEDED(mPool_RemoveAt(a, i, &index)), "");
+
+    for (size_t i = 0; i < bCount; i++)
+    {
+      size_t j = pB[i];
+      mASSERT(mSUCCEEDED(mPool_Add(b, &j, &index)), "");
+    }
+
+    for (size_t i = 0; i < bCount; i++)
+      if (pB[i] == x)
+        mASSERT(mSUCCEEDED(mPool_RemoveAt(b, i, &index)), "");
+
+    const bool ret = mPool_Equals<size_t, mEqualsValue<size_t>, mFN_WRAPPER(_inner::IsNotZero)>(a, b);
+    mASSERT(ret == (mPool_Equals<size_t, mEqualsValue<size_t>, mFN_WRAPPER(_inner::IsNotZero)>(b, a)), "");
+
+    return ret;
+  };
+
+  {
+    const size_t data0[] = { 0, x, 0 };
+    const size_t data1[] = { 0, x, 0 };
+    mTEST_ASSERT_TRUE(cmpFunc(data0, mARRAYSIZE(data0), data1, mARRAYSIZE(data1)));
+  }
+
+  {
+    const size_t data0[] = { x, x, 0, 1, 0, 0, 0, x, x, x };
+    const size_t data1[] = { x, x, 0, 1, 0, 0, 0 };
+    mTEST_ASSERT_TRUE(cmpFunc(data0, mARRAYSIZE(data0), data1, mARRAYSIZE(data1)));
+  }
+
+  {
+    const size_t data0[] = { x, 1, 0 };
+    const size_t data1[] = { x, 1, 0 };
+    mTEST_ASSERT_TRUE(cmpFunc(data0, mARRAYSIZE(data0), data1, mARRAYSIZE(data1)));
+  }
+
+  {
+    const size_t data0[] = { x, x, x, x, x };
+    const size_t data1[] = { x, x, x, x, x, x, x, x, x };
+    mTEST_ASSERT_TRUE(cmpFunc(data0, mARRAYSIZE(data0), data1, mARRAYSIZE(data1)));
+  }
+
+  {
+    const size_t data0[] = { x, 1, 2, 0 };
+    const size_t data1[] = { 0, 1, 2, 0 };
+    mTEST_ASSERT_TRUE(cmpFunc(data0, mARRAYSIZE(data0), data1, mARRAYSIZE(data1)));
+  }
+
+  {
+    const size_t data0[] = { x, 1, 2, 0 };
+    const size_t data1[] = { 1, 2, 2, 0 };
+    mTEST_ASSERT_FALSE(cmpFunc(data0, mARRAYSIZE(data0), data1, mARRAYSIZE(data1)));
+  }
+
+  {
+    const size_t data0[] = { 0, 1, x, x };
+    const size_t data1[] = { 0, 1, x, 0, x, x };
+    mTEST_ASSERT_TRUE(cmpFunc(data0, mARRAYSIZE(data0), data1, mARRAYSIZE(data1)));
+  }
+
+  {
+    const size_t data0[] = { 0, 1, x, x };
+    const size_t data1[] = { 0, 1, x, 1, x, x };
+    mTEST_ASSERT_FALSE(cmpFunc(data0, mARRAYSIZE(data0), data1, mARRAYSIZE(data1)));
+  }
+
+  {
+    const size_t data0[] = { x, x, 0, 1, 0, 0, 0, x, x, x };
+    const size_t data1[] = { x, x, 0, 0, 1, 0, 0 };
+    mTEST_ASSERT_FALSE(cmpFunc(data0, mARRAYSIZE(data0), data1, mARRAYSIZE(data1)));
+  }
+
+  {
+    const size_t data0[] = { 1, 1};
+    const size_t data1[] = { 0, 1 };
+    mTEST_ASSERT_FALSE(cmpFunc(data0, mARRAYSIZE(data0), data1, mARRAYSIZE(data1)));
+  }
+
+  {
+    const size_t data0[] = { x, x, 1, 1 };
+    const size_t data1[] = { x, x, 0, 1 };
+    mTEST_ASSERT_FALSE(cmpFunc(data0, mARRAYSIZE(data0), data1, mARRAYSIZE(data1)));
+  }
+
+  {
+    const size_t data0[] = { 1, 1, x, 1 };
+    const size_t data1[] = { 1, 0, x, 1 };
+    mTEST_ASSERT_FALSE(cmpFunc(data0, mARRAYSIZE(data0), data1, mARRAYSIZE(data1)));
+  }
+
+  {
+    const size_t data0[] = { 1, 1, x, 1, 0, 0, 0, 0, 0 };
+    const size_t data1[] = { 1, 1, x, 1 };
+    mTEST_ASSERT_TRUE(cmpFunc(data0, mARRAYSIZE(data0), data1, mARRAYSIZE(data1)));
+  }
+
+  {
+    const size_t data0[] = { 1, 1, x, 1, 0, 0, 0, 1, 0 };
+    const size_t data1[] = { 1, 1, x, 1 };
+    mTEST_ASSERT_FALSE(cmpFunc(data0, mARRAYSIZE(data0), data1, mARRAYSIZE(data1)));
+  }
+
+  {
+    const size_t data0[] = { 1, 1, x, 1, 0, 0, 0, 1 };
+    const size_t data1[] = { 1, 1, x, 1, 0, 0, 0, 0, 0 };
+    mTEST_ASSERT_FALSE(cmpFunc(data0, mARRAYSIZE(data0), data1, mARRAYSIZE(data1)));
+  }
+
+  {
+    const size_t data0[] = { 1, 1, x, 1, 0, 0, 0, 1, x, 2 };
+    const size_t data1[] = { 1, 1, x, 1, x, x, x, 1, 0, 3 };
+    mTEST_ASSERT_FALSE(cmpFunc(data0, mARRAYSIZE(data0), data1, mARRAYSIZE(data1)));
   }
 
   mTEST_ALLOCATOR_ZERO_CHECK();

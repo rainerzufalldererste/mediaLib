@@ -1,6 +1,13 @@
 #include "mPixelFormat.h"
 #include "mImageBuffer.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "WxZHdolxaOsVMVztMcLWewBh6hSpEpuquqmpB8m6HcA9zdae0FuZIHcxgKjRdXKBj5HQQfLkazzf6tq9"
+#endif
+
 mFUNCTION(mPixelFormat_HasSubBuffers, const mPixelFormat pixelFormat, OUT bool *pValue)
 {
   mFUNCTION_SETUP();
@@ -15,6 +22,10 @@ mFUNCTION(mPixelFormat_HasSubBuffers, const mPixelFormat pixelFormat, OUT bool *
   case mPF_R8G8B8A8:
   case mPF_Monochrome8:
   case mPF_Monochrome16:
+  case mPF_Rf16Gf16Bf16Af16:
+  case mPF_Rf16Gf16Bf16:
+  case mPF_Rf32Gf32Bf32Af32:
+  case mPF_Rf32Gf32Bf32:
     *pValue = false;
     break;
 
@@ -44,6 +55,10 @@ mFUNCTION(mPixelFormat_IsChromaSubsampled, const mPixelFormat pixelFormat, OUT b
   case mPF_R8G8B8A8:
   case mPF_Monochrome8:
   case mPF_Monochrome16:
+  case mPF_Rf16Gf16Bf16Af16:
+  case mPF_Rf16Gf16Bf16:
+  case mPF_Rf32Gf32Bf32Af32:
+  case mPF_Rf32Gf32Bf32:
     *pValue = false;
     break;
 
@@ -93,6 +108,22 @@ mFUNCTION(mPixelFormat_GetSize, const mPixelFormat pixelFormat, const mVec2s &si
     *pBytes = sizeof(uint16_t) * size.x * size.y;
     break;
 
+  case mPF_Rf16Gf16Bf16Af16:
+    *pBytes = sizeof(half_t) * 4 * size.x * size.y;
+    break;
+
+  case mPF_Rf16Gf16Bf16:
+    *pBytes = sizeof(half_t) * 3 * size.x * size.y;
+    break;
+
+  case mPF_Rf32Gf32Bf32Af32:
+    *pBytes = sizeof(float_t) * 4 * size.x * size.y;
+    break;
+
+  case mPF_Rf32Gf32Bf32:
+    *pBytes = sizeof(float_t) * 3 * size.x * size.y;
+    break;
+
   default:
     mRETURN_RESULT(mR_InvalidParameter);
   }
@@ -126,6 +157,22 @@ mFUNCTION(mPixelFormat_GetUnitSize, const mPixelFormat pixelFormat, OUT size_t *
     *pBytes = sizeof(uint16_t);
     break;
 
+  case mPF_Rf16Gf16Bf16Af16:
+    *pBytes = sizeof(half_t) * 4;
+    break;
+
+  case mPF_Rf16Gf16Bf16:
+    *pBytes = sizeof(half_t) * 3;
+    break;
+
+  case mPF_Rf32Gf32Bf32Af32:
+    *pBytes = sizeof(float_t) * 4;
+    break;
+
+  case mPF_Rf32Gf32Bf32:
+    *pBytes = sizeof(float_t) * 3;
+    break;
+
   default:
     mRETURN_RESULT(mR_InvalidParameter);
   }
@@ -147,6 +194,10 @@ mFUNCTION(mPixelFormat_GetSubBufferCount, const mPixelFormat pixelFormat, OUT si
   case mPF_R8G8B8A8:
   case mPF_Monochrome8:
   case mPF_Monochrome16:
+  case mPF_Rf16Gf16Bf16Af16:
+  case mPF_Rf16Gf16Bf16:
+  case mPF_Rf32Gf32Bf32Af32:
+  case mPF_Rf32Gf32Bf32:
     *pBufferCount = 1;
     break;
 
@@ -246,6 +297,10 @@ mFUNCTION(mPixelFormat_GetSubBufferSize, const mPixelFormat pixelFormat, const s
   case mPF_R8G8B8A8:
   case mPF_Monochrome8:
   case mPF_Monochrome16:
+  case mPF_Rf16Gf16Bf16Af16:
+  case mPF_Rf16Gf16Bf16:
+  case mPF_Rf32Gf32Bf32Af32:
+  case mPF_Rf32Gf32Bf32:
     *pSubBufferSize = size;
     break;
 
@@ -280,6 +335,10 @@ mFUNCTION(mPixelFormat_GetSubBufferPixelFormat, const mPixelFormat pixelFormat, 
   case mPF_R8G8B8A8:
   case mPF_Monochrome8:
   case mPF_Monochrome16:
+  case mPF_Rf16Gf16Bf16Af16:
+  case mPF_Rf16Gf16Bf16:
+  case mPF_Rf32Gf32Bf32Af32:
+  case mPF_Rf32Gf32Bf32:
     *pSubBufferPixelFormat = pixelFormat;
     break;
 
@@ -317,6 +376,10 @@ mFUNCTION(mPixelFormat_GetSubBufferStride, const mPixelFormat pixelFormat, const
   case mPF_R8G8B8A8:
   case mPF_Monochrome8:
   case mPF_Monochrome16:
+  case mPF_Rf16Gf16Bf16Af16:
+  case mPF_Rf16Gf16Bf16:
+  case mPF_Rf32Gf32Bf32Af32:
+  case mPF_Rf32Gf32Bf32:
     *pSubBufferLineStride = originalLineStride;
     break;
 
@@ -359,6 +422,13 @@ namespace mPixelFormat_Transform
   */
 
 #include "mSimd.h"
+
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "WxZHdolxaOsVMVztMcLWewBh6hSpEpuquqmpB8m6HcA9zdae0FuZIHcxgKjRdXKBj5HQQfLkazzf6tq9"
+#endif
 
   const int mPixelFormatTransform_YUV_SIMD_Y_ADJUST = 16;
   const int mPixelFormatTransform_YUV_SIMD_UV_ADJUST = 128;
@@ -930,14 +1000,14 @@ namespace mPixelFormat_Transform
     mRETURN_SUCCESS();
   }
 
-  mFUNCTION(mPixelFormat_Transform_RgbaToBgra_BgraToRgba, uint32_t *pSource, const size_t sourceStride, uint32_t *pTarget, const size_t targetStride, const mVec2s &size)
+  mFUNCTION(mPixelFormat_Transform_RgbaToBgra_BgraToRgba, const uint32_t *pSource, const size_t sourceStride, uint32_t *pTarget, const size_t targetStride, const mVec2s &size)
   {
     mFUNCTION_SETUP();
 
 #ifndef SSE2
-    const size_t maxX = size.x - 1;
+    const size_t maxX = size.x >= 1 ? size.x - 1 : 0;
 #else
-    const size_t maxX = size.x - 3;
+    const size_t maxX = size.x >= 3 ? size.x - 3 : 0;
 #endif
 
     for (size_t y = 0; y < size.y; ++y)
@@ -962,7 +1032,7 @@ namespace mPixelFormat_Transform
 
       for (; x < maxX; x += 4)
       {
-        __m128i color = *(__m128i *)&pSource[x + ySourceOffset];
+        __m128i color = _mm_loadu_si128(reinterpret_cast<const __m128i *>(&pSource[x + ySourceOffset]));
         __m128i swap0 = _mm_slli_si128(color, 2);
         __m128i swap1 = _mm_srli_si128(color, 2);
 
@@ -972,7 +1042,7 @@ namespace mPixelFormat_Transform
 
         color = _mm_or_si128(color, _mm_or_si128(swap0, swap1));
 
-        *(__m128i *)&pTarget[x + yTargetOffset] = color;
+        _mm_storeu_si128(reinterpret_cast<__m128i *>(&pTarget[x + yTargetOffset]), color);
       }
 #endif
 
@@ -1167,6 +1237,10 @@ mFUNCTION(mPixelFormat_TransformBuffer, mPtr<mImageBuffer> &source, mPtr<mImageB
     case mPF_Monochrome8:
     case mPF_Monochrome16:
     case mPF_YUV422:
+    case mPF_Rf16Gf16Bf16Af16:
+    case mPF_Rf16Gf16Bf16:
+    case mPF_Rf32Gf32Bf32Af32:
+    case mPF_Rf32Gf32Bf32:
     {
       mRETURN_RESULT(mR_NotImplemented);
     }
@@ -1198,6 +1272,10 @@ mFUNCTION(mPixelFormat_TransformBuffer, mPtr<mImageBuffer> &source, mPtr<mImageB
     case mPF_YUV420:
     case mPF_Monochrome8:
     case mPF_Monochrome16:
+    case mPF_Rf16Gf16Bf16Af16:
+    case mPF_Rf16Gf16Bf16:
+    case mPF_Rf32Gf32Bf32Af32:
+    case mPF_Rf32Gf32Bf32:
     {
       mRETURN_RESULT(mR_NotImplemented);
     }
@@ -1234,6 +1312,10 @@ mFUNCTION(mPixelFormat_TransformBuffer, mPtr<mImageBuffer> &source, mPtr<mImageB
   case mPF_Monochrome16:
   case mPF_YUV422:
   case mPF_YUV420:
+  case mPF_Rf16Gf16Bf16Af16:
+  case mPF_Rf16Gf16Bf16:
+  case mPF_Rf32Gf32Bf32Af32:
+  case mPF_Rf32Gf32Bf32:
   {
     mRETURN_RESULT(mR_NotImplemented);
   }

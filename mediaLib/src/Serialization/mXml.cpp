@@ -8,6 +8,13 @@
 #include "mQueue.h"
 #include "mKeyValuePair.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "JFs/iNea9PNiOhkxuIcMOYdwGEShzzm7M30xGCwSNKRyEbfd7QUQ8ETqZA4IKNaELuLJYEirFcS/49uN"
+#endif
+
 struct mXmlNode
 {
   mString tag, content;
@@ -460,7 +467,7 @@ struct mXmlWriter
 };
 
 mFUNCTION(mXmlWriter_Destroy_Internal, IN_OUT mXmlWriter *pXmlWriter);
-mFUNCTION(mXmlWriter_RecursiveSerializeNode_Internal, const mXmlNode &xmlNode, IN_OUT mString &string);
+mFUNCTION(mXmlWriter_RecursiveSerializeNode_Internal, const mXmlNode &xmlNode, IN_OUT mString &string, const size_t depth = 0);
 mFUNCTION(mXmlWriter_AppendEscapedString_Internal, IN_OUT mString &string, const mString &unescapedString);
 
 inline bool mXmlWriter_IsValidString(const mString &tag)
@@ -476,6 +483,14 @@ inline bool mXmlWriter_StringNeedsEscaping(const mString &string)
 
   return false;
 }
+
+static mString mXmlWriter_OpeningTag = "<";
+static mString mXmlWriter_OpeningEndTag = "</";
+static mString mXmlWriter_ClosingTag = ">";
+static mString mXmlWriter_EmptyClosingTag = "/>";
+static mString mXmlWriter_Space = " ";
+static mString mXmlWriter_Equals = "=";
+static mString mXmlWriter_Quote = "\"";
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -517,10 +532,14 @@ mFUNCTION(mXmlWriter_ToString, mPtr<mXmlWriter> &xmlWriter, OUT mString *pXmlStr
 
   mERROR_IF(xmlWriter == nullptr || pXmlString == nullptr, mR_ArgumentNull);
 
-  mERROR_CHECK(mString_Create(pXmlString, "", 1, pAllocator));
+  const char header[] = "<?xml version=\"1.0\"?>\n";
 
+  mERROR_CHECK(mString_Create(pXmlString, header, mARRAYSIZE(header), pAllocator));
   mERROR_CHECK(mXmlWriter_RecursiveSerializeNode_Internal(xmlWriter->rootNode, *pXmlString));
-  mERROR_CHECK(mString_Append(*pXmlString, "\n"));
+
+  mInplaceString<2> newline;
+  mERROR_CHECK(mInplaceString_Create(&newline, "\n"));
+  mERROR_CHECK(mString_Append(*pXmlString, newline));
 
   mRETURN_SUCCESS();
 }
@@ -637,14 +656,7 @@ mFUNCTION(mXmlWriter_Destroy_Internal, IN_OUT mXmlWriter *pXmlWriter)
   mRETURN_SUCCESS();
 }
 
-static mString mXmlWriter_OpeningTag = "<";
-static mString mXmlWriter_OpeningEndTag = "</";
-static mString mXmlWriter_ClosingTag = ">";
-static mString mXmlWriter_Space = " ";
-static mString mXmlWriter_Equals = "=";
-static mString mXmlWriter_Quote = "\"";
-
-mFUNCTION(mXmlWriter_RecursiveSerializeNode_Internal, const mXmlNode &xmlNode, IN_OUT mString &string)
+mFUNCTION(mXmlWriter_RecursiveSerializeNode_Internal, const mXmlNode &xmlNode, IN_OUT mString &string, const size_t depth /* = 0 */)
 {
   mFUNCTION_SETUP();
 
@@ -664,12 +676,20 @@ mFUNCTION(mXmlWriter_RecursiveSerializeNode_Internal, const mXmlNode &xmlNode, I
     }
   }
 
+  const bool hasChildNodes = xmlNode.childNodes != nullptr && xmlNode.childNodes->count > 0;
+
+  if (xmlNode.content.bytes <= 1 && !hasChildNodes)
+  {
+    mERROR_CHECK(mString_Append(string, mXmlWriter_EmptyClosingTag));
+    mRETURN_SUCCESS();
+  }
+
   mERROR_CHECK(mString_Append(string, mXmlWriter_ClosingTag));
   mERROR_CHECK(mXmlWriter_AppendEscapedString_Internal(string, xmlNode.content));
 
-  if (xmlNode.childNodes != nullptr)
+  if (hasChildNodes)
     for (const auto &_childNode : xmlNode.childNodes->Iterate())
-      mERROR_CHECK(mXmlWriter_RecursiveSerializeNode_Internal(_childNode, string));
+      mERROR_CHECK(mXmlWriter_RecursiveSerializeNode_Internal(_childNode, string, depth + 1));
 
   mERROR_CHECK(mString_Append(string, mXmlWriter_OpeningEndTag));
   mERROR_CHECK(mString_Append(string, xmlNode.tag));

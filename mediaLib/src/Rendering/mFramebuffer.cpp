@@ -5,16 +5,24 @@
 //#define DEBUG_FRAMBUFFER_CREATION
 
 #if defined (mRENDERER_OPENGL)
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "1fNBDeKfYQkAJQSQhx6M314RdQis15VJ++OE3e/ZzoZ1izXkI8uLSr1ef2wIzw9teQ3VDdElhcuqYIOr"
+#endif
+
 GLuint mFrameBuffer_ActiveFrameBufferHandle = 0;
 #endif
 
 mPtr<mQueue<mPtr<mFramebuffer>>> mFramebuffer_Queue = nullptr;
 
-mFUNCTION(mFramebuffer_Create_Internal, OUT mFramebuffer *pFramebuffer, const mVec2s &size, const mTexture2DParams &params, const size_t sampleCount, const mPixelFormat pixelFormat);
-mFUNCTION(mFramebuffer_Destroy_Internal, IN mFramebuffer *pFramebuffer);
+static mFUNCTION(mFramebuffer_Create_Internal, OUT mFramebuffer *pFramebuffer, const mVec2s &size, const mTexture2DParams &params, const size_t sampleCount, const mPixelFormat pixelFormat);
+static mFUNCTION(mFramebuffer_Destroy_Internal, IN mFramebuffer *pFramebuffer);
 
 #ifdef mRENDERER_OPENGL
-mFUNCTION(mFramebuffer_PixelFormatToGLenum_Internal, const mPixelFormat pixelFormat, OUT GLenum *pPixelFormat);
+static mFUNCTION(mFramebuffer_PixelFormatToGLenumChannels_Internal, const mPixelFormat pixelFormat, OUT GLenum *pPixelFormat);
+static mFUNCTION(mFramebuffer_PixelFormatToGLenumDataType_Internal, const mPixelFormat pixelFormat, OUT GLenum *pPixelFormat);
 #endif
 
 //////////////////////////////////////////////////////////////////////////
@@ -26,7 +34,7 @@ mFUNCTION(mFramebuffer_Create, OUT mPtr<mFramebuffer> *pFramebuffer, IN mAllocat
   mERROR_IF(pFramebuffer == nullptr, mR_ArgumentNull);
 
   if (mFramebuffer_Queue == nullptr)
-    mERROR_CHECK(mQueue_Create(&mFramebuffer_Queue, pAllocator));
+    mERROR_CHECK(mQueue_Create(&mFramebuffer_Queue, &mDefaultAllocator));
 
   mERROR_CHECK(mSharedPointer_Allocate(pFramebuffer, pAllocator, (std::function<void (mFramebuffer *)>)[](mFramebuffer *pData) { mFramebuffer_Destroy_Internal(pData); }, 1));
 
@@ -42,7 +50,7 @@ mFUNCTION(mFramebuffer_Create, OUT mPtr<mFramebuffer> *pFramebuffer, IN mAllocat
   mERROR_IF(pFramebuffer == nullptr, mR_ArgumentNull);
 
   if (mFramebuffer_Queue == nullptr)
-    mERROR_CHECK(mQueue_Create(&mFramebuffer_Queue, pAllocator));
+    mERROR_CHECK(mQueue_Create(&mFramebuffer_Queue, &mDefaultAllocator));
 
   mERROR_CHECK(mSharedPointer_Allocate(pFramebuffer, pAllocator, (std::function<void (mFramebuffer *)>)[](mFramebuffer *pData) { mFramebuffer_Destroy_Internal(pData); }, 1));
 
@@ -73,6 +81,8 @@ mFUNCTION(mFramebuffer_Bind, mPtr<mFramebuffer> &framebuffer)
   mERROR_IF(framebuffer == nullptr, mR_ArgumentNull);
 
 #if defined(mRENDERER_OPENGL)
+  mGL_DEBUG_ERROR_CHECK();
+
   glBindFramebuffer(GL_FRAMEBUFFER, framebuffer->frameBufferHandle);
   mERROR_CHECK(mRenderParams_SetCurrentRenderResolution(framebuffer->size));
   mFrameBuffer_ActiveFrameBufferHandle = framebuffer->frameBufferHandle;
@@ -94,8 +104,11 @@ mFUNCTION(mFramebuffer_Unbind)
 
 #if defined(mRENDERER_OPENGL)
   mGL_DEBUG_ERROR_CHECK();
+  
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  mERROR_CHECK(mRenderParams_SetCurrentRenderResolution(mRenderParams_BackBufferResolution));
   mFrameBuffer_ActiveFrameBufferHandle = 0;
+  
   mGL_DEBUG_ERROR_CHECK();
 
 #else
@@ -112,6 +125,9 @@ mFUNCTION(mFramebuffer_Push, mPtr<mFramebuffer> &framebuffer)
   mERROR_IF(framebuffer == nullptr, mR_ArgumentNull);
 
   mERROR_CHECK(mFramebuffer_Bind(framebuffer));
+
+  if (mFramebuffer_Queue == nullptr)
+    mERROR_CHECK(mQueue_Create(&mFramebuffer_Queue, &mDefaultAllocator));
 
   mERROR_CHECK(mQueue_PushBack(mFramebuffer_Queue, framebuffer));
 
@@ -165,13 +181,13 @@ mFUNCTION(mFramebuffer_SetResolution, mPtr<mFramebuffer> &framebuffer, const mVe
   mERROR_IF(framebuffer->size == size, mR_Success);
 
   GLenum glPixelFormat = GL_RGBA;
-  mERROR_CHECK(mFramebuffer_PixelFormatToGLenum_Internal(framebuffer->pixelFormat, &glPixelFormat));
+  mERROR_CHECK(mFramebuffer_PixelFormatToGLenumChannels_Internal(framebuffer->pixelFormat, &glPixelFormat));
 
   framebuffer->allocatedSize = framebuffer->size = size;
 
   mGL_DEBUG_ERROR_CHECK();
 
-  glBindTexture((framebuffer->sampleCount > 0) ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, framebuffer->texColourBuffer);
+  glBindTexture((framebuffer->sampleCount > 0) ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, framebuffer->textureId);
 
   if (framebuffer->sampleCount > 0)
     glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, (GLsizei)framebuffer->sampleCount, glPixelFormat, (GLsizei)size.x, (GLsizei)size.y, false);
@@ -194,14 +210,19 @@ mFUNCTION(mFramebuffer_Download, mPtr<mFramebuffer> &framebuffer, OUT mPtr<mImag
 #if defined(mRENDERER_OPENGL)
 
   GLenum glPixelFormat;
+  GLenum type = GL_UNSIGNED_BYTE;
 
   switch (pixelFormat)
   {
   case mPF_R8G8B8A8:
+  case mPF_Rf16Gf16Bf16Af16:
+  case mPF_Rf32Gf32Bf32Af32:
     glPixelFormat = GL_RGBA;
     break;
 
   case mPF_R8G8B8:
+  case mPF_Rf16Gf16Bf16:
+  case mPF_Rf32Gf32Bf32:
     glPixelFormat = GL_RGB;
     break;
 
@@ -222,6 +243,22 @@ mFUNCTION(mFramebuffer_Download, mPtr<mFramebuffer> &framebuffer, OUT mPtr<mImag
     break;
   }
 
+  switch (pixelFormat)
+  {
+  case mPF_Rf16Gf16Bf16:
+  case mPF_Rf16Gf16Bf16Af16:
+    type = GL_HALF_FLOAT;
+    break;
+
+  case mPF_Rf32Gf32Bf32:
+  case mPF_Rf32Gf32Bf32Af32:
+    type = GL_FLOAT;
+    break;
+
+  default:
+    break;
+  }
+
   if (framebuffer->sampleCount > 0)
   {
     mPtr<mFramebuffer> tempFramebuffer;
@@ -237,11 +274,11 @@ mFUNCTION(mFramebuffer_Download, mPtr<mFramebuffer> &framebuffer, OUT mPtr<mImag
 
     mERROR_CHECK(mImageBuffer_Create(pImageBuffer, pAllocator, framebuffer->size, pixelFormat));
 
-    glBindTexture(GL_TEXTURE_2D, framebuffer->texColourBuffer);
+    glBindTexture(GL_TEXTURE_2D, framebuffer->textureId);
 
     mGL_ERROR_CHECK();
 
-    glGetTexImage(GL_TEXTURE_2D, 0, glPixelFormat, GL_UNSIGNED_BYTE, (*pImageBuffer)->pPixels);
+    glGetTexImage(GL_TEXTURE_2D, 0, glPixelFormat, type, (*pImageBuffer)->pPixels);
 
     mGL_ERROR_CHECK();
   }
@@ -346,7 +383,7 @@ mFUNCTION(mTexture_Bind, mPtr<mFramebuffer> &framebuffer, const size_t textureUn
   mERROR_IF(mFrameBuffer_ActiveFrameBufferHandle == framebuffer->frameBufferHandle, mR_ResourceStateInvalid);
 
   glActiveTexture(GL_TEXTURE0 + (GLuint)framebuffer->textureUnit);
-  glBindTexture((framebuffer->sampleCount > 0) ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, framebuffer->texColourBuffer);
+  glBindTexture((framebuffer->sampleCount > 0) ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, framebuffer->textureId);
 
   mGL_DEBUG_ERROR_CHECK();
 #else
@@ -410,7 +447,7 @@ mFUNCTION(mTexture_Copy, mTexture &destination, mPtr<mFramebuffer> &source)
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mFramebuffer_Create_Internal, mFramebuffer *pFramebuffer, const mVec2s &size, const mTexture2DParams &params, const size_t sampleCount, const mPixelFormat pixelFormat)
+static mFUNCTION(mFramebuffer_Create_Internal, mFramebuffer *pFramebuffer, const mVec2s &size, const mTexture2DParams &params, const size_t sampleCount, const mPixelFormat pixelFormat)
 {
   mFUNCTION_SETUP();
 
@@ -424,22 +461,27 @@ mFUNCTION(mFramebuffer_Create_Internal, mFramebuffer *pFramebuffer, const mVec2s
   pFramebuffer->pixelFormat = pixelFormat;
 
 #ifdef mRENDERER_OPENGL
+  mGL_ERROR_CHECK();
+
   GLenum glPixelFormat = GL_RGBA;
-  mERROR_CHECK(mFramebuffer_PixelFormatToGLenum_Internal(pixelFormat, &glPixelFormat));
+  mERROR_CHECK(mFramebuffer_PixelFormatToGLenumChannels_Internal(pixelFormat, &glPixelFormat));
+
+  GLenum glType = GL_UNSIGNED_BYTE;
+  mERROR_CHECK(mFramebuffer_PixelFormatToGLenumDataType_Internal(pixelFormat, &glType));
 
   glGenFramebuffers(1, &pFramebuffer->frameBufferHandle);
   glBindFramebuffer(GL_FRAMEBUFFER, pFramebuffer->frameBufferHandle);
-  glGenTextures(1, &pFramebuffer->texColourBuffer);
-  glBindTexture((pFramebuffer->sampleCount > 0) ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, pFramebuffer->texColourBuffer);
+  glGenTextures(1, &pFramebuffer->textureId);
+  glBindTexture((pFramebuffer->sampleCount > 0) ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, pFramebuffer->textureId);
 
   if (pFramebuffer->sampleCount > 0)
     glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, (GLsizei)sampleCount, glPixelFormat, (GLsizei)size.x, (GLsizei)size.y, false);
   else
-    glTexImage2D(GL_TEXTURE_2D, 0, glPixelFormat, (GLsizei)size.x, (GLsizei)size.y, 0, glPixelFormat, GL_UNSIGNED_BYTE, nullptr);
+    glTexImage2D(GL_TEXTURE_2D, 0, glPixelFormat, (GLsizei)size.x, (GLsizei)size.y, 0, glPixelFormat, glType, nullptr);
 
   mERROR_CHECK(mTexture2DParams_ApplyToBoundTexture(params, pFramebuffer->sampleCount > 0));
   
-  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, (pFramebuffer->sampleCount > 0) ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, pFramebuffer->texColourBuffer, 0);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, (pFramebuffer->sampleCount > 0) ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, pFramebuffer->textureId, 0);
 
   glGenRenderbuffers(1, &pFramebuffer->rboDepthStencil);
   glBindRenderbuffer(GL_RENDERBUFFER, pFramebuffer->rboDepthStencil);
@@ -458,7 +500,7 @@ mFUNCTION(mFramebuffer_Create_Internal, mFramebuffer *pFramebuffer, const mVec2s
 #endif
 
 #ifdef DEBUG_FRAMBUFFER_CREATION
-  mPRINT_DEBUG("Created Framebuffer %" PRIu64 " with texture %" PRIu64 ".\n", (uint64_t)pFramebuffer->frameBufferHandle, (uint64_t)pFramebuffer->texColourBuffer);
+  mPRINT_DEBUG("Created Framebuffer %" PRIu64 " with texture %" PRIu64 ".\n", (uint64_t)pFramebuffer->frameBufferHandle, (uint64_t)pFramebuffer->textureId);
 #endif
 
   mGL_ERROR_CHECK();
@@ -478,7 +520,7 @@ mFUNCTION(mFramebuffer_Create_Internal, mFramebuffer *pFramebuffer, const mVec2s
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mFramebuffer_Destroy_Internal, IN mFramebuffer *pFramebuffer)
+static mFUNCTION(mFramebuffer_Destroy_Internal, IN mFramebuffer *pFramebuffer)
 {
   mFUNCTION_SETUP();
 
@@ -492,27 +534,31 @@ mFUNCTION(mFramebuffer_Destroy_Internal, IN mFramebuffer *pFramebuffer)
 
   pFramebuffer->frameBufferHandle = 0;
 
-  if (pFramebuffer->texColourBuffer)
-    glDeleteTextures(0, &pFramebuffer->texColourBuffer);
+  if (pFramebuffer->textureId)
+    glDeleteTextures(0, &pFramebuffer->textureId);
 
-  pFramebuffer->texColourBuffer = 0;
+  pFramebuffer->textureId = 0;
 #endif
 
   mRETURN_SUCCESS();
 }
 
 #ifdef mRENDERER_OPENGL
-mFUNCTION(mFramebuffer_PixelFormatToGLenum_Internal, const mPixelFormat pixelFormat, OUT GLenum *pPixelFormat)
+static mFUNCTION(mFramebuffer_PixelFormatToGLenumChannels_Internal, const mPixelFormat pixelFormat, OUT GLenum *pPixelFormat)
 {
   mFUNCTION_SETUP();
 
   switch (pixelFormat)
   {
   case mPF_R8G8B8:
+  case mPF_Rf16Gf16Bf16:
+  case mPF_Rf32Gf32Bf32:
     *pPixelFormat = GL_RGB;
     break;
 
   case mPF_R8G8B8A8:
+  case mPF_Rf16Gf16Bf16Af16:
+  case mPF_Rf32Gf32Bf32Af32:
     *pPixelFormat = GL_RGBA;
     break;
 
@@ -522,6 +568,29 @@ mFUNCTION(mFramebuffer_PixelFormatToGLenum_Internal, const mPixelFormat pixelFor
 
   default:
     mRETURN_RESULT(mR_InvalidParameter);
+  }
+
+  mRETURN_SUCCESS();
+}
+
+static mFUNCTION(mFramebuffer_PixelFormatToGLenumDataType_Internal, const mPixelFormat pixelFormat, OUT GLenum *pPixelFormat)
+{
+  mFUNCTION_SETUP();
+
+  switch (pixelFormat)
+  {
+  case mPF_Rf16Gf16Bf16:
+  case mPF_Rf16Gf16Bf16Af16:
+    *pPixelFormat = GL_HALF_FLOAT;
+    break;
+
+  case mPF_Rf32Gf32Bf32:
+  case mPF_Rf32Gf32Bf32Af32:
+    *pPixelFormat = GL_FLOAT;
+    break;
+
+  default:
+    *pPixelFormat = GL_UNSIGNED_BYTE;
   }
 
   mRETURN_SUCCESS();

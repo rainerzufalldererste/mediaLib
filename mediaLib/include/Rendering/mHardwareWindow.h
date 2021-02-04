@@ -3,6 +3,13 @@
 
 #include "mRenderParams.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "uoBFfquKF0Hpbql8Jw9HNO+Yf07zSigzDdXkcTyvPMi0RNgMxQrSzRRM484x2Bn4SisWt0xxJE/I33f6"
+#endif
+
 enum mHardwareWindow_DisplayMode
 {
   mHW_DM_Windowed = 0,
@@ -13,6 +20,7 @@ enum mHardwareWindow_DisplayMode
   mHW_DM_Minimized = SDL_WINDOW_MINIMIZED,
   mHW_DM_Hidden = SDL_WINDOW_HIDDEN,
   mHW_DM_NotInTaskbar = SDL_WINDOW_SKIP_TASKBAR,
+  mHW_DM_Borderless = SDL_WINDOW_BORDERLESS,
 };
 
 struct mHardwareWindow;
@@ -26,6 +34,17 @@ mFUNCTION(mHardwareWindow_SetAsActiveRenderTarget, mPtr<mHardwareWindow> &window
 mFUNCTION(mHardwareWindow_GetSdlWindowPtr, mPtr<mHardwareWindow> &window, OUT SDL_Window **ppSdlWindow);
 mFUNCTION(mHardwareWindow_GetRenderContextId, mPtr<mHardwareWindow> &window, OUT mRenderContextId *pRenderContextId);
 mFUNCTION(mHardwareWindow_SetFullscreenMode, mPtr<mHardwareWindow> &window, const mHardwareWindow_DisplayMode displayMode);
+mFUNCTION(mHardwareWindow_SetActive, mPtr<mHardwareWindow> &window);
+
+mFUNCTION(mHardwareWindow_IsActive, const mPtr<mHardwareWindow> &window, OUT bool *pIsActive);
+mFUNCTION(mHardwareWindow_IsResizable, const mPtr<mHardwareWindow> &window, OUT bool *pIsResizable);
+mFUNCTION(mHardwareWindow_IsMinimized, const mPtr<mHardwareWindow> &window, OUT bool *pIsMinimized);
+mFUNCTION(mHardwareWindow_IsMaximized, const mPtr<mHardwareWindow> &window, OUT bool *pIsMaximized);
+
+mFUNCTION(mHardwareWindow_MaximizeWindow, mPtr<mHardwareWindow> &window);
+mFUNCTION(mHardwareWindow_MinimizeWindow, mPtr<mHardwareWindow> &window);
+mFUNCTION(mHardwareWindow_RestoreWindow, mPtr<mHardwareWindow> &window);
+mFUNCTION(mHardwareWindow_SetResizable, mPtr<mHardwareWindow> &window, const bool resizable);
 
 mFUNCTION(mHardwareWindow_AddOnResizeEvent, mPtr<mHardwareWindow> &window, const std::function<mResult(const mVec2s &)> &callback);
 mFUNCTION(mHardwareWindow_AddOnCloseEvent, mPtr<mHardwareWindow> &window, const std::function<mResult(void)> &callback);

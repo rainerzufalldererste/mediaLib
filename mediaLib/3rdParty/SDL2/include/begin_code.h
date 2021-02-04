@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2018 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2019 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -51,30 +51,33 @@
 
 /* Some compilers use a special export keyword */
 #ifndef DECLSPEC
-# if defined(__WIN32__) || defined(__WINRT__)
-#  ifdef __BORLANDC__
-#   ifdef BUILD_SDL
-#    define DECLSPEC
-#   else
-#    define DECLSPEC    __declspec(dllimport)
-#   endif
-#  else
-#   define DECLSPEC __declspec(dllexport)
-#  endif
-# elif defined(__OS2__)
-#   ifdef BUILD_SDL
-#    define DECLSPEC    __declspec(dllexport)
-#   else
-#    define DECLSPEC
-#   endif
-# else
-#  if defined(__GNUC__) && __GNUC__ >= 4
-#   define DECLSPEC __attribute__ ((visibility("default")))
-#  else
-#   define DECLSPEC
-#  endif
-# endif
+#define DECLSPEC
 #endif
+//#ifndef DECLSPEC
+//# if defined(__WIN32__) || defined(__WINRT__)
+//#  ifdef __BORLANDC__
+//#   ifdef BUILD_SDL
+//#    define DECLSPEC
+//#   else
+//#    define DECLSPEC    __declspec(dllimport)
+//#   endif
+//#  else
+//#   define DECLSPEC __declspec(dllexport)
+//#  endif
+//# elif defined(__OS2__)
+//#   ifdef BUILD_SDL
+//#    define DECLSPEC    __declspec(dllexport)
+//#   else
+//#    define DECLSPEC
+//#   endif
+//# else
+//#  if defined(__GNUC__) && __GNUC__ >= 4
+//#   define DECLSPEC __attribute__ ((visibility("default")))
+//#  else
+//#   define DECLSPEC
+//#  endif
+//# endif
+//#endif
 
 /* By default SDL uses the C calling convention */
 #ifndef SDLCALL
@@ -104,6 +107,9 @@
 #if defined(_MSC_VER) || defined(__MWERKS__) || defined(__BORLANDC__)
 #ifdef _MSC_VER
 #pragma warning(disable: 4103)
+#endif
+#ifdef __clang__
+#pragma clang diagnostic ignored "-Wpragma-pack"
 #endif
 #ifdef __BORLANDC__
 #pragma nopackwarning

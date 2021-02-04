@@ -3,6 +3,13 @@
 #include "mMediaFileInputHandler.h"
 #include "mTimeStamp.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "wRlpx85LP9eBsllb3ZS5eG8IXG7Oyvo70iViC/PfqZY1+4rSG9DV3ThMIQf3FmSsmSLkNwD9mKmUmRc7"
+#endif
+
 struct mVideoPlaybackEngine
 {
   mThread *pPlaybackThread;
@@ -26,8 +33,12 @@ struct mVideoPlaybackEngine
   void *pLastFramePtr;
 };
 
-mFUNCTION(mVideoPlaybackEngine_Create_Internal, IN mVideoPlaybackEngine *pPlaybackEngine, IN mAllocator *pAllocator, IN const wchar_t *fileName, mPtr<mThreadPool> &asyncTaskHandler, const size_t videoStreamIndex, const mPixelFormat outputPixelFormat, const size_t playbackFlags);
-mFUNCTION(mVideoPlaybackEngine_Destroy_Internal, IN_OUT mVideoPlaybackEngine *pPlaybackEngine);
+//////////////////////////////////////////////////////////////////////////
+
+static mFUNCTION(mVideoPlaybackEngine_Create_Internal, IN mVideoPlaybackEngine *pPlaybackEngine, IN mAllocator *pAllocator, IN const wchar_t *fileName, mPtr<mThreadPool> &asyncTaskHandler, const size_t videoStreamIndex, const mPixelFormat outputPixelFormat, const size_t playbackFlags);
+static mFUNCTION(mVideoPlaybackEngine_Destroy_Internal, IN_OUT mVideoPlaybackEngine *pPlaybackEngine);
+
+//////////////////////////////////////////////////////////////////////////
 
 mFUNCTION(mVideoPlaybackEngine_PlaybackThread, mVideoPlaybackEngine *pPlaybackEngine)
 {
@@ -74,8 +85,7 @@ mFUNCTION(mVideoPlaybackEngine_PlaybackThread, mVideoPlaybackEngine *pPlaybackEn
       if (currentImageBuffer == nullptr)
         mERROR_CHECK(mImageBuffer_Create(&currentImageBuffer, pPlaybackEngine->pAllocator));
     }
-
-
+    
     mERROR_CHECK(mTimeStamp_Now(&now));
 
     mTimeStamp difference = (now - pPlaybackEngine->startTimeStamp) - (playbackTime + pPlaybackEngine->frameTime);
@@ -244,7 +254,7 @@ mFUNCTION(mVideoPlaybackEngine_GetCurrentFrame, mPtr<mVideoPlaybackEngine> &play
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mVideoPlaybackEngine_Create_Internal, IN mVideoPlaybackEngine *pPlaybackEngine, IN mAllocator *pAllocator, IN const wchar_t *fileName, mPtr<mThreadPool> &asyncTaskHandler, const size_t videoStreamIndex, const mPixelFormat outputPixelFormat, const size_t playbackFlags)
+static mFUNCTION(mVideoPlaybackEngine_Create_Internal, IN mVideoPlaybackEngine *pPlaybackEngine, IN mAllocator *pAllocator, IN const wchar_t *fileName, mPtr<mThreadPool> &asyncTaskHandler, const size_t videoStreamIndex, const mPixelFormat outputPixelFormat, const size_t playbackFlags)
 {
   mFUNCTION_SETUP();
 
@@ -274,7 +284,7 @@ mFUNCTION(mVideoPlaybackEngine_Create_Internal, IN mVideoPlaybackEngine *pPlayba
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mVideoPlaybackEngine_Destroy_Internal, IN_OUT mVideoPlaybackEngine *pPlaybackEngine)
+static mFUNCTION(mVideoPlaybackEngine_Destroy_Internal, IN_OUT mVideoPlaybackEngine *pPlaybackEngine)
 {
   mFUNCTION_SETUP();
 

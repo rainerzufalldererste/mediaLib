@@ -3,6 +3,13 @@
 #include <condition_variable>
 #include <mutex>
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "nxmy96Ja8aLmwKT+/v62RP14meo3etMdz8lHZ8WGUZ7HSSY61pxX/Dl4bh8sPbx0T8qiznS1eEGL3+DH"
+#endif
+
 struct mSemaphore
 {
   std::mutex mutex;
@@ -10,7 +17,7 @@ struct mSemaphore
   mAllocator *pAllocator;
 };
 
-mFUNCTION(mSemaphore_Destroy_Internal, IN mSemaphore *pSemaphore);
+static mFUNCTION(mSemaphore_Destroy_Internal, IN mSemaphore *pSemaphore);
 
 mFUNCTION(mSemaphore_Create, OUT mSemaphore **ppSemaphore, IN OPTIONAL mAllocator *pAllocator)
 {
@@ -112,7 +119,7 @@ mFUNCTION(mSemaphore_Sleep, IN mSemaphore *pSemaphore, const size_t timeoutMilli
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mSemaphore_Destroy_Internal, IN mSemaphore *pSemaphore)
+static mFUNCTION(mSemaphore_Destroy_Internal, IN mSemaphore *pSemaphore)
 {
   mFUNCTION_SETUP();
 

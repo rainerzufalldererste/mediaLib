@@ -3,6 +3,13 @@
 
 #include "mediaLib.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "y1EUEpEJJ8MxruisvGAXr11ALY4KxYnr63Mnb++I1x3nbzrqqrKSuq3SGQJZS5OYWBVyjqGddyLhsNbm"
+#endif
+
 struct mCachedFileReader
 {
   int fileHandle;

@@ -2,6 +2,13 @@
 #include "mHashMap.h"
 
 #ifdef mDEBUG_MEMORY_ALLOCATIONS
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "v2gunMP1J5R2IoC808eVXexsKTrWbDjb15HM94uWS4tnBkokiYN3TQ4Ld85efL9OD3sv0EQ2XeltNZtm"
+#endif
+
 void mAllocatorDebugging_PrintOnExit()
 {
   mPRINT("\nRemaining Memory Allocations:\n\n");
@@ -167,7 +174,7 @@ void mAllocatorDebugging_StoreFreeCall(IN mAllocator *pAllocator, const size_t o
 #endif
 
 #ifndef MEDIA_LIB_CUSTOM_DEFAULT_ALLOCATOR
-mAllocator mDefaultAllocator = mAllocator_StaticCreate(&mDefaultAllocator_Alloc, &mDefaultAllocator_Realloc, &mDefaultAllocator_Free, &mDefaultAllocator_Move, &mDefaultAllocator_Copy, &mDefaultAllocator_AllocZero);
+mAllocator mDefaultAllocator = mAllocator_StaticCreate(&mDefaultAllocator_Alloc, &mDefaultAllocator_Realloc, &mDefaultAllocator_Free, &mDefaultAllocator_AllocZero);
 mAllocator mDefaultTempAllocator = mDefaultAllocator;
 
 mFUNCTION(mDefaultAllocator_Alloc, OUT uint8_t **ppData, const size_t size, const size_t count, IN void *)
@@ -202,24 +209,6 @@ mFUNCTION(mDefaultAllocator_Free, OUT uint8_t *pData, IN void *)
   mFUNCTION_SETUP();
 
   mERROR_CHECK(mFree(pData));
-
-  mRETURN_SUCCESS();
-}
-
-mFUNCTION(mDefaultAllocator_Move, IN_OUT uint8_t *pDestimation, IN uint8_t *pSource, const size_t size, const size_t count, IN void *)
-{
-  mFUNCTION_SETUP();
-
-  mERROR_CHECK(mMemmove(pDestimation, pSource, size * count));
-
-  mRETURN_SUCCESS();
-}
-
-mFUNCTION(mDefaultAllocator_Copy, IN_OUT uint8_t *pDestimation, IN const uint8_t *pSource, const size_t size, const size_t count, IN void *)
-{
-  mFUNCTION_SETUP();
-
-  mERROR_CHECK(mMemcpy(pDestimation, pSource, size * count));
 
   mRETURN_SUCCESS();
 }
@@ -297,7 +286,7 @@ mAllocator mNullAllocator = mAllocator_StaticCreate(mNullAllocator_Alloc, mNullA
 
 //////////////////////////////////////////////////////////////////////////
 
-mAllocator mAllocator_StaticCreate(IN mAllocator_AllocFunction *pAllocFunction, IN mAllocator_AllocFunction *pReallocFunction, IN mAllocator_FreeFunction *pFree, IN OPTIONAL mAllocator_MoveFunction *pMove, IN OPTIONAL mAllocator_CopyFunction *pCopy, IN OPTIONAL mAllocator_AllocFunction *pAllocZeroFunction, IN OPTIONAL mAllocator_DestroyAllocator *pDestroyAllocator, IN OPTIONAL void *pUserData)
+mAllocator mAllocator_StaticCreate(IN mAllocator_AllocFunction *pAllocFunction, IN mAllocator_AllocFunction *pReallocFunction, IN mAllocator_FreeFunction *pFree, IN OPTIONAL mAllocator_AllocFunction *pAllocZeroFunction, IN OPTIONAL mAllocator_DestroyAllocator *pDestroyAllocator, IN OPTIONAL void *pUserData)
 {
   mAllocator allocator;
 
@@ -307,8 +296,6 @@ mAllocator mAllocator_StaticCreate(IN mAllocator_AllocFunction *pAllocFunction, 
   allocator.pAllocateZero = pAllocZeroFunction;
   allocator.pReallocate = pReallocFunction;
   allocator.pFree = pFree;
-  allocator.pMove = pMove;
-  allocator.pCopy = pCopy;
   allocator.pDestroyAllocator = pDestroyAllocator;
   allocator.pUserData = pUserData;
 
@@ -317,7 +304,7 @@ mAllocator mAllocator_StaticCreate(IN mAllocator_AllocFunction *pAllocFunction, 
   return allocator;
 }
 
-mFUNCTION(mAllocator_Create, OUT mAllocator *pAllocator, IN mAllocator_AllocFunction *pAllocFunction, IN mAllocator_AllocFunction *pReallocFunction, IN mAllocator_FreeFunction *pFree, IN OPTIONAL mAllocator_MoveFunction *pMove /* = nullptr */, IN OPTIONAL mAllocator_CopyFunction *pCopy /* = nullptr */, IN OPTIONAL mAllocator_AllocFunction *pAllocZeroFunction /* = nullptr */, IN OPTIONAL mAllocator_DestroyAllocator *pDestroyAllocator /* = nullptr */, IN OPTIONAL void *pUserData /* = nullptr */)
+mFUNCTION(mAllocator_Create, OUT mAllocator *pAllocator, IN mAllocator_AllocFunction *pAllocFunction, IN mAllocator_AllocFunction *pReallocFunction, IN mAllocator_FreeFunction *pFree, IN OPTIONAL mAllocator_AllocFunction *pAllocZeroFunction /* = nullptr */, IN OPTIONAL mAllocator_DestroyAllocator *pDestroyAllocator /* = nullptr */, IN OPTIONAL void *pUserData /* = nullptr */)
 {
   mFUNCTION_SETUP();
 
@@ -327,8 +314,6 @@ mFUNCTION(mAllocator_Create, OUT mAllocator *pAllocator, IN mAllocator_AllocFunc
   pAllocator->pAllocateZero = pAllocZeroFunction;
   pAllocator->pReallocate = pReallocFunction;
   pAllocator->pFree = pFree;
-  pAllocator->pMove = pMove;
-  pAllocator->pCopy = pCopy;
   pAllocator->pDestroyAllocator = pDestroyAllocator;
   pAllocator->pUserData = pUserData;
 

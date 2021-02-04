@@ -2,6 +2,13 @@
 
 #include "mJson.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "CR0Q11RLnclS8su1pRtRdhNk792HLTTqcL+dCO8vpmn26ry0x6sNgf4cgvN5KMShWDBEvupS7/qqduEd"
+#endif
+
 mFUNCTION(m2DAH_Keyframe_Serialize, IN const m2DAH_Keyframe *pKeyframe, mPtr<mJsonWriter> &jsonWriter);
 mFUNCTION(m2DAH_Keyframe_Deserialize, OUT m2DAH_Keyframe *pKeyframe, mPtr<mJsonReader> &jsonReader);
 float_t GetKeyframeInfluenceFactor(IN const m2DAH_Keyframe *pPrevious, IN const m2DAH_Keyframe *pNext, const float_t animationPosition);
@@ -213,9 +220,8 @@ float_t GetKeyframeInfluenceFactor(IN const m2DAH_Keyframe *pPrevious, IN const 
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(m2DAH_Sprite_Serialize, IN const m2DAH_Sprite *pSprite, mPtr<mJsonWriter> &jsonWriter);
-mFUNCTION(m2DAH_Sprite_Deserialize, OUT m2DAH_Sprite *pSprite, mPtr<mJsonReader> &jsonReader);
-mFUNCTION(m2DAH_Sprite_Update, IN m2DAH_Sprite *pSprite, const float_t animationPosition);
+static mFUNCTION(m2DAH_Sprite_Serialize, IN const m2DAH_Sprite *pSprite, mPtr<mJsonWriter> &jsonWriter);
+static mFUNCTION(m2DAH_Sprite_Deserialize, OUT m2DAH_Sprite *pSprite, mPtr<mJsonReader> &jsonReader);
 
 const char m2DAH_Sprite_Keyframes[] = "keyframes";
 const char m2DAH_Sprite_Filename[] = "filename";
@@ -374,7 +380,7 @@ mFUNCTION(m2DAH_Sprite_Update, IN m2DAH_Sprite *pSprite, const float_t animation
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(m2DAH_Sprite_Serialize, IN const m2DAH_Sprite *pSprite, mPtr<mJsonWriter> &jsonWriter)
+static mFUNCTION(m2DAH_Sprite_Serialize, IN const m2DAH_Sprite *pSprite, mPtr<mJsonWriter> &jsonWriter)
 {
   mFUNCTION_SETUP();
 
@@ -399,7 +405,7 @@ mFUNCTION(m2DAH_Sprite_Serialize, IN const m2DAH_Sprite *pSprite, mPtr<mJsonWrit
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(m2DAH_Sprite_Deserialize, OUT m2DAH_Sprite *pSprite, mPtr<mJsonReader> &jsonReader)
+static mFUNCTION(m2DAH_Sprite_Deserialize, OUT m2DAH_Sprite *pSprite, mPtr<mJsonReader> &jsonReader)
 {
   mFUNCTION_SETUP();
 
@@ -435,7 +441,8 @@ mFUNCTION(m2DAH_Sprite_Deserialize, OUT m2DAH_Sprite *pSprite, mPtr<mJsonReader>
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(m2DAnimationHandler_Destroy_Internal, IN_OUT m2DAnimationHandler *pAnimationHandler);
+static mFUNCTION(m2DAnimationHandler_Destroy_Internal, IN_OUT m2DAnimationHandler *pAnimationHandler);
+static mFUNCTION(m2DAnimationHandler_CreateFromJsonReader_Internal, OUT mPtr<m2DAnimationHandler> *pAnimationHandler, IN OPTIONAL mAllocator *pAllocator, mPtr<mJsonReader> &jsonReader);
 
 const char m2DAnimationHandler_Sprites[] = "sprites";
 
@@ -448,7 +455,7 @@ mFUNCTION(m2DAnimationHandler_Create, OUT mPtr<m2DAnimationHandler> *pAnimationH
   mERROR_IF(pAnimationHandler == nullptr, mR_ArgumentNull);
 
   mDEFER_CALL_ON_ERROR(pAnimationHandler, mSharedPointer_Destroy);
-  mERROR_CHECK(mSharedPointer_Allocate(pAnimationHandler, pAllocator));
+  mERROR_CHECK((mSharedPointer_Allocate<m2DAnimationHandler>(pAnimationHandler, pAllocator, [](m2DAnimationHandler *pData) {m2DAnimationHandler_Destroy_Internal(pData);}, 1)));
 
   mERROR_CHECK(mQueue_Create(&(*pAnimationHandler)->sprites, pAllocator));
 
@@ -468,21 +475,20 @@ mFUNCTION(m2DAnimationHandler_CreateFromFile, OUT mPtr<m2DAnimationHandler> *pAn
   mDEFER_CALL(&jsonReader, mJsonReader_Destroy);
   mERROR_CHECK(mJsonReader_CreateFromFile(&jsonReader, pAllocator, filename));
 
-  mERROR_CHECK(mJsonReader_StepIntoArray(jsonReader, m2DAnimationHandler_Sprites));
+  mERROR_CHECK(m2DAnimationHandler_CreateFromJsonReader_Internal(pAnimationHandler, pAllocator, jsonReader));
 
-  const auto &spriteFunc = [&](mPtr<mJsonReader> &_jsonReader, const size_t /* index */) -> mResult 
-  {
-    mFUNCTION_SETUP();
+  mRETURN_SUCCESS();
+}
 
-    m2DAH_Sprite sprite;
-    mERROR_CHECK(m2DAH_Sprite_Deserialize(&sprite, _jsonReader));
+mFUNCTION(m2DAnimationHandler_CreateFromJsonString, OUT mPtr<m2DAnimationHandler> *pAnimationHandler, IN OPTIONAL mAllocator *pAllocator, const mString &jsonString)
+{
+  mFUNCTION_SETUP();
 
-    mERROR_CHECK(mQueue_PushBack((*pAnimationHandler)->sprites, std::move(sprite)));
+  mPtr<mJsonReader> jsonReader;
+  mDEFER_CALL(&jsonReader, mJsonReader_Destroy);
+  mERROR_CHECK(mJsonReader_CreateFromString(&jsonReader, pAllocator, jsonString));
 
-    mRETURN_SUCCESS();
-  };
-
-  mERROR_CHECK(mJsonReader_ArrayForEach(jsonReader, spriteFunc));
+  mERROR_CHECK(m2DAnimationHandler_CreateFromJsonReader_Internal(pAnimationHandler, pAllocator, jsonReader));
 
   mRETURN_SUCCESS();
 }
@@ -647,7 +653,6 @@ mFUNCTION(m2DAnimationHandler_GetLastKeyframeTimestamp, mPtr<m2DAnimationHandler
   mRETURN_SUCCESS();
 }
 
-
 mFUNCTION(m2DAnimationHandler_SaveToFile, mPtr<m2DAnimationHandler> &animationHandler, const mString &filename)
 {
   mFUNCTION_SETUP();
@@ -679,7 +684,7 @@ mFUNCTION(m2DAnimationHandler_SaveToFile, mPtr<m2DAnimationHandler> &animationHa
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(m2DAnimationHandler_Destroy_Internal, IN_OUT m2DAnimationHandler *pAnimationHandler)
+static mFUNCTION(m2DAnimationHandler_Destroy_Internal, IN_OUT m2DAnimationHandler *pAnimationHandler)
 {
   mFUNCTION_SETUP();
 
@@ -688,4 +693,30 @@ mFUNCTION(m2DAnimationHandler_Destroy_Internal, IN_OUT m2DAnimationHandler *pAni
   mERROR_CHECK(mSharedPointer_Destroy(&pAnimationHandler->sprites));
 
   mRETURN_SUCCESS();
+}
+
+static mFUNCTION(m2DAnimationHandler_CreateFromJsonReader_Internal, OUT mPtr<m2DAnimationHandler> *pAnimationHandler, IN OPTIONAL mAllocator *pAllocator, mPtr<mJsonReader> &jsonReader)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_CHECK(m2DAnimationHandler_Create(pAnimationHandler, pAllocator));
+
+  mERROR_CHECK(mJsonReader_StepIntoArray(jsonReader, m2DAnimationHandler_Sprites));
+
+  const auto &spriteFunc = [&](mPtr<mJsonReader> &_jsonReader, const size_t /* index */) -> mResult
+  {
+    mFUNCTION_SETUP();
+
+    m2DAH_Sprite sprite;
+    mERROR_CHECK(m2DAH_Sprite_Deserialize(&sprite, _jsonReader));
+
+    mERROR_CHECK(mQueue_PushBack((*pAnimationHandler)->sprites, std::move(sprite)));
+
+    mRETURN_SUCCESS();
+  };
+
+  mERROR_CHECK(mJsonReader_ArrayForEach(jsonReader, spriteFunc));
+
+  mRETURN_SUCCESS();
+
 }

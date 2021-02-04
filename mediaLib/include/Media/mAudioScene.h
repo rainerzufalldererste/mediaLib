@@ -4,6 +4,13 @@
 #include "mediaLib.h"
 #include "mAudio.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "Yrx2LpouS54rsu9JsQfYwEX9o4XPxKRBN4Jo8cRg0K3A5P4J9+DhBuDV16+2ZrRQY0tR96pPVX/S9X6Y"
+#endif
+
 struct mSpacialAudioSource
 {
   CONST_FIELD mPtr<mAudioSource> monoAudioSource;

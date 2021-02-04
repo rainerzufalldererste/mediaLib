@@ -1,6 +1,13 @@
 #ifndef mStaticArray_h__
 #define mStaticArray_h__
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "nFxOP1/VhYbui3OiH/pfxenT2WLIc6/UOvCfvaGOd35FA6oT8B+ZfCwOTPe1LyMw0T3briSsMFYvQIGS"
+#endif
+
 template <typename T, size_t TCount>
 struct mStaticArray 
 {

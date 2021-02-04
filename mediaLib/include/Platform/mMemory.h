@@ -3,6 +3,13 @@
 
 #include "mediaLib.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "P3JB0pUzZTg+eb+IdSGZnz8TN8sJqRCC9qLe1Omqih6yco2FCdh8WEwcmVwJmfKqJO8IsWftAeyLPyUe"
+#endif
+
 template <typename T>
 void mSetToNullptr(T **ppData)
 {
@@ -255,11 +262,41 @@ mFUNCTION(mMemmove, T *pDst, T *pSrc, const size_t count)
 {
   mFUNCTION_SETUP();
   mERROR_IF(pDst == nullptr || pSrc == nullptr, mR_ArgumentNull);
-
-  if (count == 0)
-    mRETURN_SUCCESS();
+  mERROR_IF(count == 0, mR_Success);
 
   memmove(pDst, pSrc, sizeof(T) * count);
+
+  mRETURN_SUCCESS();
+}
+
+template <typename T>
+mFUNCTION(mMove, T *pDestination, T *pSource, const size_t count)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pDestination == nullptr || pSource == nullptr, mR_ArgumentNull);
+  mERROR_IF(count == 0, mR_Success);
+
+  if (mIsTriviallyMemoryMovable<T>::value)
+    memmove(pDestination, pSource, sizeof(T) * count);
+  else
+    mMoveConstructMultiple(pDestination, pSource, count);
+
+  mRETURN_SUCCESS();
+}
+
+template <typename T>
+mFUNCTION(mCopy, T *pDestination, T *pSource, const size_t count)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pDst == nullptr || pSource == nullptr, mR_ArgumentNull);
+  mERROR_IF(count == 0, mR_Success);
+
+  if (!std::is_trivially_copy_constructible<T>::value)
+    memcpy(pDestination, pSource, sizeof(T) * count);
+  else
+    mCopyConstructMultiple(pDestination, pSource, count);
 
   mRETURN_SUCCESS();
 }
@@ -279,46 +316,53 @@ mFUNCTION(mMemcpy, T *pDst, const T *pSrc, const size_t count)
 }
 
 template <size_t TCount>
-mFUNCTION(mStringLength, const char text[TCount], OUT size_t *pLength)
+mFUNCTION(mStringLength, const char text[TCount], OUT size_t *pCount)
 {
   mFUNCTION_SETUP();
 
-  mERROR_IF(text == nullptr || pLength == nullptr, mR_ArgumentNull);
+  mERROR_IF(text == nullptr || pCount == nullptr, mR_ArgumentNull);
 
-  *pLength = strnlen_s(text, TCount);
+  *pCount = strnlen_s(text, TCount);
 
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mStringLength, const char *text, const size_t maxLength, OUT size_t *pLength);
-mFUNCTION(mSprintf, OUT char *buffer, const size_t bufferLength, const char *formatString, ...);
-mFUNCTION(mSprintfWithLength, OUT char *buffer, const size_t bufferLength, const char *formatString, OUT size_t *pLength, ...);
-mFUNCTION(mStringCopy, OUT char *buffer, const size_t bufferLength, const char *source, const size_t sourceLength);
+mFUNCTION(mStringLength, const char *text, const size_t maxCount, OUT size_t *pCount);
+mFUNCTION(mSprintf, OUT char *buffer, const size_t bufferCount, const char *formatString, ...);
+mFUNCTION(mSprintfWithCount, OUT char *buffer, const size_t bufferCount, const char *formatString, OUT size_t *pCount, ...);
+mFUNCTION(mStringCopy, OUT char *buffer, const size_t bufferCount, const char *source, const size_t sourceCount);
+mFUNCTION(mStringConcat, OUT char *buffer, const size_t bufferCount, const char *source, const size_t sourceCount);
+
+mFUNCTION(mStringLength, const wchar_t *text, const size_t maxCount, OUT size_t *pCount);
+mFUNCTION(mSprintf, OUT wchar_t *buffer, const size_t bufferCount, const wchar_t *formatString, ...);
+mFUNCTION(mSprintfWithCount, OUT wchar_t *buffer, const size_t bufferCount, const wchar_t *formatString, OUT size_t *pCount, ...);
+mFUNCTION(mStringCopy, OUT wchar_t *buffer, const size_t bufferCount, const wchar_t *source, const size_t sourceCount);
+mFUNCTION(mStringConcat, OUT wchar_t *buffer, const size_t bufferCount, const wchar_t *source, const size_t sourceCount);
 
 template <size_t TCount>
-mFUNCTION(mStringChar, const char text[TCount], const char character, OUT size_t *pLength)
+mFUNCTION(mStringChar, const char text[TCount], const char character, OUT size_t *pCount)
 {
   mFUNCTION_SETUP();
 
-  mERROR_IF(text == nullptr || pLength == nullptr, mR_ArgumentNull);
+  mERROR_IF(text == nullptr || pCount == nullptr, mR_ArgumentNull);
 
-  *pLength = (size_t)((char *)memchr((void *)text, (int)character, strnlen_s(text, TCount)) - (char *)text);
+  *pCount = (size_t)((char *)memchr((void *)text, (int)character, strnlen_s(text, TCount)) - (char *)text);
 
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mStringChar, const char *text, const size_t maxLength, const char character, OUT size_t *pLength);
+mFUNCTION(mStringChar, const char *text, const size_t maxCount, const char character, OUT size_t *pCount);
 
 template <typename ...Args>
 inline mFUNCTION(mSScanf, const char *text, const char *format, Args ...args)
 {
   mFUNCTION_SETUP();
 
-  const int length = sscanf(text, format, args...);
+  const int count = sscanf(text, format, args...);
 
-  if (length < 0)
+  if (count < 0)
     mRETURN_RESULT(mR_Failure);
-  else if (sizeof...(args) != length)
+  else if (sizeof...(args) != count)
     mRETURN_RESULT(mR_InvalidParameter);
 
   mRETURN_SUCCESS();

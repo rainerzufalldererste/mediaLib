@@ -115,17 +115,11 @@ mFUNCTION(mTestLib_RunAllTests, int *pArgc, char **pArgv)
 
     for (const auto &failedTest : failedTests)
     {
-      mString resultAsString = "<invalid>";
-      const mResult result = mResult_ToString(std::get<2>(failedTest), &resultAsString);
-
       mSetConsoleColour(mCC_DarkGray, mCC_Black);
       fputs(" ## ", stdout);
       mResetConsoleColour();
 
-      if (mSUCCEEDED(result))
-        printf("%s : %s with %s (0x%" PRIx64 ")\n", std::get<0>(failedTest).c_str(), std::get<1>(failedTest).c_str(), resultAsString.c_str(), (uint64_t)std::get<2>(failedTest));
-      else
-        printf("%s : %s with error code 0x%" PRIx64 "\n", std::get<0>(failedTest).c_str(), std::get<1>(failedTest).c_str(), (uint64_t)std::get<2>(failedTest));
+      printf("%s : %s with %s (0x%" PRIx64 ")\n", std::get<0>(failedTest).c_str(), std::get<1>(failedTest).c_str(), mResult_ToString(std::get<2>(failedTest)), (uint64_t)std::get<2>(failedTest));
     }
 
     return mR_Failure;
@@ -274,7 +268,7 @@ mFUNCTION(mTestAllocator_Create, mAllocator *pTestAllocator)
   mERROR_CHECK(mAllocZero(&pUserData, 1));
   pUserData->pSelf = pTestAllocator;
 
-  mERROR_CHECK(mAllocator_Create(pTestAllocator, &mTestAllocator_Alloc, &mTestAllocator_Realloc, &mTestAllocator_Free, nullptr, nullptr, &mTestAllocator_AllocZero, &mTestAllocator_Destroy, pUserData));
+  mERROR_CHECK(mAllocator_Create(pTestAllocator, &mTestAllocator_Alloc, &mTestAllocator_Realloc, &mTestAllocator_Free, &mTestAllocator_AllocZero, &mTestAllocator_Destroy, pUserData));
 
   mRETURN_SUCCESS();
 }

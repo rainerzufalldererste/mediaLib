@@ -4,6 +4,13 @@
 #include "mediaLib.h"
 #include "mThreadPool.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "qN3buM09rfR4aXIp0+OMli5NtPtokbxdwmnOsji1Y2v9fYqBgleaaXc2D2tIx5Ycmg9HuyIEvurE9VK+"
+#endif
+
 struct mImageBuffer;
 
 enum mPixelFormat
@@ -16,6 +23,10 @@ enum mPixelFormat
   mPF_YUV420,
   mPF_Monochrome8,
   mPF_Monochrome16,
+  mPF_Rf16Gf16Bf16Af16,
+  mPF_Rf16Gf16Bf16,
+  mPF_Rf32Gf32Bf32Af32,
+  mPF_Rf32Gf32Bf32,
 
   mPixelFormat_Count,
 };

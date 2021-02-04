@@ -3,6 +3,13 @@
 
 #include "mediaLib.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "yNOtm4httszbIMhYl1tOfZ8MbPFmilFPDHdR16Z077hLP+XQkgVPN+6OalxZWPySKzIyj3h351dJsf87"
+#endif
+
 struct mMutex;
 
 mFUNCTION(mMutex_Create, OUT mMutex **ppMutex, IN OPTIONAL mAllocator *pAllocator);

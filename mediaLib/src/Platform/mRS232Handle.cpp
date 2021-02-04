@@ -11,6 +11,13 @@
 #include <fcntl.h>
 #endif
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "7m6Hsadz75nEBQw7cp7/qUFNtXy3NBwRGm4fTrSRlxWpmev/CqiEx+KPno2PuY99wYJZfs/DGZEz2OYz"
+#endif
+
 struct mRS232Handle
 {
 #if defined(mPLATFORM_WINDOWS)

@@ -70,15 +70,11 @@ mTest_TestInit mTest_CreateTestInit(const char *component, const char *testCase,
 
 #define mTEST_ASSERT_SUCCESS(functionCall) \
   do \
-  { mResult __result = (functionCall); \
+  { const mResult __result = (functionCall); \
     \
     if (mFAILED(__result)) \
-    { mString __resultString; \
-      if (mFAILED(mResult_ToString(__result, &__resultString))) \
-        mTEST_PRINT_FAILURE("Test Failed on 'mFAILED(%s)'\n with invalid result [0x%" PRIx64 "]\n at " __FUNCTION__ "\n in File '"  __FILE__ "' Line %" PRIi32 ".\n", #functionCall, (uint64_t)__result, __LINE__); \
-      else \
-        mTEST_PRINT_FAILURE("Test Failed on 'mFAILED(%s)'\n with Result '%s' [0x%" PRIx64 "]\n at " __FUNCTION__ "\n in File '" __FILE__ "' Line %" PRIi32 ".\n", #functionCall, __resultString.c_str(), (uint64_t)__result, __LINE__); \
-      __debugbreak(); \
+    { mTEST_PRINT_FAILURE("Test Failed on 'mFAILED(%s)'\n with Result '%s' [0x%" PRIx64 "]\n at " __FUNCTION__ "\n in File '" __FILE__ "' Line %" PRIi32 ".\n", #functionCall, mResult_ToString(__result), (uint64_t)__result, __LINE__); \
+      mDEBUG_BREAK(); \
       mTEST_RETURN_FAILURE(); \
     } \
   } while(0)
@@ -114,6 +110,18 @@ extern size_t mTestDestructible_Count;
   mUnused(pAllocator); \
   { 
 
+#ifdef mDEBUG_MEMORY_ALLOCATIONS
+#define mTEST_ALLOCATOR_ZERO_CHECK() \
+  } \
+  do \
+  { size_t allocationCount = (size_t)-1; \
+    mTEST_ASSERT_SUCCESS(mTestAllocator_GetCount(&__testAllocator, &allocationCount)); \
+    if (allocationCount != 0) \
+      mAllocatorDebugging_PrintRemainingMemoryAllocations(&__testAllocator); \
+    mTEST_ASSERT_EQUAL(allocationCount, 0); \
+    mTEST_RETURN_SUCCESS(); \
+  } while (0)
+#else
 #define mTEST_ALLOCATOR_ZERO_CHECK() \
   } \
   do \
@@ -122,6 +130,7 @@ extern size_t mTestDestructible_Count;
     mTEST_ASSERT_EQUAL(allocationCount, 0); \
     mTEST_RETURN_SUCCESS(); \
   } while (0)
+#endif
 
 void mTestLib_Initialize();
 mFUNCTION(mTestLib_RunAllTests, int *pArgc, char **pArgv);

@@ -1,5 +1,12 @@
 #include "mPool.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "QbCK9wfNPslwGAxp4/ggb+L2RoE/pt3ikmEf0eISDuQuxOe84S8IuhG1E4466Pp6LT7dbEdLleYcK/hx"
+#endif
+
 template <typename T>
 mFUNCTION(mPool_Destroy_Internal, IN mPool<T> *pPool);
 
@@ -302,6 +309,147 @@ mFUNCTION(mPool_ContainsIndex, mPtr<mPool<T>> &pool, const size_t index, OUT boo
   mRETURN_SUCCESS();
 }
 
+template <typename T>
+mFUNCTION(mPool_Clear, mPtr<mPool<T>> &pool)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pool == nullptr, mR_ArgumentNull);
+
+  for (size_t i = 0; i < pool->size; i++)
+    pool->pIndexes[i] = 0;
+
+  pool->count = 0;
+
+  mERROR_CHECK(mChunkedArray_Clear(pool->data));
+
+  mRETURN_SUCCESS();
+}
+
+template <typename T, typename equals_func /* = mEqualsValue<T> */, typename element_valid_func /* = mTrue */>
+bool mPool_Equals(const mPtr<mPool<T>> &a, const mPtr<mPool<T>> &b)
+{
+  if (a == b)
+    return true;
+
+  if ((a == nullptr) ^ (b == nullptr))
+    return false;
+
+  auto itA = a->Iterate();
+  auto startA = itA.begin();
+  auto endA = itA.end();
+
+  auto itB = b->Iterate();
+  auto startB = itB.begin();
+  auto endB = itB.end();
+
+  while (true)
+  {
+    if (!(startA != endA)) // no more values in a.
+    {
+      // if there's a value in `b` thats active: return false.
+      while (startB != endB)
+      {
+        auto _b = *startB;
+
+        if ((bool)element_valid_func()(_b.pData))
+          return false;
+
+        ++startB;
+      }
+
+      break;
+    }
+    else if (!(startB != endB)) // no more values in b, but values in a.
+    {
+      // if there's a value in `a` thats active: return false.
+      do // do-while-loop, because we've already checked if (startA != endA) and an iterator might rely on that function only being called once.
+      {
+        auto _a = *startA;
+
+        if ((bool)element_valid_func()(_a.pData))
+          return false;
+
+        ++startA;
+      } while (startA != endA);
+
+      break;
+    }
+
+    auto _a = *startA;
+    bool end = false;
+
+    while (!(bool)element_valid_func()(_a.pData))
+    {
+      ++startA;
+
+      // if we've reached the end.
+      if (!(startA != endA))
+      {
+        // if there's a value in `b` thats active: return false.
+        while (startB != endB)
+        {
+          auto __b = *startB;
+
+          if ((bool)element_valid_func()(__b.pData))
+            return false;
+
+          ++startB;
+        }
+
+        end = true;
+        break;
+      }
+
+      _a = *startA;
+    }
+
+    if (end)
+      break;
+
+    auto _b = *startB;
+
+    while (!(bool)element_valid_func()(_b.pData))
+    {
+      ++startB;
+
+      // if we've reached the end.
+      if (!(startB != endB))
+        return false; // `a` is not at the end and valid.
+
+      _b = *startB;
+    }
+
+    if (_a.index != _b.index || !(bool)equals_func()(_a.pData, _b.pData))
+      return false;
+
+    ++startA;
+    ++startB;
+  }
+
+  return true;
+}
+
+template<typename T, typename T2, typename comparison>
+inline bool mPool_ContainsValue(const mPtr<mPool<T>> &pool, const T2 &value, OUT OPTIONAL size_t *pIndex, comparison _comparison)
+{
+  if (pool == nullptr)
+    return false;
+
+  for (const auto &_item : queue->Iterate())
+  {
+    if (_comparison((*_item), value))
+    {
+      if (pIndex != nullptr)
+        *pIndex = _item.index;
+
+      return true;
+    }
+  }
+
+  return false;
+}
+
 //////////////////////////////////////////////////////////////////////////
 
 template<typename T>
@@ -398,6 +546,77 @@ inline T& mPoolIterator<T>::IteratorValue::operator*()
 
 template<typename T>
 inline const T& mPoolIterator<T>::IteratorValue::operator*() const
+{
+  return *pData;
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+template<typename T>
+inline mConstPoolIterator<T>::mConstPoolIterator(const mPool<T> *pPool) :
+  index(0),
+  globalIndex(0),
+  blockIndex(0),
+  flag(1),
+  pData(nullptr),
+  pPool(pPool)
+{ }
+
+template<typename T>
+inline const typename mConstPoolIterator<T>::IteratorValue mConstPoolIterator<T>::operator*() const
+{
+  return mConstPoolIterator<T>::IteratorValue(pData, globalIndex - 1);
+}
+
+template<typename T>
+inline bool mConstPoolIterator<T>::operator != (const typename mConstPoolIterator<T> &)
+{
+  for (blockIndex; blockIndex < pPool->size; ++blockIndex)
+  {
+    for (; index < mBYTES_OF(pPool->pIndexes[0]); ++index)
+    {
+      if (pPool->pIndexes[blockIndex] & flag)
+      {
+        const mResult result = mChunkedArray_ConstPointerAt(pPool->data, globalIndex, &pData);
+
+        if (mFAILED(result))
+        {
+          mFAIL_DEBUG("mChunkedArray_ConstPointerAt failed in mConstPoolIterator::operator != with errorcode %" PRIu64 ".", (uint64_t)result);
+          return false;
+        }
+
+        flag <<= 1;
+        ++globalIndex;
+        ++index;
+
+        return true;
+      }
+
+      flag <<= 1;
+      ++globalIndex;
+    }
+
+    index = 0;
+    flag = 1;
+  }
+
+  return false;
+}
+
+template<typename T>
+inline typename mConstPoolIterator<T>& mConstPoolIterator<T>::operator++()
+{
+  return *this;
+}
+
+template<typename T>
+inline mConstPoolIterator<T>::IteratorValue::IteratorValue(const T *pData, const size_t index) :
+  pData(pData),
+  index(index)
+{ }
+
+template<typename T>
+inline const T& mConstPoolIterator<T>::IteratorValue::operator*() const
 {
   return *pData;
 }

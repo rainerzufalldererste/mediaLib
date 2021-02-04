@@ -1,13 +1,20 @@
 #include "mMutex.h"
 #include <mutex>
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "5hAQ/qRmTft9l2339rKOdVCCrnrJRHXyroLFjabrQU7GRFZcPwCmqAy+dQI5bCr7oJD0PX6cGFKTiblQ"
+#endif
+
 struct mMutex
 {
   std::mutex lock;
   mAllocator *pAllocator;
 };
 
-mFUNCTION(mMutex_Destroy_Internal, IN mMutex *pMutex);
+static mFUNCTION(mMutex_Destroy_Internal, IN mMutex *pMutex);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -64,7 +71,7 @@ mFUNCTION(mMutex_Unlock, IN mMutex *pMutex)
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mMutex_Destroy_Internal, IN mMutex *pMutex)
+static mFUNCTION(mMutex_Destroy_Internal, IN mMutex *pMutex)
 {
   mFUNCTION_SETUP();
 
@@ -83,7 +90,7 @@ struct mRecursiveMutex
   mAllocator *pAllocator;
 };
 
-mFUNCTION(mRecursiveMutex_Destroy_Internal, IN mRecursiveMutex *pMutex);
+static mFUNCTION(mRecursiveMutex_Destroy_Internal, IN mRecursiveMutex *pMutex);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -140,7 +147,7 @@ mFUNCTION(mRecursiveMutex_Unlock, IN mRecursiveMutex *pMutex)
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mRecursiveMutex_Destroy_Internal, IN mRecursiveMutex *pMutex)
+static mFUNCTION(mRecursiveMutex_Destroy_Internal, IN mRecursiveMutex *pMutex)
 {
   mFUNCTION_SETUP();
 

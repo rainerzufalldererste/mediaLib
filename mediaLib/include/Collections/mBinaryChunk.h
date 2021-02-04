@@ -3,6 +3,13 @@
 
 #include "mediaLib.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "De6gmXydgRjhIYW/hHVzSD/FImMHqkuUNobg+0CHS/89JmIJZILo2SZfWIiXlc8sxsmRzZFK1IjXpt5H"
+#endif
+
 struct mBinaryChunk
 {
   uint8_t *pData;
@@ -32,10 +39,10 @@ mFUNCTION(mBinaryChunk_ResetWrite, mPtr<mBinaryChunk> &binaryChunk);
 mFUNCTION(mBinaryChunk_ResetRead, mPtr<mBinaryChunk> &binaryChunk);
 
 // Retrieves the number of bytes written to the binary chunk.
-mFUNCTION(mBinaryChunk_GetWriteBytes, mPtr<mBinaryChunk> &binaryChunk, OUT size_t *pSize);
+mFUNCTION(mBinaryChunk_GetWriteBytes, const mPtr<mBinaryChunk> &binaryChunk, OUT size_t *pSize);
 
 // Retrieves the number of bytes read from the binary chunk.
-mFUNCTION(mBinaryChunk_GetReadBytes, mPtr<mBinaryChunk> &binaryChunk, OUT size_t *pSize);
+mFUNCTION(mBinaryChunk_GetReadBytes, const mPtr<mBinaryChunk> &binaryChunk, OUT size_t *pSize);
 
 //////////////////////////////////////////////////////////////////////////
 

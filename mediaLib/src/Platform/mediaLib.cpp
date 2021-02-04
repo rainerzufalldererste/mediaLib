@@ -7,6 +7,13 @@
 #include "mediaLib.h"
 
 #ifdef mPLATFORM_WINDOWS
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "hJxXtXZLn5mrTXicBqpRmqzOi/HGriWHIaPhBoYJdH/uA6vV5/aWehfGSsFZG41NQnPfqNvSkmhJriq2"
+#endif
+
 HANDLE mStdOutHandle = nullptr;
 #endif
 
@@ -152,6 +159,13 @@ int64_t mGetCurrentTimeNs()
 #else
 #include <cpuid.h>
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "hJxXtXZLn5mrTXicBqpRmqzOi/HGriWHIaPhBoYJdH/uA6vV5/aWehfGSsFZG41NQnPfqNvSkmhJriq2"
+#endif
+
 void cpuid(int info[4], int infoType)
 {
   __cpuid_count(infoType, 0, info[0], info[1], info[2], info[3]);
@@ -228,33 +242,81 @@ namespace mCpuExtensions
   }
 };
 
-double_t mParseFloat(IN const char *start, OUT const char **end)
+int64_t mParseInt(IN const char *start, OUT const char **pEnd)
 {
-  double_t sign = 1;
+  const char *endIfNoEnd = nullptr;
+
+  if (pEnd == nullptr)
+    pEnd = &endIfNoEnd;
+
+  int64_t ret = 0;
+
+  // See: https://graphics.stanford.edu/~seander/bithacks.html#ConditionalNegate
+  int64_t negate = 0;
 
   if (*start == '-')
   {
-    sign = -1;
+    negate = 1;
+    start++;
+  }
+
+  while (true)
+  {
+    uint8_t digit = *start - '0';
+    
+    if (digit > 9)
+      break;
+
+    ret = (ret << 1) + (ret << 3) + digit;
+    start++;
+  }
+
+  *pEnd = start;
+
+  return (ret ^ -negate) + negate;
+}
+
+double_t mParseFloat(IN const char *start, OUT const char **pEnd)
+{
+  const char *endIfNoEnd = nullptr;
+
+  if (pEnd == nullptr)
+    pEnd = &endIfNoEnd;
+
+  uint64_t sign = 0;
+
+  if (*start == '-')
+  {
+    sign = (uint64_t)1 << 63; // IEEE floating point signed bit.
     ++start;
   }
 
-  char *_end = (char *)start;
-  const int64_t left = strtoll(start, &_end, 10);
+  const char *_end = start;
+  const int64_t left = mParseInt(start, &_end);
   double_t ret = (double_t)left;
 
   if (*_end == '.')
   {
     start = _end + 1;
-    const int64_t right = strtoll(start, &_end, 10);
+    const int64_t right = mParseInt(start, &_end);
 
     const double_t fracMult[] = { 0.0, 1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7, 1e-8, 1e-9, 1e-10, 1e-11, 1e-12, 1e-13 };
 
     if (_end - start < mARRAYSIZE(fracMult))
-      ret = sign * (ret + right * fracMult[_end - start]);
+      ret = (ret + right * fracMult[_end - start]);
     else
-      ret = sign * (ret + right * mPow(10, _end - start));
+      ret = (ret + right * mPow(10, _end - start));
 
-    *end = _end;
+    // Get Sign. (memcpy should get optimized away and is only there to prevent undefined behavior)
+    {
+      uint64_t data;
+      static_assert(sizeof(data) == sizeof(ret), "Platform not supported.");
+      memcpy(&data, &ret, sizeof(data));
+      data ^= sign;
+      memcpy(&ret, &data, sizeof(data));
+    }
+
+    *pEnd = _end;
 
     if (*_end == 'e' || *_end == 'E')
     {
@@ -262,25 +324,32 @@ double_t mParseFloat(IN const char *start, OUT const char **end)
 
       if ((*start >= '0' && *start <= '9') || *start == '-')
       {
-        ret *= mPow(10, strtoll(start, &_end, 10));
+        ret *= mPow(10, mParseInt(start, &_end));
 
-        *end = _end;
+        *pEnd = _end;
       }
     }
   }
   else
   {
-    ret *= sign;
+    // Get Sign. (memcpy should get optimized away and is only there to prevent undefined behavior)
+    {
+      uint64_t data;
+      static_assert(sizeof(data) == sizeof(ret), "Platform not supported.");
+      memcpy(&data, &ret, sizeof(data));
+      data ^= sign;
+      memcpy(&ret, &data, sizeof(data));
+    }
 
     if (*_end == 'e' || *_end == 'E')
     {
       start = ++_end;
 
       if ((*start >= '0' && *start <= '9') || *start == '-')
-        ret *= mPow(10, strtoll(start, &_end, 10));
+        ret *= mPow(10, mParseInt(start, &_end));
     }
 
-    *end = _end;
+    *pEnd = _end;
   }
 
   return ret;

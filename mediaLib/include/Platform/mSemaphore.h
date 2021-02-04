@@ -3,6 +3,13 @@
 
 #include "mediaLib.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "1A5xPftfV/GgFOCD2f2OiiABg5KcV/hib43wtFhXrXIOhs43SA++ni7VcGDDQPno7CTVBh9ByBwphrKf"
+#endif
+
 enum mSemaphore_SleepTime : size_t
 {
   mS_ST_Infinite = 0xFFFFFFFF,

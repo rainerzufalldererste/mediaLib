@@ -8,6 +8,13 @@
 #include "mMediaFoundation.h"
 #include "mAudioEngine.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "AQJBHkZgeNq6x/TP1wl2nC8IWdzglH5zkPc1I7rr0g+5cpDqA35ZsqV2S3GrCa1T8SkAAjBi2kkXMXjJ"
+#endif
+
 struct mMediaTypeLookup
 {
   size_t streamIndex;
@@ -33,17 +40,17 @@ struct mMediaFileInputHandler
   bool iteratorCreated;
 };
 
-mFUNCTION(mMediaFileInputHandler_Create_Internal, IN mMediaFileInputHandler *pData, IN mAllocator *pAllocator, IN const wchar_t *filename, const bool enableVideoProcessing, const bool enableAudioProcessing);
-mFUNCTION(mMediaFileInputHandler_Destroy_Internal, IN mMediaFileInputHandler *pData);
-mFUNCTION(mMediaFileInputHandler_RunSession_Internal, IN mMediaFileInputHandler *pData);
-mFUNCTION(mMediaFileInputHandler_InitializeExtenalDependencies);
-mFUNCTION(mMediaFileInputHandler_CleanupExtenalDependencies);
-mFUNCTION(mMediaFileInputHandler_AddStream_Internal, IN mMediaFileInputHandler *pInputHandler, IN mMediaTypeLookup *pMediaType);
-mFUNCTION(mMediaFileInputHandler_AddVideoStream_Internal, IN mMediaFileInputHandler *pInputHandler, IN mVideoStreamType *pVideoStreamType);
-mFUNCTION(mMediaFileInputHandler_AddAudioStream_Internal, IN mMediaFileInputHandler *pInputHandler, IN mAudioStreamType *pAudioStreamType);
+static mFUNCTION(mMediaFileInputHandler_Create_Internal, IN mMediaFileInputHandler *pData, IN mAllocator *pAllocator, IN const wchar_t *filename, const bool enableVideoProcessing, const bool enableAudioProcessing);
+static mFUNCTION(mMediaFileInputHandler_Destroy_Internal, IN mMediaFileInputHandler *pData);
+static mFUNCTION(mMediaFileInputHandler_RunSession_Internal, IN mMediaFileInputHandler *pData);
+static mFUNCTION(mMediaFileInputHandler_InitializeExtenalDependencies);
+static mFUNCTION(mMediaFileInputHandler_CleanupExtenalDependencies);
+static mFUNCTION(mMediaFileInputHandler_AddStream_Internal, IN mMediaFileInputHandler *pInputHandler, IN mMediaTypeLookup *pMediaType);
+static mFUNCTION(mMediaFileInputHandler_AddVideoStream_Internal, IN mMediaFileInputHandler *pInputHandler, IN mVideoStreamType *pVideoStreamType);
+static mFUNCTION(mMediaFileInputHandler_AddAudioStream_Internal, IN mMediaFileInputHandler *pInputHandler, IN mAudioStreamType *pAudioStreamType);
 
-mFUNCTION(mAudioStreamType_Create, IN IMFMediaType *pMediaType, IN IMFMediaType *pTargetMediaType, IN mMediaTypeLookup *pMediaTypeLookup, const size_t streamIndex, OUT mAudioStreamType *pAudioStreamType);
-mFUNCTION(mVideoStreamType_Create, IN IMFMediaType *pMediaType, IN mMediaTypeLookup *pMediaTypeLookup, const size_t streamIndex, OUT mVideoStreamType *pVideoStreamType);
+static mFUNCTION(mAudioStreamType_Create_Internal, IN IMFMediaType *pMediaType, IN IMFMediaType *pTargetMediaType, IN mMediaTypeLookup *pMediaTypeLookup, const size_t streamIndex, OUT mAudioStreamType *pAudioStreamType);
+static mFUNCTION(mVideoStreamType_Create_Internal, IN IMFMediaType *pMediaType, IN mMediaTypeLookup *pMediaTypeLookup, const size_t streamIndex, OUT mVideoStreamType *pVideoStreamType);
 
 template <typename T>
 static mINLINE void _ReleaseReference(T **pData)
@@ -200,10 +207,10 @@ struct mMediaFileInputIterator
   bool hasFinished;
 };
 
-mFUNCTION(mMediaFileInputIterator_Create, OUT mPtr<mMediaFileInputIterator> *pIterator, mPtr<mMediaFileInputHandler> &mediaFileInputHandlerRef, const size_t wmf_streamIndex, const mMediaMajorType mediaType);
-mFUNCTION(mMediaFileInputIterator_Create_Internal, mMediaFileInputIterator *pIterator, mPtr<mMediaFileInputHandler> &mediaFileInputHandlerRef, const size_t wmf_streamIndex, const mMediaMajorType mediaType);
-mFUNCTION(mMediaFileInputIterator_Destroy_Internal, mMediaFileInputIterator *pIterator);
-mFUNCTION(mMediaFileInputIterator_IterateToStreamIndex, mPtr<mMediaFileInputIterator> &iterator, OUT IMFSample **ppSample, OUT LONGLONG *pTimeStamp);
+static mFUNCTION(mMediaFileInputIterator_Create_Internal, OUT mPtr<mMediaFileInputIterator> *pIterator, mPtr<mMediaFileInputHandler> &mediaFileInputHandlerRef, const size_t wmf_streamIndex, const mMediaMajorType mediaType);
+static mFUNCTION(mMediaFileInputIterator_Create_Internal, mMediaFileInputIterator *pIterator, mPtr<mMediaFileInputHandler> &mediaFileInputHandlerRef, const size_t wmf_streamIndex, const mMediaMajorType mediaType);
+static mFUNCTION(mMediaFileInputIterator_Destroy_Internal, mMediaFileInputIterator *pIterator);
+static mFUNCTION(mMediaFileInputIterator_IterateToStreamIndex_Internal, mPtr<mMediaFileInputIterator> &iterator, OUT IMFSample **ppSample, OUT LONGLONG *pTimeStamp);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -239,7 +246,7 @@ mFUNCTION(mMediaFileInputHandler_GetIterator, mPtr<mMediaFileInputHandler> &ptr,
 
   mPtr<mMediaFileInputIterator> iterator;
 
-  mERROR_CHECK(mMediaFileInputIterator_Create(&iterator, ptr, wmf_streamIndex, mediaType));
+  mERROR_CHECK(mMediaFileInputIterator_Create_Internal(&iterator, ptr, wmf_streamIndex, mediaType));
 
   *pIterator = iterator;
 
@@ -270,7 +277,7 @@ mFUNCTION(mMediaFileInputIterator_GetNextVideoFrame, mPtr<mMediaFileInputIterato
 
   LONGLONG timestamp;
 
-  mERROR_CHECK(mMediaFileInputIterator_IterateToStreamIndex(iterator, &pSample, &timestamp));
+  mERROR_CHECK(mMediaFileInputIterator_IterateToStreamIndex_Internal(iterator, &pSample, &timestamp));
 
   {
     HRESULT hr = S_OK;
@@ -335,7 +342,7 @@ mFUNCTION(mMediaFileInputIterator_GetNextAudioFrame, mPtr<mMediaFileInputIterato
 
   LONGLONG timestamp;
 
-  mERROR_CHECK(mMediaFileInputIterator_IterateToStreamIndex(iterator, &pSample, &timestamp));
+  mERROR_CHECK(mMediaFileInputIterator_IterateToStreamIndex_Internal(iterator, &pSample, &timestamp));
 
   {
     HRESULT hr = S_OK;
@@ -402,7 +409,7 @@ mFUNCTION(mMediaFileInputIterator_SkipFrame, mPtr<mMediaFileInputIterator> &iter
 
   LONGLONG timestamp;
 
-  mERROR_CHECK(mMediaFileInputIterator_IterateToStreamIndex(iterator, &pSample, &timestamp));
+  mERROR_CHECK(mMediaFileInputIterator_IterateToStreamIndex_Internal(iterator, &pSample, &timestamp));
 
   mRETURN_SUCCESS();
 }
@@ -431,7 +438,7 @@ mFUNCTION(mMediaFileInputIterator_SeekTo, mPtr<mMediaFileInputIterator> &iterato
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mMediaFileInputHandler_AddStream_Internal, IN mMediaFileInputHandler *pInputHandler, IN mMediaTypeLookup *pMediaType)
+static mFUNCTION(mMediaFileInputHandler_AddStream_Internal, IN mMediaFileInputHandler *pInputHandler, IN mMediaTypeLookup *pMediaType)
 {
   mFUNCTION_SETUP();
 
@@ -444,12 +451,12 @@ mFUNCTION(mMediaFileInputHandler_AddStream_Internal, IN mMediaFileInputHandler *
   else
     mERROR_CHECK(mAllocator_Reallocate(pInputHandler->pAllocator, &pInputHandler->pStreamTypeLookup, pInputHandler->streamCount));
 
-  mERROR_CHECK(mAllocator_Copy(pInputHandler->pAllocator, &pInputHandler->pStreamTypeLookup[pInputHandler->streamCount - 1], pMediaType, 1));
+  mERROR_CHECK(mMemcpy(&pInputHandler->pStreamTypeLookup[pInputHandler->streamCount - 1], pMediaType, 1));
 
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mMediaFileInputHandler_AddVideoStream_Internal, IN mMediaFileInputHandler *pInputHandler, IN mVideoStreamType *pVideoStreamType)
+static mFUNCTION(mMediaFileInputHandler_AddVideoStream_Internal, IN mMediaFileInputHandler *pInputHandler, IN mVideoStreamType *pVideoStreamType)
 {
   mFUNCTION_SETUP();
 
@@ -462,12 +469,12 @@ mFUNCTION(mMediaFileInputHandler_AddVideoStream_Internal, IN mMediaFileInputHand
   else
     mERROR_CHECK(mAllocator_Reallocate(pInputHandler->pAllocator, &pInputHandler->pVideoStreams, pInputHandler->videoStreamCount));
 
-  mERROR_CHECK(mAllocator_Copy(pInputHandler->pAllocator, &pInputHandler->pVideoStreams[pInputHandler->videoStreamCount - 1], pVideoStreamType, 1));
+  mERROR_CHECK(mMemcpy(&pInputHandler->pVideoStreams[pInputHandler->videoStreamCount - 1], pVideoStreamType, 1));
 
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mMediaFileInputHandler_AddAudioStream_Internal, IN mMediaFileInputHandler *pInputHandler, IN mAudioStreamType *pAudioStreamType)
+static mFUNCTION(mMediaFileInputHandler_AddAudioStream_Internal, IN mMediaFileInputHandler *pInputHandler, IN mAudioStreamType *pAudioStreamType)
 {
   mFUNCTION_SETUP();
 
@@ -480,12 +487,12 @@ mFUNCTION(mMediaFileInputHandler_AddAudioStream_Internal, IN mMediaFileInputHand
   else
     mERROR_CHECK(mAllocator_Reallocate(pInputHandler->pAllocator, &pInputHandler->pAudioStreams, pInputHandler->audioStreamCount));
 
-  mERROR_CHECK(mAllocator_Copy(pInputHandler->pAllocator, &pInputHandler->pAudioStreams[pInputHandler->audioStreamCount - 1], pAudioStreamType, 1));
+  mERROR_CHECK(mMemcpy(&pInputHandler->pAudioStreams[pInputHandler->audioStreamCount - 1], pAudioStreamType, 1));
 
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mMediaFileInputHandler_Create_Internal, IN mMediaFileInputHandler *pInputHandler, IN mAllocator *pAllocator, IN const wchar_t *filename, const bool enableVideoProcessing, const bool enableAudioProcessing)
+static mFUNCTION(mMediaFileInputHandler_Create_Internal, IN mMediaFileInputHandler *pInputHandler, IN mAllocator *pAllocator, IN const wchar_t *filename, const bool enableVideoProcessing, const bool enableAudioProcessing)
 {
   mFUNCTION_SETUP();
   mERROR_IF(pInputHandler == nullptr, mR_ArgumentNull);
@@ -620,7 +627,7 @@ mFUNCTION(mMediaFileInputHandler_Create_Internal, IN mMediaFileInputHandler *pIn
             mERROR_CHECK(mMediaFileInputHandler_AddStream_Internal(pInputHandler, &mediaTypeLookup));
 
             mVideoStreamType videoStreamType;
-            mERROR_CHECK(mVideoStreamType_Create(pType, &mediaTypeLookup, streamIndex, &videoStreamType));
+            mERROR_CHECK(mVideoStreamType_Create_Internal(pType, &mediaTypeLookup, streamIndex, &videoStreamType));
 
             videoStreamType.pixelFormat = isYUV ? mPF_YUV420 : mPF_B8G8R8A8;
 
@@ -668,7 +675,7 @@ mFUNCTION(mMediaFileInputHandler_Create_Internal, IN mMediaFileInputHandler *pIn
             mERROR_CHECK(mMediaFileInputHandler_AddStream_Internal(pInputHandler, &mediaTypeLookup));
 
             mAudioStreamType audioStreamType;
-            mERROR_CHECK(mAudioStreamType_Create(pType, pMediaType, &mediaTypeLookup, streamIndex, &audioStreamType));
+            mERROR_CHECK(mAudioStreamType_Create_Internal(pType, pMediaType, &mediaTypeLookup, streamIndex, &audioStreamType));
             mERROR_CHECK(mMediaFileInputHandler_AddAudioStream_Internal(pInputHandler, &audioStreamType));
           }
         }
@@ -698,7 +705,7 @@ mFUNCTION(mMediaFileInputHandler_Create_Internal, IN mMediaFileInputHandler *pIn
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mMediaFileInputHandler_Destroy_Internal, IN mMediaFileInputHandler *pData)
+static mFUNCTION(mMediaFileInputHandler_Destroy_Internal, IN mMediaFileInputHandler *pData)
 {
   mFUNCTION_SETUP();
 
@@ -736,7 +743,7 @@ mFUNCTION(mMediaFileInputHandler_Destroy_Internal, IN mMediaFileInputHandler *pD
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mMediaFileInputHandler_RunSession_Internal, IN mMediaFileInputHandler *pData)
+static mFUNCTION(mMediaFileInputHandler_RunSession_Internal, IN mMediaFileInputHandler *pData)
 {
   mFUNCTION_SETUP();
 
@@ -841,7 +848,7 @@ mFUNCTION(mMediaFileInputHandler_RunSession_Internal, IN mMediaFileInputHandler 
         }
 
         mAudioStreamType audioStreamType;
-        mERROR_CHECK(mAudioStreamType_Create(pMediaType, pTargetMediaType, pMediaTypeLookup, streamIndex, &audioStreamType));
+        mERROR_CHECK(mAudioStreamType_Create_Internal(pMediaType, pTargetMediaType, pMediaTypeLookup, streamIndex, &audioStreamType));
 
         if (pMediaTypeLookup->mediaType != mMMT_Audio)
           mERROR_CHECK(mMediaFileInputHandler_AddAudioStream_Internal(pData, &audioStreamType));
@@ -857,7 +864,7 @@ mFUNCTION(mMediaFileInputHandler_RunSession_Internal, IN mMediaFileInputHandler 
 
         mVideoStreamType videoStreamType;
 
-        mERROR_CHECK(mVideoStreamType_Create(pMediaType, pMediaTypeLookup, streamIndex, &videoStreamType));
+        mERROR_CHECK(mVideoStreamType_Create_Internal(pMediaType, pMediaTypeLookup, streamIndex, &videoStreamType));
 
         if (pMediaTypeLookup->mediaType != mMMT_Video)
         {
@@ -944,7 +951,7 @@ mFUNCTION(mMediaFileInputHandler_RunSession_Internal, IN mMediaFileInputHandler 
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mAudioStreamType_Create, IN IMFMediaType *pMediaType, IN IMFMediaType *pTargetMediaType, IN mMediaTypeLookup *pMediaTypeLookup, const size_t streamIndex, OUT mAudioStreamType *pAudioStreamType)
+static mFUNCTION(mAudioStreamType_Create_Internal, IN IMFMediaType *pMediaType, IN IMFMediaType *pTargetMediaType, IN mMediaTypeLookup *pMediaTypeLookup, const size_t streamIndex, OUT mAudioStreamType *pAudioStreamType)
 {
   mFUNCTION_SETUP();
 
@@ -975,7 +982,7 @@ mFUNCTION(mAudioStreamType_Create, IN IMFMediaType *pMediaType, IN IMFMediaType 
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mVideoStreamType_Create, IN IMFMediaType *pMediaType, IN mMediaTypeLookup *pMediaTypeLookup, const size_t streamIndex, OUT mVideoStreamType *pVideoStreamType)
+static mFUNCTION(mVideoStreamType_Create_Internal, IN IMFMediaType *pMediaType, IN mMediaTypeLookup *pMediaTypeLookup, const size_t streamIndex, OUT mVideoStreamType *pVideoStreamType)
 {
   mFUNCTION_SETUP();
 
@@ -1012,7 +1019,7 @@ mFUNCTION(mVideoStreamType_Create, IN IMFMediaType *pMediaType, IN mMediaTypeLoo
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mMediaFileInputIterator_Create, OUT mPtr<mMediaFileInputIterator> *pIterator, mPtr<mMediaFileInputHandler> &mediaFileInputHandlerRef, const size_t wmf_streamIndex, const mMediaMajorType mediaType)
+static mFUNCTION(mMediaFileInputIterator_Create_Internal, OUT mPtr<mMediaFileInputIterator> *pIterator, mPtr<mMediaFileInputHandler> &mediaFileInputHandlerRef, const size_t wmf_streamIndex, const mMediaMajorType mediaType)
 {
   mFUNCTION_SETUP();
 
@@ -1037,7 +1044,7 @@ mFUNCTION(mMediaFileInputIterator_Create, OUT mPtr<mMediaFileInputIterator> *pIt
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mMediaFileInputIterator_Create_Internal, mMediaFileInputIterator *pIterator, mPtr<mMediaFileInputHandler> &mediaFileInputHandlerRef, const size_t wmf_streamIndex, const mMediaMajorType mediaType)
+static mFUNCTION(mMediaFileInputIterator_Create_Internal, mMediaFileInputIterator *pIterator, mPtr<mMediaFileInputHandler> &mediaFileInputHandlerRef, const size_t wmf_streamIndex, const mMediaMajorType mediaType)
 {
   mFUNCTION_SETUP();
 
@@ -1051,7 +1058,7 @@ mFUNCTION(mMediaFileInputIterator_Create_Internal, mMediaFileInputIterator *pIte
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mMediaFileInputIterator_Destroy_Internal, mMediaFileInputIterator *pIterator)
+static mFUNCTION(mMediaFileInputIterator_Destroy_Internal, mMediaFileInputIterator *pIterator)
 {
   mFUNCTION_SETUP();
 
@@ -1067,7 +1074,7 @@ mFUNCTION(mMediaFileInputIterator_Destroy_Internal, mMediaFileInputIterator *pIt
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mMediaFileInputIterator_IterateToStreamIndex, mPtr<mMediaFileInputIterator> &iterator, OUT IMFSample **ppSample, OUT LONGLONG *pTimeStamp)
+static mFUNCTION(mMediaFileInputIterator_IterateToStreamIndex_Internal, mPtr<mMediaFileInputIterator> &iterator, OUT IMFSample **ppSample, OUT LONGLONG *pTimeStamp)
 {
   mFUNCTION_SETUP();
 
@@ -1173,7 +1180,7 @@ mFUNCTION(mMediaFileInputIterator_IterateToStreamIndex, mPtr<mMediaFileInputIter
         }
 
         mAudioStreamType audioStreamType;
-        mERROR_CHECK(mAudioStreamType_Create(pMediaType, pTargetMediaType, pMediaTypeLookup, streamIndex, &audioStreamType));
+        mERROR_CHECK(mAudioStreamType_Create_Internal(pMediaType, pTargetMediaType, pMediaTypeLookup, streamIndex, &audioStreamType));
 
         if (pMediaTypeLookup->mediaType != mMMT_Audio)
           mERROR_CHECK(mMediaFileInputHandler_AddAudioStream_Internal(iterator->mediaFileInputHandler.GetPointer(), &audioStreamType));
@@ -1189,7 +1196,7 @@ mFUNCTION(mMediaFileInputIterator_IterateToStreamIndex, mPtr<mMediaFileInputIter
 
         mVideoStreamType videoStreamType;
 
-        mERROR_CHECK(mVideoStreamType_Create(pMediaType, pMediaTypeLookup, streamIndex, &videoStreamType));
+        mERROR_CHECK(mVideoStreamType_Create_Internal(pMediaType, pMediaTypeLookup, streamIndex, &videoStreamType));
 
         if (pMediaTypeLookup->mediaType != mMMT_Video)
         {
@@ -1226,13 +1233,13 @@ struct mMediaFileInputAudioSource : mAudioSource
   bool endReached;
 };
 
-mFUNCTION(mMediaFileInputAudioSource_Destroy_Internal, mMediaFileInputAudioSource *pAudioSource);
-mFUNCTION(mMediaFileInputAudioSource_GetBuffer_Internal, mPtr<mAudioSource> &audioSource, OUT float_t *pBuffer, const size_t bufferLength, const size_t channelIndex, OUT size_t *pBufferCount);
-mFUNCTION(mMediaFileInputAudioSource_MoveToNextBuffer_Internal, mPtr<mAudioSource> &audioSource, const size_t samples);
-mFUNCTION(mMediaFileInputAudioSource_SeekSample_Internal, mPtr<mAudioSource> &audioSource, const size_t sampleIndex);
+static mFUNCTION(mMediaFileInputAudioSource_Destroy_Internal, mMediaFileInputAudioSource *pAudioSource);
+static mFUNCTION(mMediaFileInputAudioSource_GetBuffer_Internal, mPtr<mAudioSource> &audioSource, OUT float_t *pBuffer, const size_t bufferLength, const size_t channelIndex, OUT size_t *pBufferCount);
+static mFUNCTION(mMediaFileInputAudioSource_MoveToNextBuffer_Internal, mPtr<mAudioSource> &audioSource, const size_t samples);
+static mFUNCTION(mMediaFileInputAudioSource_SeekSample_Internal, mPtr<mAudioSource> &audioSource, const size_t sampleIndex);
 
-mFUNCTION(mMediaFileInputAudioSource_ReadBuffer_Internal, mMediaFileInputAudioSource *pAudioSource, const size_t samplesToLoad);
-mFUNCTION(mMediaFileInputAudioSource_ConsumeBuffer_Internal, mMediaFileInputAudioSource *pAudioSource, const size_t size);
+static mFUNCTION(mMediaFileInputAudioSource_ReadBuffer_Internal, mMediaFileInputAudioSource *pAudioSource, const size_t samplesToLoad);
+static mFUNCTION(mMediaFileInputAudioSource_ConsumeBuffer_Internal, mMediaFileInputAudioSource *pAudioSource, const size_t size);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -1264,7 +1271,7 @@ mFUNCTION(mMediaFileInputHandler_GetAudioSource, mPtr<mMediaFileInputHandler> &i
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mMediaFileInputAudioSource_Destroy_Internal, mMediaFileInputAudioSource *pAudioSource)
+static mFUNCTION(mMediaFileInputAudioSource_Destroy_Internal, mMediaFileInputAudioSource *pAudioSource)
 {
   mFUNCTION_SETUP();
 
@@ -1276,7 +1283,7 @@ mFUNCTION(mMediaFileInputAudioSource_Destroy_Internal, mMediaFileInputAudioSourc
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mMediaFileInputAudioSource_GetBuffer_Internal, mPtr<mAudioSource> &audioSource, OUT float_t *pBuffer, const size_t bufferLength, const size_t channelIndex, OUT size_t *pBufferCount)
+static mFUNCTION(mMediaFileInputAudioSource_GetBuffer_Internal, mPtr<mAudioSource> &audioSource, OUT float_t *pBuffer, const size_t bufferLength, const size_t channelIndex, OUT size_t *pBufferCount)
 {
   mFUNCTION_SETUP();
 
@@ -1309,7 +1316,7 @@ mFUNCTION(mMediaFileInputAudioSource_GetBuffer_Internal, mPtr<mAudioSource> &aud
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mMediaFileInputAudioSource_MoveToNextBuffer_Internal, mPtr<mAudioSource> &audioSource, const size_t samples)
+static mFUNCTION(mMediaFileInputAudioSource_MoveToNextBuffer_Internal, mPtr<mAudioSource> &audioSource, const size_t samples)
 {
   mFUNCTION_SETUP();
 
@@ -1338,7 +1345,7 @@ mFUNCTION(mMediaFileInputAudioSource_MoveToNextBuffer_Internal, mPtr<mAudioSourc
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mMediaFileInputAudioSource_SeekSample_Internal, mPtr<mAudioSource> &audioSource, const size_t sampleIndex)
+static mFUNCTION(mMediaFileInputAudioSource_SeekSample_Internal, mPtr<mAudioSource> &audioSource, const size_t sampleIndex)
 {
   mFUNCTION_SETUP();
 
@@ -1360,7 +1367,7 @@ mFUNCTION(mMediaFileInputAudioSource_SeekSample_Internal, mPtr<mAudioSource> &au
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mMediaFileInputAudioSource_ReadBuffer_Internal, mMediaFileInputAudioSource *pAudioSource, const size_t samplesToLoad)
+static mFUNCTION(mMediaFileInputAudioSource_ReadBuffer_Internal, mMediaFileInputAudioSource *pAudioSource, const size_t samplesToLoad)
 {
   mFUNCTION_SETUP();
 
@@ -1425,7 +1432,7 @@ mFUNCTION(mMediaFileInputAudioSource_ReadBuffer_Internal, mMediaFileInputAudioSo
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mMediaFileInputAudioSource_ConsumeBuffer_Internal, mMediaFileInputAudioSource *pAudioSource, const size_t size)
+static mFUNCTION(mMediaFileInputAudioSource_ConsumeBuffer_Internal, mMediaFileInputAudioSource *pAudioSource, const size_t size)
 {
   mFUNCTION_SETUP();
 

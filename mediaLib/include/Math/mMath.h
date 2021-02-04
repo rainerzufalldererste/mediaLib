@@ -30,6 +30,13 @@
 #define mRAD2DEG (180.0 / mPI)
 #define mRAD2DEGf (180.0f / mPIf)
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "wWI0Zp0/tScpuj08VZchnph9RQsErzPv9NdWnME87LWR+wcviEMJLzT9l2wjxVxyueINRHZOFGVQq0kE"
+#endif
+
 template <typename T> constexpr T mAbs(const T value) { return value >= 0 ? value : -value; }
 template <typename T, typename std::enable_if_t<!std::is_unsigned<T>::value, int>* = nullptr> constexpr T mSign(const T value) { return value > 0 ? (T)1 : (value < 0 ? (T)-1 : (T)0); }
 template <typename T, typename std::enable_if_t<std::is_unsigned<T>::value, int>* = nullptr> constexpr T mSign(const T value) { return value > 0 ? (T)1 : (T)0; }
@@ -56,6 +63,11 @@ auto mPow(const T value, const U value2) -> typename std::enable_if_t<!std::is_s
 
 template <typename T> constexpr auto mLog(const T value) -> decltype(log(value)) { return log(value); }
 template <typename T> constexpr auto mLog10(const T value) -> decltype(log10(value)) { return log10(value); }
+template <typename T> constexpr auto mLog2(const T value) -> decltype(log2(value)) { return log2(value); }
+template <typename T> constexpr auto mLogN(const T logarithm, const T value) -> decltype(log(value)) { return log(value) / log(logarithm); }
+
+template <typename T> constexpr auto mFloor(const T value) -> decltype(floor(value)) { return floor(value); }
+template <typename T> constexpr auto mCeil(const T value) -> decltype(ceil(value)) { return ceil(value); }
 
 template <typename T> constexpr T mMax(const T a, const T b) { return (a >= b) ? a : b; }
 template <typename T> constexpr T mMin(const T a, const T b) { return (a <= b) ? a : b; }
@@ -63,28 +75,110 @@ template <typename T> constexpr T mMin(const T a, const T b) { return (a <= b) ?
 template <typename T, typename U>
 constexpr auto mLerp(const T a, const T b, const U ratio) -> decltype(a + (b - a) * ratio) { return a + (b - a) * ratio; }
 
-template <typename T, typename U = T>
+template <typename T, typename U = typename std::conditional_t<std::is_integral<T>::value, float_t, T>>
 constexpr U mInverseLerp(const T value, const T min, const T max) { return (U)(value - min) / (U)(max - min); }
 
 template <typename T, typename U>
 auto mBiLerp(const T a, const T b, const T c, const T d, const U ratio1, const U ratio2) -> decltype(mLerp(mLerp(a, b, ratio1), mLerp(c, d, ratio1), ratio2)) { return mLerp(mLerp(a, b, ratio1), mLerp(c, d, ratio1), ratio2); }
 
+// Indices are: Z, Y, X.
 template <typename T, typename U>
-T mTriLerp(const T a, const T b, const T c, const T d, const T e, const T f, const T g, const T h, const U factor1, const U factor2, const U factor3) 
+T mTriLerp(const T v000, const T v001, const T v010, const T v011, const T v100, const T v101, const T v110, const T v111, const U factor_001, const U factor_010, const U factor_100)
 {
-  const U inverseFactor1 = (U)1 - factor1;
-  const U inverseFactor2 = (U)1 - factor2;
+  const U inverseFactor_001 = (U)1 - factor_001;
+  const U inverseFactor_010 = (U)1 - factor_010;
+  const U inverseFactor_100 = (U)1 - factor_100;
 
-  const T c00 = a * inverseFactor1 + e * factor1;
-  const T c01 = b * inverseFactor1 + f * factor1;
-  const T c10 = c * inverseFactor1 + g * factor1;
-  const T c11 = d * inverseFactor1 + h * factor1;
+  const T c00 = v000 * inverseFactor_100 + v100 * factor_100;
+  const T c01 = v001 * inverseFactor_100 + v101 * factor_100;
+  const T c10 = v010 * inverseFactor_100 + v110 * factor_100;
+  const T c11 = v011 * inverseFactor_100 + v111 * factor_100;
 
-  const T c0 = c00 * inverseFactor2 + c10 * factor2;
-  const T c1 = c01 * inverseFactor2 + c11 * factor2;
+  const T c0 = c00 * inverseFactor_010 + c10 * factor_010;
+  const T c1 = c01 * inverseFactor_010 + c11 * factor_010;
 
-  return c0 * ((U)1 - factor3) + c1 * factor3;
+  return c0 * inverseFactor_001 + c1 * factor_001;
 }
+
+template <typename T, typename U = typename std::conditional_t<std::is_integral<T>::value, float_t, T>>
+U mSmoothStep(const T x)
+{
+  const U ux = (U)x;
+
+  return mClamp(((U)3 - ux * (U)2) * ux * ux, (U)0, (U)1);
+}
+
+template <typename T, typename U = typename std::conditional_t<std::is_integral<T>::value, float_t, T>>
+U mSmoothStepUnclamped(const T x)
+{
+  const U ux = (U)x;
+
+  return ((U)3 - ux * (U)2) * ux * ux;
+}
+
+template <typename T, typename U = typename std::conditional_t<std::is_integral<T>::value, float_t, T>>
+U mSmootherStep(const T x)
+{
+  const U ux = (U)x;
+
+  return mClamp(ux * ux * ux * (ux * (ux * (U)6 - (U)15) + (U)10), (U)0, (U)1);
+}
+
+template <typename T, typename U = typename std::conditional_t<std::is_integral<T>::value, float_t, T>>
+U mSmootherStepUnclamped(const T x)
+{
+  const U ux = (U)x;
+
+  return ux * ux * ux * (ux * (ux * (U)6 - (U)15) + (U)10);
+}
+
+// `y0` is the value at relative -1.
+// `y1` is the value at relative 0.
+// `y2` is the value at relative 1.
+// `y3` is the value at relative 2.
+// `x` is the interpolated position.
+template <typename T, typename U>
+T mInterpolateCubic(const T y0, const T y1, const T y2, const T y3, const U x) { return y1 + ((y2 - y0 + ((U)2 * y0 - (U)5 * y1 + (U)4 * y2 - y3 + ((U)3 * (y1 - y2) + y3 - y0) * x) * x) * x) / (U)2; }
+
+template <typename T, typename U>
+T mInterpolateBicubic(const T values[4][4], const U x, const U y)
+{
+  T values[4];
+
+  for (size_t i = 0; i < 4; i++)
+    values[i] = mInterpolateCubic(data[i][0], data[i][1], data[i][2], data[i][3], y);
+
+  return mInterpolateCubic(values[0], values[1], values[2], values[3], x);
+}
+
+template <typename T, typename U>
+struct mInterpolateBicubic_t
+{
+  T values[4];
+
+  mInterpolateBicubic_t(const T data[4][4], const U y)
+  {
+    for (size_t i = 0; i < 4; i++)
+      values[i] = mInterpolateCubic(data[i][0], data[i][1], data[i][2], data[i][3], y);
+  }
+
+  T SampleAt(const U x)
+  {
+    return mInterpolateCubic(values[0], values[1], values[2], values[3], x);
+  }
+};
+
+template <typename T, typename U>
+T mInterpolateTricubic(const T values[4][4][4], const U x, const U y, const U z)
+{
+  T values[4];
+
+  for (size_t i = 0; i < 4; i++)
+    values[i] = mInterpolateBicubic(data[i][0], data[i][1], data[i][2], data[i][3], y, z);
+
+  return mInterpolateCubic(values[0], values[1], values[2], values[3], x);
+}
+
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -157,6 +251,44 @@ enum mComparisonResult : int8_t
 
 //////////////////////////////////////////////////////////////////////////
 
+bool mIsPrime(const size_t n);
+
+//////////////////////////////////////////////////////////////////////////
+
+// 16 bit float.
+struct half_t
+{
+  uint16_t data;
+
+  inline explicit half_t(const uint16_t value) :
+    data(value)
+  { }
+
+  inline half_t(const float_t value)
+  {
+    int32_t storage;
+    memcpy(&storage, &value, sizeof(float_t));
+    
+    data = (uint16_t)(((storage & 0x7fffffff) >> 13) - (0x38000000 >> 13));
+    data |= (uint16_t)(((storage & 0x80000000) >> 16));
+  }
+
+  inline operator float_t() const
+  {
+    int32_t storage = ((data & 0x8000) << 16);
+    storage |= ((data & 0x7fff) << 13) + 0x38000000;
+
+    float_t ret;
+    memcpy(&ret, &storage, sizeof(float_t));
+
+    return ret;
+  }
+};
+
+static_assert(sizeof(half_t) == sizeof(uint16_t), "Invalid Padding.");
+
+//////////////////////////////////////////////////////////////////////////
+
 template <typename T>
 struct mMath_DistanceTypeOf
 {
@@ -169,9 +301,9 @@ struct mMath_DistanceTypeOf<float_t>
   typedef float_t type;
 };
 
-#define _mVECTOR_SUBSET_2(a, b) __host__ __device__ inline mVec2t<T> a ## b() { return mVec2t<T>(a, b); }
-#define _mVECTOR_SUBSET_3(a, b, c) __host__ __device__ inline mVec3t<T> a ## b ## c() { return mVec3t<T>(a, b, c); }
-#define _mVECTOR_SUBSET_4(a, b, c, d) __host__ __device__ inline mVec4t<T> a ## b ## c ## d() { return mVec4t<T>(a, b, c, d); }
+#define _mVECTOR_SUBSET_2(a, b) __host__ __device__ inline mVec2t<T> a ## b() const { return mVec2t<T>(a, b); }
+#define _mVECTOR_SUBSET_3(a, b, c) __host__ __device__ inline mVec3t<T> a ## b ## c() const { return mVec3t<T>(a, b, c); }
+#define _mVECTOR_SUBSET_4(a, b, c, d) __host__ __device__ inline mVec4t<T> a ## b ## c ## d() const { return mVec4t<T>(a, b, c, d); }
 
 template <typename T>
 struct mVec2t
@@ -219,7 +351,17 @@ struct mVec2t
 
   __host__ __device__ inline typename mMath_DistanceTypeOf<T>::type Length() const { return mSqrt(x * x + y * y); };
   __host__ __device__ inline T LengthSquared() const { return x * x + y * y; };
-  __host__ __device__ inline mVec2t<T> Normalize() { return *this / (T)Length(); };
+  __host__ __device__ inline mVec2t<T> Normalize() const { return *this / (T)Length(); };
+
+  __host__ __device__ inline typename mMath_DistanceTypeOf<T>::type Angle() const { return mATan2(mMath_DistanceTypeOf<T>::type(y), mMath_DistanceTypeOf<T>::type(x)); };
+
+  __host__ __device__ inline typename mMath_DistanceTypeOf<T>::type AspectRatio() const { return mMath_DistanceTypeOf<T>::type(x) / mMath_DistanceTypeOf<T>::type(y); };
+  __host__ __device__ inline typename mMath_DistanceTypeOf<T>::type InverseAspectRatio() const { return mMath_DistanceTypeOf<T>::type(y) / mMath_DistanceTypeOf<T>::type(x); };
+
+  __host__ __device__ inline static T Dot(const mVec2t<T> a, const mVec2t<T> b)
+  {
+    return a.x * b.x + a.y * b.y;
+  };
 
   _mVECTOR_SUBSET_2(y, x);
 };
@@ -232,6 +374,9 @@ __host__ __device__ inline mVec2t<T>  operator /  (const T a, const mVec2t<T> b)
 
 template <typename T> T mMax(const mVec2t<T> &v) { return mMax(v.x, v.y); }
 template <typename T> T mMin(const mVec2t<T> &v) { return mMin(v.x, v.y); }
+
+template <typename T> mVec2t<T> mMax(const mVec2t<T> &a, const mVec2t<T> &b) { return mVec2t<T>(mMax(a.x, b.x), mMax(a.y, b.y)); }
+template <typename T> mVec2t<T> mMin(const mVec2t<T> &a, const mVec2t<T> &b) { return mVec2t<T>(mMin(a.x, b.x), mMin(a.y, b.y)); }
 
 typedef mVec2t<size_t> mVec2s;
 typedef mVec2t<int64_t> mVec2i;
@@ -286,7 +431,7 @@ struct mVec3t
 
   __host__ __device__ inline typename mMath_DistanceTypeOf<T>::type Length() const { return mSqrt(x * x + y * y + z * z); };
   __host__ __device__ inline T LengthSquared() const { return x * x + y * y + z * z; };
-  __host__ __device__ inline mVec3t<T> Normalize() { return *this / (T)Length(); };
+  __host__ __device__ inline mVec3t<T> Normalize() const { return *this / (T)Length(); };
 
   __host__ __device__ inline mVec2t<T> ToVector2() const { return mVec2t<T>(x, y); };
 
@@ -366,6 +511,9 @@ __host__ __device__ inline mVec3t<T>  operator /  (const T a, const mVec3t<T> b)
 template <typename T> T mMax(const mVec3t<T> &v) { return mMax(mMax(v.x, v.y), v.z); }
 template <typename T> T mMin(const mVec3t<T> &v) { return mMin(mMin(v.x, v.y), v.z); }
 
+template <typename T> T mMax(const mVec3t<T> &a, const mVec3t<T> &b) { return mVec3t<T>(mMax(a.x, b.x), mMax(a.y, b.y), mMax(a.z, b.z)); }
+template <typename T> T mMin(const mVec3t<T> &a, const mVec3t<T> &b) { return mVec3t<T>(mMin(a.x, b.x), mMin(a.y, b.y), mMin(a.z, b.z)); }
+
 typedef mVec3t<size_t> mVec3s;
 typedef mVec3t<int64_t> mVec3i;
 typedef mVec3t<uint64_t> mVec3u;
@@ -418,10 +566,15 @@ struct mVec4t
 
   __host__ __device__ inline typename mMath_DistanceTypeOf<T>::type Length() const { return mSqrt(x * x + y * y + z * z + w * w); };
   __host__ __device__ inline T LengthSquared() const { return x * x + y * y + z * z + w * w; };
-  __host__ __device__ inline mVec4t<T> Normalize() { return *this / (T)Length(); };
+  __host__ __device__ inline mVec4t<T> Normalize() const { return *this / (T)Length(); };
 
   __host__ __device__ inline mVec2t<T> ToVector2() const { return mVec2t<T>(x, y); };
   __host__ __device__ inline mVec3t<T> ToVector3() const { return mVec3t<T>(x, y, z); };
+
+  __host__ __device__ inline static T Dot(const mVec4t<T> a, const mVec4t<T> b)
+  {
+    return a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w;
+  };
 
   _mVECTOR_SUBSET_2(x, y);
   _mVECTOR_SUBSET_2(x, z);
@@ -495,6 +648,9 @@ __host__ __device__ inline mVec4t<T>  operator /  (const T a, const mVec4t<T> b)
 
 template <typename T> T mMax(const mVec4t<T> &v) { return mMax(mMax(v.x, v.y), mMax(v.z, v.w)); }
 template <typename T> T mMin(const mVec4t<T> &v) { return mMin(mMin(v.x, v.y), mMin(v.z, v.w)); }
+
+template <typename T> T mMax(const mVec4t<T> &a, const mVec4t<T> &b) { return mVec4t<T>(mMax(a.x, b.x), mMax(a.y, b.y), mMax(a.z, b.z), mMax(a.w, b.w)); }
+template <typename T> T mMin(const mVec4t<T> &a, const mVec4t<T> &b) { return mVec4t<T>(mMin(a.x, b.x), mMin(a.y, b.y), mMin(a.z, b.z), mMin(a.w, b.w)); }
 
 typedef mVec4t<size_t> mVec4s;
 typedef mVec4t<int64_t> mVec4i;
@@ -789,10 +945,38 @@ __host__ __device__ inline mVec3f mColor_RgbToYuv(const mVec3f rgb)
     mClamp(.5115453256722814f * rgb.x - .4281115132705763f * rgb.y - .08343381240170515f * rgb.z + .5f, 0.f, 1.f));
 }
 
+__host__ __device__ inline mVec3f mColor_RgbToHcv(const mVec3f rgb)
+{
+  const mVec4f p = (rgb.y < rgb.z) ? mVec4f(rgb.z, rgb.y, -1.f, 2.f / 3.f) : mVec4f(rgb.y, rgb.z, 0.f, -1.f / 3.f);
+  const mVec4f q = (rgb.x < p.x) ? mVec4f(p.x, p.y, p.w, rgb.x) : mVec4f(rgb.x, p.y, p.z, p.x);
+  const float_t c = q.x - mMin(q.w, q.y);
+  const float_t h = abs((q.w - q.y) / (6.f * c + FLT_EPSILON) + q.z);
+
+  return mVec3f(h, c, q.x);
+}
+
+__host__ __device__ inline mVec3f mColor_HslToRgb(const mVec3f hsl)
+{
+  const mVec3f rgb = mColor_HueToVec3f(hsl.x);
+  const float_t c = (1.f - mAbs(2.f * hsl.z - 1.f)) * hsl.y;
+
+  return (rgb - mVec3f(.5f)) * c + mVec3f(hsl.z);
+}
+
+__host__ __device__ inline mVec3f mColor_RgbToHsl(const mVec3f rgb)
+{
+  const mVec3f hcv = mColor_RgbToHcv(rgb);
+  const float_t l = hcv.z - hcv.y * .5f;
+  const float_t s = hcv.y / (1.f - mAbs(l * 2.f - 1.f) + FLT_EPSILON);
+
+  return mVec3f(hcv.x, s, l);
+}
+
 template<typename T, typename U>
 inline mVec2t<U> mBarycentricInterpolationFactors(const T &p, const T &q, const U &x)
 {
   const U wp = (x - q) / (q - p);
+
   return mVec2t<U>(wp, 1 - wp);
 }
 
@@ -996,6 +1180,16 @@ mINLINE bool mIntersects(const mTriangle3D<T> &triangle, const mLine3D<T> &line,
 
   return false;
 }
+
+//////////////////////////////////////////////////////////////////////////
+
+struct mFraction
+{
+  int64_t integralPart, numerator, denominator;
+};
+
+mFraction mToFraction(const double_t value, const int64_t precision = 1000000000);
+int64_t mGreatestCommonDivisor(const int64_t a, const int64_t b);
 
 //////////////////////////////////////////////////////////////////////////
 

@@ -1,5 +1,7 @@
 #include "mImageBuffer.h"
+
 #include "mFile.h"
+#include "mProfiler.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #pragma warning(push)
@@ -12,8 +14,37 @@
 
 #include "turbojpeg.h"
 
-mFUNCTION(mImageBuffer_Create_Iternal, mPtr<mImageBuffer> *pImageBuffer, IN OPTIONAL mAllocator *pAllocator);
-mFUNCTION(mImageBuffer_Destroy_Iternal, mImageBuffer *pImageBuffer);
+//////////////////////////////////////////////////////////////////////////
+
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "QgL/buye0i29ugNB9Gb1OObJgZCM5z3w1h8+qkQFX7BE67pbY5EwXZU9SdPR2evaOp1Y1qEZqrZ6b/OT"
+#endif
+
+struct WriteFuncData
+{
+  mUniqueContainer<mFileWriter> file;
+  mResult result = mR_Success;
+
+  static void Write(void *pWriteFuncData, void *pData, const int32_t size)
+  {
+    WriteFuncData *pSelf = static_cast<WriteFuncData *>(pWriteFuncData);
+
+    if (mFAILED(pSelf->result))
+      return;
+
+    pSelf->result = mFileWriter_WriteRaw(pSelf->file, reinterpret_cast<uint8_t *>(pData), (size_t)size);
+  }
+};
+
+//////////////////////////////////////////////////////////////////////////
+
+static mFUNCTION(mImageBuffer_Create_Iternal, mPtr<mImageBuffer> *pImageBuffer, IN OPTIONAL mAllocator *pAllocator);
+static mFUNCTION(mImageBuffer_Destroy_Iternal, mImageBuffer *pImageBuffer);
+
+//////////////////////////////////////////////////////////////////////////
 
 mFUNCTION(mImageBuffer_Create, OUT mPtr<mImageBuffer> *pImageBuffer, IN OPTIONAL mAllocator *pAllocator)
 {
@@ -32,148 +63,19 @@ mFUNCTION(mImageBuffer_CreateFromFile, OUT mPtr<mImageBuffer> *pImageBuffer, IN 
   mERROR_IF(pImageBuffer == nullptr, mR_ArgumentNull);
   mERROR_CHECK(mImageBuffer_Create_Iternal(pImageBuffer, pAllocator));
 
-  bool fileExists = false;
-  mERROR_CHECK(mFile_Exists(filename, &fileExists));
-  mERROR_IF(!fileExists, mR_ResourceNotFound);
+  mERROR_CHECK(mImageBuffer_SetToFile(*pImageBuffer, filename, pixelFormat));
 
-  uint8_t *pData = nullptr;
-  size_t size = 0;
-  mERROR_CHECK(mFile_ReadRaw(filename, &pData, pAllocator, &size));
-  mDEFER(mAllocator_FreePtr(pAllocator, &pData));
+  mRETURN_SUCCESS();
+}
 
-  int components = 4;
-  mPixelFormat readPixelFormat = mPF_R8G8B8A8;
+mFUNCTION(mImageBuffer_CreateFromData, OUT mPtr<mImageBuffer> *pImageBuffer, IN OPTIONAL mAllocator *pAllocator, IN const uint8_t *pData, const size_t size, const mPixelFormat pixelFormat /* = mPF_R8G8B8A8 */)
+{
+  mFUNCTION_SETUP();
 
-  const bool tryJpeg = (size > 3 && pData[0] == 0xFF && pData[1] == 0xD8 && pData[2] == 0xFF);
+  mERROR_IF(pImageBuffer == nullptr, mR_ArgumentNull);
+  mERROR_CHECK(mImageBuffer_Create_Iternal(pImageBuffer, pAllocator));
 
-  if (tryJpeg)
-  {
-    tjhandle decoder = tjInitDecompress();
-
-    int32_t width, height;
-
-    if (decoder == nullptr)
-      goto jpeg_decoder_failed;
-
-    mDEFER(tjDestroy(decoder));
-
-    if (0 != tjDecompressHeader(decoder, pData, (uint32_t)size, &width, &height))
-      goto jpeg_decoder_failed;
-
-    if (pixelFormat == mPF_YUV420)
-    {
-      if (mFAILED(mImageBuffer_AllocateBuffer(*pImageBuffer, mVec2s((size_t)width, (size_t)height), pixelFormat)))
-        goto jpeg_decoder_failed;
-
-      if (0 != tjDecompressToYUV2(decoder, pData, (uint32_t)size, (*pImageBuffer)->pPixels, width, 1, height, TJFLAG_FASTDCT))
-        goto jpeg_decoder_failed;
-    }
-    else
-    {
-      int32_t tjPixelFormat = 0;
-      size_t pixelSize = 1;
-
-      switch (pixelFormat)
-      {
-      case mPF_B8G8R8:
-        tjPixelFormat = TJPF_BGR;
-        break;
-
-      case mPF_R8G8B8:
-        tjPixelFormat = TJPF_RGB;
-        break;
-
-      case mPF_B8G8R8A8:
-        tjPixelFormat = TJPF_BGRA;
-        break;
-
-      case mPF_R8G8B8A8:
-        tjPixelFormat = TJPF_RGBA;
-        break;
-
-      case mPF_Monochrome8:
-        tjPixelFormat = TJPF_GRAY;
-        break;
-
-      default:
-        goto jpeg_decoder_failed;
-        break;
-      }
-
-      if (mFAILED(mImageBuffer_AllocateBuffer(*pImageBuffer, mVec2s((size_t)width, (size_t)height), pixelFormat)) || mFAILED(mPixelFormat_GetUnitSize(pixelFormat, &pixelSize)))
-        goto jpeg_decoder_failed;
-
-      if (0 != tjDecompress2(decoder, pData, (uint32_t)size, (*pImageBuffer)->pPixels, width, (int)(width * pixelSize), height, tjPixelFormat, TJFLAG_FASTDCT))
-        goto jpeg_decoder_failed;
-    }
-
-    mRETURN_SUCCESS();
-  }
-
-jpeg_decoder_failed:
-
-  switch (pixelFormat)
-  {
-  case mPF_B8G8R8:
-  case mPF_R8G8B8:
-    components = 3;
-    readPixelFormat = mPF_R8G8B8;
-    break;
-
-  case mPF_B8G8R8A8:
-  case mPF_R8G8B8A8:
-    components = 4;
-    readPixelFormat = mPF_R8G8B8A8;
-    break;
-
-  case mPF_YUV422:
-  case mPF_YUV420:
-    components = 3;
-    readPixelFormat = mPF_R8G8B8;
-    break;
-
-  case mPF_Monochrome8:
-  case mPF_Monochrome16:
-    components = 1;
-    readPixelFormat = mPF_Monochrome8;
-    break;
-
-  default:
-    mRETURN_RESULT(mR_OperationNotSupported);
-    break;
-  }
-
-  int x, y, originalChannelCount;
-  stbi_uc *pResult = stbi_load_from_memory(pData, (int)size, &x, &y, &originalChannelCount, components);
-
-  if (pResult == nullptr)
-    mRETURN_RESULT(mR_InternalError);
-
-  mDEFER_CALL((void *)pResult, stbi_image_free);
-
-  mERROR_CHECK(mImageBuffer_AllocateBuffer(*pImageBuffer, mVec2s((size_t)x, (size_t)y), pixelFormat));
-
-  size_t imageBytes;
-  mERROR_CHECK(mPixelFormat_GetSize((*pImageBuffer)->pixelFormat, (*pImageBuffer)->currentSize, &imageBytes));
-
-  if (readPixelFormat != pixelFormat)
-  {
-    mPtr<mImageBuffer> tempImageBuffer;
-    mDEFER_CALL(&tempImageBuffer, mImageBuffer_Destroy);
-    mERROR_CHECK(mImageBuffer_Create(&tempImageBuffer, &mDefaultTempAllocator, mVec2s((size_t)x, (size_t)y), readPixelFormat));
-    
-    if (tempImageBuffer->pPixels != nullptr) // If someone would corrupt the implementation so that it would allocate an empty image on `mImageBuffer_Create`.
-      mERROR_CHECK(mAllocator_FreePtr(tempImageBuffer->pAllocator, &tempImageBuffer->pPixels));
-
-    tempImageBuffer->pAllocator = &mNullAllocator;
-    tempImageBuffer->pPixels = (uint8_t *)pResult;
-
-    mERROR_CHECK(mPixelFormat_TransformBuffer(tempImageBuffer, *pImageBuffer));
-  }
-  else
-  {
-    mERROR_CHECK(mAllocator_Copy((*pImageBuffer)->pAllocator, (*pImageBuffer)->pPixels, (uint8_t *)pResult, imageBytes));
-  }
+  mERROR_CHECK(mImageBuffer_SetToData(*pImageBuffer, pData, size, pixelFormat));
 
   mRETURN_SUCCESS();
 }
@@ -367,7 +269,7 @@ mFUNCTION(mImageBuffer_CopyTo, mPtr<mImageBuffer> &source, mPtr<mImageBuffer> &t
   {
     size_t copiedSize;
     mERROR_CHECK(mPixelFormat_GetSize(source->pixelFormat, mVec2s(source->lineStride, source->currentSize.y), &copiedSize));
-    mERROR_CHECK(mAllocator_Copy(source->pAllocator, target->pPixels, source->pPixels, copiedSize));
+    mERROR_CHECK(mMemcpy(target->pPixels, source->pPixels, copiedSize));
   }
   else
   {
@@ -405,7 +307,7 @@ mFUNCTION(mImageBuffer_CopyTo, mPtr<mImageBuffer> &source, mPtr<mImageBuffer> &t
 
       for (size_t y = 0; y < source->currentSize.y; y++)
       {
-        mERROR_CHECK(mAllocator_Copy(source->pAllocator, pTargetSubBufferPixels + targetLineStride, pSourceSubBufferPixels + sourceLineStride, subBufferSize.x));
+        mERROR_CHECK(mMemcpy(pTargetSubBufferPixels + targetLineStride, pSourceSubBufferPixels + sourceLineStride, subBufferSize.x));
 
         targetLineStride += sourceSubBufferStride * subBufferUnitSize;
         sourceLineStride += targetSubBufferStride * subBufferUnitSize;
@@ -442,8 +344,12 @@ mFUNCTION(mImageBuffer_SaveAsPng, mPtr<mImageBuffer> &imageBuffer, const mString
     mRETURN_RESULT(mR_OperationNotSupported);
   }
 
-  int result = stbi_write_png(filename.c_str(), (int)imageBuffer->currentSize.x, (int)imageBuffer->currentSize.y, components, imageBuffer->pPixels, (int)(imageBuffer->lineStride * sizeof(uint8_t)) * components);
+  WriteFuncData fileWriteData;
+  mERROR_CHECK(mFileWriter_Create(&fileWriteData.file, filename));
 
+  const int result = stbi_write_png_to_func(WriteFuncData::Write, &fileWriteData, (int)imageBuffer->currentSize.x, (int)imageBuffer->currentSize.y, components, imageBuffer->pPixels, (int)(imageBuffer->lineStride * sizeof(uint8_t)) * components);
+
+  mERROR_IF(mFAILED(fileWriteData.result), fileWriteData.result);
   mERROR_IF(result == 0, mR_InternalError);
 
   mRETURN_SUCCESS();
@@ -476,8 +382,12 @@ mFUNCTION(mImageBuffer_SaveAsJpeg, mPtr<mImageBuffer> &imageBuffer, const mStrin
     mRETURN_RESULT(mR_OperationNotSupported);
   }
 
-  int result = stbi_write_jpg(filename.c_str(), (int)imageBuffer->currentSize.x, (int)imageBuffer->currentSize.y, components, imageBuffer->pPixels, 85);
+  WriteFuncData fileWriteData;
+  mERROR_CHECK(mFileWriter_Create(&fileWriteData.file, filename));
 
+  const int result = stbi_write_jpg_to_func(WriteFuncData::Write, &fileWriteData, (int)imageBuffer->currentSize.x, (int)imageBuffer->currentSize.y, components, imageBuffer->pPixels, 85);
+
+  mERROR_IF(mFAILED(fileWriteData.result), fileWriteData.result);
   mERROR_IF(result == 0, mR_InternalError);
 
   mRETURN_SUCCESS();
@@ -510,8 +420,12 @@ mFUNCTION(mImageBuffer_SaveAsBmp, mPtr<mImageBuffer> &imageBuffer, const mString
     mRETURN_RESULT(mR_OperationNotSupported);
   }
 
-  int result = stbi_write_bmp(filename.c_str(), (int)imageBuffer->currentSize.x, (int)imageBuffer->currentSize.y, components, imageBuffer->pPixels);
+  WriteFuncData fileWriteData;
+  mERROR_CHECK(mFileWriter_Create(&fileWriteData.file, filename));
 
+  const int result = stbi_write_bmp_to_func(WriteFuncData::Write, &fileWriteData, (int)imageBuffer->currentSize.x, (int)imageBuffer->currentSize.y, components, imageBuffer->pPixels);
+
+  mERROR_IF(mFAILED(fileWriteData.result), fileWriteData.result);
   mERROR_IF(result == 0, mR_InternalError);
 
   mRETURN_SUCCESS();
@@ -544,9 +458,180 @@ mFUNCTION(mImageBuffer_SaveAsTga, mPtr<mImageBuffer> &imageBuffer, const mString
     mRETURN_RESULT(mR_OperationNotSupported);
   }
 
-  int result = stbi_write_tga(filename.c_str(), (int)imageBuffer->currentSize.x, (int)imageBuffer->currentSize.y, components, imageBuffer->pPixels);
+  WriteFuncData fileWriteData;
+  mERROR_CHECK(mFileWriter_Create(&fileWriteData.file, filename));
 
+  const int result = stbi_write_tga_to_func(WriteFuncData::Write, &fileWriteData, (int)imageBuffer->currentSize.x, (int)imageBuffer->currentSize.y, components, imageBuffer->pPixels);
+
+  mERROR_IF(mFAILED(fileWriteData.result), fileWriteData.result);
   mERROR_IF(result == 0, mR_InternalError);
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mImageBuffer_SetToFile, mPtr<mImageBuffer> &imageBuffer, const mString &filename, const mPixelFormat pixelFormat /* = mPF_B8G8R8A8 */)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(imageBuffer == nullptr, mR_ArgumentNull);
+  mERROR_IF(filename.hasFailed || filename.text == nullptr, mR_InvalidParameter);
+
+  mPROFILE_SCOPED("mImageBuffer_SetToFile");
+
+  bool fileExists = false;
+  mERROR_CHECK(mFile_Exists(filename, &fileExists));
+  mERROR_IF(!fileExists, mR_ResourceNotFound);
+
+  uint8_t *pData = nullptr;
+  size_t size = 0;
+  mERROR_CHECK(mFile_ReadRaw(filename, &pData, &mDefaultTempAllocator, &size));
+  mDEFER(mAllocator_FreePtr(&mDefaultTempAllocator, &pData));
+
+  mERROR_CHECK(mImageBuffer_SetToData(imageBuffer, pData, size, pixelFormat));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mImageBuffer_SetToData, mPtr<mImageBuffer> &imageBuffer, IN const uint8_t *pData, const size_t size, const mPixelFormat pixelFormat /* = mPF_B8G8R8A8 */)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(imageBuffer == nullptr || pData == nullptr, mR_ArgumentNull);
+  mERROR_IF(size == 0, mR_InvalidParameter);
+
+  int32_t components = 4;
+  mPixelFormat readPixelFormat = mPF_R8G8B8A8;
+
+  const bool tryJpeg = (size > 3 && pData[0] == 0xFF && pData[1] == 0xD8 && pData[2] == 0xFF);
+
+  if (tryJpeg)
+  {
+    tjhandle decoder = tjInitDecompress();
+
+    int32_t width, height;
+
+    if (decoder == nullptr)
+      goto jpeg_decoder_failed;
+
+    mDEFER(tjDestroy(decoder));
+
+    if (0 != tjDecompressHeader(decoder, const_cast<uint8_t *>(reinterpret_cast<const uint8_t *>(pData)), (uint32_t)size, &width, &height))
+      goto jpeg_decoder_failed;
+
+    if (pixelFormat == mPF_YUV420)
+    {
+      if (mFAILED(mImageBuffer_AllocateBuffer(imageBuffer, mVec2s((size_t)width, (size_t)height), pixelFormat)))
+        goto jpeg_decoder_failed;
+
+      if (0 != tjDecompressToYUV2(decoder, pData, (uint32_t)size, imageBuffer->pPixels, width, 1, height, TJFLAG_FASTDCT))
+        goto jpeg_decoder_failed;
+    }
+    else
+    {
+      int32_t tjPixelFormat = 0;
+      size_t pixelSize = 1;
+
+      switch (pixelFormat)
+      {
+      case mPF_B8G8R8:
+        tjPixelFormat = TJPF_BGR;
+        break;
+
+      case mPF_R8G8B8:
+        tjPixelFormat = TJPF_RGB;
+        break;
+
+      case mPF_B8G8R8A8:
+        tjPixelFormat = TJPF_BGRA;
+        break;
+
+      case mPF_R8G8B8A8:
+        tjPixelFormat = TJPF_RGBA;
+        break;
+
+      case mPF_Monochrome8:
+        tjPixelFormat = TJPF_GRAY;
+        break;
+
+      default:
+        goto jpeg_decoder_failed;
+        break;
+      }
+
+      if (mFAILED(mImageBuffer_AllocateBuffer(imageBuffer, mVec2s((size_t)width, (size_t)height), pixelFormat)) || mFAILED(mPixelFormat_GetUnitSize(pixelFormat, &pixelSize)))
+        goto jpeg_decoder_failed;
+
+      if (0 != tjDecompress2(decoder, pData, (uint32_t)size, imageBuffer->pPixels, width, (int)(width * pixelSize), height, tjPixelFormat, TJFLAG_FASTDCT))
+        goto jpeg_decoder_failed;
+    }
+
+    mRETURN_SUCCESS();
+  }
+
+jpeg_decoder_failed:
+
+  switch (pixelFormat)
+  {
+  case mPF_B8G8R8:
+  case mPF_R8G8B8:
+    components = 3;
+    readPixelFormat = mPF_R8G8B8;
+    break;
+
+  case mPF_B8G8R8A8:
+  case mPF_R8G8B8A8:
+    components = 4;
+    readPixelFormat = mPF_R8G8B8A8;
+    break;
+
+  case mPF_YUV422:
+  case mPF_YUV420:
+    components = 3;
+    readPixelFormat = mPF_R8G8B8;
+    break;
+
+  case mPF_Monochrome8:
+  case mPF_Monochrome16:
+    components = 1;
+    readPixelFormat = mPF_Monochrome8;
+    break;
+
+  default:
+    mRETURN_RESULT(mR_OperationNotSupported);
+    break;
+  }
+
+  int x, y, originalChannelCount;
+  stbi_uc *pResult = stbi_load_from_memory(pData, (int)size, &x, &y, &originalChannelCount, components);
+
+  if (pResult == nullptr)
+    mRETURN_RESULT(mR_InternalError);
+
+  mDEFER_CALL((void *)pResult, stbi_image_free);
+
+  mERROR_CHECK(mImageBuffer_AllocateBuffer(imageBuffer, mVec2s((size_t)x, (size_t)y), pixelFormat));
+
+  size_t imageBytes;
+  mERROR_CHECK(mPixelFormat_GetSize(imageBuffer->pixelFormat, imageBuffer->currentSize, &imageBytes));
+
+  if (readPixelFormat != pixelFormat)
+  {
+    mPtr<mImageBuffer> tempImageBuffer;
+    mDEFER_CALL(&tempImageBuffer, mImageBuffer_Destroy);
+    mERROR_CHECK(mImageBuffer_Create(&tempImageBuffer, &mDefaultTempAllocator, mVec2s((size_t)x, (size_t)y), readPixelFormat));
+
+    if (tempImageBuffer->pPixels != nullptr) // If someone would corrupt the implementation so that it would allocate an empty image on `mImageBuffer_Create`.
+      mERROR_CHECK(mAllocator_FreePtr(tempImageBuffer->pAllocator, &tempImageBuffer->pPixels));
+
+    tempImageBuffer->pAllocator = &mNullAllocator;
+    tempImageBuffer->pPixels = (uint8_t *)pResult;
+
+    mERROR_CHECK(mPixelFormat_TransformBuffer(tempImageBuffer, imageBuffer));
+  }
+  else
+  {
+    mERROR_CHECK(mMemcpy(imageBuffer->pPixels, (uint8_t *)pResult, imageBytes));
+  }
 
   mRETURN_SUCCESS();
 }
@@ -593,9 +678,9 @@ mFUNCTION(mImageBuffer_FlipY, mPtr<mImageBuffer> &imageBuffer)
 
     while (pSubBuffer < pSubBufferEnd)
     {
-      mERROR_CHECK(mAllocator_Copy(imageBuffer->pAllocator, pBuffer, pSubBuffer, strideBytes));
-      mERROR_CHECK(mAllocator_Copy(imageBuffer->pAllocator, pSubBuffer, pSubBufferEnd, strideBytes));
-      mERROR_CHECK(mAllocator_Copy(imageBuffer->pAllocator, pSubBufferEnd, pBuffer, strideBytes));
+      mERROR_CHECK(mMemcpy(pBuffer, pSubBuffer, strideBytes));
+      mERROR_CHECK(mMemcpy(pSubBuffer, pSubBufferEnd, strideBytes));
+      mERROR_CHECK(mMemcpy(pSubBufferEnd, pBuffer, strideBytes));
 
       pSubBuffer += strideBytes;
       pSubBufferEnd -= strideBytes;
@@ -607,7 +692,7 @@ mFUNCTION(mImageBuffer_FlipY, mPtr<mImageBuffer> &imageBuffer)
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mImageBuffer_Destroy_Iternal, mImageBuffer *pImageBuffer)
+static mFUNCTION(mImageBuffer_Destroy_Iternal, mImageBuffer *pImageBuffer)
 {
   mFUNCTION_SETUP();
 
@@ -627,7 +712,7 @@ mFUNCTION(mImageBuffer_Destroy_Iternal, mImageBuffer *pImageBuffer)
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mImageBuffer_Create_Iternal, mPtr<mImageBuffer> *pImageBuffer, IN OPTIONAL mAllocator *pAllocator)
+static mFUNCTION(mImageBuffer_Create_Iternal, mPtr<mImageBuffer> *pImageBuffer, IN OPTIONAL mAllocator *pAllocator)
 {
   mFUNCTION_SETUP();
 

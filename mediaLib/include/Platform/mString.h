@@ -3,11 +3,20 @@
 
 #include "mediaLib.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "QlpJjQ2xYC58nDw/X1yN1LmXU7vVReW19HfIAzxlYE3W9rPtHEpUDwMzx/M56FJO0AebK0DN8U2w+8YG"
+#endif
+
 typedef int32_t mchar_t;
 
 template <size_t TCount>
 mchar_t mToChar(const char c[TCount]);
 mchar_t mToChar(IN const char *c, const size_t size);
+
+bool mString_IsValidChar(const char *c, const size_t size, OUT OPTIONAL mchar_t *pChar = nullptr, OUT OPTIONAL size_t *pCharSize = nullptr);
 
 struct mIteratedString
 {
@@ -40,6 +49,9 @@ struct mUtf8StringIterator
 
   mIteratedString operator*();
 };
+
+template <size_t TCount>
+struct mInplaceString;
 
 struct mString
 {
@@ -91,7 +103,14 @@ struct mString
   mString operator +=(const mString &s);
 
   bool operator == (const mString &s) const;
+
+  template <size_t T>
+  bool operator == (const mInplaceString<T> &s) const;
+
   bool operator != (const mString &s) const;
+
+  template <size_t T>
+  bool operator != (const mInplaceString<T> &s) const;
 
   mUtf8StringIterator begin() const;
   mUtf8StringIterator end() const;
@@ -127,13 +146,19 @@ mFUNCTION(mString_Reserve, mString &string, const size_t size);
 mFUNCTION(mString_GetByteSize, const mString &string, OUT size_t *pSize);
 mFUNCTION(mString_GetCount, const mString &string, OUT size_t *pLength);
 
-mFUNCTION(mString_ToWideString, const mString &string, OUT wchar_t *pWideString, const size_t bufferSize);
-mFUNCTION(mString_ToWideString, const mString &string, OUT wchar_t *pWideString, const size_t bufferSize, OUT size_t *pWideStringLength);
+mFUNCTION(mString_ToWideString, const mString &string, OUT wchar_t *pWideString, const size_t bufferCount);
+mFUNCTION(mString_ToWideString, const mString &string, OUT wchar_t *pWideString, const size_t bufferCount, OUT size_t *pWideStringCount);
+mFUNCTION(mString_GetRequiredWideStringCount, const mString &string, OUT size_t *pWideStringCount);
 
 mFUNCTION(mString_Substring, const mString &text, OUT mString *pSubstring, const size_t startCharacter);
 mFUNCTION(mString_Substring, const mString &text, OUT mString *pSubstring, const size_t startCharacter, const size_t length);
 
 mFUNCTION(mString_Append, mString &text, const mString &appendedText);
+mFUNCTION(mString_Append, mString &text, const char *appendedText);
+mFUNCTION(mString_Append, mString &text, const char *appendedText, const size_t size);
+
+template <typename ...Args>
+mFUNCTION(mString_AppendFormat, mString &text, const char *format, Args&&... args);
 
 mFUNCTION(mString_AppendUnsignedInteger, mString &text, const uint64_t value);
 mFUNCTION(mString_AppendInteger, mString &text, const int64_t value);
@@ -204,10 +229,23 @@ inline mFUNCTION(mString_CreateFormat, OUT mString *pString, IN OPTIONAL mAlloca
 {
   mFUNCTION_SETUP();
 
-  char text[2048];
+  char text[1024 * 8];
   mERROR_IF(0 > sprintf_s(text, formatString, std::forward<Args>(args)...), mR_InternalError);
 
   mERROR_CHECK(mString_Create(pString, text, pAllocator));
+
+  mRETURN_SUCCESS();
+}
+
+template <typename ...Args>
+mFUNCTION(mString_AppendFormat, mString &text, const char *format, Args&&... args)
+{
+  mFUNCTION_SETUP();
+
+  char appendedText[1024 * 8];
+  mERROR_IF(0 > sprintf_s(appendedText, format, std::forward<Args>(args)...), mR_InternalError);
+
+  mERROR_CHECK(mString_Append(text, appendedText, mARRAYSIZE(appendedText)));
 
   mRETURN_SUCCESS();
 }
@@ -244,6 +282,9 @@ struct mInplaceString
 
   template <size_t TOtherCount>
   bool operator != (const mInplaceString<TOtherCount> &other) const;
+
+  bool operator == (const mString &other) const;
+  bool operator != (const mString &other) const;
 
   mUtf8StringIterator begin() const;
   mUtf8StringIterator end() const;
@@ -362,6 +403,21 @@ inline bool mInplaceString<TCount>::operator!=(const mInplaceString<TOtherCount>
 }
 
 template<size_t TCount>
+bool mInplaceString<TCount>::operator == (const mString &other) const
+{
+  if (other.bytes != bytes || other.count != this->count || other.hasFailed)
+    return false;
+
+  return mInplaceString_StringsAreEqual_Internal(text, other.text, bytes, count);
+}
+
+template<size_t TCount>
+bool mInplaceString<TCount>::operator != (const mString &other) const
+{
+  return !(*this == other);
+}
+
+template<size_t TCount>
 inline mFUNCTION(mInplaceString_Create, OUT mInplaceString<TCount> *pStackString)
 {
   mFUNCTION_SETUP();
@@ -408,11 +464,17 @@ inline mFUNCTION(mInplaceString_Create, OUT mInplaceString<TCount> *pStackString
   size_t textCount;
 
   mERROR_CHECK(mInplaceString_GetCount_Internal(text, size, &textCount, &textSize));
-  mERROR_IF(textSize > TCount, mR_ArgumentOutOfBounds);
 
-  pStackString->bytes = textSize;
-  pStackString->count = textCount;
+  const bool isNotNullTerminated = *(text + textSize - 1) != '\0';
+
+  mERROR_IF(textSize + isNotNullTerminated > TCount, mR_ArgumentOutOfBounds);
+
+  pStackString->bytes = textSize + isNotNullTerminated;
+  pStackString->count = textCount + isNotNullTerminated;
   mERROR_CHECK(mMemcpy(pStackString->text, text, textSize + 1));
+
+  if (isNotNullTerminated)
+    pStackString->text[textSize] = '\0';
 
   mRETURN_SUCCESS();
 }
@@ -501,6 +563,35 @@ inline mFUNCTION(mInplaceString_GetCount, const mInplaceString<TCount> &string, 
   *pLength = string.count;
 
   mRETURN_SUCCESS();
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+template<size_t T>
+inline bool mString::operator==(const mInplaceString<T> &s) const
+{
+  if (s.bytes <= 1 && bytes <= 1)
+    return true;
+
+  if (s.bytes != bytes || s.count != count)
+    return false;
+
+  mString tmp;
+  tmp.text = const_cast<char *>(s.text);
+  tmp.capacity = tmp.bytes = s.bytes;
+  tmp.count = s.count;
+
+  const bool equal = (*this) == tmp;
+
+  tmp.text = nullptr;
+
+  return equal;
+}
+
+template<size_t T>
+inline bool mString::operator!=(const mInplaceString<T> &s) const
+{
+  return !((*this) == s);
 }
 
 #endif // mString_h__

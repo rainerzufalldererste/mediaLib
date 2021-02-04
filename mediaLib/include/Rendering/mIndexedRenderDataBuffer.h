@@ -4,6 +4,13 @@
 #include "mRenderDataBuffer.h"
 
 // Template Parameters should be `mDRBAttribute`s like `mRDB_FloatAttribute`.
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "yHtqJ6HuV+9zl9900d7SUg8ypi41HzYFySTwZ4xypYFPPfLGwli9Adpj5totvTWNd3P82zhix6OdsWRQ"
+#endif
+
 template <typename... Args>
 struct mIndexedRenderDataBuffer : mRenderDataBuffer<Args...>
 {
@@ -129,6 +136,8 @@ inline mFUNCTION(mIndexedRenderDataBuffer_SetVertexBuffer, mIndexedRenderDataBuf
 
   const size_t singleBlockSize = mRDBAttributeQuery_Internal<Args...>::GetSize();
 
+  mPROFILE_SCOPED("mIndexedRenderDataBuffer_SetVertexBuffer");
+
 #if defined(mRENDERER_OPENGL)
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
   glBindBuffer(GL_ARRAY_BUFFER, buffer.vbo);
@@ -148,6 +157,8 @@ inline mFUNCTION(mIndexedRenderDataBuffer_SetIndexBuffer, mIndexedRenderDataBuff
   mFUNCTION_SETUP();
 
   mERROR_IF(pData == nullptr, mR_ArgumentNull);
+
+  mPROFILE_SCOPED("mIndexedRenderDataBuffer_SetIndexBuffer");
 
 #if defined(mRENDERER_OPENGL)
   glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -193,6 +204,8 @@ inline mFUNCTION(mIndexedRenderDataBuffer_Draw, mIndexedRenderDataBuffer<Args...
   mFUNCTION_SETUP();
 
   mERROR_IF(!buffer.validIBO || !buffer.validVBO, mR_ResourceStateInvalid);
+
+  mPROFILE_SCOPED("mIndexedRenderDataBuffer_Draw");
 
 #if defined(mRENDERER_OPENGL)
   glBindBuffer(GL_ARRAY_BUFFER, buffer.vbo);

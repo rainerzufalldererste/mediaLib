@@ -3,6 +3,13 @@
 
 #include "mediaLib.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "lUcW5k0a6WtItocdiHxepsYQ7VbeY5/04cu7fOewzBG3PzNXNuGzBjuOv5ayyH210Xdx2paMWtlyWXeB"
+#endif
+
 struct mTimeStamp
 {
   double_t timePoint;

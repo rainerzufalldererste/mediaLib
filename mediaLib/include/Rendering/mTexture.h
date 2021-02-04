@@ -5,11 +5,18 @@
 #include "mImageBuffer.h"
 #include "mResourceManager.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "BU8yYy9xJysspta8eu64bE6XuHu3cuWvk0RFgXu9707c/w9RE7S+xIw10NlaQjkFn3E0QK1TezghS5e4"
+#endif
+
 struct mTexture
 {
   mVec2s resolution;
   mVec2f resolutionF;
-  mRenderParams_UploadState uploadState = mRenderParams_UploadState::mRP_US_NotInitialized;
+  mRenderParams_UploadState uploadState = mRP_US_NotInitialized;
   mPtr<mImageBuffer> imageBuffer;
 
 #if defined(mRENDERER_OPENGL)
@@ -19,12 +26,17 @@ struct mTexture
 
   size_t sampleCount;
   bool foreignTexture;
+  bool isMipMapTexture;
+  mTexture2DParams textureParams;
 };
 
 mFUNCTION(mTexture_Create, OUT mTexture *pTexture, mPtr<mImageBuffer> &imageBuffer, const bool upload = true, const size_t textureUnit = 0, const mTexture2DParams &textureParams = mTexture2DParams());
 mFUNCTION(mTexture_Create, OUT mTexture *pTexture, const mString &filename, const bool upload = true, const size_t textureUnit = 0, const mTexture2DParams &textureParams = mTexture2DParams());
 mFUNCTION(mTexture_Create, OUT mTexture *pTexture, const uint8_t *pData, const mVec2s &size, const mPixelFormat pixelFormat = mPF_B8G8R8A8, const bool upload = true, const size_t textureUnit = 0, const mTexture2DParams &textureParams = mTexture2DParams());
-mFUNCTION(mTexture_CreateFromUnownedIndex, OUT mTexture *pTexture, int textureIndex, const size_t textureUnit = 0);
+
+// This binds the texture to the specified texture unit.
+mFUNCTION(mTexture_CreateFromUnownedIndex, OUT mTexture *pTexture, int textureIndex, const size_t textureUnit = 0, const size_t sampleCount = 0);
+
 mFUNCTION(mTexture_Allocate, OUT mTexture *pTexture, const mVec2s size, const mPixelFormat pixelFormat = mPF_R8G8B8A8, const size_t textureUnit = 0, const mTexture2DParams &textureParams = mTexture2DParams());
 mFUNCTION(mTexture_Destroy, IN_OUT mTexture *pTexture);
 
@@ -50,7 +62,7 @@ struct mTexture3D
 {
   mVec3s resolution;
   mVec3f resolutionF;
-  mRenderParams_UploadState uploadState = mRenderParams_UploadState::mRP_US_NotInitialized;
+  mRenderParams_UploadState uploadState = mRP_US_NotInitialized;
 
 #if defined(mRENDERER_OPENGL)
   GLuint textureId;

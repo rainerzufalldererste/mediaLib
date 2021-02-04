@@ -4,7 +4,14 @@
 #define mPOINT_RENDERER_COLOUR_ATTRIBUTE "_colour0"
 #define mPOINT_RENDERER_SCREEN_SIZE_ATTRIBUTE "_scale0"
 
-mFUNCTION(mPointRenderer_Destroy_Internal, IN mPointRenderer *pPointRenderer);
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "ylpx4/kST4uu8w/FEi/KckGveMOQ+YjF1otTqtkzolMlKa7m+uDQgw0sjapOkS8F7Uz7tI8vfRsejWWI"
+#endif
+
+static mFUNCTION(mPointRenderer_Destroy_Internal, IN mPointRenderer *pPointRenderer);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -155,7 +162,7 @@ mFUNCTION(mPointRenderer_DrawPoint, mPtr<mPointRenderer> &pointRenderer, const m
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mPointRenderer_Destroy_Internal, IN mPointRenderer *pPointRenderer)
+static mFUNCTION(mPointRenderer_Destroy_Internal, IN mPointRenderer *pPointRenderer)
 {
   mFUNCTION_SETUP();
 

@@ -136,7 +136,6 @@ mTEST(mChunkedArray, TestFillEmptyBlockCount)
   mTEST_ASSERT_SUCCESS(mChunkedArray_PopAt(chunkedArray, index, &dummy));
 
   mTEST_ASSERT_EQUAL(dummy.index, dummyTestIndex);
-  mTEST_ASSERT_EQUAL(0, chunkedArray->blockCount);
 
   mDummyDestructible *pDummy = nullptr;
   mTEST_ASSERT_EQUAL(mR_IndexOutOfBounds, mChunkedArray_PointerAt(chunkedArray, index, &pDummy));
@@ -171,6 +170,290 @@ mTEST(mChunkedArray, TestFillEmptyBlockCount)
   mTEST_ASSERT_NOT_EQUAL(pDummy, nullptr);
   mTEST_ASSERT_EQUAL(pDummy->index, dummyTestIndex);
   mTEST_ASSERT_EQUAL(chunkedArray->blockSize, chunkedArray->itemCapacity);
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}
+
+mTEST(mChunkedArray, TestGenericUsage)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  {
+    mPtr<mChunkedArray<size_t>> chunkedArray;
+    mDEFER_CALL(&chunkedArray, mChunkedArray_Destroy);
+    mTEST_ASSERT_SUCCESS(mChunkedArray_Create(&chunkedArray, pAllocator));
+
+    constexpr size_t size = 128;
+
+    for (size_t i = 0; i < size; i++)
+      mTEST_ASSERT_SUCCESS(mChunkedArray_PushBack(chunkedArray, &i));
+
+    size_t data;
+    size_t count = size;
+
+    mTEST_ASSERT_SUCCESS(mChunkedArray_GetCount(chunkedArray, &data));
+    mTEST_ASSERT_EQUAL(data, size);
+
+    for (size_t i = 0; i < count; i += 3)
+    {
+      count--;
+      mTEST_ASSERT_SUCCESS(mChunkedArray_PopAt(chunkedArray, i, &data));
+
+      mTEST_ASSERT_SUCCESS(mChunkedArray_GetCount(chunkedArray, &data));
+      mTEST_ASSERT_EQUAL(data, count);
+    }
+
+    mTEST_ASSERT_SUCCESS(mChunkedArray_GetCount(chunkedArray, &data));
+    mTEST_ASSERT_EQUAL(data, count);
+
+    for (size_t i = count; i < size; i++)
+    {
+      size_t index;
+      mTEST_ASSERT_SUCCESS(mChunkedArray_Push(chunkedArray, &i, &index));
+      mTEST_ASSERT_TRUE(index < size);
+    }
+    
+    mTEST_ASSERT_SUCCESS(mChunkedArray_GetCount(chunkedArray, &data));
+    mTEST_ASSERT_EQUAL(data, size);
+    
+    count = size;
+    
+    for (size_t i = 0; i < count; i += 3)
+    {
+      count--;
+      mTEST_ASSERT_SUCCESS(mChunkedArray_PopAt(chunkedArray, i, &data));
+    }
+    
+    mTEST_ASSERT_SUCCESS(mChunkedArray_GetCount(chunkedArray, &data));
+    mTEST_ASSERT_EQUAL(data, count);
+    
+    for (size_t i = count; i < size; i++)
+      mTEST_ASSERT_SUCCESS(mChunkedArray_PushBack(chunkedArray, &i));
+    
+    mTEST_ASSERT_SUCCESS(mChunkedArray_GetCount(chunkedArray, &data));
+    mTEST_ASSERT_EQUAL(data, size);
+  }
+
+  {
+    mPtr<mChunkedArray<mString>> chunkedArray;
+    mDEFER_CALL(&chunkedArray, mChunkedArray_Destroy);
+    mTEST_ASSERT_SUCCESS(mChunkedArray_Create(&chunkedArray, pAllocator));
+
+    constexpr size_t size = 128;
+
+    for (size_t i = 0; i < size; i++)
+    {
+      mString data;
+      mTEST_ASSERT_SUCCESS(mString_CreateFormat(&data, pAllocator, "%" PRIu64, i));
+      mTEST_ASSERT_SUCCESS(mChunkedArray_PushBack(chunkedArray, &data));
+    }
+
+    mString data;
+    size_t count = size;
+
+    for (size_t i = 0; i < count; i += 3)
+    {
+      count--;
+      mTEST_ASSERT_SUCCESS(mChunkedArray_PopAt(chunkedArray, i, &data));
+    }
+
+    size_t expectedCount = 0;
+    mTEST_ASSERT_SUCCESS(mChunkedArray_GetCount(chunkedArray, &expectedCount));
+    mTEST_ASSERT_EQUAL(expectedCount, count);
+
+    for (size_t i = count; i < size; i++)
+    {
+      mTEST_ASSERT_SUCCESS(mString_CreateFormat(&data, pAllocator, "%" PRIu64, i));
+
+      size_t index;
+      mTEST_ASSERT_SUCCESS(mChunkedArray_Push(chunkedArray, &data, &index));
+      mTEST_ASSERT_TRUE(index < size);
+
+      mString *pData = nullptr;
+      mTEST_ASSERT_SUCCESS(mChunkedArray_PointerAt(chunkedArray, index, &pData));
+
+      mTEST_ASSERT_EQUAL(*pData, data);
+    }
+
+    mTEST_ASSERT_SUCCESS(mChunkedArray_GetCount(chunkedArray, &expectedCount));
+    mTEST_ASSERT_EQUAL(expectedCount, size);
+
+    count = size;
+
+    for (size_t i = 0; i < count; i += 3)
+    {
+      count--;
+      mTEST_ASSERT_SUCCESS(mChunkedArray_PopAt(chunkedArray, i, &data));
+    }
+
+    mTEST_ASSERT_SUCCESS(mChunkedArray_GetCount(chunkedArray, &expectedCount));
+    mTEST_ASSERT_EQUAL(expectedCount, count);
+
+    for (size_t i = count; i < size; i++)
+    {
+      mTEST_ASSERT_SUCCESS(mString_CreateFormat(&data, pAllocator, "%" PRIu64, i));
+
+      mTEST_ASSERT_SUCCESS(mChunkedArray_PushBack(chunkedArray, &data));
+      mTEST_ASSERT_SUCCESS(mChunkedArray_GetCount(chunkedArray, &expectedCount));
+
+      mString *pData = nullptr;
+      mTEST_ASSERT_SUCCESS(mChunkedArray_PointerAt(chunkedArray, expectedCount - 1, &pData));
+
+      mTEST_ASSERT_EQUAL(*pData, data);
+    }
+
+    mTEST_ASSERT_SUCCESS(mChunkedArray_GetCount(chunkedArray, &expectedCount));
+    mTEST_ASSERT_EQUAL(expectedCount, size);
+  }
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}
+
+mTEST(mChunkedArray, TestClear)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  {
+    mPtr<mChunkedArray<size_t>> chunkedArray;
+    mDEFER_CALL(&chunkedArray, mChunkedArray_Destroy);
+    mTEST_ASSERT_SUCCESS(mChunkedArray_Create(&chunkedArray, pAllocator));
+
+    constexpr size_t size = 128;
+
+    for (size_t i = 0; i < 4; i++)
+    {
+      for (size_t j = 0; j < size; j++)
+        mTEST_ASSERT_SUCCESS(mChunkedArray_PushBack(chunkedArray, &j));
+
+      size_t data;
+      size_t count = size;
+
+      mTEST_ASSERT_SUCCESS(mChunkedArray_GetCount(chunkedArray, &data));
+      mTEST_ASSERT_EQUAL(data, size);
+
+      for (size_t j = 0; j < count; j += 3)
+      {
+        count--;
+        mTEST_ASSERT_SUCCESS(mChunkedArray_PopAt(chunkedArray, j, &data));
+
+        mTEST_ASSERT_SUCCESS(mChunkedArray_GetCount(chunkedArray, &data));
+        mTEST_ASSERT_EQUAL(data, count);
+      }
+
+      mTEST_ASSERT_SUCCESS(mChunkedArray_GetCount(chunkedArray, &data));
+      mTEST_ASSERT_EQUAL(data, count);
+
+      for (size_t j = count; j < size; j++)
+      {
+        size_t index;
+        mTEST_ASSERT_SUCCESS(mChunkedArray_Push(chunkedArray, &j, &index));
+        mTEST_ASSERT_TRUE(index < size);
+      }
+
+      mTEST_ASSERT_SUCCESS(mChunkedArray_GetCount(chunkedArray, &data));
+      mTEST_ASSERT_EQUAL(data, size);
+
+      count = size;
+
+      for (size_t j = 0; j < count; j += 3)
+      {
+        count--;
+        mTEST_ASSERT_SUCCESS(mChunkedArray_PopAt(chunkedArray, j, &data));
+      }
+
+      mTEST_ASSERT_SUCCESS(mChunkedArray_GetCount(chunkedArray, &data));
+      mTEST_ASSERT_EQUAL(data, count);
+
+      for (size_t j = count; j < size; j++)
+        mTEST_ASSERT_SUCCESS(mChunkedArray_PushBack(chunkedArray, &j));
+
+      mTEST_ASSERT_SUCCESS(mChunkedArray_GetCount(chunkedArray, &data));
+      mTEST_ASSERT_EQUAL(data, size);
+
+      mTEST_ASSERT_SUCCESS(mChunkedArray_Clear(chunkedArray));
+      mTEST_ASSERT_SUCCESS(mChunkedArray_Clear(chunkedArray));
+    }
+  }
+  
+  {
+    mPtr<mChunkedArray<mString>> chunkedArray;
+    mDEFER_CALL(&chunkedArray, mChunkedArray_Destroy);
+    mTEST_ASSERT_SUCCESS(mChunkedArray_Create(&chunkedArray, pAllocator));
+
+    mTEST_ASSERT_SUCCESS(mChunkedArray_Clear(chunkedArray));
+
+    constexpr size_t size = 128;
+
+    for (size_t i = 0; i < 4; i++)
+    {
+      for (size_t j = 0; j < size; j++)
+      {
+        mString data;
+        mTEST_ASSERT_SUCCESS(mString_CreateFormat(&data, pAllocator, "%" PRIu64, j));
+        mTEST_ASSERT_SUCCESS(mChunkedArray_PushBack(chunkedArray, &data));
+      }
+
+      mString data;
+      size_t count = size;
+
+      for (size_t j = 0; j < count; j += 3)
+      {
+        count--;
+        mTEST_ASSERT_SUCCESS(mChunkedArray_PopAt(chunkedArray, j, &data));
+      }
+
+      size_t expectedCount = 0;
+      mTEST_ASSERT_SUCCESS(mChunkedArray_GetCount(chunkedArray, &expectedCount));
+      mTEST_ASSERT_EQUAL(expectedCount, count);
+
+      for (size_t j = count; j < size; j++)
+      {
+        mTEST_ASSERT_SUCCESS(mString_CreateFormat(&data, pAllocator, "%" PRIu64, j));
+
+        size_t index;
+        mTEST_ASSERT_SUCCESS(mChunkedArray_Push(chunkedArray, &data, &index));
+        mTEST_ASSERT_TRUE(index < size);
+
+        mString *pData = nullptr;
+        mTEST_ASSERT_SUCCESS(mChunkedArray_PointerAt(chunkedArray, index, &pData));
+
+        mTEST_ASSERT_EQUAL(*pData, data);
+      }
+
+      mTEST_ASSERT_SUCCESS(mChunkedArray_GetCount(chunkedArray, &expectedCount));
+      mTEST_ASSERT_EQUAL(expectedCount, size);
+
+      count = size;
+
+      for (size_t j = 0; j < count; j += 3)
+      {
+        count--;
+        mTEST_ASSERT_SUCCESS(mChunkedArray_PopAt(chunkedArray, j, &data));
+      }
+
+      mTEST_ASSERT_SUCCESS(mChunkedArray_GetCount(chunkedArray, &expectedCount));
+      mTEST_ASSERT_EQUAL(expectedCount, count);
+
+      for (size_t j = count; j < size; j++)
+      {
+        mTEST_ASSERT_SUCCESS(mString_CreateFormat(&data, pAllocator, "%" PRIu64, j));
+
+        mTEST_ASSERT_SUCCESS(mChunkedArray_PushBack(chunkedArray, &data));
+        mTEST_ASSERT_SUCCESS(mChunkedArray_GetCount(chunkedArray, &expectedCount));
+
+        mString *pData = nullptr;
+        mTEST_ASSERT_SUCCESS(mChunkedArray_PointerAt(chunkedArray, expectedCount - 1, &pData));
+
+        mTEST_ASSERT_EQUAL(*pData, data);
+      }
+
+      mTEST_ASSERT_SUCCESS(mChunkedArray_GetCount(chunkedArray, &expectedCount));
+      mTEST_ASSERT_EQUAL(expectedCount, size);
+
+      mTEST_ASSERT_SUCCESS(mChunkedArray_Clear(chunkedArray));
+      mTEST_ASSERT_SUCCESS(mChunkedArray_Clear(chunkedArray));
+    }
+  }
 
   mTEST_ALLOCATOR_ZERO_CHECK();
 }

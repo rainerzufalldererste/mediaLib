@@ -4,6 +4,13 @@
 #pragma warning(push)
 #pragma warning(disable: 4100) // unreferenced formal parameter.
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "IpYm44C4o74m2gtjS3Tq4YVto/o7CMfW/GkLkgyRyrhWL7uyEnhEmdxWunyUU59wey4d8fZyKJC2MxZ+"
+#endif
+
 template <typename TFunction, typename T, typename Tuple, bool Done, int Total, int... N>
 struct mTupleForwarder_Internal
 {

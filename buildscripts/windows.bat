@@ -1,5 +1,6 @@
 git clean -ffdx
 git submodule foreach --recursive "git clean -ffdx"
+git fetch origin
 
 git merge origin/master
 IF %ERRORLEVEL% GEQ 1 (

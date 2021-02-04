@@ -11,6 +11,13 @@
 
 #include "mMath.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "KyjP3bThBsKiTSp0OAwuTDMdJUGhuWbRwCmEMO+RwqfmnDjniYf0YdiasPk/hOw/sf1p/Nlc1qg3lLbN"
+#endif
+
 struct mMatrix;
 struct mQuaternion;
 
@@ -276,6 +283,8 @@ struct mVector
   static mResult mVECTORCALL ComponentsFromNormal3(OUT mVector *pParallel, OUT mVector *pPerpendicular, const mVector &v, const mVector &normal);
 
   static mResult mVECTORCALL TransformStream4(OUT DirectX::XMFLOAT4 *pOutputData, const size_t outputStride, IN DirectX::XMFLOAT4 *pInputData, const size_t inputStride, const size_t inputLength, const mMatrix &matrix);
+
+  static mMatrix OuterProduct4(const mVector a, const mVector b);
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -318,21 +327,25 @@ struct mQuaternion
   mINLINE mVector ReciprocalLength() const { return mVector(DirectX::XMQuaternionReciprocalLength(q)); }
 
   mINLINE static mQuaternion Identity() { return mQuaternion(DirectX::XMQuaternionIdentity()); }
-  
-  static mQuaternion mVECTORCALL RotationMatrix(const mMatrix &m);
 
-  mINLINE static mQuaternion mVECTORCALL RotationAxis(const mVector axis, const float_t angle) { return mQuaternion(DirectX::XMQuaternionRotationAxis(axis.v, angle)); }
-  mINLINE static mQuaternion mVECTORCALL RotationNormal(const mVector normalAxis, const float_t angle) { return mQuaternion(DirectX::XMQuaternionRotationNormal(normalAxis.v, angle)); }
-  mINLINE static mQuaternion mVECTORCALL RotationRollPitchYaw(const float_t pitch, const float_t yaw, const float_t roll) { return mQuaternion(DirectX::XMQuaternionRotationRollPitchYaw(pitch, yaw, roll)); }
-  mINLINE static mQuaternion mVECTORCALL RotationRollPitchYawFromVector(const mVector angles) { return mQuaternion(DirectX::XMQuaternionRotationRollPitchYawFromVector(angles.v)); }
+  static mQuaternion mVECTORCALL mQuaternion::FromRotationMatrix(const mMatrix &m);
+  
+  mINLINE static mQuaternion mVECTORCALL FromRotationAxis(const mVector axis, const float_t angle) { return mQuaternion(DirectX::XMQuaternionRotationAxis(axis.v, angle)); }
+  mINLINE static mQuaternion mVECTORCALL FromRotationNormal(const mVector normalAxis, const float_t angle) { return mQuaternion(DirectX::XMQuaternionRotationNormal(normalAxis.v, angle)); }
+  mINLINE static mQuaternion mVECTORCALL FromRotationRollPitchYaw(const float_t pitch, const float_t yaw, const float_t roll) { return mQuaternion(DirectX::XMQuaternionRotationRollPitchYaw(pitch, yaw, roll)); }
+  mINLINE static mQuaternion mVECTORCALL FromRotationRollPitchYaw(const mVector angles) { return mQuaternion(DirectX::XMQuaternionRotationRollPitchYawFromVector(angles.v)); }
+
   mINLINE static mQuaternion mVECTORCALL Slerp(const mQuaternion q0, const mQuaternion q1, const float_t t) { return mQuaternion(DirectX::XMQuaternionSlerp(q0.q, q1.q, t)); }
   mINLINE static mQuaternion mVECTORCALL SlerpV(const mQuaternion q0, const mQuaternion q1, const mVector t) { return mQuaternion(DirectX::XMQuaternionSlerpV(q0.q, q1.q, t.v)); }
   mINLINE static mQuaternion mVECTORCALL Squad(const mQuaternion q0, const mQuaternion q1, const mQuaternion q2, const mQuaternion q3, const float_t t) { return mQuaternion(DirectX::XMQuaternionSquad(q0.q, q1.q, q2.q, q3.q, t)); }
   mINLINE static mQuaternion mVECTORCALL SquadV(const mQuaternion q0, const mQuaternion q1, const mQuaternion q2, const mQuaternion q3, const mVector t) { return mQuaternion(DirectX::XMQuaternionSquadV(q0.q, q1.q, q2.q, q3.q, t.v)); }
 
-  mVec3f ToEulerAngles();
-  mResult SquadSetup(OUT mVector *pA, OUT mVector *pB, OUT mVector *pC, const mQuaternion &q0, const mQuaternion &q1, const mQuaternion &q2, const mQuaternion &q3);
-  mResult ToAxisAngle(OUT mVector *pAxis, OUT float_t *pAngle);
+  mVec3f ToEulerAngles() const;
+  mResult SquadSetup(OUT mVector *pA, OUT mVector *pB, OUT mVector *pC, const mQuaternion &q0, const mQuaternion &q1, const mQuaternion &q2, const mQuaternion &q3) const;
+  mResult ToAxisAngle(OUT mVector *pAxis, OUT float_t *pAngle) const;
+
+  // This gets very close to the exact value that is way more expensive to calculate.
+  static mResult GetAverageEst(IN const mQuaternion *pValues, const size_t count, OUT mQuaternion *pAverage);
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -370,7 +383,7 @@ struct mMatrix
   mResult Decompose(OUT mVector *pOutScale, OUT mQuaternion *pOutRotQuat, OUT mVector *pOutTrans) const;
   
   mINLINE mVector Determinant() const { return mVector(DirectX::XMMatrixDeterminant(m)); }
-  mINLINE mMatrix Inverse(OUT OPTIONAL mVector *pDeterminant /* = nullptr */) const { return mMatrix(DirectX::XMMatrixInverse(&pDeterminant->v, m)); }
+  mINLINE mMatrix Inverse(OUT OPTIONAL mVector *pDeterminant = nullptr) const { return mMatrix(DirectX::XMMatrixInverse(pDeterminant == nullptr ? nullptr : &pDeterminant->v, m)); }
   
   mINLINE static mMatrix mVECTORCALL LookAtLH(const mVector &eyePosition, const mVector &focusPosition, const mVector &upDirection) { return mMatrix(DirectX::XMMatrixLookAtLH(eyePosition.v, focusPosition.v, upDirection.v)); }
   mINLINE static mMatrix mVECTORCALL LookAtRH(const mVector &eyePosition, const mVector &focusPosition, const mVector &upDirection) { return mMatrix(DirectX::XMMatrixLookAtRH(eyePosition.v, focusPosition.v, upDirection.v)); }
@@ -422,6 +435,11 @@ struct mMatrix
   mINLINE mMatrix Transpose() const { return mMatrix(DirectX::XMMatrixTranspose(m)); }
   mINLINE mVector mVECTORCALL TransformVector4(const mVector vector4) { return mVector(XMVector4Transform(vector4.v, m)); }
   mINLINE mVector mVECTORCALL TransformVector3(const mVector vector3) { return mVector(XMVector3Transform(vector3.v, m)); }
+
+  static mMatrix AddComponentWise(const mMatrix& a, const mMatrix& b);
+  static mMatrix SubtractComponentWise(const mMatrix& a, const mMatrix& b);
+  static mMatrix MultiplyComponentWise(const mMatrix& a, const mMatrix& b);
+  static mMatrix DivideComponentWise(const mMatrix& a, const mMatrix& b);
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -440,7 +458,7 @@ mINLINE mVector mVector::Transform4(const mMatrix &matrix) const { return mVecto
 
 //////////////////////////////////////////////////////////////////////////
 
-mINLINE /* static */ mQuaternion mVECTORCALL mQuaternion::RotationMatrix(const mMatrix &m) { return mQuaternion(DirectX::XMQuaternionRotationMatrix(m.m)); };
+mINLINE /* static */ mQuaternion mVECTORCALL mQuaternion::FromRotationMatrix(const mMatrix &m) { return mQuaternion(DirectX::XMQuaternionRotationMatrix(m.m)); };
 
 template <>
 mINLINE bool mIntersects<float_t>(const mTriangle3D<float_t> &triangle, const mLine3D<float_t> &line, OUT OPTIONAL float_t *pDistance /* = nullptr */)

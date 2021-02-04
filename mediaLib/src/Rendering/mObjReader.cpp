@@ -2,6 +2,13 @@
 
 #include "mFile.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "qC2lTh5gU/5wA9FgHf5UgnWsKTyzgu5xNQDp/ShSLOv90EpOnEZ2hKn72WkwwNwzXbnLw8VpEkb4WmQ3"
+#endif
+
 mFUNCTION(mObjInfo_Destroy, IN_OUT mObjInfo *pObjInfo)
 {
   mFUNCTION_SETUP();
@@ -13,6 +20,93 @@ mFUNCTION(mObjInfo_Destroy, IN_OUT mObjInfo *pObjInfo)
   mERROR_CHECK(mSharedPointer_Destroy(&pObjInfo->vertices));
 
   mRETURN_SUCCESS();
+}
+
+const char * FindNewLine(const char *text)
+{
+#define IS_ZERO(x) ((uint64_t)((x) - (uint64_t)0x0101010101010101) & ~(x) & (uint64_t)0x8080808080808080)
+
+  constexpr uint64_t crmask = (uint64_t)'\r' * 0x0101010101010101;
+  constexpr uint64_t lfmask = (uint64_t)'\n' * 0x0101010101010101;
+
+  const uint64_t *pText64 = reinterpret_cast<const uint64_t *>(text);
+
+  while (true)
+  {
+    const uint64_t chars = *pText64;
+    const uint64_t cr_ = crmask ^ chars;
+    const uint64_t lf_ = lfmask ^ chars;
+
+    const uint64_t null = IS_ZERO(chars);
+    const uint64_t cr = IS_ZERO(cr_);
+    const uint64_t lf = IS_ZERO(lf_);
+
+    const uint64_t mask = cr | lf | null;
+
+    if (mask != 0)
+    {
+      unsigned long offset;
+      _BitScanForward64(&offset, mask);
+
+      if (null)
+      {
+        unsigned long nulloffset;
+        _BitScanForward64(&nulloffset, null);
+
+        if (nulloffset == offset)
+          return nullptr;
+      }
+
+      return reinterpret_cast<const char *>(pText64) + (offset >> 3);
+    }
+
+    pText64++;
+  }
+}
+
+const char * FindNewLineOrSpace(const char *text)
+{
+#define IS_ZERO(x) ((uint64_t)((x) - (uint64_t)0x0101010101010101) & ~(x) & (uint64_t)0x8080808080808080)
+
+  constexpr uint64_t crmask = (uint64_t)'\r' * 0x0101010101010101;
+  constexpr uint64_t lfmask = (uint64_t)'\n' * 0x0101010101010101;
+  constexpr uint64_t spmask = (uint64_t)' ' * 0x0101010101010101;
+
+  const uint64_t *pText64 = reinterpret_cast<const uint64_t *>(text);
+
+  while (true)
+  {
+    const uint64_t chars = *pText64;
+    const uint64_t cr_ = crmask ^ chars;
+    const uint64_t lf_ = lfmask ^ chars;
+    const uint64_t sp_ = spmask ^ chars;
+
+    const uint64_t null = IS_ZERO(chars);
+    const uint64_t cr = IS_ZERO(cr_);
+    const uint64_t lf = IS_ZERO(lf_);
+    const uint64_t sp = IS_ZERO(sp_);
+
+    const uint64_t mask = cr | lf | sp | null;
+
+    if (mask != 0)
+    {
+      unsigned long offset;
+      _BitScanForward64(&offset, mask);
+
+      if (null)
+      {
+        unsigned long nulloffset;
+        _BitScanForward64(&nulloffset, null);
+
+        if (nulloffset == offset)
+          return nullptr;
+      }
+
+      return reinterpret_cast<const char *>(pText64) + (offset >> 3);
+    }
+
+    pText64++;
+  }
 }
 
 mFUNCTION(mObjReader_Parse, const char *contents, const size_t size, IN mAllocator *pAllocator, OUT mObjInfo *pObjInfo, const mObjParseParam parseMode /* = mOPP_Default */)
@@ -136,7 +230,7 @@ mFUNCTION(mObjReader_Parse, const char *contents, const size_t size, IN mAllocat
         
         pObjInfo->hasVertices = true;
 
-        text = mMin(strchr(text, '\r') - 1, strchr(text, '\n') - 1) + 2;
+        text = FindNewLine(text) + 1;
 
         if (text == (const char *)1)
         {
@@ -276,7 +370,7 @@ mFUNCTION(mObjReader_Parse, const char *contents, const size_t size, IN mAllocat
           ++text;
       }
 
-      text = mMin(strchr(text, '\r') - 1, strchr(text, '\n') - 1) + 2;
+      text = FindNewLine(text) + 1;
 
       if (text == (const char *)1)
       {
@@ -386,7 +480,7 @@ mFUNCTION(mObjReader_Parse, const char *contents, const size_t size, IN mAllocat
           ++text;
       }
 
-      text = mMin(strchr(text, '\r') - 1, strchr(text, '\n') - 1) + 2;
+      text = FindNewLine(text) + 1;
 
       if (text == (const char *)1)
       {
@@ -407,7 +501,7 @@ mFUNCTION(mObjReader_Parse, const char *contents, const size_t size, IN mAllocat
       while (*text == ' ')
         ++text;
 
-      const char *endChar = mMin(strchr(text, '\r') - 1, mMin(strchr(text, '\n') - 1, strchr(text, ' ') - 1)) + 2;
+      const char *endChar = FindNewLineOrSpace(text) + 1;
 
       if (endChar == (const char *)1)
       {
@@ -450,7 +544,7 @@ mFUNCTION(mObjReader_Parse, const char *contents, const size_t size, IN mAllocat
       }
       }
 
-      text = mMin(strchr(text, '\r') - 1, strchr(text, '\n') - 1) + 2;
+      text = FindNewLine(text) + 1;
 
       if (text == (const char *)1)
       {
@@ -467,13 +561,15 @@ mFUNCTION(mObjReader_Parse, const char *contents, const size_t size, IN mAllocat
     case 'O':
     case 'm':
     case 'M':
+    case 'g':
+    case 'G':
     case '#':
     {
       ++text;
 
-      // usemtl, comments, objects, mtllib.
+      // usemtl, comments, objects, mtllib, group.
 
-      text = mMin(strchr(text, '\r') - 1, strchr(text, '\n') - 1) + 2;
+      text = FindNewLine(text) + 1;
       
       if (text == (const char *)1)
       {

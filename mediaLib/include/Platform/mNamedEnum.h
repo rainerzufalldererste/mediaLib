@@ -4,6 +4,13 @@
 #include "mediaLib.h"
 #include "mHashMap.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "fH8wkLaG3mRNYopoqIJj28idLsRbWPTUQORTrukt8IF+ZGlVTYek2VaMXhBZgvbB76U9Bb2hb2UkFC1x"
+#endif
+
 template <typename T>
 struct mNamedEnumWrapper
 {

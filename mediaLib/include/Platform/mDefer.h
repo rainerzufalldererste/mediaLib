@@ -6,7 +6,15 @@
 #include "mResult.h"
 #include "mediaLib.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "T/FEsFasx00sRo0SL4Yb/7f2aVPtzXbIJadH5wtOCbHRV3mBpnXvzlN089TV87GJwVBAE0hlj1ZbGZzy"
+#endif
+
 // Attention: Because of the specific use-case of this class, the copy constructor & copy assignment operator *move* instead of copying.
+
 template <typename T>
 class mDefer
 {
@@ -340,14 +348,14 @@ inline mDefer<size_t> mDefer_Create(mDefer<size_t>::OnExitFuncResultVoid *pOnExi
 #define mDEFER(...) const auto mCONCAT_LITERALS(__defer__, __COUNTER__) = mDefer_Create([&](){ __VA_ARGS__; })
 #define mDEFER_IF(conditional, ...) const auto mCONCAT_LITERALS(__defer__, __COUNTER__) = mDefer_Create([&](){ if (conditional) { __VA_ARGS__; } })
 #define mDEFER_ON_ERROR(...) const auto mCONCAT_LITERALS(__defer__, __COUNTER__) = mDefer_Create([&](){ { __VA_ARGS__; } }, &(mSTDRESULT))
-#define mDEFER_CALL(Ressource, DestructionFunction) const auto mCONCAT_LITERALS(__defer__, __COUNTER__) = mDefer_Create((DestructionFunction), (Ressource))
-#define mDEFER_CALL_ON_ERROR(Ressource, DestructionFunction) const auto mCONCAT_LITERALS(__defer__, __COUNTER__) = mDefer_Create((DestructionFunction), (Ressource), &(mSTDRESULT))
+#define mDEFER_CALL(Resource, DestructionFunction) const auto mCONCAT_LITERALS(__defer__, __COUNTER__) = mDefer_Create((DestructionFunction), (Resource))
+#define mDEFER_CALL_ON_ERROR(Resource, DestructionFunction) const auto mCONCAT_LITERALS(__defer__, __COUNTER__) = mDefer_Create((DestructionFunction), (Resource), &(mSTDRESULT))
 #else
 #define mDEFER(...) const auto mCONCAT_LITERALS(__defer__, __LINE__) = mDefer_Create([&](){ __VA_ARGS__; })
 #define mDEFER_IF(conditional, ...) const auto mCONCAT_LITERALS(__defer__, __LINE__) = mDefer_Create([&](){ if (conditional) { __VA_ARGS__; } })
 #define mDEFER_ON_ERROR(...) const auto mCONCAT_LITERALS(__defer__, __LINE__) = mDefer_Create([&](){ { __VA_ARGS__; } }, &(mSTDRESULT))
-#define mDEFER_CALL(Ressource, DestructionFunction) const auto mCONCAT_LITERALS(__defer__, __LINE__) = mDefer_Create((DestructionFunction), (Ressource))
-#define mDEFER_CALL_ON_ERROR(Ressource, DestructionFunction) const auto mCONCAT_LITERALS(__defer__, __LINE__) = mDefer_Create((DestructionFunction), (Ressource), &(mSTDRESULT))
+#define mDEFER_CALL(Resource, DestructionFunction) const auto mCONCAT_LITERALS(__defer__, __LINE__) = mDefer_Create((DestructionFunction), (Resource))
+#define mDEFER_CALL_ON_ERROR(Resource, DestructionFunction) const auto mCONCAT_LITERALS(__defer__, __LINE__) = mDefer_Create((DestructionFunction), (Resource), &(mSTDRESULT))
 #endif
 
 #endif // mDefer_h__

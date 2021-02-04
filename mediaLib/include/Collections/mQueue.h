@@ -3,6 +3,13 @@
 
 #include "mediaLib.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "068QWfVKDoNDX35/U6Bt6GEM7lzZ3rR0t9Squn0udUaHOn5RrNj8udDu9B+iCZ9dVLMljdGZssyV/WTE"
+#endif
+
 template <typename T>
 struct mQueueIterator
 {
@@ -118,16 +125,22 @@ template <typename T>
 mFUNCTION(mQueue_Destroy, IN_OUT mPtr<mQueue<T>> *pQueue);
 
 template <typename T>
-mFUNCTION(mQueue_PushBack, mPtr<mQueue<T>> &queue, IN T *pItem);
+mFUNCTION(mQueue_PushBack, mPtr<mQueue<T>> &queue, IN const T *pItem);
 
 template <typename T>
-mFUNCTION(mQueue_PushBack, mPtr<mQueue<T>> &queue, IN T item);
+mFUNCTION(mQueue_PushBack, mPtr<mQueue<T>> &queue, IN const T &item);
 
 template <typename T>
-mFUNCTION(mQueue_PushFront, mPtr<mQueue<T>> &queue, IN T *pItem);
+mFUNCTION(mQueue_PushBack, mPtr<mQueue<T>> &queue, IN T &&item);
 
 template <typename T>
-mFUNCTION(mQueue_PushFront, mPtr<mQueue<T>> &queue, IN T item);
+mFUNCTION(mQueue_PushFront, mPtr<mQueue<T>> &queue, IN const T *pItem);
+
+template <typename T>
+mFUNCTION(mQueue_PushFront, mPtr<mQueue<T>> &queue, IN const T &item);
+
+template <typename T>
+mFUNCTION(mQueue_PushFront, mPtr<mQueue<T>> &queue, IN T &&item);
 
 template <typename T>
 mFUNCTION(mQueue_PopFront, mPtr<mQueue<T>> &queue, OUT T *pItem);
@@ -150,6 +163,10 @@ mFUNCTION(mQueue_PopAt, mPtr<mQueue<T>> &queue, size_t index, OUT T *pItem);
 // Handle with care. The retrieved pointer will just be valid until the size changes or an element is removed.
 template <typename T>
 mFUNCTION(mQueue_PointerAt, mPtr<mQueue<T>> &queue, const size_t index, OUT T **ppItem);
+
+// Handle with care. The retrieved pointer will just be valid until the size changes or an element is removed.
+template <typename T>
+mFUNCTION(mQueue_PointerAt, const mPtr<mQueue<T>> &queue, const size_t index, OUT T const **ppItem);
 
 template <typename T, typename ...Args>
 mFUNCTION(mQueue_EmplaceBack, mPtr<mQueue<T>> &queue, Args && ...args);
@@ -181,6 +198,9 @@ mFUNCTION(mQueue_OrderBy, mPtr<mQueue<T>> &queue, const std::function<mCompariso
 template <typename T, typename TLessFunc = std::less<T>, typename TGreaterFunc = std::greater<T>>
 mFUNCTION(mQueue_OrderBy, mPtr<mQueue<T>> &queue);
 
+template <typename T, typename U>
+mFUNCTION(mQueue_OrderBy, mPtr<mQueue<T>> &queue, const std::function<U (const T &v)> &valueFunc);
+
 template <typename T>
 mFUNCTION(mQueue_Select, const mPtr<mQueue<T>> &source, OUT mPtr<mQueue<T>> *pTarget, IN mAllocator *pAllocator, const std::function<bool(const T &a)> &selectFunc);
 
@@ -211,6 +231,9 @@ mFUNCTION(mQueue_Contains, const mPtr<mQueue<T>> &queue, const T2 &value, const 
 template <typename T, typename T2, typename comparison = mEquals<T, T2>>
 mFUNCTION(mQueue_Contains, const mPtr<mQueue<T>> &queue, const T2 &value, OUT bool *pContained, OUT OPTIONAL size_t *pIndex = nullptr, comparison _comparison = comparison());
 
+template <typename T, typename T2, typename comparison = mEquals<T, T2>>
+bool mQueue_ContainsValue(const mPtr<mQueue<T>> &queue, const T2 &value, OUT OPTIONAL size_t *pIndex = nullptr, comparison _comparison = comparison());
+
 template <typename T>
 mFUNCTION(mQueue_RemoveDuplicates, const mPtr<mQueue<T>> &source, OUT mPtr<mQueue<T>> *pTarget, IN mAllocator *pAllocator, const std::function<bool(const T &a, const T &b)> &equalityComparer);
 
@@ -219,6 +242,9 @@ mFUNCTION(mQueue_RemoveDuplicates, const mPtr<mQueue<T>> &source, OUT mPtr<mQueu
 
 template <typename T>
 mFUNCTION(mQueue_Any, const mPtr<mQueue<T>> &queue, OUT bool *pAny);
+
+template <typename T, typename equals_func = mEquals<T>, typename element_valid_func = mTrue>
+bool mQueue_Equals(const mPtr<mQueue<T>> &a, const mPtr<mQueue<T>> &b);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -289,7 +315,7 @@ inline mFUNCTION(mQueue_Destroy, IN_OUT mPtr<mQueue<T>> *pQueue)
 }
 
 template<typename T>
-inline mFUNCTION(mQueue_PushBack, mPtr<mQueue<T>> &queue, IN T *pItem)
+inline mFUNCTION(mQueue_PushBack, mPtr<mQueue<T>> &queue, IN const T *pItem)
 {
   mFUNCTION_SETUP();
 
@@ -305,7 +331,7 @@ inline mFUNCTION(mQueue_PushBack, mPtr<mQueue<T>> &queue, IN T *pItem)
   if (!std::is_trivially_copy_constructible<T>::value)
     new (&queue->pData[index]) T(*pItem);
   else
-    mERROR_CHECK(mAllocator_Copy(queue->pAllocator, &queue->pData[index], pItem, 1));
+    mERROR_CHECK(mMemcpy(&queue->pData[index], pItem, 1));
 
   ++queue->count;
 
@@ -334,17 +360,23 @@ mFUNCTION(mQueue_EmplaceBack, mPtr<mQueue<T>> &queue, Args && ...args)
 }
 
 template<typename T>
-inline mFUNCTION(mQueue_PushBack, mPtr<mQueue<T>> &queue, IN T item)
+inline mFUNCTION(mQueue_PushBack, mPtr<mQueue<T>> &queue, IN const T &item)
 {
   mFUNCTION_SETUP();
 
-  mERROR_CHECK(mQueue_PushBack(queue, &item));
+  mERROR_CHECK((mQueue_PushBack<T>(queue, &item)));
 
   mRETURN_SUCCESS();
 }
 
 template<typename T>
-inline mFUNCTION(mQueue_PushFront, mPtr<mQueue<T>> &queue, IN T *pItem)
+inline mFUNCTION(mQueue_PushBack, mPtr<mQueue<T>> &queue, IN T &&item)
+{
+  return mQueue_EmplaceBack(queue, std::forward<T>(item));
+}
+
+template<typename T>
+inline mFUNCTION(mQueue_PushFront, mPtr<mQueue<T>> &queue, IN const T *pItem)
 {
   mFUNCTION_SETUP();
 
@@ -365,7 +397,7 @@ inline mFUNCTION(mQueue_PushFront, mPtr<mQueue<T>> &queue, IN T *pItem)
   if (!std::is_trivially_copy_constructible<T>::value)
     new (&queue->pData[index]) T(*pItem);
   else
-    mERROR_CHECK(mAllocator_Copy(queue->pAllocator, &queue->pData[index], pItem, 1));
+    mERROR_CHECK(mMemcpy(&queue->pData[index], pItem, 1));
 
   ++queue->count;
   queue->startIndex = index;
@@ -401,13 +433,19 @@ mFUNCTION(mQueue_EmplaceFront, mPtr<mQueue<T>> &queue, Args && ...args)
 }
 
 template<typename T>
-inline mFUNCTION(mQueue_PushFront, mPtr<mQueue<T>> &queue, IN T item)
+inline mFUNCTION(mQueue_PushFront, mPtr<mQueue<T>> &queue, IN const T &item)
 {
   mFUNCTION_SETUP();
 
-  mERROR_CHECK(mQueue_PushFront(queue, &item));
+  mERROR_CHECK((mQueue_PushFront<T>(queue, &item)));
 
   mRETURN_SUCCESS();
+}
+
+template<typename T>
+inline mFUNCTION(mQueue_PushFront, mPtr<mQueue<T>> &queue, IN T &&item)
+{
+  return mQueue_EmplaceFront(queue, std::forward<T>(item));
 }
 
 template<typename T>
@@ -502,19 +540,19 @@ inline mFUNCTION(mQueue_PopAt, mPtr<mQueue<T>> &queue, size_t index, OUT T *pIte
   if (queue->startIndex + index < queue->size)
   {
     if (queueIndex + 1 != queue->size)
-      mERROR_CHECK(mAllocator_Move(queue->pAllocator, &queue->pData[queueIndex], &queue->pData[queueIndex + 1], queue->size - (queue->startIndex + index)));
+      mERROR_CHECK(mMove(&queue->pData[queueIndex], &queue->pData[queueIndex + 1], mMin(queue->size, queue->startIndex + queue->count) - (queue->startIndex + index) - 1));
 
     if (queue->startIndex + queue->count > queue->size)
     {
       new (&queue->pData[queue->size - 1]) T(std::move(queue->pData[0]));
 
       if (queue->startIndex + queue->count - 1 > queue->size)
-        mERROR_CHECK(mAllocator_Move(queue->pAllocator, &queue->pData[0], &queue->pData[1], queue->count - (queue->size - queue->startIndex)));
+        mERROR_CHECK(mMove(&queue->pData[0], &queue->pData[1], queue->count - (queue->size - queue->startIndex) - 1));
     }
   }
   else
   {
-    mERROR_CHECK(mAllocator_Move(queue->pAllocator, &queue->pData[queueIndex], &queue->pData[queueIndex + 1], queue->count - (queue->size - queue->startIndex) - queueIndex - 1));
+    mERROR_CHECK(mMove(&queue->pData[queueIndex], &queue->pData[queueIndex + 1], queue->count - (queue->size - queue->startIndex) - queueIndex - 1));
   }
 
   --queue->count;
@@ -524,6 +562,21 @@ inline mFUNCTION(mQueue_PopAt, mPtr<mQueue<T>> &queue, size_t index, OUT T *pIte
 
 template<typename T>
 inline mFUNCTION(mQueue_PointerAt, mPtr<mQueue<T>> &queue, const size_t index, OUT T **ppItem)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(queue == nullptr || ppItem == nullptr, mR_ArgumentNull);
+  mERROR_IF(queue->count <= index, mR_IndexOutOfBounds);
+
+  const size_t queueIndex = (queue->startIndex + index) % queue->size;
+
+  *ppItem = &queue->pData[queueIndex];
+
+  mRETURN_SUCCESS();
+}
+
+template<typename T>
+inline mFUNCTION(mQueue_PointerAt, const mPtr<mQueue<T>> &queue, const size_t index, OUT T const **ppItem)
 {
   mFUNCTION_SETUP();
 
@@ -650,6 +703,7 @@ inline mFUNCTION(mQueue_CopyTo, const mPtr<mQueue<T>> &source, OUT mPtr<mQueue<T
   mFUNCTION_SETUP();
 
   mERROR_IF(source == nullptr || pTarget == nullptr, mR_ArgumentNull);
+  mERROR_IF(source == *pTarget, mR_Success);
 
   if (*pTarget == nullptr)
     mERROR_CHECK(mQueue_Create(pTarget, pAllocator));
@@ -841,12 +895,100 @@ inline mFUNCTION(mQueue_OrderBy, mPtr<mQueue<T>> &queue)
   mRETURN_SUCCESS();
 }
 
+template <typename T, typename U>
+mFUNCTION(mQueue_OrderBy, mPtr<mQueue<T>> &queue, const std::function<U(const T &v)> &valueFunc)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(queue == nullptr, mR_ArgumentNull);
+
+  struct
+  {
+    mQueue<T> *pQueue;
+
+    void DualPivotQuickSort_Partition(const int64_t low, const int64_t high, int64_t *pRightPivot, int64_t *pLeftPivot, const std::function<U(const T &v)> &valueFunc)
+    {
+      if (valueFunc((*pQueue)[low]) > valueFunc((*pQueue)[high]))
+        std::swap((*pQueue)[low], (*pQueue)[high]);
+
+      int64_t j = low + 1;
+      int64_t g = high - 1;
+      int64_t k = low + 1;
+
+      T *pP = &(*pQueue)[low];
+      T *pQ = &(*pQueue)[high];
+
+      while (k <= g)
+      {
+        if (valueFunc((*pQueue)[k]) < valueFunc(*pP))
+        {
+          std::swap((*pQueue)[k], (*pQueue)[j]);
+          j++;
+        }
+
+        else if (!(valueFunc((*pQueue)[k]) < valueFunc(*pQ)))
+        {
+          while (valueFunc((*pQueue)[g]) > valueFunc(*pQ) && k < g)
+            g--;
+
+          std::swap((*pQueue)[k], (*pQueue)[g]);
+          g--;
+
+          if (valueFunc((*pQueue)[k]) < valueFunc(*pP))
+          {
+            std::swap((*pQueue)[k], (*pQueue)[j]);
+            j++;
+          }
+        }
+
+        k++;
+      }
+
+      j--;
+      g++;
+
+      std::swap((*pQueue)[low], (*pQueue)[j]);
+      std::swap((*pQueue)[high], (*pQueue)[g]);
+
+      *pLeftPivot = j;
+      *pRightPivot = g;
+    }
+
+    void QuickSort(const int64_t start, const int64_t end, const std::function<U(const T &v)> &valueFunc)
+    {
+      if (start < end)
+      {
+        int64_t leftPivot, rightPivot;
+
+        DualPivotQuickSort_Partition(start, end, &rightPivot, &leftPivot, valueFunc);
+
+        QuickSort(start, leftPivot - 1, valueFunc);
+        QuickSort(leftPivot + 1, rightPivot - 1, valueFunc);
+        QuickSort(rightPivot + 1, end, valueFunc);
+      }
+    }
+
+    void OrderBy(const std::function<U(const T &v)> &valueFunc)
+    {
+      QuickSort(0, (int64_t)pQueue->count - 1, valueFunc);
+    }
+
+  } _internal;
+
+  _internal.pQueue = queue.GetPointer();
+
+  _internal.OrderBy(valueFunc);
+
+  mRETURN_SUCCESS();
+}
+
 template<typename T>
 inline mFUNCTION(mQueue_Select, const mPtr<mQueue<T>> &source, OUT mPtr<mQueue<T>> *pTarget, IN mAllocator *pAllocator, const std::function<bool(const T &a)> &selectFunc)
 {
   mFUNCTION_SETUP();
 
   mERROR_IF(source == nullptr || pTarget == nullptr || selectFunc == nullptr, mR_ArgumentNull);
+  mERROR_IF(source == *pTarget, mR_InvalidParameter);
 
   if (*pTarget == nullptr)
     mERROR_CHECK(mQueue_Create(pTarget, pAllocator));
@@ -868,6 +1010,7 @@ inline mFUNCTION(mQueue_Select, const mPtr<mQueue<T>> &source, OUT mPtr<mQueue<T
   mFUNCTION_SETUP();
 
   mERROR_IF(source == nullptr || pTarget == nullptr, mR_ArgumentNull);
+  mERROR_IF(source == *pTarget, mR_InvalidParameter);
 
   if (*pTarget == nullptr)
     mERROR_CHECK(mQueue_Create(pTarget, pAllocator));
@@ -1059,12 +1202,37 @@ inline mFUNCTION(mQueue_Contains, const mPtr<mQueue<T>> &queue, const T2 &value,
   mRETURN_SUCCESS();
 }
 
+template <typename T, typename T2, typename comparison /* = mEquals<T, T2> */>
+bool mQueue_ContainsValue(const mPtr<mQueue<T>> &queue, const T2 &value, OUT OPTIONAL size_t *pIndex /* = nullptr */, comparison _comparison /* = comparison() */)
+{
+  if (queue == nullptr)
+    return false;
+
+  size_t index = (size_t)-1;
+
+  for (const auto &_item : queue->Iterate())
+  {
+    ++index;
+
+    if (_comparison(_item, value))
+    {
+      if (pIndex != nullptr)
+        *pIndex = index;
+
+      return true;
+    }
+  }
+
+  return false;
+}
+
 template<typename T>
 inline mFUNCTION(mQueue_RemoveDuplicates, const mPtr<mQueue<T>> &source, OUT mPtr<mQueue<T>> *pTarget, IN mAllocator *pAllocator, const std::function<bool(const T&a, const T&b)> &equalityComparer)
 {
   mFUNCTION_SETUP();
 
   mERROR_IF(source == nullptr || pTarget == nullptr || equalityComparer == nullptr, mR_ArgumentNull);
+  mERROR_IF(source == *pTarget, mR_InvalidParameter);
 
   if (*pTarget == nullptr)
     mERROR_CHECK(mQueue_Create(pTarget, pAllocator));
@@ -1089,6 +1257,7 @@ inline mFUNCTION(mQueue_RemoveDuplicates, const mPtr<mQueue<T>> &source, OUT mPt
   mFUNCTION_SETUP();
 
   mERROR_IF(source == nullptr || pTarget == nullptr, mR_ArgumentNull);
+  mERROR_IF(source == *pTarget, mR_InvalidParameter);
 
   if (*pTarget == nullptr)
     mERROR_CHECK(mQueue_Create(pTarget, pAllocator));
@@ -1097,10 +1266,7 @@ inline mFUNCTION(mQueue_RemoveDuplicates, const mPtr<mQueue<T>> &source, OUT mPt
 
   for (const auto &_item : source->Iterate())
   {
-    bool contained;
-    mERROR_CHECK((mQueue_Contains<T, T, comparison>(*pTarget, _item, &contained)));
-
-    if (!contained)
+    if (!mQueue_ContainsValue<T, T, comparison>(*pTarget, _item))
       mERROR_CHECK(mQueue_PushBack(*pTarget, _item));
   }
 
@@ -1163,7 +1329,7 @@ inline mFUNCTION(mQueue_Grow_Internal, mPtr<mQueue<T>> &queue)
   if (queue->startIndex > 0 && queue->startIndex + queue->count > originalSize)
   {
     const size_t wrappedCount = queue->count - (originalSize - queue->startIndex);
-    mERROR_CHECK(mAllocator_Move(queue->pAllocator, &queue->pData[originalSize], &queue->pData[0], wrappedCount));
+    mERROR_CHECK(mMove(&queue->pData[originalSize], &queue->pData[0], wrappedCount));
   }
 
   mRETURN_SUCCESS();
@@ -1207,7 +1373,7 @@ inline mFUNCTION(mQueue_Grow_Internal, mPtr<mQueue<T>> &queue)
   if (queue->startIndex > 0 && queue->startIndex + queue->count > originalSize)
   {
     const size_t wrappedCount = queue->count - (originalSize - queue->startIndex);
-    mERROR_CHECK(mAllocator_Move(queue->pAllocator, &queue->pData[originalSize], &queue->pData[0], wrappedCount));
+    mERROR_CHECK(mMove(&queue->pData[originalSize], &queue->pData[0], wrappedCount));
   }
 
   mRETURN_SUCCESS();
@@ -1226,6 +1392,110 @@ inline mFUNCTION(mQueue_PopAt_Internal, mPtr<mQueue<T>> &queue, const size_t ind
   *pItem = std::move(queue->pData[queueIndex]);
 
   mRETURN_SUCCESS();
+}
+
+template <typename T, typename equals_func /* = mEquals<T> */, typename element_valid_func /* = mTrue */>
+bool mQueue_Equals(const mPtr<mQueue<T>> &a, const mPtr<mQueue<T>> &b)
+{
+  if (a == b)
+    return true;
+
+  if ((a == nullptr) ^ (b == nullptr))
+    return false;
+
+  auto itA = a->Iterate();
+  auto startA = itA.begin();
+  auto endA = itA.end();
+
+  auto itB = b->Iterate();
+  auto startB = itB.begin();
+  auto endB = itB.end();
+
+  while (true)
+  {
+    if (!(startA != endA)) // no more values in a.
+    {
+      // if there's a value in `b` thats active: return false.
+      while (startB != endB)
+      {
+        auto _b = *startB;
+
+        if ((bool)element_valid_func()(_b))
+          return false;
+
+        ++startB;
+      }
+
+      break;
+    }
+    else if (!(startB != endB)) // no more values in b, but values in a.
+    {
+      // if there's a value in `a` thats active: return false.
+      do // do-while-loop, because we've already checked if (startA != endA) and an iterator might rely on that function only being called once.
+      {
+        auto _a = *startA;
+
+        if ((bool)element_valid_func()(_a))
+          return false;
+
+        ++startA;
+      } while (startA != endA);
+
+      break;
+    }
+
+    auto _a = *startA;
+    bool end = false;
+
+    while (!(bool)element_valid_func()(_a))
+    {
+      ++startA;
+
+      // if we've reached the end.
+      if (!(startA != endA))
+      {
+        // if there's a value in `b` thats active: return false.
+        while (startB != endB)
+        {
+          auto __b = *startB;
+
+          if ((bool)element_valid_func()(__b))
+            return false;
+
+          ++startB;
+        }
+
+        end = true;
+        break;
+      }
+
+      _a = *startA;
+    }
+
+    if (end)
+      break;
+
+    auto _b = *startB;
+
+    while (!(bool)element_valid_func()(_b))
+    {
+      ++startB;
+
+      // if we've reached the end.
+      if (!(startB != endB))
+        return false; // `a` is not at the end and valid.
+
+      _b = *startB;
+    }
+
+    if (!(bool)equals_func()(_a, _b))
+      return false;
+
+    ++startA;
+    ++startB;
+  }
+
+  return true;
 }
 
 //////////////////////////////////////////////////////////////////////////

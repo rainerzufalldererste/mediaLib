@@ -1,17 +1,24 @@
 #include "mediaLib.h"
 
-mFUNCTION(mStringLength, const char *text, const size_t maxLength, OUT size_t *pLength)
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "Rx6R99ErVSc74oQfABhd3lN1Z/7LbxaWj5aofNcPw+3mWMReFYhCMscW350rxwq48gtWVS1+nWs+s8Dw"
+#endif
+
+mFUNCTION(mStringLength, const char *text, const size_t maxCount, OUT size_t *pCount)
 {
   mFUNCTION_SETUP();
 
-  mERROR_IF(text == nullptr || pLength == nullptr, mR_ArgumentNull);
+  mERROR_IF(text == nullptr || pCount == nullptr, mR_ArgumentNull);
 
-  *pLength = strnlen_s(text, maxLength);
+  *pCount = strnlen_s(text, maxCount);
 
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mSprintf, OUT char *buffer, const size_t bufferLength, const char *formatString, ...)
+mFUNCTION(mSprintf, OUT char *buffer, const size_t bufferCount, const char *formatString, ...)
 {
   mFUNCTION_SETUP();
 
@@ -19,41 +26,41 @@ mFUNCTION(mSprintf, OUT char *buffer, const size_t bufferLength, const char *for
 
   va_list args;
   va_start(args, formatString);
-  int length = vsprintf_s(buffer, bufferLength, formatString, args);
+  const int count = vsprintf_s(buffer, bufferCount, formatString, args);
   va_end(args);
 
-  mERROR_IF(length < 0, mR_ArgumentOutOfBounds);
+  mERROR_IF(count < 0, mR_ArgumentOutOfBounds);
 
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mSprintfWithLength, OUT char *buffer, const size_t bufferLength, const char *formatString, OUT size_t *pLength, ...)
+mFUNCTION(mSprintfWithCount, OUT char *buffer, const size_t bufferCount, const char *formatString, OUT size_t *pCount, ...)
 {
   mFUNCTION_SETUP();
 
-  mERROR_IF(buffer == nullptr || formatString == nullptr || pLength == nullptr, mR_ArgumentNull);
+  mERROR_IF(buffer == nullptr || formatString == nullptr || pCount == nullptr, mR_ArgumentNull);
 
-  *pLength = 0;
+  *pCount = 0;
 
   va_list args;
   va_start(args, formatString);
-  int length = vsprintf_s(buffer, bufferLength, formatString, args);
+  const int count = vsprintf_s(buffer, bufferCount, formatString, args);
   va_end(args);
 
-  mERROR_IF(length < 0, mR_ArgumentOutOfBounds);
+  mERROR_IF(count < 0, mR_ArgumentOutOfBounds);
 
-  *pLength = length;
+  *pCount = count;
 
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mStringCopy, OUT char *buffer, const size_t bufferLength, const char *source, const size_t sourceLength)
+mFUNCTION(mStringCopy, OUT char *buffer, const size_t bufferCount, const char *source, const size_t sourceCount)
 {
   mFUNCTION_SETUP();
 
   mERROR_IF(buffer == nullptr || source == nullptr, mR_ArgumentNull);
 
-  const errno_t error = strncpy_s(buffer, bufferLength, source, sourceLength);
+  const errno_t error = strncpy_s(buffer, bufferCount, source, sourceCount);
 
   switch (error)
   {
@@ -72,13 +79,133 @@ mFUNCTION(mStringCopy, OUT char *buffer, const size_t bufferLength, const char *
   }
 }
 
-mFUNCTION(mStringChar, const char *text, const size_t maxLength, const char character, OUT size_t *pLength)
+mFUNCTION(mStringConcat, OUT char *buffer, const size_t bufferCount, const char *source, const size_t sourceCount)
 {
   mFUNCTION_SETUP();
 
-  mERROR_IF(text == nullptr || pLength == nullptr, mR_ArgumentNull);
+  mERROR_IF(buffer == nullptr || source == nullptr, mR_ArgumentNull);
 
-  *pLength = (size_t)((char *)memchr((void *)text, (int)character, strnlen_s(text, maxLength)) - (char *)text);
+  const errno_t error = strncat_s(buffer, bufferCount, source, sourceCount);
+
+  switch (error)
+  {
+  case 0:
+    mRETURN_SUCCESS();
+
+  case STRUNCATE:
+  case ERANGE:
+    mRETURN_RESULT(mR_ArgumentOutOfBounds);
+
+  case EINVAL:
+    mRETURN_RESULT(mR_InvalidParameter);
+
+  default:
+    mRETURN_RESULT(mR_InternalError);
+  }
+}
+
+mFUNCTION(mStringLength, const wchar_t *text, const size_t maxCount, OUT size_t *pCount)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(text == nullptr || pCount == nullptr, mR_ArgumentNull);
+
+  *pCount = wcsnlen_s(text, maxCount);
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mSprintf, OUT wchar_t *buffer, const size_t bufferCount, const wchar_t *formatString, ...)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(buffer == nullptr || formatString == nullptr, mR_ArgumentNull);
+
+  va_list args;
+  va_start(args, formatString);
+  const int result = vswprintf_s(buffer, bufferCount, formatString, args);
+  va_end(args);
+
+  mERROR_IF(result < 0, mR_ArgumentOutOfBounds);
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mSprintfWithCount, OUT wchar_t *buffer, const size_t bufferCount, const wchar_t *formatString, OUT size_t *pCount, ...)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(buffer == nullptr || formatString == nullptr || pCount == nullptr, mR_ArgumentNull);
+
+  va_list args;
+  va_start(args, formatString);
+  const int result = vswprintf_s(buffer, bufferCount, formatString, args);
+  va_end(args);
+
+  mERROR_IF(result < 0, mR_ArgumentOutOfBounds);
+
+  *pCount = (size_t)result;
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mStringCopy, OUT wchar_t *buffer, const size_t bufferCount, const wchar_t *source, const size_t sourceCount)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(buffer == nullptr || source == nullptr, mR_ArgumentNull);
+
+  const errno_t error = wcsncpy_s(buffer, bufferCount, source, sourceCount);
+
+  switch (error)
+  {
+  case 0:
+    mRETURN_SUCCESS();
+
+  case STRUNCATE:
+  case ERANGE:
+    mRETURN_RESULT(mR_ArgumentOutOfBounds);
+
+  case EINVAL:
+    mRETURN_RESULT(mR_InvalidParameter);
+
+  default:
+    mRETURN_RESULT(mR_InternalError);
+  }
+}
+
+mFUNCTION(mStringConcat, OUT wchar_t *buffer, const size_t bufferCount, const wchar_t *source, const size_t sourceCount)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(buffer == nullptr || source == nullptr, mR_ArgumentNull);
+
+  const errno_t error = wcsncat_s(buffer, bufferCount, source, sourceCount);
+
+  switch (error)
+  {
+  case 0:
+    mRETURN_SUCCESS();
+
+  case STRUNCATE:
+  case ERANGE:
+    mRETURN_RESULT(mR_ArgumentOutOfBounds);
+
+  case EINVAL:
+    mRETURN_RESULT(mR_InvalidParameter);
+
+  default:
+    mRETURN_RESULT(mR_InternalError);
+  }
+}
+
+mFUNCTION(mStringChar, const char *text, const size_t maxCount, const char character, OUT size_t *pCount)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(text == nullptr || pCount == nullptr, mR_ArgumentNull);
+
+  *pCount = (size_t)((char *)memchr((void *)text, (int)character, strnlen_s(text, maxCount)) - (char *)text);
 
   mRETURN_SUCCESS();
 }

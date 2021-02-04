@@ -3,6 +3,13 @@
 
 #include "mediaLib.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "t7NsDwqbuP4IU4LlhD2r3z7taZ7SAJc3igbxjsOTqX64OYSvr1316dwWip6MOhfeHx2y+7z/gdCXmNpF"
+#endif
+
 struct mJsonWriter;
 
 mFUNCTION(mJsonWriter_Create, OUT mPtr<mJsonWriter> *pJsonWriter, IN mAllocator *pAllocator);

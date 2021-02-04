@@ -2,26 +2,37 @@
 
 #if defined(mRENDERER_OPENGL)
 #define IMGUI_IMPL_OPENGL_LOADER_GLEW
-#include "imgui/examples/imgui_impl_sdl.h"
-//#include "imgui/examples/imgui_impl_opengl3.h"
+#define DECLSPEC
+#include "imgui/include/examples/imgui_impl_sdl.h"
+//#include "imgui/include/examples/imgui_impl_opengl3.h"
 
-#include "imgui/examples/imgui_impl_sdl.cpp"
-#include "imgui/examples/imgui_impl_opengl3.cpp"
-#include "imgui/imgui.cpp"
-#include "imgui/imgui_demo.cpp"
-#include "imgui/imgui_draw.cpp"
-#include "imgui/imgui_widgets.cpp"
-#include "imgui/imgui_internal.h"
+#include "imgui/include/examples/imgui_impl_sdl.cpp"
+#include "imgui/include/examples/imgui_impl_opengl3.cpp"
+#include "imgui/include/imgui.cpp"
+#include "imgui/include/imgui_demo.cpp"
+#include "imgui/include/imgui_draw.cpp"
+#include "imgui/include/imgui_widgets.cpp"
+#include "imgui/include/imgui_internal.h"
+#undef DECLSPEC
 #endif
 
-ImGuiIO *mUI_pImguiIO;
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "FwItiCW9M4ymsopGJPX/Jho263tGovZ5P67oWtztNtdM6FLCPBYXOciUDwgZ6OKErj+1WGdP5jWXBdur"
+#endif
+
+ImGuiIO *mUI_pImguiIO = nullptr;
 ImFont *pFont = nullptr;
 ImFont *pHeadline = nullptr;
+ImFont *pSlimHeadline = nullptr;
 ImFont *pSubHeadline = nullptr;
 ImFont *pMonospacedFont = nullptr;
 ImFont *pBold = nullptr;
 
 bool mUI_AutoUpdateMousePosition = true;
+bool mUI_FirstFrameStarted = false;
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -52,6 +63,7 @@ mFUNCTION(mUI_Initilialize, mPtr<mHardwareWindow> &hardwareWindow, const bool ad
   pMonospacedFont = mUI_pImguiIO->Fonts->AddFontFromFileTTF("C:/Windows/Fonts/consola.ttf", 13.0f, nullptr, mUI_pImguiIO->Fonts->GetGlyphRangesDefault());
 
   pHeadline = mUI_pImguiIO->Fonts->AddFontFromFileTTF("C:/Windows/Fonts/seguibl.ttf", 52.0f, nullptr, mUI_pImguiIO->Fonts->GetGlyphRangesDefault());
+  pSlimHeadline = mUI_pImguiIO->Fonts->AddFontFromFileTTF("C:/Windows/Fonts/segoeuisl.ttf", 42.0f, nullptr, mUI_pImguiIO->Fonts->GetGlyphRangesDefault());
   pSubHeadline = mUI_pImguiIO->Fonts->AddFontFromFileTTF("C:/Windows/Fonts/seguisb.ttf", 28.0f, nullptr, mUI_pImguiIO->Fonts->GetGlyphRangesDefault());
   pBold = mUI_pImguiIO->Fonts->AddFontFromFileTTF("C:/Windows/Fonts/seguisb.ttf", 18.0f, nullptr, mUI_pImguiIO->Fonts->GetGlyphRangesDefault());
 
@@ -86,9 +98,9 @@ mFUNCTION(mUI_Initilialize, mPtr<mHardwareWindow> &hardwareWindow, const bool ad
   pColors[ImGuiCol_Header] = ImVec4(0.46f, 0.46f, 0.46f, 0.31f);
   pColors[ImGuiCol_HeaderHovered] = ImVec4(0.63f, 0.63f, 0.63f, 0.80f);
   pColors[ImGuiCol_HeaderActive] = ImVec4(0.82f, 0.82f, 0.82f, 1.00f);
-  pColors[ImGuiCol_Separator] = ImVec4(0.39f, 0.39f, 0.39f, 1.00f);
-  pColors[ImGuiCol_SeparatorHovered] = ImVec4(0.39f, 0.39f, 0.39f, 1.00f);
-  pColors[ImGuiCol_SeparatorActive] = ImVec4(0.39f, 0.39f, 0.39f, 1.00f);
+  pColors[ImGuiCol_Separator] = ImVec4(0.70f, 0.70f, 0.70f, 1.00f);
+  pColors[ImGuiCol_SeparatorHovered] = ImVec4(0.70f, 0.70f, 0.70f, 1.00f);
+  pColors[ImGuiCol_SeparatorActive] = ImVec4(0.70f, 0.70f, 0.70f, 1.00f);
   pColors[ImGuiCol_ResizeGrip] = ImVec4(0.80f, 0.80f, 0.80f, 0.56f);
   pColors[ImGuiCol_ResizeGripHovered] = ImVec4(0.59f, 0.59f, 0.59f, 0.67f);
   pColors[ImGuiCol_ResizeGripActive] = ImVec4(0.37f, 0.37f, 0.37f, 0.95f);
@@ -106,11 +118,32 @@ mFUNCTION(mUI_Initilialize, mPtr<mHardwareWindow> &hardwareWindow, const bool ad
   mRETURN_SUCCESS();
 }
 
+mFUNCTION(mUI_SetIniFilePath, const mString &path)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(mUI_pImguiIO == nullptr, mR_ResourceStateInvalid);
+  mERROR_IF(path.bytes <= 1, mR_InvalidParameter);
+  mERROR_IF(mUI_FirstFrameStarted, mR_ResourceStateInvalid);
+
+  static char iniFilePath[MAX_PATH + 1] = "";
+  mERROR_IF(path.bytes > sizeof(iniFilePath), mR_ArgumentOutOfBounds);
+
+  mERROR_CHECK(mMemcpy(iniFilePath, path.c_str(), path.bytes));
+
+  mUI_pImguiIO->IniFilename = iniFilePath;
+
+  mRETURN_SUCCESS();
+}
+
 mFUNCTION(mUI_StartFrame, mPtr<mHardwareWindow> &hardwareWindow)
 {
   mFUNCTION_SETUP();
 
+  mERROR_IF(mUI_pImguiIO == nullptr, mR_ResourceStateInvalid);
   mERROR_IF(hardwareWindow == nullptr, mR_ArgumentNull);
+
+  mUI_FirstFrameStarted = true;
 
   ImGui_ImplOpenGL3_NewFrame();
 
@@ -131,12 +164,16 @@ mFUNCTION(mUI_Shutdown)
   ImGui_ImplSDL2_Shutdown();
   ImGui::DestroyContext();
 
+  mUI_pImguiIO = nullptr;
+
   mRETURN_SUCCESS();
 }
 
 mFUNCTION(mUI_Bake)
 {
   mFUNCTION_SETUP();
+
+  mERROR_IF(mUI_pImguiIO == nullptr, mR_ResourceStateInvalid);
 
   ImGui::Render();
 
@@ -147,6 +184,8 @@ mFUNCTION(mUI_Render)
 {
   mFUNCTION_SETUP();
 
+  mERROR_IF(mUI_pImguiIO == nullptr, mR_ResourceStateInvalid);
+
   ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
   mRETURN_SUCCESS();
@@ -155,7 +194,10 @@ mFUNCTION(mUI_Render)
 mFUNCTION(mUI_ProcessEvent, IN SDL_Event *pEvent)
 {
   mFUNCTION_SETUP();
-  
+
+  mERROR_IF(pEvent == nullptr, mR_ArgumentNull);
+  mERROR_IF(mUI_pImguiIO == nullptr, mR_ResourceStateInvalid);
+
   ImGui_ImplSDL2_ProcessEvent(pEvent);
 
   mRETURN_SUCCESS();
@@ -165,6 +207,7 @@ mFUNCTION(mUI_GetIO, OUT ImGuiIO **ppIO)
 {
   mFUNCTION_SETUP();
 
+  mERROR_IF(mUI_pImguiIO == nullptr, mR_ResourceStateInvalid);
   mERROR_IF(ppIO == nullptr, mR_ArgumentNull);
 
   *ppIO = &ImGui::GetIO();
@@ -175,6 +218,8 @@ mFUNCTION(mUI_GetIO, OUT ImGuiIO **ppIO)
 mFUNCTION(mUI_SetCustomMousePosition, const mVec2f position)
 {
   mFUNCTION_SETUP();
+
+  mERROR_IF(mUI_pImguiIO == nullptr, mR_ResourceStateInvalid);
 
   ImGuiIO *pIO = nullptr;
   mERROR_CHECK(mUI_GetIO(&pIO));
@@ -197,6 +242,8 @@ mFUNCTION(mUI_PushMonospacedFont)
 {
   mFUNCTION_SETUP();
 
+  mERROR_IF(mUI_pImguiIO == nullptr, mR_ResourceStateInvalid);
+
   if (pMonospacedFont != nullptr)
     ImGui::PushFont(pMonospacedFont);
 
@@ -206,6 +253,8 @@ mFUNCTION(mUI_PushMonospacedFont)
 mFUNCTION(mUI_PopMonospacedFont)
 {
   mFUNCTION_SETUP();
+
+  mERROR_IF(mUI_pImguiIO == nullptr, mR_ResourceStateInvalid);
 
   if (pMonospacedFont != nullptr)
     ImGui::PopFont();
@@ -217,6 +266,8 @@ mFUNCTION(mUI_PushHeadlineFont)
 {
   mFUNCTION_SETUP();
 
+  mERROR_IF(mUI_pImguiIO == nullptr, mR_ResourceStateInvalid);
+
   if (pHeadline != nullptr)
     ImGui::PushFont(pHeadline);
 
@@ -227,7 +278,33 @@ mFUNCTION(mUI_PopHeadlineFont)
 {
   mFUNCTION_SETUP();
 
+  mERROR_IF(mUI_pImguiIO == nullptr, mR_ResourceStateInvalid);
+
   if (pHeadline != nullptr)
+    ImGui::PopFont();
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mUI_PushSlimHeadlineFont)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(mUI_pImguiIO == nullptr, mR_ResourceStateInvalid);
+
+  if (pSlimHeadline != nullptr)
+    ImGui::PushFont(pSlimHeadline);
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mUI_PopSlimHeadlineFont)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(mUI_pImguiIO == nullptr, mR_ResourceStateInvalid);
+
+  if (pSlimHeadline != nullptr)
     ImGui::PopFont();
 
   mRETURN_SUCCESS();
@@ -236,6 +313,8 @@ mFUNCTION(mUI_PopHeadlineFont)
 mFUNCTION(mUI_PushSubHeadlineFont)
 {
   mFUNCTION_SETUP();
+
+  mERROR_IF(mUI_pImguiIO == nullptr, mR_ResourceStateInvalid);
 
   if (pSubHeadline != nullptr)
     ImGui::PushFont(pSubHeadline);
@@ -247,6 +326,8 @@ mFUNCTION(mUI_PopSubHeadlineFont)
 {
   mFUNCTION_SETUP();
 
+  mERROR_IF(mUI_pImguiIO == nullptr, mR_ResourceStateInvalid);
+
   if (pSubHeadline != nullptr)
     ImGui::PopFont();
 
@@ -257,6 +338,8 @@ mFUNCTION(mUI_PushBoldFont)
 {
   mFUNCTION_SETUP();
 
+  mERROR_IF(mUI_pImguiIO == nullptr, mR_ResourceStateInvalid);
+
   if (pBold != nullptr)
     ImGui::PushFont(pBold);
 
@@ -266,6 +349,8 @@ mFUNCTION(mUI_PushBoldFont)
 mFUNCTION(mUI_PopBoldFont)
 {
   mFUNCTION_SETUP();
+
+  mERROR_IF(mUI_pImguiIO == nullptr, mR_ResourceStateInvalid);
 
   if (pBold != nullptr)
     ImGui::PopFont();
@@ -278,15 +363,16 @@ namespace ImGui
   // See: https://github.com/ocornut/imgui/issues/1901
   bool BufferingBar(const char *label, float_t value, const ImVec2 &size_arg, const ImU32 &bg_col, const ImU32 &fg_col)
   {
-    ImGuiWindow* window = GetCurrentWindow();
-    if (window->SkipItems)
+    ImGuiWindow *pWindow = GetCurrentWindow();
+
+    if (pWindow->SkipItems)
       return false;
 
-    ImGuiContext& g = *GImGui;
+    ImGuiContext &g = *GImGui;
     const ImGuiStyle& style = g.Style;
-    const ImGuiID id = window->GetID(label);
+    const ImGuiID id = pWindow->GetID(label);
 
-    ImVec2 pos = window->DC.CursorPos;
+    ImVec2 pos = pWindow->DC.CursorPos;
     ImVec2 size = size_arg;
     size.x -= style.FramePadding.x * 2;
 
@@ -301,8 +387,8 @@ namespace ImGui
     const double_t circleEnd = size.x;
     const double_t circleWidth = circleEnd - circleStart;
 
-    window->DrawList->AddRectFilled(bb.Min, ImVec2(pos.x + (float_t)circleStart, bb.Max.y), bg_col);
-    window->DrawList->AddRectFilled(bb.Min, ImVec2(pos.x + (float_t)circleStart * value, bb.Max.y), fg_col);
+    pWindow->DrawList->AddRectFilled(bb.Min, ImVec2(pos.x + (float_t)circleStart, bb.Max.y), bg_col);
+    pWindow->DrawList->AddRectFilled(bb.Min, ImVec2(pos.x + (float_t)circleStart * value, bb.Max.y), fg_col);
 
     const double_t t = g.Time;
     const double_t r = size.y / 2;
@@ -316,9 +402,9 @@ namespace ImGui
     const double_t o2 = (circleWidth + r) * (t + b - speed * (int32_t)((t + b) / speed)) / speed;
     const double_t o3 = (circleWidth + r) * (t + c - speed * (int32_t)((t + c) / speed)) / speed;
 
-    window->DrawList->AddCircleFilled(ImVec2(pos.x + (float_t)circleEnd - (float_t)o1, bb.Min.y + (float_t)r), (float_t)r, bg_col);
-    window->DrawList->AddCircleFilled(ImVec2(pos.x + (float_t)circleEnd - (float_t)o2, bb.Min.y + (float_t)r), (float_t)r, bg_col);
-    window->DrawList->AddCircleFilled(ImVec2(pos.x + (float_t)circleEnd - (float_t)o3, bb.Min.y + (float_t)r), (float_t)r, bg_col);
+    pWindow->DrawList->AddCircleFilled(ImVec2(pos.x + (float_t)circleEnd - (float_t)o1, bb.Min.y + (float_t)r), (float_t)r, bg_col);
+    pWindow->DrawList->AddCircleFilled(ImVec2(pos.x + (float_t)circleEnd - (float_t)o2, bb.Min.y + (float_t)r), (float_t)r, bg_col);
+    pWindow->DrawList->AddCircleFilled(ImVec2(pos.x + (float_t)circleEnd - (float_t)o3, bb.Min.y + (float_t)r), (float_t)r, bg_col);
     
     return true;
   }
@@ -326,15 +412,16 @@ namespace ImGui
   // See: https://github.com/ocornut/imgui/issues/1901
   bool Spinner(const char *label, float_t radius, float_t thickness, const ImU32 &color)
   {
-    ImGuiWindow* window = GetCurrentWindow();
-    if (window->SkipItems)
+    ImGuiWindow *pWindow = GetCurrentWindow();
+
+    if (pWindow->SkipItems)
       return false;
 
-    ImGuiContext& g = *GImGui;
-    const ImGuiStyle& style = g.Style;
-    const ImGuiID id = window->GetID(label);
+    ImGuiContext &g = *GImGui;
+    const ImGuiStyle &style = g.Style;
+    const ImGuiID id = pWindow->GetID(label);
 
-    ImVec2 pos = window->DC.CursorPos;
+    ImVec2 pos = pWindow->DC.CursorPos;
     ImVec2 size((radius) * 2, (radius + style.FramePadding.y) * 2);
 
     const ImRect bb(pos, ImVec2(pos.x + size.x, pos.y + size.y));
@@ -344,7 +431,7 @@ namespace ImGui
       return false;
 
     // Render
-    window->DrawList->PathClear();
+    pWindow->DrawList->PathClear();
 
     int32_t num_segments = 30;
     int32_t start = (int32_t)abs(ImSin((float_t)g.Time * 1.8f) * (num_segments - 5));
@@ -354,14 +441,14 @@ namespace ImGui
 
     const ImVec2 centre = ImVec2(pos.x + radius, pos.y + radius + style.FramePadding.y);
 
-    for (int i = 0; i < num_segments; i++)
+    for (int32_t i = 0; i < num_segments; i++)
     {
       const float_t a = a_min + ((float_t)i / (float_t)num_segments) * (a_max - a_min);
 
-      window->DrawList->PathLineTo(ImVec2(centre.x + ImCos(a + (float_t)g.Time * 8) * radius, centre.y + ImSin(a + (float_t)g.Time * 8) * radius));
+      pWindow->DrawList->PathLineTo(ImVec2(centre.x + ImCos(a + (float_t)g.Time * 8) * radius, centre.y + ImSin(a + (float_t)g.Time * 8) * radius));
     }
 
-    window->DrawList->PathStroke(color, false, thickness);
+    pWindow->DrawList->PathStroke(color, false, thickness);
 
     return true;
   }
@@ -398,5 +485,91 @@ namespace ImGui
     }
 
     return returnedIndex;
+  }
+
+  bool ImageButtonWithText(ImTextureID texId, const char *label, const ImVec2 &imageSize, const ImVec2 &buttonSize, const ImVec2 &uv0, const ImVec2 &uv1, const float_t frame_padding, const ImVec4 &bg_col, const ImVec4 &tint_col)
+  {
+    ImGuiWindow *pWindow = GetCurrentWindow();
+
+    if (pWindow->SkipItems)
+      return false;
+
+    ImVec2 size = imageSize;
+
+    if (size.x <= 0 && size.y <= 0)
+    {
+      size.x = size.y = ImGui::GetTextLineHeightWithSpacing();
+    }
+    else
+    {
+      if (size.x <= 0)
+        size.x = size.y;
+      else if (size.y <= 0)
+        size.y = size.x;
+
+      size *= pWindow->FontWindowScale * ImGui::GetIO().FontGlobalScale;
+    }
+
+    ImGuiContext &g = *GImGui;
+    const ImGuiStyle &style = g.Style;
+
+    const ImGuiID id = pWindow->GetID(label);
+    const ImVec2 textSize = ImGui::CalcTextSize(label, NULL, true);
+    const bool hasText = textSize.x > 0;
+
+    const float_t innerSpacing = hasText ? ((frame_padding >= 0) ? (float_t)frame_padding : (style.ItemInnerSpacing.x)) : 0.f;
+    const ImVec2 padding = (frame_padding >= 0) ? ImVec2((float_t)frame_padding, (float_t)frame_padding) : style.FramePadding;
+    const ImVec2 totalSizeWithoutPadding(size.x + innerSpacing + textSize.x, size.y > textSize.y ? size.y : textSize.y);
+    ImRect bb(pWindow->DC.CursorPos, pWindow->DC.CursorPos + totalSizeWithoutPadding + padding * 2);
+
+    if (buttonSize.x != 0)
+    {
+      if (buttonSize.x < 0)
+        bb.Max.x = bb.Min.x + GetContentRegionAvail().x + buttonSize.x;
+      else if (buttonSize.x < 1)
+        bb.Max.x = bb.Min.x + buttonSize.x * GetContentRegionAvail().x;
+      else
+        bb.Max.x = bb.Min.x + buttonSize.x;
+    }
+
+    if (buttonSize.y > 0)
+    {
+      if (buttonSize.y < 0)
+        bb.Max.y = bb.Min.y + GetContentRegionAvail().y + buttonSize.y;
+      else if (buttonSize.y < 1)
+        bb.Max.y = bb.Min.y + buttonSize.y * GetContentRegionAvail().y;
+      else
+        bb.Max.y = bb.Min.y + buttonSize.y;
+    }
+
+    ImVec2 start(0, 0);
+    start = pWindow->DC.CursorPos + padding;
+    
+    if (size.y < textSize.y)
+      start.y += (textSize.y - size.y) * .5f;
+
+    const ImRect image_bb(start, start + size);
+    start = pWindow->DC.CursorPos + padding;start.x += size.x + innerSpacing;if (size.y > textSize.y) start.y += (size.y - textSize.y)*.5f;
+    ItemSize(bb);
+
+    if (!ItemAdd(bb, id))
+      return false;
+
+    bool hovered = false, held = false;
+    bool pressed = ButtonBehavior(bb, id, &hovered, &held);
+
+    // Render
+    const ImU32 col = GetColorU32((hovered && held) ? ImGuiCol_ButtonActive : hovered ? ImGuiCol_ButtonHovered : ImGuiCol_Button);
+    RenderFrame(bb.Min, bb.Max, col, true, ImClamp((float_t)ImMin(padding.x, padding.y), 0.0f, style.FrameRounding));
+    
+    if (bg_col.w > 0.0f)
+      pWindow->DrawList->AddRectFilled(image_bb.Min, image_bb.Max, GetColorU32(bg_col));
+
+    pWindow->DrawList->AddImage(texId, image_bb.Min, image_bb.Max, uv0, uv1, GetColorU32(tint_col));
+
+    if (textSize.x > 0)
+      ImGui::RenderText(start, label);
+    
+    return pressed;
   }
 }

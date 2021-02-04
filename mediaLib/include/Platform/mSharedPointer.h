@@ -3,9 +3,16 @@
 
 #include "mediaLib.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "n6y6J1gutmiKm+SPo3/4ax3zPKfhPWxiHShRkbnjmsiG7+QsvoNWXdOcqUtAw8WOIHpkSvoEO3usJuEJ"
+#endif
+
 struct mAllocator;
 
-#define mSHARED_POINTER_FOREIGN_RESOURCE ((mAllocator *)-1)
+#define mSHARED_POINTER_FOREIGN_RESOURCE (reinterpret_cast<mAllocator *>((size_t)-1))
 //#define mSHARED_POINTER_DEBUG_OUTPUT 1
 
 #if defined(GIT_BUILD) && defined(mSHARED_POINTER_DEBUG_OUTPUT)
@@ -591,6 +598,24 @@ inline mFUNCTION(mSharedPointer_AllocateInheritedWithFlexArray, OUT mSharedPoint
 #ifdef mSHARED_POINTER_DEBUG_OUTPUT
   mLOG(" [was inherited from %s]\n", typeid(TInherited).name());
 #endif
+
+  mRETURN_SUCCESS();
+}
+
+template <typename T>
+inline mFUNCTION(mSharedPointer_AllocateWithSize, OUT mSharedPointer<T> *pOutSharedPointer, IN mAllocator *pAllocator, const size_t size, const std::function<void(T *)> &function = nullptr)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pOutSharedPointer == nullptr, mR_ArgumentNull);
+
+  uint8_t *pData = nullptr;
+  mDEFER(mAllocator_FreePtr(pAllocator, &pData));
+  mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &pData, size));
+
+  mERROR_CHECK(mSharedPointer_Create(pOutSharedPointer, reinterpret_cast<T *>(pData), function, pAllocator));
+
+  pData = nullptr; // to not get released on destruction.
 
   mRETURN_SUCCESS();
 }

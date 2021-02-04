@@ -6,6 +6,13 @@
 #pragma warning(push)
 #pragma warning(disable: 4200)
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "w1LT4GzeLk8uc+uQKJUQBZlJ7LugcQ2TT8HDS7OAefTje1amkpHKvkvvAYgf7cR4KYjeCeLx5a6WJ62P"
+#endif
+
 constexpr size_t mAudioScene_MaxAudioDelay = 1024;
 constexpr float_t mAudioScene_SpeedOfSoundInAirAtRoomTemperatureInMetersPerSecond = 343.f;
 constexpr size_t mAudioScene_AudioResampleFadeSamples = 8;
@@ -42,13 +49,13 @@ struct mAudioScene final : mAudioSource // Can't be inherited from because it ha
 
 #pragma warning(pop)
 
-mFUNCTION(mAudioScene_Destroy_Internal, mAudioScene *pAudioSource);
-mFUNCTION(mAudioScene_GetBuffer_Internal, mPtr<mAudioSource> &audioSource, OUT float_t *pBuffer, const size_t bufferLength, const size_t channelIndex, OUT size_t *pBufferCount);
-mFUNCTION(mAudioScene_ReadBuffers_Internal, mAudioScene *pAudioScene, const size_t sampleCount);
-mFUNCTION(mAudioScene_MoveToNextBuffer_Internal, mPtr<mAudioSource> &audioSource, const size_t samples);
-mFUNCTION(mAudioScene_BroadcastDelay_Internal, mPtr<mAudioSource> &audioSource, const size_t samples);
-mFUNCTION(mSpacialAudioSourceContainer_Destroy_Internal, mSpacialAudioSourceContainer *pAudioSource);
-mFUNCTION(mVirtualMicrophoneContainer_Destroy_Internal, mVirtualMicrophoneContainer *pMicrophone);
+static mFUNCTION(mAudioScene_Destroy_Internal, mAudioScene *pAudioSource);
+static mFUNCTION(mAudioScene_GetBuffer_Internal, mPtr<mAudioSource> &audioSource, OUT float_t *pBuffer, const size_t bufferLength, const size_t channelIndex, OUT size_t *pBufferCount);
+static mFUNCTION(mAudioScene_ReadBuffers_Internal, mAudioScene *pAudioScene, const size_t sampleCount);
+static mFUNCTION(mAudioScene_MoveToNextBuffer_Internal, mPtr<mAudioSource> &audioSource, const size_t samples);
+static mFUNCTION(mAudioScene_BroadcastDelay_Internal, mPtr<mAudioSource> &audioSource, const size_t samples);
+static mFUNCTION(mSpacialAudioSourceContainer_Destroy_Internal, mSpacialAudioSourceContainer *pAudioSource);
+static mFUNCTION(mVirtualMicrophoneContainer_Destroy_Internal, mVirtualMicrophoneContainer *pMicrophone);
 
 inline float_t mAudioScene_GetVolumeFromMicFactor(const float_t volumeFactor, mVirtualMicrophoneContainer *pMic)
 {
@@ -171,7 +178,7 @@ mFUNCTION(mAudioScene_AddSpacialMonoAudioSource,
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mAudioScene_Destroy_Internal, mAudioScene *pAudioSource)
+static mFUNCTION(mAudioScene_Destroy_Internal, mAudioScene *pAudioSource)
 {
   mFUNCTION_SETUP();
 
@@ -188,7 +195,7 @@ mFUNCTION(mAudioScene_Destroy_Internal, mAudioScene *pAudioSource)
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mAudioScene_GetBuffer_Internal, mPtr<mAudioSource> &audioSource, OUT float_t *pBuffer, const size_t bufferLength, const size_t channelIndex, OUT size_t *pBufferCount)
+static mFUNCTION(mAudioScene_GetBuffer_Internal, mPtr<mAudioSource> &audioSource, OUT float_t *pBuffer, const size_t bufferLength, const size_t channelIndex, OUT size_t *pBufferCount)
 {
   mFUNCTION_SETUP();
 
@@ -287,7 +294,7 @@ mFUNCTION(mAudioScene_GetBuffer_Internal, mPtr<mAudioSource> &audioSource, OUT f
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mAudioScene_MoveToNextBuffer_Internal, mPtr<mAudioSource> &audioSource, const size_t /* samples */)
+static mFUNCTION(mAudioScene_MoveToNextBuffer_Internal, mPtr<mAudioSource> &audioSource, const size_t /* samples */)
 {
   mFUNCTION_SETUP();
 
@@ -320,7 +327,7 @@ mFUNCTION(mAudioScene_MoveToNextBuffer_Internal, mPtr<mAudioSource> &audioSource
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mAudioScene_BroadcastDelay_Internal, mPtr<mAudioSource> &audioSource, const size_t samples)
+static mFUNCTION(mAudioScene_BroadcastDelay_Internal, mPtr<mAudioSource> &audioSource, const size_t samples)
 {
   mFUNCTION_SETUP();
 
@@ -367,7 +374,7 @@ mFUNCTION(mAudioScene_BroadcastDelay_Internal, mPtr<mAudioSource> &audioSource, 
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mAudioScene_ReadBuffers_Internal, mAudioScene *pAudioScene, const size_t sampleCount)
+static mFUNCTION(mAudioScene_ReadBuffers_Internal, mAudioScene *pAudioScene, const size_t sampleCount)
 {
   mFUNCTION_SETUP();
 
@@ -437,19 +444,21 @@ mFUNCTION(mAudioScene_ReadBuffers_Internal, mAudioScene *pAudioScene, const size
         continue;
       }
 
-      if (requiredSampleCount != sampleCount + mAudioScene_MaxAudioDelay)
+      if (samplesRetrieved != 0)
       {
-        const size_t resultingSampleCount = samplesRetrieved * (sampleCount + mAudioScene_MaxAudioDelay) / requiredSampleCount;
+        if (requiredSampleCount != sampleCount + mAudioScene_MaxAudioDelay)
+        {
+          const size_t resultingSampleCount = samplesRetrieved * (sampleCount + mAudioScene_MaxAudioDelay) / requiredSampleCount;
 
-        mERROR_CHECK(mAudio_InplaceResampleMonoWithFade(audioSource->pSamples + audioSource->sampleCount, samplesRetrieved, resultingSampleCount, mAudioScene_AudioResampleFadeSamples));
+          mERROR_CHECK(mAudio_InplaceResampleMonoWithFade(audioSource->pSamples + audioSource->sampleCount, samplesRetrieved, resultingSampleCount, mAudioScene_AudioResampleFadeSamples));
 
-        audioSource->sampleCount += resultingSampleCount;
+          audioSource->sampleCount += resultingSampleCount;
+        }
+        else
+        {
+          audioSource->sampleCount += samplesRetrieved;
+        }
       }
-      else
-      {
-        audioSource->sampleCount += samplesRetrieved;
-      }
-
     }
   }
 
@@ -509,7 +518,7 @@ mFUNCTION(mAudioScene_ReadBuffers_Internal, mAudioScene *pAudioScene, const size
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mSpacialAudioSourceContainer_Destroy_Internal, mSpacialAudioSourceContainer *pAudioSource)
+static mFUNCTION(mSpacialAudioSourceContainer_Destroy_Internal, mSpacialAudioSourceContainer *pAudioSource)
 {
   mFUNCTION_SETUP();
 
@@ -525,7 +534,7 @@ mFUNCTION(mSpacialAudioSourceContainer_Destroy_Internal, mSpacialAudioSourceCont
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mVirtualMicrophoneContainer_Destroy_Internal, mVirtualMicrophoneContainer *pMicrophone)
+static mFUNCTION(mVirtualMicrophoneContainer_Destroy_Internal, mVirtualMicrophoneContainer *pMicrophone)
 {
   mFUNCTION_SETUP();
 

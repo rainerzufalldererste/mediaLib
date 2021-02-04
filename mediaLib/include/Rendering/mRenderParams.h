@@ -16,6 +16,8 @@
 
 extern mVec2s mRenderParams_CurrentRenderResolution;
 extern mVec2f mRenderParams_CurrentRenderResolutionF;
+extern mVec2s mRenderParams_BackBufferResolution;
+extern mVec2f mRenderParams_BackBufferResolutionF;
 
 typedef size_t mRenderContextId;
 extern mRenderContextId mRenderParams_CurrentRenderContext;
@@ -41,7 +43,8 @@ extern GLenum mRenderParams_GLError;
     if (mRenderParams_InitializedRenderContextCount > 0) { \
       mRenderParams_GLError = glGetError(); \
       if (mRenderParams_GLError != GL_NO_ERROR) { \
-        mPRINT_ERROR("Rendering Error in '" __FUNCTION__ "': GLError Code %" PRIi32 " (%s) (File '" __FILE__ "'; Line %" PRIi32 ")\n", mRenderParams_GLError, gluErrorString(mRenderParams_GLError), __LINE__); \
+        mPRINT_ERROR("Rendering Error in '%s': GLError Code %" PRIi32 " (%s) (File '" __M_FILE__ "'; Line %" PRIi32 ")\n", mRESULT_PRINT_FUNCTION_TITLE, mRenderParams_GLError, gluErrorString(mRenderParams_GLError), __LINE__); \
+        mRenderParams_PrintRenderState(false); \
         mERROR_IF(mRenderParams_GLError != GL_NO_ERROR, mR_RenderingError); \
       } \
     } \
@@ -109,9 +112,10 @@ enum mRenderParam_BlendFunc
   mRP_BF_AlphaBlend,
   mRP_BF_Premultiplied,
   mRP_BF_Override,
+  mRP_BF_AlphaMask
 };
 
-mFUNCTION(mRenderParams_SetAlphaBlendFunc, const mRenderParam_BlendFunc blendFunc);
+mFUNCTION(mRenderParams_SetBlendFunc, const mRenderParam_BlendFunc blendFunc);
 
 enum mRenderParams_DepthFunc
 {
@@ -174,6 +178,10 @@ enum mRenderParams_TextureMinificationFilteringMode
 {
   mRP_TMinFM_NearestNeighbor = GL_NEAREST,
   mRP_TMinFM_BilinearInterpolation = GL_LINEAR,
+  mRP_TMagFM_NearestNeighborNearestMipMap = GL_NEAREST_MIPMAP_NEAREST,
+  mRP_TMagFM_BilinearInterpolationNearestMipMap = GL_LINEAR_MIPMAP_NEAREST,
+  mRP_TMagFM_NearestNeighborBlendMipMap = GL_NEAREST_MIPMAP_LINEAR,
+  mRP_TMagFM_BilinearInterpolationBlendMipMap = GL_LINEAR_MIPMAP_LINEAR,
 };
 
 struct mTexture2DParams
@@ -194,6 +202,10 @@ struct mTexture3DParams
 
 mFUNCTION(mTexture3DParams_ApplyToBoundTexture, const mTexture3DParams &params, const bool isMultisampleTexture = false);
 
-mFUNCTION(mRenderParams_PrintRenderState, const bool onlyNewValues = false);
+mFUNCTION(mRenderParams_PrintRenderState, const bool onlyNewValues = false, const bool onlyUpdateValues = false);
+
+#if defined(mRENDERER_OPENGL)
+mFUNCTION(mRenderParams_SetOnErrorDebugCallback, const std::function<mResult (const GLenum source, const GLenum type, const GLuint id, const GLenum severity, const GLsizei lenght, const char *msg)> &callback);
+#endif
 
 #endif // mRenderParams_h__

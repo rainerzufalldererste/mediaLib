@@ -33,6 +33,24 @@ mTEST(mInplaceString, TestCreateEmpty)
   mTEST_RETURN_SUCCESS();
 }
 
+mTEST(mInplaceString, TestCreateSegment)
+{
+  const char txt[] = "🌵🦎🎅test";
+
+  mInplaceString<128> string;
+  mTEST_ASSERT_SUCCESS(mInplaceString_Create(&string, txt, 4));
+
+  size_t count;
+  mTEST_ASSERT_SUCCESS(mInplaceString_GetCount(string, &count));
+  mTEST_ASSERT_EQUAL(count, 2);
+
+  size_t size;
+  mTEST_ASSERT_SUCCESS(mInplaceString_GetByteSize(string, &size));
+  mTEST_ASSERT_EQUAL(size, 4 + 1);
+
+  mTEST_RETURN_SUCCESS();
+}
+
 mTEST(mInplaceString, TestCreateUTF8)
 {
   mInplaceString<128> string;

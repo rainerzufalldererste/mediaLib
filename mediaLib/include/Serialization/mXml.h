@@ -3,6 +3,13 @@
 
 #include "mediaLib.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "6WQGckaDcdFgVisiVDlfzRxG3GmqnX0gT24250s3EbpgYMAZYUajuedZT7QNh4fkufuJvhe8UHhjhzPk"
+#endif
+
 struct mXmlReader;
 
 mFUNCTION(mXmlReader_CreateFromString, OUT mPtr<mXmlReader> *pXmlReader, IN mAllocator *pAllocator, const mString &string);
