@@ -242,6 +242,8 @@ namespace mCpuExtensions
   }
 };
 
+//////////////////////////////////////////////////////////////////////////
+
 int64_t mParseInt(IN const char *start, OUT const char **pEnd)
 {
   const char *endIfNoEnd = nullptr;
@@ -353,4 +355,133 @@ double_t mParseFloat(IN const char *start, OUT const char **pEnd)
   }
 
   return ret;
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+bool mIsInt(IN const char *text)
+{
+  if (text == nullptr)
+    return false;
+
+  return mIsInt(text, strlen(text));
+}
+
+bool mIsInt(IN const char *text, const size_t length)
+{
+  if (text == nullptr)
+    return false;
+
+  const bool sign = (text[0] == '-');
+  size_t i = (size_t)sign;
+
+  for (; i < length; i++)
+  {
+    if (text[i] < '0' || text[i] > '9')
+    {
+      if (text[i] == '\0')
+        return (i > (size_t)sign);
+
+      return false;
+    }
+  }
+
+  return i > (size_t)sign;
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+bool mIsFloat(IN const char *text)
+{
+  if (text == nullptr)
+    return false;
+
+  return mIsFloat(text, strlen(text));
+}
+
+bool mIsFloat(IN const char *text, const size_t length)
+{
+  if (text == nullptr)
+    return false;
+
+  bool hasDigits = false;
+  bool hasPostPeriodDigits = false;
+  bool hasPostExponentDigits = false;
+
+  size_t i = (size_t)(text[0] == '-');
+
+  for (; i < length; i++)
+  {
+    if (text[i] == '\0')
+    {
+      return hasDigits;
+    }
+    else if (text[i] == '.')
+    {
+      i++;
+      goto period;
+    }
+    else if (text[i] == 'e' || text[i] == 'E')
+    {
+      if (!hasDigits)
+        return false;
+      
+      i++;
+      goto exponent;
+    }
+    else if (text[i] < '0' || text[i] > '9')
+    {
+      return false;
+    }
+    else
+    {
+      hasDigits = true;
+    }
+  }
+
+  return hasDigits;
+
+period:
+  for (; i < length; i++)
+  {
+    if (text[i] == '\0')
+    {
+      return hasDigits || hasPostPeriodDigits;
+    }
+    else if (text[i] == 'e' || text[i] == 'E')
+    {
+      if (!(hasDigits || hasPostPeriodDigits))
+        return false;
+
+      i++;
+      goto exponent;
+    }
+    else if (text[i] < '0' || text[i] > '9')
+    {
+      return false;
+    }
+    else
+    {
+      hasPostPeriodDigits = true;
+    }
+  }
+
+  return hasDigits || hasPostPeriodDigits;
+
+exponent:
+  i += (size_t)(text[i] == '-');
+
+  for (; i < length; i++)
+  {
+    if (text[i] < '0' || text[i] > '9')
+    {
+      return false;
+    }
+    else
+    {
+      hasPostExponentDigits = true;
+    }
+  }
+
+  return hasPostExponentDigits && (hasPostPeriodDigits || hasDigits);
 }
