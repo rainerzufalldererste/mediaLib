@@ -277,4 +277,9 @@ namespace mCpuExtensions
 int64_t mParseInt(IN const char *start, OUT const char **pEnd);
 double_t mParseFloat(IN const char *start, OUT const char **pEnd);
 
+bool mIsInt(IN const char *text);
+bool mIsInt(IN const char *text, const size_t length);
+bool mIsFloat(IN const char *text);
+bool mIsFloat(IN const char *text, const size_t length);
+
 #endif // mediaLib_h__
