@@ -924,6 +924,8 @@ mFUNCTION(mFontRenderer_DrawWithLayout, mPtr<mFontRenderer> &fontRenderer, const
       fontRenderer->position.x += fontDescription.bounds.width;
 
     fontRenderer->resetPosition = fontRenderer->position;
+
+    mERROR_CHECK(mFontRenderer_ResetRenderedRect(fontRenderer));
   }
 
   const mchar_t space = mToChar<2>(" ");
@@ -1027,24 +1029,26 @@ mFUNCTION(mFontRenderer_DrawWithLayout, mPtr<mFontRenderer> &fontRenderer, const
 
               if (first)
               {
-                if (fontDescription.hasBounds && !fontDescription.bounds.Contains(glyphBounds)
-                  // HACK: Sometimes it seems like we're a tiny amount of pixels off, when rendering center- (and probably also right-) aligned. (But make sure it doesn't render one line before or after the bounds)
-                  && ((glyphBounds.y + glyphBounds.height > fontDescription.bounds.y + fontDescription.bounds.height || glyphBounds.y < fontDescription.bounds.y) || (glyphBounds.size.LengthSquared() - fontDescription.bounds.Intersect(glyphBounds).size.LengthSquared() > mVec2f(spaceGlyphInfo.advanceX * .5f, glyphBounds.height).LengthSquared() && fontDescription.bounds.position.y <= glyphBounds.y && fontDescription.bounds.position.y + fontDescription.bounds.height >= glyphBounds.y + glyphBounds.height)))
+                if (fontDescription.hasBounds && !fontDescription.bounds.Contains(glyphBounds))
                 {
-                  fontRenderer->stoppedAtStartX = glyphBounds.x < fontDescription.bounds.x;
-                  fontRenderer->stoppedAtStartY = glyphBounds.y < fontDescription.bounds.y;
-                  fontRenderer->stoppedAtEndX = glyphBounds.x + glyphBounds.w > fontDescription.bounds.x;
-                  fontRenderer->stoppedAtEndY = glyphBounds.y + glyphBounds.h > fontDescription.bounds.y;
-                  
-                  if (fontDescription.boundMode == mFD_BM_StopWithTrippleDot)
+                  // HACK: Sometimes it seems like we're a tiny amount of pixels off, when rendering center- (and probably also right-) aligned. (But make sure it doesn't render one line before or after the bounds)
+                  if ((glyphBounds.y + glyphBounds.height > fontDescription.bounds.y + fontDescription.bounds.height || glyphBounds.y < fontDescription.bounds.y) || (glyphBounds.size.LengthSquared() - fontDescription.bounds.Intersect(glyphBounds).size.LengthSquared() > mVec2f(spaceGlyphInfo.advanceX * .5f, glyphBounds.height).LengthSquared() && fontDescription.bounds.position.y <= glyphBounds.y && fontDescription.bounds.position.y + fontDescription.bounds.height >= glyphBounds.y + glyphBounds.height))
                   {
-                    mFontDescription description = fontDescription;
-                    description.hasBounds = false;
+                    fontRenderer->stoppedAtStartX = glyphBounds.x < fontDescription.bounds.x;
+                    fontRenderer->stoppedAtStartY = glyphBounds.y < fontDescription.bounds.y;
+                    fontRenderer->stoppedAtEndX = glyphBounds.x + glyphBounds.w > fontDescription.bounds.x;
+                    fontRenderer->stoppedAtEndY = glyphBounds.y + glyphBounds.h > fontDescription.bounds.y;
 
-                    mERROR_CHECK(mFontRenderer_Draw(fontRenderer, description, "...", colour));
+                    if (fontDescription.boundMode == mFD_BM_StopWithTrippleDot)
+                    {
+                      mFontDescription description = fontDescription;
+                      description.hasBounds = false;
+
+                      mERROR_CHECK(mFontRenderer_Draw(fontRenderer, description, "...", colour));
+                    }
+
+                    mRETURN_SUCCESS();
                   }
-
-                  mRETURN_SUCCESS();
                 }
 
                 first = false;
@@ -1076,6 +1080,30 @@ mFUNCTION(mFontRenderer_DrawWithLayout, mPtr<mFontRenderer> &fontRenderer, const
 
           if ((isNewLine || isLast) && doesntFit)
           {
+            if (fontDescription.hasBounds)
+            {
+              if (fontRenderer->position.y - fontDescription.lineHeightRatio * fontDescription.fontSize < fontDescription.bounds.y)
+              {
+                switch (fontDescription.boundMode)
+                {
+                default:
+                case mFD_BM_Stop:
+                case mFD_BM_BreakLineOnBound:
+                  break;
+
+                case mFD_BM_StopWithTrippleDot:
+                  mFontDescription description = fontDescription;
+                  description.hasBounds = false;
+
+                  mERROR_CHECK(mFontRenderer_Draw(fontRenderer, description, "...", colour));
+                  break;
+                }
+
+                fontRenderer->stoppedAtStartY = true;
+                break; // Stop Rendering, because we've hit the border.
+              }
+            }
+
             fontRenderer->position.x = fontRenderer->resetPosition.x;
             fontRenderer->position.y -= fontDescription.lineHeightRatio * fontDescription.fontSize;
             size = 0;
