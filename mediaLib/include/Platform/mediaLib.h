@@ -274,11 +274,14 @@ namespace mCpuExtensions
   void Detect();
 };
 
-int64_t mParseInt(IN const char *start, OUT const char **pEnd);
-double_t mParseFloat(IN const char *start, OUT const char **pEnd);
+int64_t mParseInt(IN const char *start, OPTIONAL OUT const char **pEnd = nullptr);
+uint64_t mParseUInt(IN const char *start, OPTIONAL OUT const char **pEnd = nullptr);
+double_t mParseFloat(IN const char *start, OPTIONAL OUT const char **pEnd = nullptr);
 
 bool mIsInt(IN const char *text);
 bool mIsInt(IN const char *text, const size_t length);
+bool mIsUInt(IN const char *text);
+bool mIsUInt(IN const char *text, const size_t length);
 bool mIsFloat(IN const char *text);
 bool mIsFloat(IN const char *text, const size_t length);
 

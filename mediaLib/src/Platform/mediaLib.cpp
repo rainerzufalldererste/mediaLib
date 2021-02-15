@@ -244,7 +244,7 @@ namespace mCpuExtensions
 
 //////////////////////////////////////////////////////////////////////////
 
-int64_t mParseInt(IN const char *start, OUT const char **pEnd)
+int64_t mParseInt(IN const char *start, OPTIONAL OUT const char **pEnd /* = nullptr */)
 {
   const char *endIfNoEnd = nullptr;
 
@@ -265,7 +265,7 @@ int64_t mParseInt(IN const char *start, OUT const char **pEnd)
   while (true)
   {
     uint8_t digit = *start - '0';
-    
+
     if (digit > 9)
       break;
 
@@ -278,7 +278,32 @@ int64_t mParseInt(IN const char *start, OUT const char **pEnd)
   return (ret ^ -negate) + negate;
 }
 
-double_t mParseFloat(IN const char *start, OUT const char **pEnd)
+uint64_t mParseUInt(IN const char *start, OPTIONAL OUT const char **pEnd /* = nullptr */)
+{
+  const char *endIfNoEnd = nullptr;
+
+  if (pEnd == nullptr)
+    pEnd = &endIfNoEnd;
+
+  uint64_t ret = 0;
+
+  while (true)
+  {
+    uint8_t digit = *start - '0';
+
+    if (digit > 9)
+      break;
+
+    ret = (ret << 1) + (ret << 3) + digit;
+    start++;
+  }
+
+  *pEnd = start;
+
+  return ret;
+}
+
+double_t mParseFloat(IN const char *start, OPTIONAL OUT const char **pEnd /* = nullptr */)
 {
   const char *endIfNoEnd = nullptr;
 
@@ -391,6 +416,37 @@ bool mIsInt(IN const char *text, const size_t length)
 
 //////////////////////////////////////////////////////////////////////////
 
+bool mIsUInt(IN const char *text)
+{
+  if (text == nullptr)
+    return false;
+
+  return mIsUInt(text, strlen(text));
+}
+
+bool mIsUInt(IN const char *text, const size_t length)
+{
+  if (text == nullptr)
+    return false;
+  
+  size_t i = 0;
+
+  for (; i < length; i++)
+  {
+    if (text[i] < '0' || text[i] > '9')
+    {
+      if (text[i] == '\0')
+        return i > 0;
+
+      return false;
+    }
+  }
+
+  return i > 0;
+}
+
+//////////////////////////////////////////////////////////////////////////
+
 bool mIsFloat(IN const char *text)
 {
   if (text == nullptr)
@@ -475,6 +531,9 @@ exponent:
   {
     if (text[i] < '0' || text[i] > '9')
     {
+      if (text[i] == '\0')
+        return hasPostExponentDigits && (hasPostPeriodDigits || hasDigits);
+
       return false;
     }
     else
