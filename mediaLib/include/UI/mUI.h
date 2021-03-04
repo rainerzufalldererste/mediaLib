@@ -41,6 +41,9 @@ mFUNCTION(mUI_PopSubHeadlineFont);
 mFUNCTION(mUI_PushBoldFont);
 mFUNCTION(mUI_PopBoldFont);
 
+mFUNCTION(mUI_SetLightColourScheme);
+mFUNCTION(mUI_SetDarkColourScheme);
+
 template <typename T>
 inline ImVec2 ToImVec(const mVec2t<T> &vec2t)
 {
