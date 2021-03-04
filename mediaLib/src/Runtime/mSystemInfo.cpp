@@ -95,6 +95,7 @@ bool mSystemInfo_IsDarkMode()
     firstRun = false;
 
 #if defined (mPLATFORM_WINDOWS)
+    // Not sure if this is a documented way to do this, but this is (was) what Eclipse uses, since the other way to do this would be to use unnamed functions in `uxtheme.dll`. This may or may not break in the future, but there may also be a documented way to do this at some point.
     uint32_t value = 1;
 
     isDarkMode = (mSUCCEEDED(mRegistry_ReadKey("HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize\\AppsUseLightTheme", &value)) && value == 0);
