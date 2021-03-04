@@ -33,9 +33,15 @@ mFUNCTION(mSoftwareWindow_AddOnCloseEvent, mPtr<mSoftwareWindow> &window, const 
 mFUNCTION(mSoftwareWindow_ClearEventHandlers, mPtr<mSoftwareWindow> &window);
 mFUNCTION(mSoftwareWindow_GetSdlWindowPtr, mPtr<mSoftwareWindow> &window, OUT SDL_Window **ppSdlWindow);
 
+#if defined(mPLATFORM_WINDOWS)
+mFUNCTION(mSoftwareWindow_GetWindowHandle, mPtr<mSoftwareWindow> &window, OUT HWND *pHWND);
+#endif
+
 mFUNCTION(mSoftwareWindow_IsActive, const mPtr<mSoftwareWindow> &window, OUT bool *pIsActive);
 mFUNCTION(mSoftwareWindow_IsResizable, const mPtr<mSoftwareWindow> &window, OUT bool *pIsResizable);
 mFUNCTION(mSoftwareWindow_IsMinimized, const mPtr<mSoftwareWindow> &window, OUT bool *pIsMinimized);
 mFUNCTION(mSoftwareWindow_IsMaximized, const mPtr<mSoftwareWindow> &window, OUT bool *pIsMaximized);
+
+mFUNCTION(mSoftwareWindow_RespectDarkModePreference, mPtr<mSoftwareWindow> &window, const bool respectDarkModePreference = true);
 
 #endif // mSoftwareWindow_h__

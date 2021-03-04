@@ -1,6 +1,14 @@
 #include "mHardwareWindow.h"
 #include "mFramebuffer.h"
 #include "mChunkedArray.h"
+#include "mSystemInfo.h"
+
+#define DECLSPEC
+#include "SDL_syswm.h"
+#undef DECLSPEC
+
+#include <dwmapi.h>
+#pragma comment(lib, "dwmapi.lib")
 
 #ifdef GIT_BUILD // Define __M_FILE__
   #ifdef __M_FILE__
@@ -223,6 +231,26 @@ mFUNCTION(mHardwareWindow_GetSdlWindowPtr, mPtr<mHardwareWindow> &window, OUT SD
   mRETURN_SUCCESS();
 }
 
+#if defined(mPLATFORM_WINDOWS)
+mFUNCTION(mHardwareWindow_GetWindowHandle, mPtr<mHardwareWindow> &window, OUT HWND *pHWND)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(window == nullptr || pHWND == nullptr, mR_ArgumentNull);
+
+  SDL_SysWMinfo wmInfo;
+  SDL_VERSION(&wmInfo.version);
+  mERROR_IF(SDL_FALSE == SDL_GetWindowWMInfo(window->pWindow, &wmInfo), mR_NotSupported);
+
+  HWND hwnd = wmInfo.info.win.window;
+  mERROR_IF(hwnd == nullptr, mR_NotSupported);
+
+  *pHWND = hwnd;
+
+  mRETURN_SUCCESS();
+}
+#endif
+
 mFUNCTION(mHardwareWindow_GetRenderContextId, mPtr<mHardwareWindow> &window, OUT mRenderContextId *pRenderContextId)
 {
   mFUNCTION_SETUP();
@@ -402,6 +430,36 @@ mFUNCTION(mHardwareWindow_IsMaximized, const mPtr<mHardwareWindow> &window, OUT 
   *pIsMaximized = !!(flags & SDL_WINDOW_MAXIMIZED);
 
   mRETURN_SUCCESS();
+}
+
+// This function also has a sibling in `mSoftwareWindow_`. When fixing bugs or adding features, please add the respected changes to `mSoftwareWindow_` as well.
+mFUNCTION(mHardwareWindow_RespectDarkModePreference, mPtr<mHardwareWindow> &window, const bool respectDarkModePreference /* = true */)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(window == nullptr, mR_ArgumentNull);
+
+#if defined(mPLATFORM_WINDOWS)
+  enum
+  {
+    DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1 = 19,
+    DWMWA_USE_IMMERSIVE_DARK_MODE = 20
+  };
+
+  mERROR_IF(!mSystemInfo_IsWindows10OrGreater(17763), mR_NotSupported);
+
+  HWND hwnd;
+  mERROR_CHECK(mHardwareWindow_GetWindowHandle(window, &hwnd));
+
+  const int32_t attribute = mSystemInfo_IsWindows10OrGreater(18985) ? DWMWA_USE_IMMERSIVE_DARK_MODE : DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1;
+  const int32_t setEnabled = (int32_t)respectDarkModePreference;
+
+  mERROR_IF(FAILED(DwmSetWindowAttribute(hwnd, attribute, &setEnabled, sizeof(setEnabled))), mR_InternalError);
+
+  mRETURN_SUCCESS();
+#else
+  mRETURN_RESULT(mR_NotImplemented);
+#endif
 }
 
 //////////////////////////////////////////////////////////////////////////
