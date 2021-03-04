@@ -350,6 +350,10 @@ mFUNCTION(mSoftwareWindow_RespectDarkModePreference, mPtr<mSoftwareWindow> &wind
   mERROR_IF(window == nullptr, mR_ArgumentNull);
 
 #if defined(mPLATFORM_WINDOWS)
+  if (!mSystemInfo_IsDarkMode())
+    mRETURN_SUCCESS();
+
+  // Attention: This uses undocumented Windows features and may or may not break in the future. (There is no documented way to do this at the moment)
   enum
   {
     DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1 = 19,
@@ -365,7 +369,20 @@ mFUNCTION(mSoftwareWindow_RespectDarkModePreference, mPtr<mSoftwareWindow> &wind
   const int32_t setEnabled = (int32_t)respectDarkModePreference;
 
   mERROR_IF(FAILED(DwmSetWindowAttribute(hwnd, attribute, &setEnabled, sizeof(setEnabled))), mR_InternalError);
-  
+
+  // HACK: Because this sometimes (!) leads to only the title text being black, we're minimizing and restoring the window in order to "refresh" the title screen.
+  const uint32_t flags = SDL_GetWindowFlags(window->pWindow);
+
+  if ((flags & SDL_WINDOW_MINIMIZED) || (flags & SDL_WINDOW_BORDERLESS) || (flags & SDL_WINDOW_FULLSCREEN) || (flags & SDL_WINDOW_FULLSCREEN_DESKTOP))
+    mRETURN_SUCCESS();
+
+  SDL_MinimizeWindow(window->pWindow);
+
+  if (flags & SDL_WINDOW_MAXIMIZED)
+    SDL_MaximizeWindow(window->pWindow);
+  else
+    SDL_RestoreWindow(window->pWindow);
+
   mRETURN_SUCCESS();
 #else
   mRETURN_RESULT(mR_NotImplemented);

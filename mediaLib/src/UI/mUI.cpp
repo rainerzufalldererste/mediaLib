@@ -404,7 +404,7 @@ mFUNCTION(mUI_SetDarkColourScheme)
   pColors[ImGuiCol_TextDisabled] = ImVec4(0.42f, 0.42f, 0.42f, 1.00f);
   pColors[ImGuiCol_WindowBg] = ImVec4(0.14f, 0.14f, 0.14f, 1.00f);
   pColors[ImGuiCol_PopupBg] = ImVec4(0.22f, 0.22f, 0.22f, 1);
-  pColors[ImGuiCol_Border] = ImVec4(0.30f, 0.30f, 0.30f, 0.30f);
+  pColors[ImGuiCol_Border] = ImVec4(0.403f, 0.403f, 0.403f, 0.276f);
   pColors[ImGuiCol_FrameBg] = ImVec4(0.22f, 0.22f, 0.22f, 1.00f);
   pColors[ImGuiCol_TitleBg] = ImVec4(0.18f, 0.18f, 0.18f, 1.00f);
   pColors[ImGuiCol_TitleBgActive] = ImVec4(0.11f, 0.11f, 0.11f, 1.00f);
