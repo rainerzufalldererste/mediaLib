@@ -369,6 +369,8 @@ mFUNCTION(mUI_SetLightColourScheme)
   pColors[ImGuiCol_PopupBg] = ImVec4(0.98f, 0.98f, 0.98f, 1);
   pColors[ImGuiCol_Border] = ImVec4(0.00f, 0.00f, 0.00f, 0.30f);
   pColors[ImGuiCol_FrameBg] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
+  pColors[ImGuiCol_FrameBgHovered] = ImVec4(0.830f, 0.830f, 0.830f, 0.400f);
+  pColors[ImGuiCol_FrameBgActive] = ImVec4(0.900f, 0.900f, 0.900f, 0.670f);
   pColors[ImGuiCol_TitleBg] = ImVec4(0.96f, 0.96f, 0.96f, 1.00f);
   pColors[ImGuiCol_TitleBgActive] = ImVec4(0.82f, 0.82f, 0.82f, 1.00f);
   pColors[ImGuiCol_TitleBgCollapsed] = ImVec4(1.00f, 1.00f, 1.00f, 0.51f);
@@ -406,6 +408,8 @@ mFUNCTION(mUI_SetDarkColourScheme)
   pColors[ImGuiCol_PopupBg] = ImVec4(0.22f, 0.22f, 0.22f, 1);
   pColors[ImGuiCol_Border] = ImVec4(0.403f, 0.403f, 0.403f, 0.276f);
   pColors[ImGuiCol_FrameBg] = ImVec4(0.22f, 0.22f, 0.22f, 1.00f);
+  pColors[ImGuiCol_FrameBgHovered] = ImVec4(0.407f, 0.407f, 0.407f, 0.400f);
+  pColors[ImGuiCol_FrameBgActive] = ImVec4(0.389f, 0.389f, 0.389f, 0.670f);
   pColors[ImGuiCol_TitleBg] = ImVec4(0.18f, 0.18f, 0.18f, 1.00f);
   pColors[ImGuiCol_TitleBgActive] = ImVec4(0.11f, 0.11f, 0.11f, 1.00f);
   pColors[ImGuiCol_TitleBgCollapsed] = ImVec4(0.18f, 0.18f, 0.18f, 1.00f);
