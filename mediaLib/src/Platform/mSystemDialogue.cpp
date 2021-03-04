@@ -2,10 +2,6 @@
 #include "mSoftwareWindow.h"
 #include "mHardwareWindow.h"
 
-#define DECLSPEC
-#include "SDL_syswm.h"
-#undef DECLSPEC
-
 #include <shlobj.h>
 
 #ifdef GIT_BUILD // Define __M_FILE__
@@ -17,11 +13,8 @@
 
 mFUNCTION(mSystemDialogue_GetWStringFromFileExtensionPairs, OUT wchar_t **ppString, IN mAllocator *pAllocator, mPtr<mQueue<mKeyValuePair<mString, mString>>> &fileTypeExtensionPairs);
 static mFUNCTION(mSystemDialogue_OpenFile_Internal, HWND window, const mString &headlineString, mPtr<mQueue<mKeyValuePair<mString, mString>>> &fileTypeExtensionPairs, OUT bool *pCanceled, OUT mString *pFilename, const mString &initialDirectory);
-mFUNCTION(mSystemDialogue_OpenFile_SdlWindowInternal, SDL_Window *pWindow, const mString &headlineString, mPtr<mQueue<mKeyValuePair<mString, mString>>> &fileTypeExtensionPairs, OUT bool *pCanceled, OUT mString *pFilename, const mString &initialDirectory);
-mFUNCTION(mSystemDialogue_SelectDirectory_SdlWindowInternal, SDL_Window *pWindow, const mString &headlineString, OUT OPTIONAL bool *pCanceled, OUT mString *pSelectedDirectory);
 static mFUNCTION(mSystemDialogue_SelectDirectory_Internal, HWND window, const mString &headlineString, OUT OPTIONAL bool *pCanceled, OUT mString *pSelectedDirectory);
 static mFUNCTION(mSystemDialogue_SaveFile_Internal, HWND window, const mString &headlineString, mPtr<mQueue<mKeyValuePair<mString, mString>>> &fileTypeExtensionPairs, OUT mString *pFilename, OUT OPTIONAL bool *pCanceled, const mString &initialDirectory);
-mFUNCTION(mSystemDialogue_SaveFile_SdlWindowInternal, SDL_Window *pWindow, const mString &headlineString, mPtr<mQueue<mKeyValuePair<mString, mString>>> &fileTypeExtensionPairs, OUT mString *pFilename, OUT OPTIONAL bool *pCanceled, const mString &initialDirectory);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -40,10 +33,10 @@ mFUNCTION(mSystemDialogue_OpenFile, mPtr<mSoftwareWindow> &window, const mString
 
   mERROR_IF(window == nullptr, mR_ArgumentNull);
 
-  SDL_Window *pSdlWindow;
-  mERROR_CHECK(mSoftwareWindow_GetSdlWindowPtr(window, &pSdlWindow));
+  HWND hwnd;
+  mERROR_CHECK(mSoftwareWindow_GetWindowHandle(window, &hwnd));
 
-  mERROR_CHECK(mSystemDialogue_OpenFile_SdlWindowInternal(pSdlWindow, headlineString, fileTypeNameExtensionPairs, pCanceled, pOpenedFile, initialDirectory));
+  mERROR_CHECK(mSystemDialogue_OpenFile_Internal(hwnd, headlineString, fileTypeNameExtensionPairs, pCanceled, pOpenedFile, initialDirectory));
 
   mRETURN_SUCCESS();
 }
@@ -54,10 +47,10 @@ mFUNCTION(mSystemDialogue_OpenFile, mPtr<mHardwareWindow> &window, const mString
 
   mERROR_IF(window == nullptr, mR_ArgumentNull);
 
-  SDL_Window *pSdlWindow;
-  mERROR_CHECK(mHardwareWindow_GetSdlWindowPtr(window, &pSdlWindow));
+  HWND hwnd;
+  mERROR_CHECK(mHardwareWindow_GetWindowHandle(window, &hwnd));
 
-  mERROR_CHECK(mSystemDialogue_OpenFile_SdlWindowInternal(pSdlWindow, headlineString, fileTypeNameExtensionPairs, pCanceled, pOpenedFile, initialDirectory));
+  mERROR_CHECK(mSystemDialogue_OpenFile_Internal(hwnd, headlineString, fileTypeNameExtensionPairs, pCanceled, pOpenedFile, initialDirectory));
 
   mRETURN_SUCCESS();
 }
@@ -73,10 +66,10 @@ mFUNCTION(mSystemDialogue_SelectDirectory, mPtr<mSoftwareWindow> &window, const 
 
   mERROR_IF(window == nullptr, mR_ArgumentNull);
 
-  SDL_Window *pSdlWindow;
-  mERROR_CHECK(mSoftwareWindow_GetSdlWindowPtr(window, &pSdlWindow));
+  HWND hwnd;
+  mERROR_CHECK(mSoftwareWindow_GetWindowHandle(window, &hwnd));
 
-  mERROR_CHECK(mSystemDialogue_SelectDirectory_SdlWindowInternal(pSdlWindow, headlineString, pCanceled, pSelectedDirectory));
+  mERROR_CHECK(mSystemDialogue_SelectDirectory_Internal(hwnd, headlineString, pCanceled, pSelectedDirectory));
 
   mRETURN_SUCCESS();
 }
@@ -87,10 +80,10 @@ mFUNCTION(mSystemDialogue_SelectDirectory, mPtr<mHardwareWindow> &window, const 
 
   mERROR_IF(window == nullptr, mR_ArgumentNull);
 
-  SDL_Window *pSdlWindow;
-  mERROR_CHECK(mHardwareWindow_GetSdlWindowPtr(window, &pSdlWindow));
+  HWND hwnd;
+  mERROR_CHECK(mHardwareWindow_GetWindowHandle(window, &hwnd));
 
-  mERROR_CHECK(mSystemDialogue_SelectDirectory_SdlWindowInternal(pSdlWindow, headlineString, pCanceled, pSelectedDirectory));
+  mERROR_CHECK(mSystemDialogue_SelectDirectory_Internal(hwnd, headlineString, pCanceled, pSelectedDirectory));
 
   mRETURN_SUCCESS();
 }
@@ -106,10 +99,10 @@ mFUNCTION(mSystemDialogue_SaveFile, mPtr<mSoftwareWindow> &window, const mString
 
   mERROR_IF(window == nullptr, mR_ArgumentNull);
 
-  SDL_Window *pSdlWindow;
-  mERROR_CHECK(mSoftwareWindow_GetSdlWindowPtr(window, &pSdlWindow));
+  HWND hwnd;
+  mERROR_CHECK(mSoftwareWindow_GetWindowHandle(window, &hwnd));
 
-  mERROR_CHECK(mSystemDialogue_SaveFile_SdlWindowInternal(pSdlWindow, headlineString, fileTypeNameExtensionPairs, pFilename, pCanceled, initialDirectory));
+  mERROR_CHECK(mSystemDialogue_SaveFile_Internal(hwnd, headlineString, fileTypeNameExtensionPairs, pFilename, pCanceled, initialDirectory));
 
   mRETURN_SUCCESS();
 }
@@ -120,31 +113,15 @@ mFUNCTION(mSystemDialogue_SaveFile, mPtr<mHardwareWindow> &window, const mString
 
   mERROR_IF(window == nullptr, mR_ArgumentNull);
 
-  SDL_Window *pSdlWindow;
-  mERROR_CHECK(mHardwareWindow_GetSdlWindowPtr(window, &pSdlWindow));
+  HWND hwnd;
+  mERROR_CHECK(mHardwareWindow_GetWindowHandle(window, &hwnd));
 
-  mERROR_CHECK(mSystemDialogue_SaveFile_SdlWindowInternal(pSdlWindow, headlineString, fileTypeNameExtensionPairs, pFilename, pCanceled, initialDirectory));
+  mERROR_CHECK(mSystemDialogue_SaveFile_Internal(hwnd, headlineString, fileTypeNameExtensionPairs, pFilename, pCanceled, initialDirectory));
 
   mRETURN_SUCCESS();
 }
 
 //////////////////////////////////////////////////////////////////////////
-
-mFUNCTION(mSystemDialogue_OpenFile_SdlWindowInternal, SDL_Window *pWindow, const mString &headlineString, mPtr<mQueue<mKeyValuePair<mString, mString>>> &fileTypeNameExtensionPairs, OUT bool *pCanceled, OUT mString *pOpenedFile, const mString &initialDirectory)
-{
-  mFUNCTION_SETUP();
-
-  SDL_SysWMinfo wmInfo;
-  SDL_VERSION(&wmInfo.version);
-  mERROR_IF(SDL_FALSE == SDL_GetWindowWMInfo(pWindow, &wmInfo), mR_NotSupported);
-
-  HWND hwnd = wmInfo.info.win.window;
-  mERROR_IF(hwnd == nullptr, mR_NotSupported);
-
-  mERROR_CHECK(mSystemDialogue_OpenFile_Internal(hwnd, headlineString, fileTypeNameExtensionPairs, pCanceled, pOpenedFile, initialDirectory));
-
-  mRETURN_SUCCESS();
-}
 
 mFUNCTION(mSystemDialogue_GetWStringFromFileExtensionPairs, OUT wchar_t **ppString, IN mAllocator *pAllocator, mPtr<mQueue<mKeyValuePair<mString, mString>>> &fileTypeExtensionPairs)
 {
@@ -233,22 +210,6 @@ static mFUNCTION(mSystemDialogue_OpenFile_Internal, HWND window, const mString &
 
   if (result != 0)
     mERROR_CHECK(mString_Create(pFilename, fileName, mARRAYSIZE(fileName)));
-
-  mRETURN_SUCCESS();
-}
-
-mFUNCTION(mSystemDialogue_SelectDirectory_SdlWindowInternal, SDL_Window *pWindow, const mString &headlineString, OUT OPTIONAL bool *pCanceled, OUT mString *pSelectedDirectory)
-{
-  mFUNCTION_SETUP();
-
-  SDL_SysWMinfo wmInfo;
-  SDL_VERSION(&wmInfo.version);
-  mERROR_IF(SDL_FALSE == SDL_GetWindowWMInfo(pWindow, &wmInfo), mR_NotSupported);
-
-  HWND hwnd = wmInfo.info.win.window;
-  mERROR_IF(hwnd == nullptr, mR_NotSupported);
-  
-  mERROR_CHECK(mSystemDialogue_SelectDirectory_Internal(hwnd, headlineString, pCanceled, pSelectedDirectory));
 
   mRETURN_SUCCESS();
 }
@@ -350,22 +311,6 @@ static mFUNCTION(mSystemDialogue_SaveFile_Internal, HWND window, const mString &
 
   if (result != 0)
     mERROR_CHECK(mString_Create(pFilename, fileName, mARRAYSIZE(fileName)));
-
-  mRETURN_SUCCESS();
-}
-
-mFUNCTION(mSystemDialogue_SaveFile_SdlWindowInternal, SDL_Window *pWindow, const mString &headlineString, mPtr<mQueue<mKeyValuePair<mString, mString>>> &fileTypeExtensionPairs, OUT mString *pFilename, OUT OPTIONAL bool *pCanceled, const mString &initialDirectory)
-{
-  mFUNCTION_SETUP();
-
-  SDL_SysWMinfo wmInfo;
-  SDL_VERSION(&wmInfo.version);
-  mERROR_IF(SDL_FALSE == SDL_GetWindowWMInfo(pWindow, &wmInfo), mR_NotSupported);
-
-  HWND hwnd = wmInfo.info.win.window;
-  mERROR_IF(hwnd == nullptr, mR_NotSupported);
-
-  mERROR_CHECK(mSystemDialogue_SaveFile_Internal(hwnd, headlineString, fileTypeExtensionPairs, pFilename, pCanceled, initialDirectory));
 
   mRETURN_SUCCESS();
 }

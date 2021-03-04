@@ -28,6 +28,7 @@ static mFUNCTION(mFile_GetKnownPath_Internal, OUT mString *pString, const GUID &
 static mFUNCTION(mFileInfo_FromFindDataWStruct_Internal, IN_OUT mFileInfo *pFileInfo, IN const WIN32_FIND_DATAW *pFileData, IN mAllocator *pAllocator);
 static mFUNCTION(mFileInfo_FromByHandleFileInformationStruct_Internal, IN_OUT mFileInfo *pFileInfo, IN const BY_HANDLE_FILE_INFORMATION *pFileData);
 static mFUNCTION(mFile_CreateDirectoryRecursive_Internal, const wchar_t *directoryPath);
+static mFUNCTION(mRegistry_FindKey_Internal, const mString &keyUrl, OUT HKEY *pParentKey, IN mAllocator *pAllocator, OUT wchar_t **pPathOrValue, OUT size_t *pPathOrValueCount, OUT wchar_t **pValueName, OUT size_t *pValueNameCount);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -2142,103 +2143,18 @@ mFUNCTION(mRegistry_WriteKey, const mString &keyUrl, const mString &value, OUT O
 {
   mFUNCTION_SETUP();
 
-  mString subAddress;
-  subAddress.pAllocator = &mDefaultTempAllocator;
-
-  const char classesRoot[] = "HKEY_CLASSES_ROOT\\";
-  const char currentConfig[] = "HKEY_CURRENT_CONFIG\\";
-  const char currentUser[] = "HKEY_CURRENT_USER\\";
-  const char localMachine[] = "HKEY_LOCAL_MACHINE\\";
-  const char users[] = "HKEY_USERS\\";
-
-  HKEY parentKey = nullptr;
-
-  if (keyUrl.StartsWith(classesRoot))
-  {
-    parentKey = HKEY_CLASSES_ROOT;
-
-    mERROR_CHECK(mString_Substring(keyUrl, &subAddress, mARRAYSIZE(classesRoot) - 1));
-  }
-  else if (keyUrl.StartsWith(currentConfig))
-  {
-    parentKey = HKEY_CURRENT_CONFIG;
-
-    mERROR_CHECK(mString_Substring(keyUrl, &subAddress, mARRAYSIZE(currentConfig) - 1));
-  }
-  else if (keyUrl.StartsWith(currentUser))
-  {
-    parentKey = HKEY_CURRENT_USER;
-
-    mERROR_CHECK(mString_Substring(keyUrl, &subAddress, mARRAYSIZE(currentUser) - 1));
-  }
-  else if (keyUrl.StartsWith(localMachine))
-  {
-    parentKey = HKEY_LOCAL_MACHINE;
-
-    mERROR_CHECK(mString_Substring(keyUrl, &subAddress, mARRAYSIZE(localMachine) - 1));
-  }
-  else if (keyUrl.StartsWith(users))
-  {
-    parentKey = HKEY_USERS;
-
-    mERROR_CHECK(mString_Substring(keyUrl, &subAddress, mARRAYSIZE(users) - 1));
-  }
-  else
-  {
-    mRETURN_RESULT(mR_InvalidParameter);
-  }
-
-  mString pathString;
-  pathString.pAllocator = &mDefaultTempAllocator;
-  
-  mString valueName;
-  valueName.pAllocator = &mDefaultTempAllocator;
-
-  size_t index = (size_t)-1;
-  size_t lastSlashIndex = (size_t)-1;
-  const mchar_t slashCodePoint = mToChar<2>("\\");
-
-  for (const auto &&_char : subAddress)
-  {
-    ++index;
-
-    if (_char.codePoint == slashCodePoint)
-      lastSlashIndex = index;
-  }
-
-  if (lastSlashIndex == (size_t)-1)
-  {
-    mERROR_CHECK(mString_Create(&pathString, subAddress, &mDefaultTempAllocator));
-    mERROR_CHECK(mString_Create(&valueName, "", 1, &mDefaultTempAllocator));
-  }
-  else
-  {
-    mERROR_CHECK(mString_Substring(subAddress, &pathString, 0, lastSlashIndex));
-
-    if (lastSlashIndex != subAddress.count)
-      mERROR_CHECK(mString_Substring(subAddress, &valueName, lastSlashIndex + 1, subAddress.count - (lastSlashIndex + 2)));
-    else
-      mERROR_CHECK(mString_Create(&valueName, "", 1, &mDefaultTempAllocator));
-  }
-
   wchar_t *wPathOrValue = nullptr;
   size_t wPathOrValueCount = 0;
-  mERROR_CHECK(mString_GetRequiredWideStringCount(pathString, &wPathOrValueCount));
-
   mAllocator *pAllocator = &mDefaultTempAllocator;
   mDEFER(mAllocator_FreePtr(pAllocator, &wPathOrValue));
-  mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &wPathOrValue, wPathOrValueCount));
-
-  mERROR_CHECK(mString_ToWideString(pathString, wPathOrValue, wPathOrValueCount));
 
   wchar_t *wValueName = nullptr;
   size_t wValueNameCount = 0;
-  mERROR_CHECK(mString_GetRequiredWideStringCount(valueName, &wValueNameCount));
-
   mDEFER(mAllocator_FreePtr(pAllocator, &wValueName));
-  mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &wValueName, wValueNameCount));
 
-  mERROR_CHECK(mString_ToWideString(valueName, wValueName, wValueNameCount));
+  HKEY parentKey = nullptr;
+
+  mERROR_CHECK(mRegistry_FindKey_Internal(keyUrl, &parentKey, pAllocator, &wPathOrValue, &wPathOrValueCount, &wValueName, &wValueNameCount));
 
   HKEY key = nullptr;
   DWORD disposition = 0;
@@ -2261,112 +2177,93 @@ mFUNCTION(mRegistry_WriteKey, const mString &keyUrl, const mString &value, OUT O
   mRETURN_SUCCESS();
 }
 
+mFUNCTION(mRegistry_WriteKey, const mString &keyUrl, const uint32_t value, OUT OPTIONAL bool *pNewlyCreated /* = nullptr */)
+{
+  mFUNCTION_SETUP();
+
+  wchar_t *wPathOrValue = nullptr;
+  size_t wPathOrValueCount = 0;
+  mAllocator *pAllocator = &mDefaultTempAllocator;
+  mDEFER(mAllocator_FreePtr(pAllocator, &wPathOrValue));
+
+  wchar_t *wValueName = nullptr;
+  size_t wValueNameCount = 0;
+  mDEFER(mAllocator_FreePtr(pAllocator, &wValueName));
+
+  HKEY parentKey = nullptr;
+
+  mERROR_CHECK(mRegistry_FindKey_Internal(keyUrl, &parentKey, pAllocator, &wPathOrValue, &wPathOrValueCount, &wValueName, &wValueNameCount));
+
+  HKEY key = nullptr;
+  DWORD disposition = 0;
+
+  LSTATUS result = RegCreateKeyExW(parentKey, wPathOrValue, 0, NULL, 0, KEY_ALL_ACCESS, NULL, &key, &disposition);
+  mDEFER(if (key != nullptr) RegCloseKey(key));
+  mERROR_IF(result != ERROR_SUCCESS, mR_InternalError);
+
+  if (pNewlyCreated != nullptr)
+    *pNewlyCreated = (disposition == REG_CREATED_NEW_KEY);
+
+  result = RegSetValueExW(key, wValueName, 0, REG_DWORD, reinterpret_cast<const BYTE *>(&value), sizeof(value));
+  mERROR_IF(result != ERROR_SUCCESS, mR_InternalError);
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mRegistry_WriteKey, const mString &keyUrl, const uint64_t value, OUT OPTIONAL bool *pNewlyCreated /* = nullptr */)
+{
+  mFUNCTION_SETUP();
+
+  wchar_t *wPathOrValue = nullptr;
+  size_t wPathOrValueCount = 0;
+  mAllocator *pAllocator = &mDefaultTempAllocator;
+  mDEFER(mAllocator_FreePtr(pAllocator, &wPathOrValue));
+
+  wchar_t *wValueName = nullptr;
+  size_t wValueNameCount = 0;
+  mDEFER(mAllocator_FreePtr(pAllocator, &wValueName));
+
+  HKEY parentKey = nullptr;
+
+  mERROR_CHECK(mRegistry_FindKey_Internal(keyUrl, &parentKey, pAllocator, &wPathOrValue, &wPathOrValueCount, &wValueName, &wValueNameCount));
+
+  HKEY key = nullptr;
+  DWORD disposition = 0;
+
+  LSTATUS result = RegCreateKeyExW(parentKey, wPathOrValue, 0, NULL, 0, KEY_ALL_ACCESS, NULL, &key, &disposition);
+  mDEFER(if (key != nullptr) RegCloseKey(key));
+  mERROR_IF(result != ERROR_SUCCESS, mR_InternalError);
+
+  if (pNewlyCreated != nullptr)
+    *pNewlyCreated = (disposition == REG_CREATED_NEW_KEY);
+
+  result = RegSetValueExW(key, wValueName, 0, REG_QWORD, reinterpret_cast<const BYTE *>(&value), sizeof(value));
+  mERROR_IF(result != ERROR_SUCCESS, mR_InternalError);
+
+  mRETURN_SUCCESS();
+}
+
 mFUNCTION(mRegistry_ReadKey, const mString &keyUrl, OUT mString *pValue)
 {
   mFUNCTION_SETUP();
 
   mERROR_IF(pValue == nullptr, mR_ArgumentNull);
 
-  mString subAddress;
-  subAddress.pAllocator = &mDefaultTempAllocator;
-
-  const char classesRoot[] = "HKEY_CLASSES_ROOT\\";
-  const char currentConfig[] = "HKEY_CURRENT_CONFIG\\";
-  const char currentUser[] = "HKEY_CURRENT_USER\\";
-  const char localMachine[] = "HKEY_LOCAL_MACHINE\\";
-  const char users[] = "HKEY_USERS\\";
-
-  HKEY parentKey = nullptr;
-
-  if (keyUrl.StartsWith(classesRoot))
-  {
-    parentKey = HKEY_CLASSES_ROOT;
-
-    mERROR_CHECK(mString_Substring(keyUrl, &subAddress, mARRAYSIZE(classesRoot) - 1));
-  }
-  else if (keyUrl.StartsWith(currentConfig))
-  {
-    parentKey = HKEY_CURRENT_CONFIG;
-
-    mERROR_CHECK(mString_Substring(keyUrl, &subAddress, mARRAYSIZE(currentConfig) - 1));
-  }
-  else if (keyUrl.StartsWith(currentUser))
-  {
-    parentKey = HKEY_CURRENT_USER;
-
-    mERROR_CHECK(mString_Substring(keyUrl, &subAddress, mARRAYSIZE(currentUser) - 1));
-  }
-  else if (keyUrl.StartsWith(localMachine))
-  {
-    parentKey = HKEY_LOCAL_MACHINE;
-
-    mERROR_CHECK(mString_Substring(keyUrl, &subAddress, mARRAYSIZE(localMachine) - 1));
-  }
-  else if (keyUrl.StartsWith(users))
-  {
-    parentKey = HKEY_USERS;
-
-    mERROR_CHECK(mString_Substring(keyUrl, &subAddress, mARRAYSIZE(users) - 1));
-  }
-  else
-  {
-    mRETURN_RESULT(mR_InvalidParameter);
-  }
-
-  mString pathString;
-  pathString.pAllocator = &mDefaultTempAllocator;
-
-  mString valueName;
-  valueName.pAllocator = &mDefaultTempAllocator;
-
-  size_t index = (size_t)-1;
-  size_t lastSlashIndex = (size_t)-1;
-  const mchar_t slashCodePoint = mToChar<2>("\\");
-
-  for (const auto &&_char : subAddress)
-  {
-    ++index;
-
-    if (_char.codePoint == slashCodePoint)
-      lastSlashIndex = index;
-  }
-
-  if (lastSlashIndex == (size_t)-1)
-  {
-    mERROR_CHECK(mString_Create(&pathString, subAddress, &mDefaultTempAllocator));
-    mERROR_CHECK(mString_Create(&valueName, "", 1, &mDefaultTempAllocator));
-  }
-  else
-  {
-    mERROR_CHECK(mString_Substring(subAddress, &pathString, 0, lastSlashIndex));
-
-    if (lastSlashIndex != subAddress.count)
-      mERROR_CHECK(mString_Substring(subAddress, &valueName, lastSlashIndex + 1, subAddress.count - (lastSlashIndex + 2)));
-    else
-      mERROR_CHECK(mString_Create(&valueName, "", 1, &mDefaultTempAllocator));
-  }
-
   wchar_t *wPathOrValue = nullptr;
-  size_t wPathStringCount = 0;
-  mERROR_CHECK(mString_GetRequiredWideStringCount(pathString, &wPathStringCount));
-
+  size_t wPathOrValueCount = 0;
   mAllocator *pAllocator = &mDefaultTempAllocator;
   mDEFER(mAllocator_FreePtr(pAllocator, &wPathOrValue));
-  mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &wPathOrValue, wPathStringCount));
-
-  mERROR_CHECK(mString_ToWideString(pathString, wPathOrValue, wPathStringCount));
 
   wchar_t *wValueName = nullptr;
   size_t wValueNameCount = 0;
-  mERROR_CHECK(mString_GetRequiredWideStringCount(valueName, &wValueNameCount));
-
   mDEFER(mAllocator_FreePtr(pAllocator, &wValueName));
-  mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &wValueName, wValueNameCount));
 
-  mERROR_CHECK(mString_ToWideString(valueName, wValueName, wValueNameCount));
+  HKEY parentKey = nullptr;
+
+  mERROR_CHECK(mRegistry_FindKey_Internal(keyUrl, &parentKey, pAllocator, &wPathOrValue, &wPathOrValueCount, &wValueName, &wValueNameCount));
 
   HKEY key = nullptr;
-  
+
   LSTATUS result = RegOpenKeyExW(parentKey, wPathOrValue, 0, KEY_QUERY_VALUE, &key);
   mDEFER(if (key != nullptr) RegCloseKey(key));
   mERROR_IF(result != ERROR_SUCCESS, mR_ResourceNotFound);
@@ -2380,16 +2277,101 @@ mFUNCTION(mRegistry_ReadKey, const mString &keyUrl, OUT mString *pValue)
 
   mERROR_IF(type != REG_SZ, mR_ResourceStateInvalid);
 
-  if (bytes > wPathStringCount * sizeof(wchar_t))
+  if (bytes > wPathOrValueCount * sizeof(wchar_t))
   {
-    wPathStringCount = (bytes + 1) / sizeof(wchar_t);
-    mERROR_CHECK(mAllocator_Reallocate(pAllocator, &wPathOrValue, wPathStringCount));
+    wPathOrValueCount = (bytes + 1) / sizeof(wchar_t);
+    mERROR_CHECK(mAllocator_Reallocate(pAllocator, &wPathOrValue, wPathOrValueCount));
   }
 
   result = RegQueryValueExW(key, wValueName, NULL, NULL, reinterpret_cast<BYTE *>(wPathOrValue), &bytes);
   mERROR_IF(result != ERROR_SUCCESS, mR_InternalError);
 
-  mERROR_CHECK(mString_Create(pValue, wPathOrValue, wPathStringCount, pValue->pAllocator));
+  mERROR_CHECK(mString_Create(pValue, wPathOrValue, wPathOrValueCount, pValue->pAllocator));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mRegistry_ReadKey, const mString &keyUrl, OUT uint32_t *pValue)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pValue == nullptr, mR_ArgumentNull);
+
+  wchar_t *wPathOrValue = nullptr;
+  size_t wPathOrValueCount = 0;
+  mAllocator *pAllocator = &mDefaultTempAllocator;
+  mDEFER(mAllocator_FreePtr(pAllocator, &wPathOrValue));
+
+  wchar_t *wValueName = nullptr;
+  size_t wValueNameCount = 0;
+  mDEFER(mAllocator_FreePtr(pAllocator, &wValueName));
+
+  HKEY parentKey = nullptr;
+
+  mERROR_CHECK(mRegistry_FindKey_Internal(keyUrl, &parentKey, pAllocator, &wPathOrValue, &wPathOrValueCount, &wValueName, &wValueNameCount));
+
+  HKEY key = nullptr;
+
+  LSTATUS result = RegOpenKeyExW(parentKey, wPathOrValue, 0, KEY_QUERY_VALUE, &key);
+  mDEFER(if (key != nullptr) RegCloseKey(key));
+  mERROR_IF(result != ERROR_SUCCESS, mR_ResourceNotFound);
+
+  DWORD type = 0;
+  DWORD bytes = 0;
+
+  result = RegQueryValueExW(key, wValueName, NULL, &type, NULL, &bytes);
+  mERROR_IF(result == ERROR_FILE_NOT_FOUND, mR_ResourceNotFound);
+  mERROR_IF(result != ERROR_SUCCESS, mR_InternalError);
+
+  mERROR_IF(type != REG_DWORD && type != REG_DWORD_BIG_ENDIAN, mR_ResourceStateInvalid);
+  mERROR_IF(bytes != sizeof(uint32_t), mR_InternalError);
+
+  result = RegQueryValueExW(key, wValueName, NULL, NULL, reinterpret_cast<BYTE *>(pValue), &bytes);
+  mERROR_IF(result != ERROR_SUCCESS, mR_InternalError);
+
+  if (type == REG_DWORD_BIG_ENDIAN)
+    *pValue = ((*pValue >> 24) & 0xFF) | ((*pValue >> 8) & 0xFF00) | ((*pValue << 8) & 0xFF0000) | ((*pValue << 24) & 0xFF000000);
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mRegistry_ReadKey, const mString &keyUrl, OUT uint64_t *pValue)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pValue == nullptr, mR_ArgumentNull);
+
+  wchar_t *wPathOrValue = nullptr;
+  size_t wPathOrValueCount = 0;
+  mAllocator *pAllocator = &mDefaultTempAllocator;
+  mDEFER(mAllocator_FreePtr(pAllocator, &wPathOrValue));
+
+  wchar_t *wValueName = nullptr;
+  size_t wValueNameCount = 0;
+  mDEFER(mAllocator_FreePtr(pAllocator, &wValueName));
+
+  HKEY parentKey = nullptr;
+
+  mERROR_CHECK(mRegistry_FindKey_Internal(keyUrl, &parentKey, pAllocator, &wPathOrValue, &wPathOrValueCount, &wValueName, &wValueNameCount));
+
+  HKEY key = nullptr;
+
+  LSTATUS result = RegOpenKeyExW(parentKey, wPathOrValue, 0, KEY_QUERY_VALUE, &key);
+  mDEFER(if (key != nullptr) RegCloseKey(key));
+  mERROR_IF(result != ERROR_SUCCESS, mR_ResourceNotFound);
+
+  DWORD type = 0;
+  DWORD bytes = 0;
+
+  result = RegQueryValueExW(key, wValueName, NULL, &type, NULL, &bytes);
+  mERROR_IF(result == ERROR_FILE_NOT_FOUND, mR_ResourceNotFound);
+  mERROR_IF(result != ERROR_SUCCESS, mR_InternalError);
+
+  mERROR_IF(type != REG_QWORD, mR_ResourceStateInvalid);
+  mERROR_IF(bytes != sizeof(uint32_t), mR_InternalError);
+
+  result = RegQueryValueExW(key, wValueName, NULL, NULL, reinterpret_cast<BYTE *>(pValue), &bytes);
+  mERROR_IF(result != ERROR_SUCCESS, mR_InternalError);
 
   mRETURN_SUCCESS();
 }
@@ -2544,6 +2526,102 @@ mFUNCTION(mRegistry_DeleteKey, const mString &keyUrl)
       }
     }
   }
+
+  mRETURN_SUCCESS();
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+static mFUNCTION(mRegistry_FindKey_Internal, const mString &keyUrl, OUT HKEY *pParentKey, IN mAllocator *pAllocator, OUT wchar_t **pPathOrValue, OUT size_t *pPathOrValueCount, OUT wchar_t **pValueName, OUT size_t *pValueNameCount)
+{
+  mFUNCTION_SETUP();
+
+  mString subAddress;
+  subAddress.pAllocator = &mDefaultTempAllocator;
+
+  const char classesRoot[] = "HKEY_CLASSES_ROOT\\";
+  const char currentConfig[] = "HKEY_CURRENT_CONFIG\\";
+  const char currentUser[] = "HKEY_CURRENT_USER\\";
+  const char localMachine[] = "HKEY_LOCAL_MACHINE\\";
+  const char users[] = "HKEY_USERS\\";
+
+  if (keyUrl.StartsWith(classesRoot))
+  {
+    *pParentKey = HKEY_CLASSES_ROOT;
+
+    mERROR_CHECK(mString_Substring(keyUrl, &subAddress, mARRAYSIZE(classesRoot) - 1));
+  }
+  else if (keyUrl.StartsWith(currentConfig))
+  {
+    *pParentKey = HKEY_CURRENT_CONFIG;
+
+    mERROR_CHECK(mString_Substring(keyUrl, &subAddress, mARRAYSIZE(currentConfig) - 1));
+  }
+  else if (keyUrl.StartsWith(currentUser))
+  {
+    *pParentKey = HKEY_CURRENT_USER;
+
+    mERROR_CHECK(mString_Substring(keyUrl, &subAddress, mARRAYSIZE(currentUser) - 1));
+  }
+  else if (keyUrl.StartsWith(localMachine))
+  {
+    *pParentKey = HKEY_LOCAL_MACHINE;
+
+    mERROR_CHECK(mString_Substring(keyUrl, &subAddress, mARRAYSIZE(localMachine) - 1));
+  }
+  else if (keyUrl.StartsWith(users))
+  {
+    *pParentKey = HKEY_USERS;
+
+    mERROR_CHECK(mString_Substring(keyUrl, &subAddress, mARRAYSIZE(users) - 1));
+  }
+  else
+  {
+    mRETURN_RESULT(mR_InvalidParameter);
+  }
+
+  mString pathString;
+  pathString.pAllocator = &mDefaultTempAllocator;
+
+  mString valueName;
+  valueName.pAllocator = &mDefaultTempAllocator;
+
+  size_t index = (size_t)-1;
+  size_t lastSlashIndex = (size_t)-1;
+  const mchar_t slashCodePoint = mToChar<2>("\\");
+
+  for (const auto &&_char : subAddress)
+  {
+    ++index;
+
+    if (_char.codePoint == slashCodePoint)
+      lastSlashIndex = index;
+  }
+
+  if (lastSlashIndex == (size_t)-1)
+  {
+    mERROR_CHECK(mString_Create(&pathString, subAddress, &mDefaultTempAllocator));
+    mERROR_CHECK(mString_Create(&valueName, "", 1, &mDefaultTempAllocator));
+  }
+  else
+  {
+    mERROR_CHECK(mString_Substring(subAddress, &pathString, 0, lastSlashIndex));
+
+    if (lastSlashIndex != subAddress.count)
+      mERROR_CHECK(mString_Substring(subAddress, &valueName, lastSlashIndex + 1, subAddress.count - (lastSlashIndex + 2)));
+    else
+      mERROR_CHECK(mString_Create(&valueName, "", 1, &mDefaultTempAllocator));
+  }
+
+  mERROR_CHECK(mString_GetRequiredWideStringCount(pathString, pPathOrValueCount));
+  mERROR_CHECK(mAllocator_AllocateZero(pAllocator, pPathOrValue, *pPathOrValueCount));
+
+  mERROR_CHECK(mString_ToWideString(pathString, *pPathOrValue, *pPathOrValueCount));
+
+  mERROR_CHECK(mString_GetRequiredWideStringCount(valueName, pValueNameCount));
+  mERROR_CHECK(mAllocator_AllocateZero(pAllocator, pValueName, *pValueNameCount));
+
+  mERROR_CHECK(mString_ToWideString(valueName, *pValueName, *pValueNameCount));
 
   mRETURN_SUCCESS();
 }

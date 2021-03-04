@@ -266,7 +266,11 @@ inline mFUNCTION(mFile_WriteRaw, const mString &filename, IN T *pData, const siz
 //////////////////////////////////////////////////////////////////////////
 
 mFUNCTION(mRegistry_ReadKey, const mString &keyUrl, OUT mString *pValue);
+mFUNCTION(mRegistry_ReadKey, const mString &keyUrl, OUT uint32_t *pValue);
+mFUNCTION(mRegistry_ReadKey, const mString &keyUrl, OUT uint64_t *pValue);
 mFUNCTION(mRegistry_WriteKey, const mString &keyUrl, const mString &value, OUT OPTIONAL bool *pNewlyCreated = nullptr);
+mFUNCTION(mRegistry_WriteKey, const mString &keyUrl, const uint32_t value, OUT OPTIONAL bool *pNewlyCreated = nullptr);
+mFUNCTION(mRegistry_WriteKey, const mString &keyUrl, const uint64_t value, OUT OPTIONAL bool *pNewlyCreated = nullptr);
 mFUNCTION(mRegistry_DeleteKey, const mString &keyUrl);
 
 #endif // mFile_h__
