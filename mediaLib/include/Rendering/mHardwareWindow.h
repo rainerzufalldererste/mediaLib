@@ -45,7 +45,8 @@ mFUNCTION(mHardwareWindow_IsResizable, const mPtr<mHardwareWindow> &window, OUT 
 mFUNCTION(mHardwareWindow_IsMinimized, const mPtr<mHardwareWindow> &window, OUT bool *pIsMinimized);
 mFUNCTION(mHardwareWindow_IsMaximized, const mPtr<mHardwareWindow> &window, OUT bool *pIsMaximized);
 
-mFUNCTION(mHardwareWindow_RespectDarkModePreference, mPtr<mHardwareWindow> &window, const bool respectDarkModePreference = true);
+mFUNCTION(mHardwareWindow_RespectDarkModePreference, mPtr<mHardwareWindow> &window);
+mFUNCTION(mHardwareWindow_AddOnDarkModeChangedEvent, mPtr<mHardwareWindow> &window, const std::function<mResult(const bool isDarkMode)> &callback);
 
 mFUNCTION(mHardwareWindow_MaximizeWindow, mPtr<mHardwareWindow> &window);
 mFUNCTION(mHardwareWindow_MinimizeWindow, mPtr<mHardwareWindow> &window);
