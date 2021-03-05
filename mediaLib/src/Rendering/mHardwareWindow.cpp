@@ -24,11 +24,14 @@ struct mHardwareWindow
   mPtr<mQueue<std::function<mResult (IN SDL_Event *)>>> onEventCallbacks;
   mPtr<mQueue<std::function<mResult (void)>>> onExitCallbacks;
   mPtr<mQueue<std::function<mResult(const mVec2s &)>>> onResizeCallbacks;
+  mPtr<mQueue<std::function<mResult(const bool)>>> onDarkModeChanged;
   mUniqueContainer<mFramebuffer> fakeFramebuffer;
+  bool respectDarkMode, isDarkMode;
 };
 
 static mFUNCTION(mHardwareWindow_Create_Internal, IN_OUT mHardwareWindow *pWindow, IN mAllocator *pAllocator, const mString &title, const mVec2s &size, const mHardwareWindow_DisplayMode displaymode, const bool stereo3dIfAvailable);
 static mFUNCTION(mHardwareWindow_Destroy_Internal, IN mHardwareWindow *pWindow);
+static mFUNCTION(mHardwareWindow_UpdateWindowTitleColour_Internal, mPtr<mHardwareWindow> &window);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -178,6 +181,53 @@ mFUNCTION(mHardwareWindow_Swap, mPtr<mHardwareWindow> &window)
             mRETURN_RESULT(result);
         }
       }
+    }
+    else if (_event.type == SDL_SYSWMEVENT)
+    {
+#if defined (mPLATFORM_WINDOWS)
+      if (_event.syswm.msg != nullptr && _event.syswm.msg->subsystem == SDL_SYSWM_WINDOWS)
+      {
+        switch (_event.syswm.msg->msg.win.msg)
+        {
+        case WM_SETTINGCHANGE:
+        case WM_THEMECHANGED:
+        {
+          if (window->respectDarkMode)
+          {
+            const bool isDarkMode = mSystemInfo_IsDarkMode();
+
+            if (window->isDarkMode != isDarkMode)
+            {
+              window->isDarkMode = isDarkMode;
+
+              /* for now, we don't care if this succeeds. */ mHardwareWindow_UpdateWindowTitleColour_Internal(window);
+
+              size_t onDarkModeChangedCount = 0;
+              mERROR_CHECK(mQueue_GetCount(window->onDarkModeChanged, &onDarkModeChangedCount));
+
+              for (size_t i = 0; i < onDarkModeChangedCount; ++i)
+              {
+                std::function<mResult(const bool)> *pFunction = nullptr;
+                mERROR_CHECK(mQueue_PointerAt(window->onDarkModeChanged, i, &pFunction));
+
+                mResult result = ((*pFunction)(window->isDarkMode));
+
+                if (mFAILED(result))
+                {
+                  if (result == mR_Break)
+                    break;
+                  else
+                    mRETURN_RESULT(result);
+                }
+              }
+            }
+          }
+          
+        break;
+        }
+        }
+      }
+#endif
     }
   }
 
@@ -433,32 +483,20 @@ mFUNCTION(mHardwareWindow_IsMaximized, const mPtr<mHardwareWindow> &window, OUT 
 }
 
 // This function also has a sibling in `mSoftwareWindow_`. When fixing bugs or adding features, please add the respected changes to `mSoftwareWindow_` as well.
-mFUNCTION(mHardwareWindow_RespectDarkModePreference, mPtr<mHardwareWindow> &window, const bool respectDarkModePreference /* = true */)
+mFUNCTION(mHardwareWindow_RespectDarkModePreference, mPtr<mHardwareWindow> &window)
 {
   mFUNCTION_SETUP();
 
   mERROR_IF(window == nullptr, mR_ArgumentNull);
 
 #if defined(mPLATFORM_WINDOWS)
-  if (!mSystemInfo_IsDarkMode())
-    mRETURN_SUCCESS();
-
-  // Attention: This uses undocumented Windows features and may or may not break in the future. (There is no documented way to do this at the moment)
-  enum
-  {
-    DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1 = 19,
-    DWMWA_USE_IMMERSIVE_DARK_MODE = 20
-  };
-
   mERROR_IF(!mSystemInfo_IsWindows10OrGreater(17763), mR_NotSupported);
 
-  HWND hwnd;
-  mERROR_CHECK(mHardwareWindow_GetWindowHandle(window, &hwnd));
+  window->isDarkMode = mSystemInfo_IsDarkMode();
 
-  const int32_t attribute = mSystemInfo_IsWindows10OrGreater(18985) ? DWMWA_USE_IMMERSIVE_DARK_MODE : DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1;
-  const int32_t setEnabled = (int32_t)respectDarkModePreference;
+  mERROR_CHECK(mHardwareWindow_UpdateWindowTitleColour_Internal(window));
 
-  mERROR_IF(FAILED(DwmSetWindowAttribute(hwnd, attribute, &setEnabled, sizeof(setEnabled))), mR_InternalError);
+  window->respectDarkMode = true;
 
   // HACK: Because this sometimes (!) leads to only the title text being black, we're minimizing and restoring the window in order to "refresh" the title screen.
   const uint32_t flags = SDL_GetWindowFlags(window->pWindow);
@@ -479,12 +517,24 @@ mFUNCTION(mHardwareWindow_RespectDarkModePreference, mPtr<mHardwareWindow> &wind
 #endif
 }
 
+mFUNCTION(mHardwareWindow_AddOnDarkModeChangedEvent, mPtr<mHardwareWindow> &window, const std::function<mResult(const bool isDarkMode)> &callback)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(window == nullptr || callback == nullptr, mR_ArgumentNull);
+
+  std::function<mResult(const bool)> function = callback;
+
+  mERROR_CHECK(mQueue_PushBack(window->onDarkModeChanged, &function));
+
+  mRETURN_SUCCESS();
+}
+
 //////////////////////////////////////////////////////////////////////////
 
 static mFUNCTION(mHardwareWindow_Create_Internal, IN_OUT mHardwareWindow *pWindow, IN mAllocator *pAllocator, const mString &title, const mVec2s &size, const mHardwareWindow_DisplayMode displaymode, const bool stereo3dIfAvailable)
 {
   mFUNCTION_SETUP();
-  mUnused(displaymode);
 
   mERROR_IF(size.x > INT_MAX || size.y > INT_MAX, mR_ArgumentOutOfBounds);
 
@@ -494,7 +544,7 @@ static mFUNCTION(mHardwareWindow_Create_Internal, IN_OUT mHardwareWindow *pWindo
 retry_without_3d:
   SDL_GL_SetAttribute(SDL_GL_STEREO, try3d ? 1 : 0);
 
-  pWindow->pWindow = SDL_CreateWindow(title.c_str(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, (int)size.x, (int)size.y
+  pWindow->pWindow = SDL_CreateWindow(title.c_str(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, (int32_t)size.x, (int32_t)size.y
     , 
 #if defined(mRENDERER_OPENGL)
     SDL_WINDOW_OPENGL |
@@ -517,11 +567,15 @@ retry_without_3d:
     SDL_MaximizeWindow(pWindow->pWindow);
   }
 
+  // Try to register for SDL_SYSWMEVENTs.
+  SDL_EventState(SDL_SYSWMEVENT, SDL_ENABLE);
+
   if ((displaymode & (SDL_WINDOW_FULLSCREEN | SDL_WINDOW_FULLSCREEN_DESKTOP)) != 0)
     SDL_RaiseWindow(pWindow->pWindow);
 
   mERROR_CHECK(mQueue_Create(&pWindow->onEventCallbacks, pAllocator));
   mERROR_CHECK(mQueue_Create(&pWindow->onResizeCallbacks, pAllocator));
+  mERROR_CHECK(mQueue_Create(&pWindow->onDarkModeChanged, pAllocator));
   mERROR_CHECK(mQueue_Create(&pWindow->onExitCallbacks, pAllocator));
 
   mRETURN_SUCCESS();
@@ -540,7 +594,30 @@ static mFUNCTION(mHardwareWindow_Destroy_Internal, IN mHardwareWindow *pWindow)
 
   mERROR_CHECK(mQueue_Destroy(&pWindow->onEventCallbacks));
   mERROR_CHECK(mQueue_Destroy(&pWindow->onResizeCallbacks));
+  mERROR_CHECK(mQueue_Destroy(&pWindow->onDarkModeChanged));
   mERROR_CHECK(mQueue_Destroy(&pWindow->onExitCallbacks));
+
+  mRETURN_SUCCESS();
+}
+
+static mFUNCTION(mHardwareWindow_UpdateWindowTitleColour_Internal, mPtr<mHardwareWindow> &window)
+{
+  mFUNCTION_SETUP();
+
+  HWND hwnd;
+  mERROR_CHECK(mHardwareWindow_GetWindowHandle(window, &hwnd));
+
+  // Attention: This uses undocumented Windows features and may or may not break in the future. (There is no documented way to do this at the moment)
+  enum
+  {
+    DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1 = 19,
+    DWMWA_USE_IMMERSIVE_DARK_MODE = 20
+  };
+
+  const int32_t attribute = mSystemInfo_IsWindows10OrGreater(18985) ? DWMWA_USE_IMMERSIVE_DARK_MODE : DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1;
+  const int32_t setEnabled = (int32_t)mSystemInfo_IsDarkMode();
+
+  mERROR_IF(FAILED(DwmSetWindowAttribute(hwnd, attribute, &setEnabled, sizeof(setEnabled))), mR_InternalError);
 
   mRETURN_SUCCESS();
 }
