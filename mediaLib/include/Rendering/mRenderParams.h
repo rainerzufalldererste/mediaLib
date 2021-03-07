@@ -205,7 +205,7 @@ mFUNCTION(mTexture3DParams_ApplyToBoundTexture, const mTexture3DParams &params, 
 mFUNCTION(mRenderParams_PrintRenderState, const bool onlyNewValues = false, const bool onlyUpdateValues = false);
 
 #if defined(mRENDERER_OPENGL)
-mFUNCTION(mRenderParams_SetOnErrorDebugCallback, const std::function<mResult (const GLenum source, const GLenum type, const GLuint id, const GLenum severity, const GLsizei lenght, const char *msg)> &callback);
+mFUNCTION(mRenderParams_SetOnErrorDebugCallback, const std::function<mResult (const GLenum source, const GLenum type, const GLuint id, const GLenum severity, const GLsizei length, const char *msg)> &callback);
 #endif
 
 #endif // mRenderParams_h__
