@@ -712,39 +712,39 @@ mFUNCTION(mRenderParams_PrintRenderState, const bool onlyNewValues /* = false */
 
 #define mGL_PRINT_DOUBLE_PARAM(param) \
   mGL_PRINT_PARAM(glGetDoublev, param, #param, double_t, "%f"); \
-  mGL_ERROR_CHECK()
+  while (glGetError() != GL_NO_ERROR) {}
 
 #define mGL_PRINT_DOUBLE_VEC2_PARAM(param) \
   mGL_PRINT_VEC2_PARAM(glGetDoublev, param, #param, double_t, "%f"); \
-  mGL_ERROR_CHECK()
+  while (glGetError() != GL_NO_ERROR) {}
 
 #define mGL_PRINT_DOUBLE_VEC3_PARAM(param) \
   mGL_PRINT_VEC3_PARAM(glGetDoublev, param, #param, double_t, "%f"); \
-  mGL_ERROR_CHECK()
+  while (glGetError() != GL_NO_ERROR) {}
 
 #define mGL_PRINT_DOUBLE_VEC4_PARAM(param) \
   mGL_PRINT_VEC4_PARAM(glGetDoublev, param, #param, double_t, "%f"); \
-  mGL_ERROR_CHECK()
+  while (glGetError() != GL_NO_ERROR) {}
 
 #define mGL_PRINT_INTEGER_PARAM(param) \
   mGL_PRINT_PARAM(glGetIntegerv, param, #param, int32_t, "%" PRIi32); \
-  mGL_ERROR_CHECK()
+  while (glGetError() != GL_NO_ERROR) {}
 
 #define mGL_PRINT_INTEGER_VEC2_PARAM(param) \
   mGL_PRINT_VEC2_PARAM(glGetIntegerv, param, #param, int32_t, "%" PRIi32); \
-  mGL_ERROR_CHECK()
+  while (glGetError() != GL_NO_ERROR) {}
 
 #define mGL_PRINT_INTEGER_VEC4_PARAM(param) \
   mGL_PRINT_VEC4_PARAM(glGetIntegerv, param, #param, int32_t, "%" PRIi32); \
-  mGL_ERROR_CHECK()
+  while (glGetError() != GL_NO_ERROR) {}
 
 #define mGL_PRINT_BOOL_PARAM(param) \
   mGL_PRINT_PARAM(glGetBooleanv, param, #param, GLboolean, "%" PRIu8); \
-  mGL_ERROR_CHECK()
+  while (glGetError() != GL_NO_ERROR) {}
 
 #define mGL_PRINT_BOOL_VEC4_PARAM(param) \
   mGL_PRINT_VEC4_PARAM(glGetBooleanv, param, #param, GLboolean, "%" PRIu8); \
-  mGL_ERROR_CHECK()
+  while (glGetError() != GL_NO_ERROR) {}
 
   mGL_PRINT_INTEGER_PARAM(GL_ACCUM_ALPHA_BITS);
   mGL_PRINT_INTEGER_PARAM(GL_ACCUM_BLUE_BITS);
@@ -1046,13 +1046,13 @@ mFUNCTION(mRenderParams_PrintRenderState, const bool onlyNewValues /* = false */
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mRenderParams_SetOnErrorDebugCallback, const std::function<mResult(const GLenum source, const GLenum type, const GLuint id, const GLenum severity, const GLsizei lenght, const char *msg)> &callback)
+mFUNCTION(mRenderParams_SetOnErrorDebugCallback, const std::function<mResult(const GLenum source, const GLenum type, const GLuint id, const GLenum severity, const GLsizei length, const char *msg)> &callback)
 {
   mFUNCTION_SETUP();
 
   mERROR_IF(callback == nullptr, mR_InvalidParameter);
 
-  static std::function<mResult(const GLenum source, const GLenum type, const GLuint id, const GLenum severity, const GLsizei lenght, const char *msg)> _Callback;
+  static std::function<mResult(const GLenum source, const GLenum type, const GLuint id, const GLenum severity, const GLsizei length, const char *msg)> _Callback;
   
   struct _internal
   {
