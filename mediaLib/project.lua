@@ -4,7 +4,9 @@ project(ProjectName)
   --Settings
   kind "StaticLib"
   language "C++"
-  flags { "StaticRuntime", "FatalWarnings" }
+  flags { "FatalWarnings" }
+  
+  staticruntime "On"
 
   filter { "system:windows" }
     buildoptions { '/Gm-' }
@@ -113,15 +115,10 @@ filter { "configurations:Debug*" }
 filter { "configurations:Release" }
 	defines { "NDEBUG" }
 	optimize "Speed"
-	flags { "NoFramePointer", "NoBufferSecurityCheck" }
+	flags { "NoBufferSecurityCheck" }
+  omitframepointer "On"
 	symbols "On"
   editandcontinue "Off"
-
-filter { "system:windows", "configurations:Release", "action:vs2012" }
-	buildoptions { "/d2Zi+" }
-
-filter { "system:windows", "configurations:Release", "action:vs2013" }
-	buildoptions { "/Zo" }
 
 filter { "system:windows", "configurations:Release" }
 	flags { "NoIncrementalLink" }
