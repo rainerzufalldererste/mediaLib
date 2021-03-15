@@ -97,8 +97,19 @@ mTest_TestInit mTest_CreateTestInit(const char *component, const char *testCase,
 #endif
 
 #define mTEST_STATIC_ASSERT(x) static_assert(x, "ASSERTION FAILED: " #x)
-#define mTEST_FLOAT_IN_RANGE(expected, value, variance) ((variance) >= mAbs((value) - (expected)))
-#define mTEST_FLOAT_EQUALS(expected, value) mTEST_FLOAT_IN_RANGE(expected, value, mSmallest<decltype(value)>(expected))
+
+inline bool mTest_FloatInRange(const double_t expected, const double_t value, const double_t variance)
+{
+  return variance >= mAbs(value - expected);
+}
+
+inline bool mTest_FloatEquals(const double_t expected, const double_t value)
+{
+  return mTest_FloatInRange(expected, value, 4.0 * (double_t)mMax(mSmallest<float_t>(), mSmallest<float_t>((float_t)mAbs(expected)) + mSmallest<float_t>((float_t)mAbs(value))));
+}
+
+#define mTEST_FLOAT_IN_RANGE(expected, value, variance) mTest_FloatInRange((expected), (value), (variance))
+#define mTEST_FLOAT_EQUALS(expected, value) mTest_FloatEquals((expected), (value))
 #define mTEST_ASSERT_FLOAT_EQUALS(expected, value) mTEST_ASSERT_TRUE(mTEST_FLOAT_EQUALS(expected, value))
 
 extern size_t mTestDestructible_Count;

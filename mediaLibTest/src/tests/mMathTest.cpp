@@ -683,3 +683,25 @@ mTEST(mRectangle2D, TestGrowToContainVector)
 
   mTEST_RETURN_SUCCESS();
 }
+
+mTEST(mAngleDiff, Test)
+{
+  mTEST_ASSERT_FLOAT_EQUALS(mAngleCompare(mPIf, mPIf), 1.f);
+  mTEST_ASSERT_FLOAT_EQUALS(mAngleCompare(mPIf, 3 * mPIf), 1.f);
+  mTEST_ASSERT_FLOAT_EQUALS(mAngleCompare(mPIf, 0.f), 0.f);
+  mTEST_ASSERT_FLOAT_EQUALS(mAngleCompare(3 * mPIf, 0.f), 0.f);
+  mTEST_ASSERT_FLOAT_EQUALS(mAngleCompare(mPIf, 2 * mPIf), 0.f);
+  mTEST_ASSERT_FLOAT_EQUALS(mAngleCompare(mPIf, 4 * mPIf), 0.f);
+  mTEST_ASSERT_FLOAT_EQUALS(mAngleCompare(mPIf, 5 * mPIf), 1.f);
+  mTEST_ASSERT_FLOAT_EQUALS(mAngleCompare(mPIf, -5 * mPIf), 1.f);
+  mTEST_ASSERT_FLOAT_EQUALS(mAngleCompare(-11 * mPIf, -5 * mPIf), 1.f);
+  mTEST_ASSERT_FLOAT_EQUALS(mAngleCompare(4 * mPIf, 2 * mPIf), 1.f);
+  mTEST_ASSERT_FLOAT_EQUALS(mAngleCompare(4 * mPIf, -2 * mPIf), 1.f);
+  mTEST_ASSERT_FLOAT_EQUALS(mAngleCompare(-4 * mPIf, -2 * mPIf), 1.f);
+  mTEST_ASSERT_FLOAT_EQUALS(mAngleCompare(mPIf, 1.5f * mPIf), 0.5f);
+  mTEST_ASSERT_FLOAT_EQUALS(mAngleCompare(mPIf, 0.5f * mPIf), 0.5f);
+  mTEST_ASSERT_FLOAT_EQUALS(mAngleCompare(mPIf, -0.5f * mPIf), 0.5f);
+  mTEST_ASSERT_FLOAT_EQUALS(mAngleCompare(mPIf, -1.5f * mPIf), 0.5f);
+
+  mTEST_RETURN_SUCCESS();
+}

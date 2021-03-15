@@ -242,6 +242,15 @@ T mSmallest(const T scale)
 
 //////////////////////////////////////////////////////////////////////////
 
+// Returns 1 if equal, 0 if opposite, anything in between is an indicator for *how* similar they are.
+template <typename T>
+inline T mAngleCompare(const T a, const T b)
+{
+  return mAbs(mEuclideanMod(a - b, (T)mTWOPI) - (T)mPI) / (T)mPIf;
+}
+
+//////////////////////////////////////////////////////////////////////////
+
 enum mComparisonResult : int8_t
 {
   mCR_Less = -1,
