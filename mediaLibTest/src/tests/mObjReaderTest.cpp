@@ -73,17 +73,17 @@ s On
   mTEST_ASSERT_FLOAT_EQUALS(0.456f, (*info.vertices)[2].position.y);
   mTEST_ASSERT_FLOAT_EQUALS(0.567f, (*info.vertices)[2].position.z);
   mTEST_ASSERT_TRUE((bool)(*info.vertices)[2].hasColour);
-  mTEST_ASSERT_FLOAT_EQUALS(1, (*info.vertices)[2].colour.x);
+  mTEST_ASSERT_FLOAT_EQUALS(1.f, (*info.vertices)[2].colour.x);
   mTEST_ASSERT_FLOAT_EQUALS(0.5f, (*info.vertices)[2].colour.y);
-  mTEST_ASSERT_FLOAT_EQUALS(0, (*info.vertices)[2].colour.z);
+  mTEST_ASSERT_FLOAT_EQUALS(0.f, (*info.vertices)[2].colour.z);
 
   mTEST_ASSERT_FLOAT_EQUALS(0.456f, (*info.vertices)[3].position.x);
   mTEST_ASSERT_FLOAT_EQUALS(0.567f, (*info.vertices)[3].position.y);
   mTEST_ASSERT_FLOAT_EQUALS(0.678f, (*info.vertices)[3].position.z);
   mTEST_ASSERT_TRUE((bool)(*info.vertices)[3].hasColour);
-  mTEST_ASSERT_FLOAT_EQUALS(0, (*info.vertices)[3].colour.x);
+  mTEST_ASSERT_FLOAT_EQUALS(0.f, (*info.vertices)[3].colour.x);
   mTEST_ASSERT_FLOAT_EQUALS(.33f, (*info.vertices)[3].colour.y);
-  mTEST_ASSERT_FLOAT_EQUALS(-.66e1, (*info.vertices)[3].colour.z);
+  mTEST_ASSERT_FLOAT_EQUALS(-.66e1f, (*info.vertices)[3].colour.z);
 
   mTEST_ASSERT_FLOAT_EQUALS(1e-1f, (*info.vertices)[4].position.x);
   mTEST_ASSERT_FLOAT_EQUALS(0.1e1f, (*info.vertices)[4].position.y);
@@ -92,7 +92,7 @@ s On
 
   mTEST_ASSERT_FLOAT_EQUALS(0.000000000001f, (*info.vertices)[5].position.x);
   mTEST_ASSERT_FLOAT_EQUALS(10000000000.0f, (*info.vertices)[5].position.y);
-  mTEST_ASSERT_FLOAT_EQUALS(-1, (*info.vertices)[5].position.z);
+  mTEST_ASSERT_FLOAT_EQUALS(-1.f, (*info.vertices)[5].position.z);
   mTEST_ASSERT_FALSE((bool)(*info.vertices)[5].hasColour);
 
   mTEST_ASSERT_EQUAL((*info.triangles)[0].position0.position, (*info.vertices)[0].position);
@@ -149,8 +149,8 @@ s On
   mTEST_ASSERT_FALSE((bool)(*info.triangles)[3].position0.hasNormal);
   mTEST_ASSERT_TRUE((bool)(*info.triangles)[3].position0.hasTextureCoord);
   mTEST_ASSERT_FLOAT_EQUALS(0.5f, (*info.triangles)[3].position0.textureCoord.x);
-  mTEST_ASSERT_FLOAT_EQUALS(0, (*info.triangles)[3].position0.textureCoord.y);
-  mTEST_ASSERT_FLOAT_EQUALS(0, (*info.triangles)[3].position0.textureCoord.z);
+  mTEST_ASSERT_FLOAT_EQUALS(0.f, (*info.triangles)[3].position0.textureCoord.y);
+  mTEST_ASSERT_FLOAT_EQUALS(0.f, (*info.triangles)[3].position0.textureCoord.z);
 
   mTEST_ASSERT_EQUAL((*info.triangles)[3].position1.position, (*info.vertices)[2].position);
   mTEST_ASSERT_EQUAL((*info.triangles)[3].position1.hasColour, (*info.vertices)[2].hasColour);
@@ -159,7 +159,7 @@ s On
   mTEST_ASSERT_TRUE((bool)(*info.triangles)[3].position1.hasTextureCoord);
   mTEST_ASSERT_FLOAT_EQUALS(0.25f, (*info.triangles)[3].position1.textureCoord.x);
   mTEST_ASSERT_FLOAT_EQUALS(0.5f, (*info.triangles)[3].position1.textureCoord.y);
-  mTEST_ASSERT_FLOAT_EQUALS(0, (*info.triangles)[3].position1.textureCoord.z);
+  mTEST_ASSERT_FLOAT_EQUALS(0.f, (*info.triangles)[3].position1.textureCoord.z);
 
   mTEST_ASSERT_EQUAL((*info.triangles)[3].position2.position, (*info.vertices)[3].position);
   mTEST_ASSERT_EQUAL((*info.triangles)[3].position2.hasColour, (*info.vertices)[3].hasColour);
@@ -187,7 +187,7 @@ s On
   mTEST_ASSERT_TRUE((bool)(*info.triangles)[4].position1.hasTextureCoord);
   mTEST_ASSERT_FLOAT_EQUALS(0.25f, (*info.triangles)[4].position1.textureCoord.x);
   mTEST_ASSERT_FLOAT_EQUALS(0.5f, (*info.triangles)[4].position1.textureCoord.y);
-  mTEST_ASSERT_FLOAT_EQUALS(0, (*info.triangles)[4].position1.textureCoord.z);
+  mTEST_ASSERT_FLOAT_EQUALS(0.f, (*info.triangles)[4].position1.textureCoord.z);
   mTEST_ASSERT_FLOAT_EQUALS(.01f, (*info.triangles)[4].position1.normal.x);
   mTEST_ASSERT_FLOAT_EQUALS(-.1f, (*info.triangles)[4].position1.normal.y);
   mTEST_ASSERT_FLOAT_EQUALS(.0f, (*info.triangles)[4].position1.normal.z);
@@ -197,8 +197,8 @@ s On
   mTEST_ASSERT_TRUE((bool)(*info.triangles)[4].position2.hasNormal);
   mTEST_ASSERT_TRUE((bool)(*info.triangles)[4].position2.hasTextureCoord);
   mTEST_ASSERT_FLOAT_EQUALS(0.5f, (*info.triangles)[4].position2.textureCoord.x);
-  mTEST_ASSERT_FLOAT_EQUALS(0, (*info.triangles)[4].position2.textureCoord.y);
-  mTEST_ASSERT_FLOAT_EQUALS(0, (*info.triangles)[4].position2.textureCoord.z);
+  mTEST_ASSERT_FLOAT_EQUALS(0.f, (*info.triangles)[4].position2.textureCoord.y);
+  mTEST_ASSERT_FLOAT_EQUALS(0.f, (*info.triangles)[4].position2.textureCoord.z);
   mTEST_ASSERT_FLOAT_EQUALS(1.1f, (*info.triangles)[4].position2.normal.x);
   mTEST_ASSERT_FLOAT_EQUALS(1234567890.f, (*info.triangles)[4].position2.normal.y);
   mTEST_ASSERT_FLOAT_EQUALS(0.0f, (*info.triangles)[4].position2.normal.z);

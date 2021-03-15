@@ -93,7 +93,7 @@ mTEST(mIsUInt, Test)
   mTEST_ALLOCATOR_ZERO_CHECK();
 }
 
-#define TEST_FLOAT(f) mTEST_ASSERT_TRUE(mIsFloat(#f)); mTEST_ASSERT_FLOAT_EQUALS(f, mParseFloat(#f));
+#define TEST_FLOAT(v) mTEST_ASSERT_TRUE(mIsFloat(#v)); mTEST_ASSERT_FLOAT_EQUALS(v, mParseFloat(#v));
 
 mTEST(mIsFloat, Test)
 {
