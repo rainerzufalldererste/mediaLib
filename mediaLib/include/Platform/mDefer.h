@@ -15,347 +15,115 @@
 
 // Attention: Because of the specific use-case of this class, the copy constructor & copy assignment operator *move* instead of copying.
 
-template <typename T>
-class mDefer
+class mDefer final
 {
-public:
-  typedef void OnExitFuncVoid();
-  typedef void OnExitFuncT(T);
-  typedef mResult OnExitFuncResultVoid();
-  typedef mResult OnExitFuncResultT(T);
-
-  mDefer();
-  mDefer(const std::function<void()> &onExit, const mResult *pResult = nullptr);
-  mDefer(std::function<void()> &&onExit, const mResult *pResult = nullptr);
-  mDefer(const std::function<void(T)> &onExit, T data, const mResult *pResult = nullptr);
-  mDefer(std::function<void(T)> &&onExit, T data, const mResult *pResult = nullptr);
-  mDefer(OnExitFuncVoid *pOnExit, const mResult *pResult = nullptr);
-  mDefer(OnExitFuncT *pOnExit, T data, const mResult *pResult = nullptr);
-  mDefer(OnExitFuncResultVoid *pOnExit, const mResult *pResult = nullptr);
-  mDefer(OnExitFuncResultT *pOnExit, T data, const mResult *pResult = nullptr);
-
-  mDefer(mDefer<T> &copy);
-  mDefer(mDefer<T> &&move);
-
-  ~mDefer();
-
-  mDefer<T>& operator = (mDefer<T> &copy);
-  mDefer<T>& operator = (mDefer<T> &&move);
-
-
 private:
-  enum mDeferType
-  {
-    mDT_None,
-    mDT_LambdaVoid,
-    mDT_FuctionPointerVoid,
-    mDT_FuctionPointerResultVoid,
-    mDT_LambdaTPtr,
-    mDT_FuctionPointerTPtr,
-    mDT_FuctionPointerResultTPtr,
-  };
+  std::function<void()> onExit;
 
-  mDeferType m_deferType;
-  T m_data;
-  const mResult *m_pResult;
+public:
+  inline mDefer() noexcept {};
+  inline explicit mDefer(std::function<void()> &&onExit) noexcept : onExit(std::move(onExit)) {};
 
-  std::function<void()> m_onExitLV;
-  std::function<void(T)> m_onExitLP;
+  inline mDefer(mDefer &copy) noexcept { onExit = std::move(copy.onExit); copy.onExit = nullptr; }
+  inline mDefer(mDefer &&move) noexcept { onExit = std::move(move.onExit); move.onExit = nullptr; }
 
-  union
-  {
-    OnExitFuncVoid *m_pOnExitFV;
-    OnExitFuncT *m_pOnExitFP;
-    OnExitFuncResultVoid *m_pOnExitFRV;
-    OnExitFuncResultT *m_pOnExitFRP;
-  };
+  inline ~mDefer() noexcept { if (onExit != nullptr) onExit(); };
+
+  inline mDefer &operator = (mDefer &copy) noexcept { onExit = std::move(copy.onExit); copy.onExit = nullptr; return *this; }
+  inline mDefer &operator = (mDefer &&move) noexcept { onExit = std::move(move.onExit); move.onExit = nullptr; return *this; }
 };
 
-mDefer<size_t> mDefer_Create(const std::function<void()> &onExit, const mResult *pResult = nullptr);
-mDefer<size_t> mDefer_Create(std::function<void()> &&onExit, const mResult *pResult = nullptr);
+class mDeferOnError final
+{
+private:
+  std::function<void()> onExit;
+  const mResult &result;
+
+public:
+  inline explicit mDeferOnError(std::function<void()> &&onExit, const mResult &result) noexcept : onExit(std::move(onExit)), result(result) {};
+  inline ~mDeferOnError() noexcept { if (mFAILED(result) && onExit != nullptr) onExit(); };
+};
+
+class mDeferOnSuccess final
+{
+private:
+  std::function<void()> onExit;
+  const mResult &result;
+
+public:
+  inline explicit mDeferOnSuccess(std::function<void()> &&onExit, const mResult &result) noexcept : onExit(std::move(onExit)), result(result) {};
+  inline ~mDeferOnSuccess() noexcept { if (mSUCCEEDED(result) && onExit != nullptr) onExit(); };
+};
 
 template <typename T>
-mDefer<T> mDefer_Create(const std::function<void(T)> &onExit, T data, const mResult *pResult = nullptr);
+class mDeferCall
+{
+protected:
+  T value;
+
+public:
+  inline explicit mDeferCall(T value) noexcept : value(value) {};
+};
 
 template <typename T>
-mDefer<T> mDefer_Create(std::function<void(T)> &&onExit, T data, const mResult *pResult = nullptr);
-
-mDefer<size_t> mDefer_Create(mDefer<size_t>::OnExitFuncVoid *pOnExit, const mResult *pResult = nullptr);
+mDeferCall<T> mDeferCall_Create(T value)
+{
+  return mDeferCall<T>(value);
+}
 
 template <typename T>
-mDefer<T> mDefer_Create(typename mDefer<T>::OnExitFuncT *pOnExit, T data, const mResult *pResult = nullptr);
+class mDeferCallResult
+{
+protected:
+  T value;
+  const mResult &result;
 
-mDefer<size_t> mDefer_Create(mDefer<size_t>::OnExitFuncResultVoid *pOnExit, const mResult *pResult = nullptr);
+public:
+  inline explicit mDeferCallResult(T value, const mResult &result) noexcept : value(value), result(result) {};
+};
 
 template <typename T>
-mDefer<T> mDefer_Create(typename mDefer<T>::OnExitFuncResultT *pOnExit, T data, const mResult *pResult = nullptr);
-
-template<typename T>
-inline mDefer<T>::mDefer()
+mDeferCallResult<T> mDeferCallResult_Create(T value, const mResult &result)
 {
-  m_deferType = mDeferType::mDT_None;
-  m_data = T();
-  m_pResult = nullptr;
+  return mDeferCallResult<T>(value, result);
 }
 
-template<typename T>
-inline mDefer<T>::mDefer(const std::function<void()> &onExit, const mResult *pResult /* = nullptr */)
+template <typename T>
+inline T mValueOf(T value)
 {
-  m_deferType = mDeferType::mDT_LambdaVoid;
-  m_data = T();
-  m_onExitLV = onExit;
-  m_pResult = pResult;
-}
-
-template<typename T>
-inline mDefer<T>::mDefer(std::function<void()> &&onExit, const mResult *pResult /* = nullptr */)
-{
-  m_deferType = mDeferType::mDT_LambdaVoid;
-  m_data = T();
-  m_onExitLV = std::move(onExit);
-  m_pResult = pResult;
-}
-
-template<typename T>
-inline mDefer<T>::mDefer(const std::function<void(T)> &onExit, T data, const mResult *pResult /* = nullptr */)
-{
-  m_deferType = mDeferType::mDT_LambdaTPtr;
-  m_data = data;
-  m_onExitLP = onExit;
-  m_pResult = pResult;
-}
-
-template<typename T>
-inline mDefer<T>::mDefer(std::function<void(T)> &&onExit, T data, const mResult *pResult /* = nullptr */)
-{
-  m_deferType = mDeferType::mDT_LambdaTPtr;
-  m_data = data;
-  m_onExitLP = std::move(onExit);
-  m_pResult = pResult;
-}
-
-template<typename T>
-inline mDefer<T>::mDefer(OnExitFuncVoid *pOnExit, const mResult *pResult /* = nullptr */)
-{
-  m_deferType = mDeferType::mDT_FuctionPointerVoid;
-  m_data = T();
-  m_pOnExitFV = pOnExit;
-  m_pResult = pResult;
-}
-
-template<typename T>
-inline mDefer<T>::mDefer(OnExitFuncT *pOnExit, T data, const mResult *pResult /* = nullptr */)
-{
-  m_deferType = mDeferType::mDT_FuctionPointerTPtr;
-  m_data = data;
-  m_pOnExitFP = pOnExit;
-  m_pResult = pResult;
-}
-
-template<typename T>
-inline mDefer<T>::mDefer(OnExitFuncResultVoid *pOnExit, const mResult *pResult /* = nullptr */)
-{
-  m_deferType = mDeferType::mDT_FuctionPointerResultVoid;
-  m_data = T();
-  m_pOnExitFRV = pOnExit;
-  m_pResult = pResult;
-}
-
-template<typename T>
-inline mDefer<T>::mDefer(OnExitFuncResultT *pOnExit, T data, const mResult *pResult /* = nullptr */)
-{
-  m_deferType = mDeferType::mDT_FuctionPointerResultTPtr;
-  m_data = data;
-  m_pOnExitFRP = pOnExit;
-  m_pResult = pResult;
-}
-
-// Attention: Because of the specific use-case of this class, the copy constructor & copy assignment operator *move* instead of copying.
-template<typename T>
-inline mDefer<T>::mDefer(mDefer<T> &copy) :
-  m_deferType(copy.m_deferType),
-  m_data(std::move(copy.m_data)),
-  m_pResult(copy.m_pResult),
-  m_onExitLP(std::move(copy.m_onExitLP)),
-  m_onExitLV(std::move(copy.m_onExitLV)),
-  m_pOnExitFP(copy.m_pOnExitFP),
-  m_pReferenceCount(copy.m_pReferenceCount),
-  m_pAllocator(copy.m_pAllocator)
-{
-  move.m_deferType = mDT_None;
-  move.m_pResult = nullptr;
-  move.m_pData = nullptr;
-  move.m_onExitLP = nullptr;
-  move.m_onExitLV = nullptr;
-  move.m_pOnExitFP = nullptr;
-}
-
-template<typename T>
-inline mDefer<T>::mDefer(mDefer<T> &&move) :
-  m_deferType(move.m_deferType),
-  m_data(std::move(move.m_data)),
-  m_pResult(move.m_pResult),
-  m_onExitLP(std::move(move.m_onExitLP)),
-  m_onExitLV(std::move(move.m_onExitLV)),
-  m_pOnExitFP(move.m_pOnExitFP),
-  m_pReferenceCount(move.m_pReferenceCount),
-  m_pAllocator(move.m_pAllocator)
-{
-  move.m_deferType = mDT_None;
-  move.m_pResult = nullptr;
-  move.m_pData = nullptr;
-  move.m_onExitLP = nullptr;
-  move.m_onExitLV = nullptr;
-  move.m_pOnExitFP = nullptr;
-}
-
-template<typename T>
-inline mDefer<T>::~mDefer()
-{
-  if (m_pResult != nullptr)
-    if (mSUCCEEDED(*m_pResult))
-      return;
-
-  switch (m_deferType)
-  {
-  case mDefer::mDeferType::mDT_LambdaVoid:
-    if (m_onExitLV)
-      m_onExitLV();
-    break;
-
-  case mDefer::mDeferType::mDT_LambdaTPtr:
-    if (m_onExitLP)
-      m_onExitLP(m_data);
-    break;
-
-  case mDefer::mDeferType::mDT_FuctionPointerVoid:
-    if (m_pOnExitFV)
-      (*m_pOnExitFV)();
-    break;
-
-  case mDefer::mDeferType::mDT_FuctionPointerTPtr:
-    if (m_pOnExitFP)
-      (*m_pOnExitFP)(m_data);
-    break;
-
-  case mDefer::mDeferType::mDT_FuctionPointerResultVoid:
-    if (m_pOnExitFRV)
-      (*m_pOnExitFRV)();
-    break;
-
-  case mDefer::mDeferType::mDT_FuctionPointerResultTPtr:
-    if (m_pOnExitFRP)
-      (*m_pOnExitFRP)(m_data);
-    break;
-
-  case mDefer::mDeferType::mDT_None:
-  default:
-    break;
-  }
-}
-
-// Attention: Because of the specific use-case of this class, the copy constructor & copy assignment operator *move* instead of copying.
-template<typename T>
-inline mDefer<T>& mDefer<T>::operator = (mDefer<T> &copy)
-{
-  m_deferType = move.m_deferType;
-  m_data = move.m_pData;
-  m_pResult = move.m_pResult;
-
-  m_onExitLV = std::move(move.m_onExitLV);
-  m_onExitLP = std::move(move.m_pOnExitFP);
-
-  // assign union:
-  m_pOnExitFP = move.m_pOnExitFP;
-
-  move.m_deferType = mDT_None;
-  move.m_pResult = nullptr;
-  move.m_pData = nullptr;
-  move.m_onExitLP = nullptr;
-  move.m_onExitLV = nullptr;
-  move.m_pOnExitFP = nullptr;
-
-  return *this;
-}
-
-template<typename T>
-inline mDefer<T>& mDefer<T>::operator = (mDefer<T> &&move)
-{
-  m_deferType = move.m_deferType;
-  m_data = std::move(move.m_data);
-  m_pResult = move.m_pResult;
-
-  m_onExitLV = std::move(move.m_onExitLV);
-  m_onExitLP = std::move(move.m_pOnExitFP);
-
-  // assign union:
-  m_pOnExitFP = move.m_pOnExitFP;
-
-  move.m_deferType = mDT_None;
-  move.m_pResult = nullptr;
-  move.m_onExitLP = nullptr;
-  move.m_onExitLV = nullptr;
-  move.m_pOnExitFP = nullptr;
-
-  return *this;
-}
-
-template<typename T>
-inline mDefer<T> mDefer_Create(const std::function<void(T)> &onExit, T data, const mResult *pResult /* = nullptr */)
-{
-  return mDefer<T>(onExit, data, pResult);
-}
-
-template<typename T>
-inline mDefer<T> mDefer_Create(std::function<void(T)> &&onExit, T data, const mResult *pResult /* = nullptr */)
-{
-  return mDefer<T>(std::forward<std::function<void(T)>>(onExit), data, pResult);
-}
-
-template<typename T>
-inline mDefer<T> mDefer_Create(typename mDefer<T>::OnExitFuncT *pOnExit, T data, const mResult *pResult /* = nullptr */)
-{
-  return mDefer<T>(pOnExit, data, pResult);
-}
-
-template<typename T>
-inline mDefer<T> mDefer_Create(typename mDefer<T>::OnExitFuncResultT *pOnExit, T data, const mResult *pResult /* = nullptr */)
-{
-  return mDefer<T>(pOnExit, data, pResult);
-}
-
-inline mDefer<size_t> mDefer_Create(const std::function<void()> &onExit, const mResult *pResult /* = nullptr */)
-{
-  return mDefer<size_t>(onExit, pResult);
-}
-
-inline mDefer<size_t> mDefer_Create(std::function<void()> &&onExit, const mResult *pResult /* = nullptr */)
-{
-  return mDefer<size_t>(std::forward<std::function<void()>>(onExit), pResult);
-}
-
-inline mDefer<size_t> mDefer_Create(mDefer<size_t>::OnExitFuncVoid *pOnExit, const mResult *pResult /* = nullptr */)
-{
-  return mDefer<size_t>(pOnExit, pResult);
-}
-
-inline mDefer<size_t> mDefer_Create(mDefer<size_t>::OnExitFuncResultVoid *pOnExit, const mResult *pResult /* = nullptr */)
-{
-  return mDefer<size_t>(pOnExit, pResult);
+  return value;
 }
 
 #ifdef __COUNTER__
-#define mDEFER(...) const auto mCONCAT_LITERALS(__defer__, __COUNTER__) = mDefer_Create([&](){ __VA_ARGS__; })
-#define mDEFER_IF(conditional, ...) const auto mCONCAT_LITERALS(__defer__, __COUNTER__) = mDefer_Create([&](){ if (conditional) { __VA_ARGS__; } })
-#define mDEFER_ON_ERROR(...) const auto mCONCAT_LITERALS(__defer__, __COUNTER__) = mDefer_Create([&](){ { __VA_ARGS__; } }, &(mSTDRESULT))
-#define mDEFER_CALL(Resource, DestructionFunction) const auto mCONCAT_LITERALS(__defer__, __COUNTER__) = mDefer_Create((DestructionFunction), (Resource))
-#define mDEFER_CALL_ON_ERROR(Resource, DestructionFunction) const auto mCONCAT_LITERALS(__defer__, __COUNTER__) = mDefer_Create((DestructionFunction), (Resource), &(mSTDRESULT))
+  #define __mDEFER_CLASS_NAME__ mCONCAT_LITERALS(__defer_class__, __COUNTER__)
+  #define __mDEFER_INSTANCE_NAME__ mCONCAT_LITERALS(__defer__, __COUNTER__)
 #else
-#define mDEFER(...) const auto mCONCAT_LITERALS(__defer__, __LINE__) = mDefer_Create([&](){ __VA_ARGS__; })
-#define mDEFER_IF(conditional, ...) const auto mCONCAT_LITERALS(__defer__, __LINE__) = mDefer_Create([&](){ if (conditional) { __VA_ARGS__; } })
-#define mDEFER_ON_ERROR(...) const auto mCONCAT_LITERALS(__defer__, __LINE__) = mDefer_Create([&](){ { __VA_ARGS__; } }, &(mSTDRESULT))
-#define mDEFER_CALL(Resource, DestructionFunction) const auto mCONCAT_LITERALS(__defer__, __LINE__) = mDefer_Create((DestructionFunction), (Resource))
-#define mDEFER_CALL_ON_ERROR(Resource, DestructionFunction) const auto mCONCAT_LITERALS(__defer__, __LINE__) = mDefer_Create((DestructionFunction), (Resource), &(mSTDRESULT))
+#define __mDEFER_CLASS_NAME__ mCONCAT_LITERALS(__defer_class__, __LINE__)
+#define __mDEFER_INSTANCE_NAME__ mCONCAT_LITERALS(__defer__, __LINE__)
+#endif
+
+#define mDEFER(...) const auto __mDEFER_INSTANCE_NAME__ = mDefer([&](){ __VA_ARGS__; })
+#define mDEFER_IF(conditional, ...) const auto __mDEFER_INSTANCE_NAME__ = mDefer([&](){ if (conditional) { __VA_ARGS__; }})
+#define mDEFER_ON_ERROR(...) const auto __mDEFER_INSTANCE_NAME__ = mDeferOnError([&](){ __VA_ARGS__; }, (mSTDRESULT))
+#define mDEFER_ON_SUCCESS(...) const auto __mDEFER_INSTANCE_NAME__ = mDeferOnSuccess([&](){ __VA_ARGS__; }, (mSTDRESULT))
+
+#define mDEFER_NO_CAPTURE_INTERNAL(className, ...) class className final { public: inline ~ className () { __VA_ARGS__; }; } __mDEFER_INSTANCE_NAME__
+#define mDEFER_NO_CAPTURE(...) mDEFER_NO_CAPTURE_INTERNAL(__mDEFER_CLASS_NAME__, __VA_ARGS__)
+
+#define mDEFER_SINGLE_CAPTURE_INTERNAL(className, capture, ...) const class className final { private: decltype(capture) &capture; public: inline explicit className(decltype(capture) &c) : capture(c) {}; inline ~ className () { __VA_ARGS__; }; } __mDEFER_INSTANCE_NAME__ = className(capture)
+#define mDEFER_SINGLE_CAPTURE(capture, ...) mDEFER_SINGLE_CAPTURE_INTERNAL(__mDEFER_CLASS_NAME__, capture, __VA_ARGS__)
+
+#if !defined(_MSC_VER) || _MSC_VER > 1920
+  #define mDEFER_CALL_INTERNAL(className, param, function) const class className final : public mDeferCall<decltype(mValueOf(param))> { public: inline className (mDeferCall<decltype(mValueOf(param))> v) : mDeferCall<decltype(mValueOf(param))>(v) {}; inline ~ className() { function(value); }; } __mDEFER_INSTANCE_NAME__ = mDeferCall_Create(param)
+  #define mDEFER_CALL(param, function) mDEFER_CALL_INTERNAL(__mDEFER_CLASS_NAME__, param, function)
+  
+  #define mDEFER_CALL_ON_RESULT_INTERNAL(className, param, function, success) const class className final : public mDeferCallResult<decltype(mValueOf(param))> { public: inline className (mDeferCallResult<decltype(mValueOf(param))> v) : mDeferCallResult<decltype(mValueOf(param))>(v) {}; inline ~ className() { if (mSUCCEEDED(result) == (success)) function(value); }; } __mDEFER_INSTANCE_NAME__ = mDeferCallResult_Create(param, (mSTDRESULT))
+  #define mDEFER_CALL_ON_ERROR(param, function) mDEFER_CALL_ON_RESULT_INTERNAL(__mDEFER_CLASS_NAME__, param, function, false)
+  #define mDEFER_CALL_ON_SUCCESS(param, function) mDEFER_CALL_ON_RESULT_INTERNAL(__mDEFER_CLASS_NAME__, param, function, true)
+#else
+  #define mDEFER_CALL(param, function) const auto __mDEFER_INSTANCE_NAME__ = mDefer([&](){ function(param); });
+  #define mDEFER_CALL_ON_ERROR(param, function) const auto __mDEFER_INSTANCE_NAME__ = mDeferOnError([&](){ function(param); }, (mSTDRESULT));
+  #define mDEFER_CALL_ON_SUCCESS(param, function) const auto __mDEFER_INSTANCE_NAME__ = mDeferOnSuccess([&](){ function(param); }, (mSTDRESULT));
 #endif
 
 #endif // mDefer_h__

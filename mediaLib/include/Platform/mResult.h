@@ -37,12 +37,15 @@
 
 #define mRESULT_SEPARATE_WITH_COMMA(A) A ,
 
+#pragma warning (push)
+#pragma warning (disable: 26812)
 enum mResult
 {
   mRESULT_X_MACRO(mRESULT_SEPARATE_WITH_COMMA)
 
   mResult_Count
 };
+#pragma warning (pop)
 
 #define mSTDRESULT __result
 #define mSUCCEEDED(result) ((result) == mR_Success)

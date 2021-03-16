@@ -130,21 +130,21 @@ mVec3f mQuaternion::ToEulerAngles() const
   // x-axis rotation
   const float_t sinr_cosp = 2.0f * (w * x + y * z);
   const float_t cosr_cosp = 1.0f - 2.0f * (x * x + y * y);
-  const float_t roll = atan2(sinr_cosp, cosr_cosp);
+  const float_t roll = mATan2(sinr_cosp, cosr_cosp);
 
   // y-axis rotation
   const float_t sinp = 2.0f * (w * y - z * x);
   float_t pitch;
 
-  if (fabsf(sinp) >= 1)
-    pitch = copysign(mHALFPIf, sinp);
+  if (mAbs(sinp) >= 1)
+    pitch = mCopySign(mHALFPIf, sinp);
   else
-    pitch = asin(sinp);
+    pitch = mASin(sinp);
 
   // z-axis rotation
   const float_t siny_cosp = 2.0f * (w * z + x * y);
   const float_t cosy_cosp = 1.0f - 2.0f * (y * y + z * z);
-  const float_t yaw = atan2(siny_cosp, cosy_cosp);
+  const float_t yaw = mATan2(siny_cosp, cosy_cosp);
 
   return mVec3f(yaw, pitch, roll);
 }

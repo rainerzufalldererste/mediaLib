@@ -37,53 +37,83 @@
   #define __M_FILE__ "wWI0Zp0/tScpuj08VZchnph9RQsErzPv9NdWnME87LWR+wcviEMJLzT9l2wjxVxyueINRHZOFGVQq0kE"
 #endif
 
-template <typename T> constexpr T mAbs(const T value) { return value >= 0 ? value : -value; }
-template <typename T, typename std::enable_if_t<!std::is_unsigned<T>::value, int>* = nullptr> constexpr T mSign(const T value) { return value > 0 ? (T)1 : (value < 0 ? (T)-1 : (T)0); }
-template <typename T, typename std::enable_if_t<std::is_unsigned<T>::value, int>* = nullptr> constexpr T mSign(const T value) { return value > 0 ? (T)1 : (T)0; }
-template <typename T> auto mSqrt(const T value)->decltype(sqrt(value)) { return sqrt(value); }
-template <typename T> auto mSin(const T value)->decltype(sin(value)) { return sin(value); }
-template <typename T> auto mCos(const T value)->decltype(cos(value)) { return cos(value); }
-template <typename T> auto mTan(const T value)->decltype(tan(value)) { return tan(value); }
-template <typename T> auto mASin(const T value)->decltype(asin(value)) { return asin(value); }
-template <typename T> auto mACos(const T value)->decltype(acos(value)) { return acos(value); }
-template <typename T> auto mATan(const T value)->decltype(atan(value)) { return atan(value); }
-template <typename T, typename U> auto mATan2(const T value, const U value2)->decltype(atan2(value, value2)) { return atan2(value, value2); }
+template <typename T> constexpr inline T mAbs(const T value) { return value >= 0 ? value : -value; }
+template <> inline float_t mAbs(const float_t value) { return fabsf(value); }
+template <> inline double_t mAbs(const double_t value) { return abs(value); }
+template <typename T, typename std::enable_if_t<!std::is_unsigned<T>::value, int>* = nullptr> constexpr inline T mSign(const T value) { return value > 0 ? (T)1 : (value < 0 ? (T)-1 : (T)0); }
+template <typename T, typename std::enable_if_t<std::is_unsigned<T>::value, int>* = nullptr> constexpr inline T mSign(const T value) { return value > 0 ? (T)1 : (T)0; }
+
+template <typename T> inline auto mSqrt(const T value) -> typename std::enable_if<!std::is_same<T, float_t>::value, double_t>::type { return sqrt((double_t)value); }
+template <typename T> inline auto mSqrt(const T value) -> typename std::enable_if< std::is_same<T, float_t>::value, float_t >::type { return sqrtf(value); }
+template <typename T> inline auto mSin(const T value) -> typename std::enable_if<!std::is_same<T, float_t>::value, double_t>::type { return sin((double_t)value); }
+template <typename T> inline auto mSin(const T value) -> typename std::enable_if< std::is_same<T, float_t>::value, float_t >::type { return sinf(value); }
+template <typename T> inline auto mCos(const T value) -> typename std::enable_if<!std::is_same<T, float_t>::value, double_t>::type { return cos((double_t)value); }
+template <typename T> inline auto mCos(const T value) -> typename std::enable_if< std::is_same<T, float_t>::value, float_t >::type { return cosf(value); }
+template <typename T> inline auto mTan(const T value) -> typename std::enable_if<!std::is_same<T, float_t>::value, double_t>::type { return tan((double_t)value); }
+template <typename T> inline auto mTan(const T value) -> typename std::enable_if< std::is_same<T, float_t>::value, float_t >::type { return tanf(value); }
+template <typename T> inline auto mASin(const T value) -> typename std::enable_if<!std::is_same<T, float_t>::value, double_t>::type { return asin((double_t)value); }
+template <typename T> inline auto mASin(const T value) -> typename std::enable_if< std::is_same<T, float_t>::value, float_t >::type { return asinf(value); }
+template <typename T> inline auto mACos(const T value) -> typename std::enable_if<!std::is_same<T, float_t>::value, double_t>::type { return acos((double_t)value); }
+template <typename T> inline auto mACos(const T value) -> typename std::enable_if< std::is_same<T, float_t>::value, float_t >::type { return acosf(value); }
+template <typename T> inline auto mATan(const T value) -> typename std::enable_if<!std::is_same<T, float_t>::value, double_t>::type { return atan((double_t)value); }
+template <typename T> inline auto mATan(const T value) -> typename std::enable_if< std::is_same<T, float_t>::value, float_t >::type { return atanf(value); }
+template <typename T, typename U> inline auto mATan2(const T value, const U value2) -> typename std::enable_if<!std::is_same<T, float_t>::value, double_t>::type { return atan2((double_t)value, (double_t)value2); }
+template <typename T, typename U> inline auto mATan2(const T value, const U value2) -> typename std::enable_if< std::is_same<T, float_t>::value, float_t >::type { return atan2f(value, value2); }
 
 template <typename U>
-auto mPow(const float_t value, const U value2) -> typename std::enable_if_t<!std::is_same<U, double_t>::value, float_t>
+inline auto mPow(const float_t value, const U value2) -> typename std::enable_if_t<!std::is_same<U, double_t>::value, float_t>
 {
   return powf(value, (float_t)value2);
 }
 
 template <typename T, typename U>
-auto mPow(const T value, const U value2) -> typename std::enable_if_t<!std::is_same<U, float_t>::value || !std::is_same<T, float_t>::value, decltype(pow(value, value2))>
+inline auto mPow(const T value, const U value2) -> typename std::enable_if_t<!std::is_same<U, float_t>::value || !std::is_same<T, float_t>::value, decltype(pow(value, value2))>
 {
   return pow(value, value2);
 }
 
-template <typename T> constexpr auto mLog(const T value) -> decltype(log(value)) { return log(value); }
-template <typename T> constexpr auto mLog10(const T value) -> decltype(log10(value)) { return log10(value); }
-template <typename T> constexpr auto mLog2(const T value) -> decltype(log2(value)) { return log2(value); }
-template <typename T> constexpr auto mLogN(const T logarithm, const T value) -> decltype(log(value)) { return log(value) / log(logarithm); }
+template <typename T>
+struct mMath_FloatTypeFrom
+{
+  typedef double_t type;
+};
 
-template <typename T> constexpr auto mFloor(const T value) -> decltype(floor(value)) { return floor(value); }
-template <typename T> constexpr auto mCeil(const T value) -> decltype(ceil(value)) { return ceil(value); }
+template <>
+struct mMath_FloatTypeFrom<float_t>
+{
+  typedef float_t type;
+};
 
-template <typename T> constexpr T mMax(const T a, const T b) { return (a >= b) ? a : b; }
-template <typename T> constexpr T mMin(const T a, const T b) { return (a <= b) ? a : b; }
+template <typename T> constexpr inline auto mLog(const T value) -> typename mMath_FloatTypeFrom<T>::type { return (mMath_FloatTypeFrom<T>::type)log((mMath_FloatTypeFrom<T>::type)value); }
+template <typename T> constexpr inline auto mLog10(const T value) -> typename mMath_FloatTypeFrom<T>::type { return (mMath_FloatTypeFrom<T>::type)log10((mMath_FloatTypeFrom<T>::type)value); }
+template <typename T> constexpr inline auto mLog2(const T value) -> typename mMath_FloatTypeFrom<T>::type { return (mMath_FloatTypeFrom<T>::type)log2((mMath_FloatTypeFrom<T>::type)value); }
+template <typename T> constexpr inline auto mLogN(const T logarithm, const T value) -> typename mMath_FloatTypeFrom<T>::type { return mLog(value) / mLog(logarithm); }
+
+inline double_t mFloor(const double_t value) { return floor(value); }
+inline float_t mFloor(const float_t value) { return floorf(value); }
+inline double_t mCeil(const double_t value) { return ceil(value); }
+inline float_t mCeil(const float_t value) { return ceilf(value); }
+inline double_t mCopySign(const double_t value, const double_t sign) { return copysign(value, sign); }
+inline float_t mCopySign(const float_t value, const float_t sign) { return copysignf(value, sign); }
+
+template <typename T> constexpr inline T mMax(const T a, const T b) { return (a >= b) ? a : b; }
+template <typename T> constexpr inline T mMin(const T a, const T b) { return (a <= b) ? a : b; }
 
 template <typename T, typename U>
-constexpr auto mLerp(const T a, const T b, const U ratio) -> decltype(a + (b - a) * ratio) { return a + (b - a) * ratio; }
+constexpr inline auto mLerp(const T a, const T b, const U ratio) -> decltype(a + (b - a) * ratio) { return a + (b - a) * ratio; }
 
 template <typename T, typename U = typename std::conditional_t<std::is_integral<T>::value, float_t, T>>
-constexpr U mInverseLerp(const T value, const T min, const T max) { return (U)(value - min) / (U)(max - min); }
+constexpr inline U mInverseLerp(const T value, const T min, const T max) { return (U)(value - min) / (U)(max - min); }
 
 template <typename T, typename U>
-auto mBiLerp(const T a, const T b, const T c, const T d, const U ratio1, const U ratio2) -> decltype(mLerp(mLerp(a, b, ratio1), mLerp(c, d, ratio1), ratio2)) { return mLerp(mLerp(a, b, ratio1), mLerp(c, d, ratio1), ratio2); }
+constexpr inline auto mBiLerp(const T a, const T b, const T c, const T d, const U ratio1, const U ratio2) -> decltype(mLerp(mLerp(a, b, ratio1), mLerp(c, d, ratio1), ratio2)) { return mLerp(mLerp(a, b, ratio1), mLerp(c, d, ratio1), ratio2); }
 
 // Indices are: Z, Y, X.
 template <typename T, typename U>
-T mTriLerp(const T v000, const T v001, const T v010, const T v011, const T v100, const T v101, const T v110, const T v111, const U factor_001, const U factor_010, const U factor_100)
+#if !defined(_MSC_VER) || _MSC_VER >= 1920
+constexpr
+#endif
+inline T mTriLerp(const T v000, const T v001, const T v010, const T v011, const T v100, const T v101, const T v110, const T v111, const U factor_001, const U factor_010, const U factor_100)
 {
   const U inverseFactor_001 = (U)1 - factor_001;
   const U inverseFactor_010 = (U)1 - factor_010;
@@ -101,7 +131,7 @@ T mTriLerp(const T v000, const T v001, const T v010, const T v011, const T v100,
 }
 
 template <typename T, typename U = typename std::conditional_t<std::is_integral<T>::value, float_t, T>>
-U mSmoothStep(const T x)
+constexpr inline U mSmoothStep(const T x)
 {
   const U ux = (U)x;
 
@@ -109,7 +139,7 @@ U mSmoothStep(const T x)
 }
 
 template <typename T, typename U = typename std::conditional_t<std::is_integral<T>::value, float_t, T>>
-U mSmoothStepUnclamped(const T x)
+constexpr inline U mSmoothStepUnclamped(const T x)
 {
   const U ux = (U)x;
 
@@ -117,7 +147,7 @@ U mSmoothStepUnclamped(const T x)
 }
 
 template <typename T, typename U = typename std::conditional_t<std::is_integral<T>::value, float_t, T>>
-U mSmootherStep(const T x)
+constexpr inline U mSmootherStep(const T x)
 {
   const U ux = (U)x;
 
@@ -125,7 +155,7 @@ U mSmootherStep(const T x)
 }
 
 template <typename T, typename U = typename std::conditional_t<std::is_integral<T>::value, float_t, T>>
-U mSmootherStepUnclamped(const T x)
+constexpr inline U mSmootherStepUnclamped(const T x)
 {
   const U ux = (U)x;
 
@@ -138,10 +168,10 @@ U mSmootherStepUnclamped(const T x)
 // `y3` is the value at relative 2.
 // `x` is the interpolated position.
 template <typename T, typename U>
-T mInterpolateCubic(const T y0, const T y1, const T y2, const T y3, const U x) { return y1 + ((y2 - y0 + ((U)2 * y0 - (U)5 * y1 + (U)4 * y2 - y3 + ((U)3 * (y1 - y2) + y3 - y0) * x) * x) * x) / (U)2; }
+constexpr inline T mInterpolateCubic(const T y0, const T y1, const T y2, const T y3, const U x) { return y1 + ((y2 - y0 + ((U)2 * y0 - (U)5 * y1 + (U)4 * y2 - y3 + ((U)3 * (y1 - y2) + y3 - y0) * x) * x) * x) / (U)2; }
 
 template <typename T, typename U>
-T mInterpolateBicubic(const T values[4][4], const U x, const U y)
+constexpr inline T mInterpolateBicubic(const T values[4][4], const U x, const U y)
 {
   T values[4];
 
@@ -169,7 +199,7 @@ struct mInterpolateBicubic_t
 };
 
 template <typename T, typename U>
-T mInterpolateTricubic(const T values[4][4][4], const U x, const U y, const U z)
+constexpr inline T mInterpolateTricubic(const T values[4][4][4], const U x, const U y, const U z)
 {
   T values[4];
 
@@ -183,7 +213,7 @@ T mInterpolateTricubic(const T values[4][4][4], const U x, const U y, const U z)
 //////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-inline T constexpr mClamp(const T value, const T min, const T max)
+constexpr inline T mClamp(const T value, const T min, const T max)
 {
   return value <= max ? (value >= min ? value : min) : max;
 };
@@ -192,7 +222,7 @@ template <typename T>
 T mMod(T value, T modulus);
 
 template <typename T>
-inline T mClampWrap(T val, T min, T max)
+constexpr inline T mClampWrap(T val, T min, T max)
 {
   const T dist = max - min;
 
@@ -207,7 +237,7 @@ inline T mClampWrap(T val, T min, T max)
 
 // Euclidean modulo. (For positive modulus).
 template <typename T>
-inline T mEuclideanMod(const T value, const T modulus)
+constexpr inline T mEuclideanMod(const T value, const T modulus)
 {
   const T v = mMod(value, modulus);
   return v < (T)0 ? (v + modulus) : v;
@@ -223,19 +253,19 @@ template <typename T, typename std::enable_if<std::is_floating_point<T>::value>:
 T mSmallest();
 
 template <typename T, typename std::enable_if<std::is_integral<T>::value>::type* = nullptr>
-T mSmallest()
+constexpr inline T mSmallest()
 {
   return (T)1;
 }
 
 template <typename T, typename std::enable_if<std::is_integral<T>::value>::type* = nullptr>
-T mSmallest(const T)
+constexpr inline T mSmallest(const T)
 {
   return mSmallest<T>();
 }
 
 template <typename T, typename std::enable_if<std::is_floating_point<T>::value>::type* = nullptr>
-T mSmallest(const T scale)
+inline T mSmallest(const T scale)
 {
   return mSmallest<T>() * mAbs(scale);
 }
@@ -298,18 +328,6 @@ static_assert(sizeof(half_t) == sizeof(uint16_t), "Invalid Padding.");
 
 //////////////////////////////////////////////////////////////////////////
 
-template <typename T>
-struct mMath_DistanceTypeOf
-{
-  typedef double_t type;
-};
-
-template <>
-struct mMath_DistanceTypeOf<float_t>
-{
-  typedef float_t type;
-};
-
 #define _mVECTOR_SUBSET_2(a, b) __host__ __device__ inline mVec2t<T> a ## b() const { return mVec2t<T>(a, b); }
 #define _mVECTOR_SUBSET_3(a, b, c) __host__ __device__ inline mVec3t<T> a ## b ## c() const { return mVec3t<T>(a, b, c); }
 #define _mVECTOR_SUBSET_4(a, b, c, d) __host__ __device__ inline mVec4t<T> a ## b ## c ## d() const { return mVec4t<T>(a, b, c, d); }
@@ -358,14 +376,14 @@ struct mVec2t
   __host__ __device__ inline bool       operator == (const mVec2t<T> &a) const { return x == a.x && y == a.y; };
   __host__ __device__ inline bool       operator != (const mVec2t<T> &a) const { return x != a.x || y != a.y; };
 
-  __host__ __device__ inline typename mMath_DistanceTypeOf<T>::type Length() const { return mSqrt(x * x + y * y); };
+  __host__ __device__ inline typename mMath_FloatTypeFrom<T>::type Length() const { return mSqrt(x * x + y * y); };
   __host__ __device__ inline T LengthSquared() const { return x * x + y * y; };
   __host__ __device__ inline mVec2t<T> Normalize() const { return *this / (T)Length(); };
 
-  __host__ __device__ inline typename mMath_DistanceTypeOf<T>::type Angle() const { return mATan2(mMath_DistanceTypeOf<T>::type(y), mMath_DistanceTypeOf<T>::type(x)); };
+  __host__ __device__ inline typename mMath_FloatTypeFrom<T>::type Angle() const { return mATan2(mMath_FloatTypeFrom<T>::type(y), mMath_FloatTypeFrom<T>::type(x)); };
 
-  __host__ __device__ inline typename mMath_DistanceTypeOf<T>::type AspectRatio() const { return mMath_DistanceTypeOf<T>::type(x) / mMath_DistanceTypeOf<T>::type(y); };
-  __host__ __device__ inline typename mMath_DistanceTypeOf<T>::type InverseAspectRatio() const { return mMath_DistanceTypeOf<T>::type(y) / mMath_DistanceTypeOf<T>::type(x); };
+  __host__ __device__ inline typename mMath_FloatTypeFrom<T>::type AspectRatio() const { return mMath_FloatTypeFrom<T>::type(x) / mMath_FloatTypeFrom<T>::type(y); };
+  __host__ __device__ inline typename mMath_FloatTypeFrom<T>::type InverseAspectRatio() const { return mMath_FloatTypeFrom<T>::type(y) / mMath_FloatTypeFrom<T>::type(x); };
 
   __host__ __device__ inline static T Dot(const mVec2t<T> a, const mVec2t<T> b)
   {
@@ -438,7 +456,7 @@ struct mVec3t
   __host__ __device__ inline bool       operator == (const mVec3t<T> &a) const { return x == a.x && y == a.y && z == a.z; };
   __host__ __device__ inline bool       operator != (const mVec3t<T> &a) const { return x != a.x || y != a.y || z != a.z; };
 
-  __host__ __device__ inline typename mMath_DistanceTypeOf<T>::type Length() const { return mSqrt(x * x + y * y + z * z); };
+  __host__ __device__ inline typename mMath_FloatTypeFrom<T>::type Length() const { return mSqrt(x * x + y * y + z * z); };
   __host__ __device__ inline T LengthSquared() const { return x * x + y * y + z * z; };
   __host__ __device__ inline mVec3t<T> Normalize() const { return *this / (T)Length(); };
 
@@ -573,7 +591,7 @@ struct mVec4t
   __host__ __device__ inline bool       operator == (const mVec4t<T> &a) const { return x == a.x && y == a.y && z == a.z && w == a.w; };
   __host__ __device__ inline bool       operator != (const mVec4t<T> &a) const { return x != a.x || y != a.y || z != a.z || w != a.w; };
 
-  __host__ __device__ inline typename mMath_DistanceTypeOf<T>::type Length() const { return mSqrt(x * x + y * y + z * z + w * w); };
+  __host__ __device__ inline typename mMath_FloatTypeFrom<T>::type Length() const { return mSqrt(x * x + y * y + z * z + w * w); };
   __host__ __device__ inline T LengthSquared() const { return x * x + y * y + z * z + w * w; };
   __host__ __device__ inline mVec4t<T> Normalize() const { return *this / (T)Length(); };
 
