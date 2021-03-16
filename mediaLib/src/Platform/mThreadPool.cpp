@@ -141,13 +141,11 @@ mFUNCTION(mTask_Execute, IN mTask *pTask)
   bool hasBeenExecuted = false;
 
   {
-    mDefer<mSemaphore *> defer;
+    const bool hasSemaphore = (pTask->pSemaphore != nullptr);
+    mDEFER_IF(hasSemaphore, mSemaphore_Unlock(pTask->pSemaphore));
 
-    if (pTask->pSemaphore != nullptr)
-    {
+    if (hasSemaphore)
       mERROR_CHECK_GOTO(mSemaphore_Lock(pTask->pSemaphore), result, epilogue);
-      defer = mDefer_Create(mSemaphore_Unlock, pTask->pSemaphore);
-    }
 
     if (pTask->state < mTask_State::mT_S_Running)
       pTask->state = mTask_State::mT_S_Running;

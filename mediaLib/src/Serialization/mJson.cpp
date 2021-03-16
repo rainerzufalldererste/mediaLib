@@ -82,7 +82,7 @@ mFUNCTION(mJsonWriter_BeginUnnamed, mPtr<mJsonWriter> &jsonWriter)
   if (pJson == nullptr)
   {
     cJSON *pChild = cJSON_CreateObject();
-    mDEFER_CALL_ON_ERROR(pChild, (std::function<void(cJSON *)>)cJSON_Delete);
+    mDEFER_CALL_ON_ERROR(pChild, cJSON_Delete);
     mERROR_CHECK(mJson_CheckError_Internal(pChild));
 
     mERROR_CHECK(mJsonWriter_PushQueue_Internal(jsonWriter, pChild, Object));
@@ -90,7 +90,7 @@ mFUNCTION(mJsonWriter_BeginUnnamed, mPtr<mJsonWriter> &jsonWriter)
   else
   {
     cJSON *pChild = cJSON_CreateObject();
-    mDEFER_CALL_ON_ERROR(pChild, (std::function<void(cJSON *)>)cJSON_Delete);
+    mDEFER_CALL_ON_ERROR(pChild, cJSON_Delete);
     mERROR_CHECK(mJson_CheckError_Internal(pChild));
 
     mJsonWriterEntryType lastType;
@@ -136,7 +136,7 @@ mFUNCTION(mJsonWriter_BeginArray, mPtr<mJsonWriter> &jsonWriter, const char *nam
   mERROR_IF(pJson == nullptr, mR_NotInitialized);
 
   cJSON *pChild = cJSON_CreateArray();
-  mDEFER_CALL_ON_ERROR(pChild, (std::function<void(cJSON *)>)cJSON_Delete);
+  mDEFER_CALL_ON_ERROR(pChild, cJSON_Delete);
   mERROR_CHECK(mJson_CheckError_Internal(pChild));
 
   mJsonWriterEntryType lastType;
@@ -171,7 +171,7 @@ mFUNCTION(mJsonWriter_BeginArray, mPtr<mJsonWriter> &jsonWriter)
   mERROR_IF(pJson == nullptr, mR_NotInitialized);
 
   cJSON *pChild = cJSON_CreateArray();
-  mDEFER_CALL_ON_ERROR(pChild, (std::function<void(cJSON *)>)cJSON_Delete);
+  mDEFER_CALL_ON_ERROR(pChild, cJSON_Delete);
   mERROR_CHECK(mJson_CheckError_Internal(pChild));
 
   mJsonWriterEntryType lastType;
@@ -214,7 +214,7 @@ mFUNCTION(mJsonWriter_BeginNamed, mPtr<mJsonWriter> &jsonWriter, const char *nam
   mERROR_IF(pJson == nullptr, mR_NotInitialized);
 
   cJSON *pChild = cJSON_CreateObject();
-  mDEFER_CALL_ON_ERROR(pChild, (std::function<void(cJSON *)>)cJSON_Delete);
+  mDEFER_CALL_ON_ERROR(pChild, cJSON_Delete);
   mERROR_CHECK(mJson_CheckError_Internal(pChild));
 
   mJsonWriterEntryType lastType;

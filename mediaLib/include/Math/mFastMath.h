@@ -369,7 +369,7 @@ struct mMatrix
 #pragma warning(pop)
 
 
-  mINLINE mMatrix() { }
+  mINLINE mMatrix() { m = DirectX::XMMatrixIdentity(); }
   mINLINE mMatrix(DirectX::XMMATRIX _m) : m(_m) { }
 
   mINLINE mMatrix operator*(const mMatrix &q1) const { return Multiply(q1); }

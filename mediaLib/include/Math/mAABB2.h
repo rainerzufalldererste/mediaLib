@@ -27,10 +27,10 @@ struct mAABB2
 
   mVec2t<T> GetClosestPoint(const mVec2t<T> position) const;
 
-  template<typename T, typename TRet = mMath_DistanceTypeOf<T>::type>
+  template<typename T, typename TRet = mMath_FloatTypeFrom<T>::type>
   inline TRet mAABB2<T>::GetClosestDistance(const mVec2t<T> position) const;
 
-  template<typename T, typename TRet = mMath_DistanceTypeOf<T>::type>
+  template<typename T, typename TRet = mMath_FloatTypeFrom<T>::type>
   inline TRet mAABB2<T>::GetClosestDistanceSquared(const mVec2t<T> position) const;
 
   mVec2t<T> startPos, endPos;

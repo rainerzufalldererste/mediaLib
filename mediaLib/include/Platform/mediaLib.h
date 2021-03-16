@@ -88,6 +88,10 @@
 #define mINLINE __forceinline
 #define mALIGN(x) __declspec(align(x))
 
+#if defined(_MSC_VER) && _MSC_VER < 1920
+#define noexcept
+#endif
+
 #define mARRAYSIZE(arrayName) (sizeof(arrayName) / sizeof(arrayName[0]))
 #define mBYTES_OF(type) (sizeof(type) << 3)
 

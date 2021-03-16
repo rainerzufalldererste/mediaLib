@@ -249,7 +249,7 @@ public:
     GlobalCount()++;
   }
 
-  inline mTestCppClass(mTestCppClass &&move)
+  inline mTestCppClass (mTestCppClass &&move) noexcept
   {
     if (move.pData == nullptr)
       return;
@@ -285,7 +285,7 @@ public:
     return *this;
   }
 
-  inline mTestCppClass & operator = (mTestCppClass &&move)
+  inline mTestCppClass & operator = (mTestCppClass &&move) noexcept
   {
     if (move.pData == nullptr)
     {

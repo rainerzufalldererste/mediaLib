@@ -26,10 +26,10 @@ mTEST(mDefer, TestExecuteAssigned)
   size_t i = 0;
 
   {
-    mDefer<size_t> defer;
+    mDefer defer;
 
     {
-      defer = mDefer_Create([&]() {i++;});
+      defer = mDefer([&]() {i++;});
       mTEST_ASSERT_EQUAL(0, i);
     }
 
@@ -62,13 +62,8 @@ mTEST(mDefer, TestExecuteAssignedIncrementPtrValue)
   size_t *pPtr = &value;
 
   {
-    mDefer<size_t *> defer;
-
-    {
-      defer = mDefer_Create(mIncrementPtrValue, pPtr);
-      mTEST_ASSERT_EQUAL(0, value);
-    }
-
+    mDEFER_CALL(pPtr, mIncrementPtrValue);
+    
     mTEST_ASSERT_EQUAL(0, value);
   }
 
@@ -107,44 +102,32 @@ mTEST(mDefer, TestExecuteLambdaOnError)
   mTEST_RETURN_SUCCESS();
 }
 
-mTEST(mDefer, TestExecuteAssignedOnNoError)
+mTEST(mDefer, TestExecuteLambdaOnSuccess)
 {
   mResult mSTDRESULT = mR_Success;
   size_t i = 0;
 
   {
-    mDefer<size_t> defer;
-
-    {
-      defer = mDefer_Create([&]() {i++;}, &mSTDRESULT);
-      mTEST_ASSERT_EQUAL(0, i);
-    }
-
+    mDEFER_ON_SUCCESS(i++);
     mTEST_ASSERT_EQUAL(0, i);
   }
 
-  mTEST_ASSERT_EQUAL(0, i);
+  mTEST_ASSERT_EQUAL(1, i);
 
   mTEST_RETURN_SUCCESS();
 }
 
-mTEST(mDefer, TestExecuteAssignedOnError)
+mTEST(mDefer, TestExecuteLambdaOnNoSuccess)
 {
   mResult mSTDRESULT = mR_Failure;
   size_t i = 0;
 
   {
-    mDefer<size_t> defer;
-
-    {
-      defer = mDefer_Create([&]() {i++;}, &mSTDRESULT);
-      mTEST_ASSERT_EQUAL(0, i);
-    }
-
+    mDEFER_ON_SUCCESS(i++);
     mTEST_ASSERT_EQUAL(0, i);
   }
 
-  mTEST_ASSERT_EQUAL(1, i);
+  mTEST_ASSERT_EQUAL(0, i);
 
   mTEST_RETURN_SUCCESS();
 }
@@ -181,46 +164,34 @@ mTEST(mDefer, TestExecuteIncrementPtrValueOnError)
   mTEST_RETURN_SUCCESS();
 }
 
-mTEST(mDefer, TestExecuteAssignedIncrementPtrValueOnNoError)
+mTEST(mDefer, TestExecuteIncrementPtrValueOnSuccess)
 {
   mResult mSTDRESULT = mR_Success;
   size_t value = 0;
   size_t *pPtr = &value;
 
   {
-    mDefer<size_t *> defer;
-
-    {
-      defer = mDefer_Create(mIncrementPtrValue, pPtr, &mSTDRESULT);
-      mTEST_ASSERT_EQUAL(0, value);
-    }
-
+    mDEFER_CALL_ON_SUCCESS(pPtr, mIncrementPtrValue);
     mTEST_ASSERT_EQUAL(0, value);
   }
 
-  mTEST_ASSERT_EQUAL(0, value);
+  mTEST_ASSERT_EQUAL(1, value);
 
   mTEST_RETURN_SUCCESS();
 }
 
-mTEST(mDefer, TestExecuteAssignedIncrementPtrValueOnError)
+mTEST(mDefer, TestExecuteIncrementPtrValueOnNoSuccess)
 {
   mResult mSTDRESULT = mR_Failure;
   size_t value = 0;
   size_t *pPtr = &value;
 
   {
-    mDefer<size_t *> defer;
-
-    {
-      defer = mDefer_Create(mIncrementPtrValue, pPtr, &mSTDRESULT);
-      mTEST_ASSERT_EQUAL(0, value);
-    }
-
+    mDEFER_CALL_ON_SUCCESS(pPtr, mIncrementPtrValue);
     mTEST_ASSERT_EQUAL(0, value);
   }
 
-  mTEST_ASSERT_EQUAL(1, value);
+  mTEST_ASSERT_EQUAL(0, value);
 
   mTEST_RETURN_SUCCESS();
 }

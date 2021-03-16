@@ -108,17 +108,17 @@ rtti "Off"
 floatingpoint "Fast"
 
 filter { "configurations:Debug*" }
-	defines { "_DEBUG" }
-	optimize "Off"
-	symbols "On"
+  defines { "_DEBUG" }
+  optimize "Off"
+  symbols "On"
 
 filter { "configurations:Release" }
-	defines { "NDEBUG" }
-	optimize "Speed"
-	flags { "NoBufferSecurityCheck" }
+  defines { "NDEBUG" }
+  optimize "Speed"
+  flags { "NoBufferSecurityCheck" }
   omitframepointer "On"
-	symbols "On"
+  symbols "On"
   editandcontinue "Off"
 
 filter { "system:windows", "configurations:Release" }
-	flags { "NoIncrementalLink" }
+  flags { "NoIncrementalLink" }
