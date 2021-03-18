@@ -91,7 +91,9 @@ mFUNCTION(mScreenQuad_CreateFrom, OUT mPtr<mScreenQuad> *pScreenQuad, IN mAlloca
 
   mERROR_CHECK(mScreenQuad_Create(pScreenQuad, pAllocator, fragmentShader, textureCount));
 
-  (*pScreenQuad)->shader->fragmentShader = fragmentShaderPath;
+#ifndef GIT_BUILD
+  (*pScreenQuad)->shader->fragmentShaderPath = fragmentShaderPath;
+#endif
 
   mRETURN_SUCCESS();
 }

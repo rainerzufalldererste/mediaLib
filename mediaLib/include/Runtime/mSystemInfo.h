@@ -30,4 +30,6 @@ bool mSystemInfo_IsWindows10OrGreater(const uint32_t buildNumber = 0);
 
 bool mSystemInfo_IsDarkMode();
 
+void mSystemInfo_SetDPIAware();
+
 #endif // mSystemInfo_h__

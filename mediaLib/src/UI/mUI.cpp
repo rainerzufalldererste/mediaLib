@@ -1,18 +1,21 @@
 #include "mUI.h"
 
+#include "mShader.h"
+
 #if defined(mRENDERER_OPENGL)
 #define IMGUI_IMPL_OPENGL_LOADER_GLEW
 #define DECLSPEC
-#include "imgui/include/examples/imgui_impl_sdl.h"
-//#include "imgui/include/examples/imgui_impl_opengl3.h"
+#include "imgui/include/backends/imgui_impl_sdl.h"
+//#include "imgui/include/backends/imgui_impl_opengl3.h"
 
-#include "imgui/include/examples/imgui_impl_sdl.cpp"
-#include "imgui/include/examples/imgui_impl_opengl3.cpp"
+#include "imgui/include/backends/imgui_impl_sdl.cpp"
+#include "imgui/include/backends/imgui_impl_opengl3.cpp"
 #include "imgui/include/imgui.cpp"
 #include "imgui/include/imgui_demo.cpp"
 #include "imgui/include/imgui_draw.cpp"
 #include "imgui/include/imgui_widgets.cpp"
 #include "imgui/include/imgui_internal.h"
+#include "imgui/include/imgui_tables.cpp"
 #undef DECLSPEC
 #endif
 
@@ -69,6 +72,8 @@ mFUNCTION(mUI_Initilialize, mPtr<mHardwareWindow> &hardwareWindow, const bool ad
 
   if (addUpdateCallback)
     mERROR_CHECK(mHardwareWindow_AddOnAnyEvent(hardwareWindow, mUI_ProcessEvent));
+
+  ImGui::GetStyle().WindowRounding = 10.f;
 
   ImVec4 *pColors = ImGui::GetStyle().Colors;
 
@@ -189,6 +194,8 @@ mFUNCTION(mUI_Render)
 
   ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
+  mERROR_CHECK(mShader_AfterForeign());
+
   mRETURN_SUCCESS();
 }
 
@@ -225,7 +232,7 @@ mFUNCTION(mUI_SetCustomMousePosition, const mVec2f position)
   ImGuiIO *pIO = nullptr;
   mERROR_CHECK(mUI_GetIO(&pIO));
 
-  pIO->MousePos = ToImVec(position);
+  pIO->MousePos = position;
 
   mRETURN_SUCCESS();
 }
@@ -436,6 +443,17 @@ mFUNCTION(mUI_SetDarkColourScheme)
   return mR_Success;
 }
 
+mFUNCTION(mUI_SetDpiScalingFactor, const float_t scalingFactor)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(mUI_pImguiIO == nullptr, mR_ResourceStateInvalid);
+
+  ImGui::GetIO().FontGlobalScale = scalingFactor;
+
+  mRETURN_SUCCESS();
+}
+
 namespace ImGui
 {
   // See: https://github.com/ocornut/imgui/issues/1901
@@ -443,7 +461,7 @@ namespace ImGui
   {
     ImGuiWindow *pWindow = GetCurrentWindow();
 
-    if (pWindow->SkipItems)
+    if (pWindow == nullptr || pWindow->SkipItems)
       return false;
 
     ImGuiContext &g = *GImGui;
@@ -492,7 +510,7 @@ namespace ImGui
   {
     ImGuiWindow *pWindow = GetCurrentWindow();
 
-    if (pWindow->SkipItems)
+    if (pWindow == nullptr || pWindow->SkipItems)
       return false;
 
     ImGuiContext &g = *GImGui;
@@ -569,7 +587,7 @@ namespace ImGui
   {
     ImGuiWindow *pWindow = GetCurrentWindow();
 
-    if (pWindow->SkipItems)
+    if (pWindow == nullptr || pWindow->SkipItems)
       return false;
 
     ImVec2 size = imageSize;
@@ -649,5 +667,16 @@ namespace ImGui
       ImGui::RenderText(start, label);
     
     return pressed;
+  }
+
+  void DrawRectangle(const ImVec2 &position, const ImVec2 &size, const ImVec4 &color)
+  {
+    ImGuiWindow *pWindow = GetCurrentWindow();
+
+    if (pWindow == nullptr || pWindow->SkipItems)
+      return;
+
+    if (color.w > 0.0f)
+      pWindow->DrawList->AddRectFilled(position, position + size, GetColorU32(color));
   }
 }

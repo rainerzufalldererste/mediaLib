@@ -409,20 +409,9 @@ mFUNCTION(mTexture_Copy, mTexture &destination, mPtr<mFramebuffer> &source)
     mDEFER(glBindFramebuffer(GL_FRAMEBUFFER, 0));
 
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, (source->sampleCount > 0) ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, destination.textureId, 0);
-
-    mPtr<mScreenQuad> screenQuadRenderer;
-    mDEFER_CALL(&screenQuadRenderer, mScreenQuad_Destroy);
-    mERROR_CHECK(mScreenQuad_Create(&screenQuadRenderer, &mDefaultTempAllocator));
-
-    mERROR_CHECK(mTexture_Bind(source));
-    mERROR_CHECK(mShader_SetUniform(screenQuadRenderer->shader, "_texture0", source));
-    mERROR_CHECK(mScreenQuad_Render(screenQuadRenderer));
-    
-    // TODO: Get a solution to work using the this: (Just untested. This should technically work - just remove the screenQuadRenderer.)
-    //glBindFramebuffer(GL_DRAW_FRAMEBUFFER, framebufferHandle);
-    //glBindFramebuffer(GL_READ_FRAMEBUFFER, source->frameBufferHandle);
-    //glDrawBuffer(GL_BACK);
-    //glBlitFramebuffer(0, 0, (GLsizei)source->size.x, (GLsizei)source->size.y, 0, 0, (GLsizei)destination.resolution.x, (GLsizei)destination.resolution.y, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, framebufferHandle);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, source->frameBufferHandle);
+    glBlitFramebuffer(0, 0, (GLsizei)source->size.x, (GLsizei)source->size.y, 0, 0, (GLsizei)destination.resolution.x, (GLsizei)destination.resolution.y, GL_COLOR_BUFFER_BIT, GL_NEAREST);
   }
 #else
   mRETURN_RESULT(mR_NotImplemented);

@@ -142,7 +142,7 @@ inline mFUNCTION(mResourceManager_GetResource, OUT mPtr<TValue> *pValue, TKey ke
 
   resourceIndex = 0;
   CurrentResourceManagerType::ResourceData resourceData;
-  mERROR_CHECK(mMemset(&resourceData, 1));
+  mERROR_CHECK(mZeroMemory(&resourceData, 1));
   mERROR_CHECK(mPool_Add(CurrentResourceManagerType::Instance()->data, std::forward<CurrentResourceManagerType::ResourceData>(resourceData), &resourceIndex));
   mERROR_CHECK(mHashMap_Add(CurrentResourceManagerType::Instance()->keys, key, &resourceIndex));
 

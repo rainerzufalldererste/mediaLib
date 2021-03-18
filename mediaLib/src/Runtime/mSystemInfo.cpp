@@ -98,3 +98,44 @@ bool mSystemInfo_IsDarkMode()
 
   return isDarkMode;
 }
+
+void mSystemInfo_SetDPIAware()
+{
+#if defined(mPLATFORM_WINDOWS)
+  SetProcessDPIAware();
+
+  HMODULE User32_dll = LoadLibraryW(L"User32.dll");
+
+  if (User32_dll == INVALID_HANDLE_VALUE || User32_dll == NULL)
+    return;
+
+#ifndef DPI_AWARENESS_CONTEXT
+  DECLARE_HANDLE(DPI_AWARENESS_CONTEXT);
+
+  typedef enum DPI_AWARENESS
+  {
+    DPI_AWARENESS_INVALID = -1,
+    DPI_AWARENESS_UNAWARE = 0,
+    DPI_AWARENESS_SYSTEM_AWARE = 1,
+    DPI_AWARENESS_PER_MONITOR_AWARE = 2
+  } DPI_AWARENESS;
+
+#define DPI_AWARENESS_CONTEXT_UNAWARE              ((DPI_AWARENESS_CONTEXT)-1)
+#define DPI_AWARENESS_CONTEXT_SYSTEM_AWARE         ((DPI_AWARENESS_CONTEXT)-2)
+#define DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE    ((DPI_AWARENESS_CONTEXT)-3)
+#define DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 ((DPI_AWARENESS_CONTEXT)-4)
+#define DPI_AWARENESS_CONTEXT_UNAWARE_GDISCALED    ((DPI_AWARENESS_CONTEXT)-5)
+
+#endif
+  typedef DPI_AWARENESS_CONTEXT (* SetThreadDpiAwarenessContextFunc)(
+    DPI_AWARENESS_CONTEXT dpiContext
+  );
+
+  SetThreadDpiAwarenessContextFunc pSetThreadDpiAwarenessContext = reinterpret_cast<SetThreadDpiAwarenessContextFunc>(GetProcAddress(User32_dll, "SetThreadDpiAwarenessContext"));
+
+  if (pSetThreadDpiAwarenessContext == nullptr)
+    return;
+
+  pSetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE);
+#endif
+}
