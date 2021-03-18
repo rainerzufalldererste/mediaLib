@@ -27,7 +27,14 @@ protected:
     LPCSTR    /*pdbName*/,
     ULONGLONG /*fileVersion*/) {};
   virtual void OnDbgHelpErr(LPCSTR /*szFuncName*/, DWORD /*gle*/, DWORD64 /*addr*/) {}
-  virtual void OnOutput(LPCSTR szText) { strncat(output, szText, length - strnlen(output, length) - 1); }
+
+  virtual void OnOutput(LPCSTR szText) 
+  {
+    const size_t lengthRemaining = strnlen(output, length);
+
+    if (lengthRemaining + 1 < length)
+      strncat(output, szText, length - lengthRemaining - 1);
+  }
 };
 
 static StackWalkerToString &mDebugSymbolInfo_GetStackWalker()
@@ -55,6 +62,8 @@ mFUNCTION(mDebugSymbolInfo_GetStackTrace, OUT char *stackTrace, const size_t len
   mFUNCTION_SETUP();
 
   mERROR_IF(stackTrace == nullptr, mR_ArgumentNull);
+
+  mZeroMemory(stackTrace, length);
   
   mDebugSymbolInfo_GetStackWalker().output = stackTrace;
   mDebugSymbolInfo_GetStackWalker().length = length;

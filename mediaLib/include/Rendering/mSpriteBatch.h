@@ -66,6 +66,7 @@ struct mSpriteBatch
 #if defined (mRENDERER_OPENGL)
   GLuint vbo;
 #endif
+  bool lastWasMultisampleTexture;
 };
 
 template <typename ...Args>

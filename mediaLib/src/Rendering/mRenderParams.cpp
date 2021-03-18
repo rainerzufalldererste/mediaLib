@@ -24,6 +24,8 @@ mRenderContext *mRenderParams_pRenderContexts = nullptr;
 size_t mRenderParams_RenderContextCount = 0;
 size_t mRenderParams_InitializedRenderContextCount = 0;
 
+bool mRenderParams_OnErrorCallbackAllowed = true;
+
 mFUNCTION(mRenderParams_InitializeToDefault)
 {
   mFUNCTION_SETUP();
@@ -612,6 +614,9 @@ mFUNCTION(mRenderParams_PrintRenderState, const bool onlyNewValues /* = false */
 {
   mFUNCTION_SETUP();
 
+  mRenderParams_OnErrorCallbackAllowed = false;
+  mDEFER(mRenderParams_OnErrorCallbackAllowed = true);
+
 #ifdef mRENDERER_OPENGL
 
   if (!onlyUpdateValues)
@@ -1058,9 +1063,14 @@ mFUNCTION(mRenderParams_SetOnErrorDebugCallback, const std::function<mResult(con
   {
     static void GLAPIENTRY _ErrorMessageCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, const void *)
     {
+      if (!mRenderParams_OnErrorCallbackAllowed)
+        return;
+
       _Callback(source, type, id, severity, length, message);
     }
   };
+  
+  mGL_ERROR_CHECK();
 
   // During init, enable debug output
   glEnable(GL_DEBUG_OUTPUT);
@@ -1069,6 +1079,8 @@ mFUNCTION(mRenderParams_SetOnErrorDebugCallback, const std::function<mResult(con
 
   glDebugMessageCallback(_internal::_ErrorMessageCallback, nullptr);
   glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
+
+  mGL_ERROR_CHECK();
 
   mRETURN_SUCCESS();
 }

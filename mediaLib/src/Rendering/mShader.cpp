@@ -29,8 +29,12 @@ mFUNCTION(mShader_Create, OUT mShader *pShader, const mString &vertexShader, con
 
   mERROR_IF(pShader == nullptr, mR_ArgumentNull);
 
-  mERROR_CHECK(mMemset(pShader, 1));
-  pShader->initialized = false;
+  mERROR_CHECK(mZeroMemory(pShader));
+
+#ifndef GIT_BUILD
+  mERROR_CHECK(mString_Create(&pShader->fragmentShaderText, fragmentShader));
+  mERROR_CHECK(mString_Create(&pShader->vertexShaderText, vertexShader));
+#endif
 
 #if defined(mRENDERER_OPENGL)
 
@@ -176,9 +180,12 @@ mFUNCTION(mShader_CreateFromFile, OUT mShader *pShader, const mString &vertexSha
 
   mERROR_CHECK(mShader_Create(pShader, vert, frag, fragDataLocation));
 
-  pShader->vertexShader = vertexShaderPath;
-  pShader->fragmentShader = fragmentShaderPath;
+#ifndef GIT_BUILD
+  mERROR_CHECK(mString_Create(&pShader->vertexShaderPath, vertexShaderPath));
+  mERROR_CHECK(mString_Create(&pShader->fragmentShaderPath, fragmentShaderPath));
   pShader->loadedFromFile = true;
+#endif
+
 #else
   mRETURN_RESULT(mR_NotImplemented);
 #endif
@@ -196,6 +203,12 @@ mFUNCTION(mShader_Destroy, IN_OUT mShader *pShader)
 
 #if defined(mRENDERER_OPENGL)
 
+  if (mShader_CurrentlyBoundShader == pShader->shaderProgram)
+  {
+    mShader_CurrentlyBoundShader = (GLuint)-1;
+    mFAIL_DEBUG("The shader that's currently bound will be released. Please make sure you're not relying on this.");
+  }
+
   if (pShader->initialized)
     glDeleteProgram(pShader->shaderProgram);
 
@@ -204,9 +217,14 @@ mFUNCTION(mShader_Destroy, IN_OUT mShader *pShader)
 #endif
 
   pShader->initialized = false;
+
+#ifndef GIT_BUILD
   pShader->loadedFromFile = false;
-  mERROR_CHECK(mDestruct(&pShader->vertexShader));
-  mERROR_CHECK(mDestruct(&pShader->fragmentShader));
+  mERROR_CHECK(mDestruct(&pShader->vertexShaderPath));
+  mERROR_CHECK(mDestruct(&pShader->fragmentShaderPath));
+  mERROR_CHECK(mDestruct(&pShader->fragmentShaderText));
+  mERROR_CHECK(mDestruct(&pShader->vertexShaderText));
+#endif
 
   mGL_DEBUG_ERROR_CHECK();
 
@@ -336,6 +354,11 @@ mFUNCTION(mShader_SetTo, mPtr<mShader> &shader, const mString &vertexShader, con
   mRETURN_RESULT(mR_NotImplemented);
 #endif
 
+#ifndef GIT_BUILD
+  mERROR_CHECK(mString_Create(&shader->fragmentShaderText, fragmentShader));
+  mERROR_CHECK(mString_Create(&shader->vertexShaderText, vertexShader));
+#endif
+
   mRETURN_SUCCESS();
 }
 
@@ -343,11 +366,12 @@ mFUNCTION(mShader_SetToFile, mPtr<mShader> &shader, const mString &filename)
 {
   mFUNCTION_SETUP();
 
-  mERROR_CHECK(mShader_SetToFile(shader, filename + L".vert", filename + L".frag", nullptr));
+  mERROR_CHECK(mShader_SetToFile(shader, filename + ".vert", filename + ".frag", nullptr));
 
   mRETURN_SUCCESS();
 }
 
+#ifndef GIT_BUILD
 mFUNCTION(mShader_ReloadFromFile, mPtr<mShader> &shader)
 {
   mFUNCTION_SETUP();
@@ -356,15 +380,13 @@ mFUNCTION(mShader_ReloadFromFile, mPtr<mShader> &shader)
   mERROR_IF(!shader->initialized, mR_NotInitialized);
   mERROR_IF(!shader->loadedFromFile, mR_ResourceIncompatible);
 
-  mString vertexShader = shader->vertexShader;
-  mString fragmentShader = shader->fragmentShader;
-
-  mResult result = mShader_SetToFile(shader, vertexShader, fragmentShader);
+  mResult result = mShader_SetToFile(shader, shader->vertexShaderPath, shader->fragmentShaderPath);
 
   mERROR_IF(mFAILED(result) && result != mR_ResourceNotFound, result);
 
   mRETURN_SUCCESS();
 }
+#endif
 
 mFUNCTION(mShader_SetToFile, mPtr<mShader> &shader, const mString &vertexShaderPath, const mString &fragmentShaderPath, IN OPTIONAL const char *fragDataLocation /* = nullptr */)
 {
@@ -379,9 +401,11 @@ mFUNCTION(mShader_SetToFile, mPtr<mShader> &shader, const mString &vertexShaderP
 
   mERROR_CHECK(mShader_SetTo(shader, vertexShader, fragmentShader, fragDataLocation));
 
-  shader->vertexShader = vertexShaderPath;
-  shader->fragmentShader = fragmentShaderPath;
+#ifndef GIT_BUILD
+  mERROR_CHECK(mString_Create(&shader->vertexShaderPath, vertexShaderPath));
+  mERROR_CHECK(mString_Create(&shader->fragmentShaderPath, fragmentShaderPath));
   shader->loadedFromFile = true;
+#endif
 
   mRETURN_SUCCESS();
 }
@@ -396,16 +420,42 @@ mFUNCTION(mShader_Bind, mShader &shader)
 
 #if defined(mRENDERER_OPENGL)
   if (shader.shaderProgram == mShader_CurrentlyBoundShader)
+  {
+#ifdef _DEBUG
+    GLint activeProgram = (GLint)-1;
+    glGetIntegerv(GL_CURRENT_PROGRAM, &activeProgram);
+    mASSERT_DEBUG((GLuint)activeProgram == mShader_CurrentlyBoundShader, "`mShader_CurrentlyBoundShader` is not up to date. Reset it after 3rdParty code by calling `mShader_AfterForeign()`");
+#endif
+
     mRETURN_SUCCESS();
+  }
 
   mShader_CurrentlyBoundShader = shader.shaderProgram;
 
   glUseProgram(shader.shaderProgram);
+
+  mGL_DEBUG_ERROR_CHECK();
 #else
   mRETURN_RESULT(mR_NotImplemented);
 #endif
 
   mRETURN_SUCCESS();
+}
+
+mFUNCTION(mShader_Bind, mPtr<mShader> &shader)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(shader == nullptr, mR_ArgumentNull);
+
+  mRETURN_RESULT(mShader_Bind(*shader));
+}
+
+mFUNCTION(mShader_AfterForeign)
+{
+  mShader_CurrentlyBoundShader = (GLuint)-1;
+
+  return mR_Success;
 }
 
 //////////////////////////////////////////////////////////////////////////

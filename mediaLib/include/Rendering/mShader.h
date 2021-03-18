@@ -15,12 +15,17 @@
 struct mShader
 {
   bool initialized = false;
-  mString vertexShader;
-  mString fragmentShader;
 
 #if defined(mRENDERER_OPENGL)
   GLuint shaderProgram;
+#endif
+
+#ifndef GIT_BUILD
   bool loadedFromFile;
+  mString vertexShaderText;
+  mString fragmentShaderText;
+  mString vertexShaderPath;
+  mString fragmentShaderPath;
 #endif
 };
 
@@ -38,9 +43,13 @@ mFUNCTION(mShader_SetTo, mPtr<mShader> &shader, const mString &vertexShader, con
 mFUNCTION(mShader_SetToFile, mPtr<mShader> &shader, const mString &vertexShaderPath, const mString &fragmentShaderPath, IN OPTIONAL const char *fragDataLocation = nullptr);
 mFUNCTION(mShader_SetToFile, mPtr<mShader> &shader, const mString &filename);
 
+#ifndef GIT_BUILD
 mFUNCTION(mShader_ReloadFromFile, mPtr<mShader> &shader);
+#endif
 
 mFUNCTION(mShader_Bind, mShader &shader);
+mFUNCTION(mShader_Bind, mPtr<mShader> &shader);
+mFUNCTION(mShader_AfterForeign);
 
 #if defined(mRENDERER_OPENGL)
 typedef GLuint shaderAttributeIndex_t;

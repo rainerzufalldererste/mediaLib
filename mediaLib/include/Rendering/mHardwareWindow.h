@@ -47,6 +47,7 @@ mFUNCTION(mHardwareWindow_IsMaximized, const mPtr<mHardwareWindow> &window, OUT 
 
 mFUNCTION(mHardwareWindow_RespectDarkModePreference, mPtr<mHardwareWindow> &window);
 mFUNCTION(mHardwareWindow_AddOnDarkModeChangedEvent, mPtr<mHardwareWindow> &window, const std::function<mResult(const bool isDarkMode)> &callback);
+mFUNCTION(mHardwareWindow_GetWindowDPIScalingFactor, mPtr<mHardwareWindow> &window, OUT float_t *pScalingFactor);
 
 mFUNCTION(mHardwareWindow_MaximizeWindow, mPtr<mHardwareWindow> &window);
 mFUNCTION(mHardwareWindow_MinimizeWindow, mPtr<mHardwareWindow> &window);

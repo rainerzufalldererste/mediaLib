@@ -43,42 +43,7 @@ mFUNCTION(mUI_PopBoldFont);
 
 mFUNCTION(mUI_SetLightColourScheme);
 mFUNCTION(mUI_SetDarkColourScheme);
-
-template <typename T>
-inline ImVec2 ToImVec(const mVec2t<T> &vec2t)
-{
-  ImVec2 v;
-
-  v.x = (float_t)vec2t.x;
-  v.y = (float_t)vec2t.y;
-
-  return v;
-}
-
-template <typename T>
-inline ImVec4 ToImVec(const mVec4t<T> &vec4t)
-{
-  ImVec4 v;
-
-  v.x = (float_t)vec4t.x;
-  v.y = (float_t)vec4t.y;
-  v.z = (float_t)vec4t.z;
-  v.w = (float_t)vec4t.w;
-
-  return v;
-}
-
-inline ImVec4 ToImVec(const mVector &vec)
-{
-  ImVec4 v;
-
-  v.x = vec.x;
-  v.y = vec.y;
-  v.z = vec.z;
-  v.w = vec.w;
-
-  return v;
-}
+mFUNCTION(mUI_SetDpiScalingFactor, const float_t scalingFactor);
 
 // Imgui Extentions:
 namespace ImGui
@@ -87,6 +52,7 @@ namespace ImGui
   bool Spinner(const char *label, float_t radius, float_t thickness, const ImU32 &color);
   size_t TabBar(const std::initializer_list<const char *> &names, const size_t activeBefore);
   bool ImageButtonWithText(ImTextureID texId, const char *label, const ImVec2 &imageSize = ImVec2(0, 0), const ImVec2 &buttonSize = ImVec2(0, 0), const ImVec2 &uv0 = ImVec2(0, 0), const ImVec2 &uv1 = ImVec2(1, 1), const float_t frame_padding = -1, const ImVec4 &bg_col = ImVec4(0, 0, 0, 0), const ImVec4 &tint_col = ImVec4(1, 1, 1, 1));
+  void DrawRectangle(const ImVec2 &position, const ImVec2 &size, const ImVec4 &color);
 }
 
 #endif // mUI_h__

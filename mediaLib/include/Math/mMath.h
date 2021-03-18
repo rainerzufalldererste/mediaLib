@@ -93,6 +93,8 @@ inline double_t mFloor(const double_t value) { return floor(value); }
 inline float_t mFloor(const float_t value) { return floorf(value); }
 inline double_t mCeil(const double_t value) { return ceil(value); }
 inline float_t mCeil(const float_t value) { return ceilf(value); }
+inline double_t mRound(const double_t value) { return round(value); }
+inline float_t mRound(const float_t value) { return roundf(value); }
 inline double_t mCopySign(const double_t value, const double_t sign) { return copysign(value, sign); }
 inline float_t mCopySign(const float_t value, const float_t sign) { return copysignf(value, sign); }
 
@@ -131,7 +133,10 @@ inline T mTriLerp(const T v000, const T v001, const T v010, const T v011, const 
 }
 
 template <typename T, typename U = typename std::conditional_t<std::is_integral<T>::value, float_t, T>>
-constexpr inline U mSmoothStep(const T x)
+#if !defined(_MSC_VER) || _MSC_VER >= 1920
+constexpr
+#endif
+inline U mSmoothStep(const T x)
 {
   const U ux = (U)x;
 
@@ -139,7 +144,10 @@ constexpr inline U mSmoothStep(const T x)
 }
 
 template <typename T, typename U = typename std::conditional_t<std::is_integral<T>::value, float_t, T>>
-constexpr inline U mSmoothStepUnclamped(const T x)
+#if !defined(_MSC_VER) || _MSC_VER >= 1920
+constexpr
+#endif
+inline U mSmoothStepUnclamped(const T x)
 {
   const U ux = (U)x;
 
@@ -147,7 +155,10 @@ constexpr inline U mSmoothStepUnclamped(const T x)
 }
 
 template <typename T, typename U = typename std::conditional_t<std::is_integral<T>::value, float_t, T>>
-constexpr inline U mSmootherStep(const T x)
+#if !defined(_MSC_VER) || _MSC_VER >= 1920
+constexpr
+#endif
+inline U mSmootherStep(const T x)
 {
   const U ux = (U)x;
 
@@ -155,7 +166,10 @@ constexpr inline U mSmootherStep(const T x)
 }
 
 template <typename T, typename U = typename std::conditional_t<std::is_integral<T>::value, float_t, T>>
-constexpr inline U mSmootherStepUnclamped(const T x)
+#if !defined(_MSC_VER) || _MSC_VER >= 1920
+constexpr
+#endif
+inline U mSmootherStepUnclamped(const T x)
 {
   const U ux = (U)x;
 
@@ -171,7 +185,10 @@ template <typename T, typename U>
 constexpr inline T mInterpolateCubic(const T y0, const T y1, const T y2, const T y3, const U x) { return y1 + ((y2 - y0 + ((U)2 * y0 - (U)5 * y1 + (U)4 * y2 - y3 + ((U)3 * (y1 - y2) + y3 - y0) * x) * x) * x) / (U)2; }
 
 template <typename T, typename U>
-constexpr inline T mInterpolateBicubic(const T values[4][4], const U x, const U y)
+#if !defined(_MSC_VER) || _MSC_VER >= 1920
+constexpr
+#endif
+inline T mInterpolateBicubic(const T values[4][4], const U x, const U y)
 {
   T values[4];
 
@@ -199,7 +216,10 @@ struct mInterpolateBicubic_t
 };
 
 template <typename T, typename U>
-constexpr inline T mInterpolateTricubic(const T values[4][4][4], const U x, const U y, const U z)
+#if !defined(_MSC_VER) || _MSC_VER >= 1920
+constexpr
+#endif
+inline T mInterpolateTricubic(const T values[4][4][4], const U x, const U y, const U z)
 {
   T values[4];
 
@@ -222,7 +242,10 @@ template <typename T>
 T mMod(T value, T modulus);
 
 template <typename T>
-constexpr inline T mClampWrap(T val, T min, T max)
+#if !defined(_MSC_VER) || _MSC_VER >= 1920
+constexpr
+#endif
+inline T mClampWrap(T val, T min, T max)
 {
   const T dist = max - min;
 
@@ -237,7 +260,10 @@ constexpr inline T mClampWrap(T val, T min, T max)
 
 // Euclidean modulo. (For positive modulus).
 template <typename T>
-constexpr inline T mEuclideanMod(const T value, const T modulus)
+#if !defined(_MSC_VER) || _MSC_VER >= 1920
+constexpr
+#endif
+inline T mEuclideanMod(const T value, const T modulus)
 {
   const T v = mMod(value, modulus);
   return v < (T)0 ? (v + modulus) : v;
@@ -405,6 +431,11 @@ template <typename T> T mMin(const mVec2t<T> &v) { return mMin(v.x, v.y); }
 template <typename T> mVec2t<T> mMax(const mVec2t<T> &a, const mVec2t<T> &b) { return mVec2t<T>(mMax(a.x, b.x), mMax(a.y, b.y)); }
 template <typename T> mVec2t<T> mMin(const mVec2t<T> &a, const mVec2t<T> &b) { return mVec2t<T>(mMin(a.x, b.x), mMin(a.y, b.y)); }
 
+template <typename T> mVec2t<T> mAbs(const mVec2t<T> &a) { return mVec2t<T>(mAbs(a.x), mAbs(a.y)); }
+template <typename T> mVec2t<T> mFloor(const mVec2t<T> &a) { return mVec2t<T>(mFloor(a.x), mFloor(a.y)); }
+template <typename T> mVec2t<T> mCeil(const mVec2t<T> &a) { return mVec2t<T>(mCeil(a.x), mCeil(a.y)); }
+template <typename T> mVec2t<T> mRound(const mVec2t<T> &a) { return mVec2t<T>(mRound(a.x), mRound(a.y)); }
+
 typedef mVec2t<size_t> mVec2s;
 typedef mVec2t<int64_t> mVec2i;
 typedef mVec2t<uint64_t> mVec2u;
@@ -538,8 +569,13 @@ __host__ __device__ inline mVec3t<T>  operator /  (const T a, const mVec3t<T> b)
 template <typename T> T mMax(const mVec3t<T> &v) { return mMax(mMax(v.x, v.y), v.z); }
 template <typename T> T mMin(const mVec3t<T> &v) { return mMin(mMin(v.x, v.y), v.z); }
 
-template <typename T> T mMax(const mVec3t<T> &a, const mVec3t<T> &b) { return mVec3t<T>(mMax(a.x, b.x), mMax(a.y, b.y), mMax(a.z, b.z)); }
-template <typename T> T mMin(const mVec3t<T> &a, const mVec3t<T> &b) { return mVec3t<T>(mMin(a.x, b.x), mMin(a.y, b.y), mMin(a.z, b.z)); }
+template <typename T> mVec3t<T> mMax(const mVec3t<T> &a, const mVec3t<T> &b) { return mVec3t<T>(mMax(a.x, b.x), mMax(a.y, b.y), mMax(a.z, b.z)); }
+template <typename T> mVec3t<T> mMin(const mVec3t<T> &a, const mVec3t<T> &b) { return mVec3t<T>(mMin(a.x, b.x), mMin(a.y, b.y), mMin(a.z, b.z)); }
+
+template <typename T> mVec3t<T> mAbs(const mVec3t<T> &a) { return mVec3t<T>(mAbs(a.x), mAbs(a.y), mAbs(a.z)); }
+template <typename T> mVec3t<T> mFloor(const mVec3t<T> &a) { return mVec3t<T>(mFloor(a.x), mFloor(a.y), mFloor(a.z)); }
+template <typename T> mVec3t<T> mCeil(const mVec3t<T> &a) { return mVec3t<T>(mCeil(a.x), mCeil(a.y), mCeil(a.z)); }
+template <typename T> mVec3t<T> mRound(const mVec3t<T> &a) { return mVec3t<T>(mRound(a.x), mRound(a.y), mRound(a.z)); }
 
 typedef mVec3t<size_t> mVec3s;
 typedef mVec3t<int64_t> mVec3i;
@@ -676,8 +712,13 @@ __host__ __device__ inline mVec4t<T>  operator /  (const T a, const mVec4t<T> b)
 template <typename T> T mMax(const mVec4t<T> &v) { return mMax(mMax(v.x, v.y), mMax(v.z, v.w)); }
 template <typename T> T mMin(const mVec4t<T> &v) { return mMin(mMin(v.x, v.y), mMin(v.z, v.w)); }
 
-template <typename T> T mMax(const mVec4t<T> &a, const mVec4t<T> &b) { return mVec4t<T>(mMax(a.x, b.x), mMax(a.y, b.y), mMax(a.z, b.z), mMax(a.w, b.w)); }
-template <typename T> T mMin(const mVec4t<T> &a, const mVec4t<T> &b) { return mVec4t<T>(mMin(a.x, b.x), mMin(a.y, b.y), mMin(a.z, b.z), mMin(a.w, b.w)); }
+template <typename T> mVec4t<T> mMax(const mVec4t<T> &a, const mVec4t<T> &b) { return mVec4t<T>(mMax(a.x, b.x), mMax(a.y, b.y), mMax(a.z, b.z), mMax(a.w, b.w)); }
+template <typename T> mVec4t<T> mMin(const mVec4t<T> &a, const mVec4t<T> &b) { return mVec4t<T>(mMin(a.x, b.x), mMin(a.y, b.y), mMin(a.z, b.z), mMin(a.w, b.w)); }
+
+template <typename T> mVec4t<T> mAbs(const mVec4t<T> &a) { return mVec4t<T>(mAbs(a.x), mAbs(a.y), mAbs(a.z), mAbs(a.w)); }
+template <typename T> mVec4t<T> mFloor(const mVec4t<T> &a) { return mVec4t<T>(mFloor(a.x), mFloor(a.y), mFloor(a.z), mFloor(a.w)); }
+template <typename T> mVec4t<T> mCeil(const mVec4t<T> &a) { return mVec4t<T>(mCeil(a.x), mCeil(a.y), mCeil(a.z), mCeil(a.w)); }
+template <typename T> mVec4t<T> mRound(const mVec4t<T> &a) { return mVec4t<T>(mRound(a.x), mRound(a.y), mRound(a.z), mRound(a.w)); }
 
 typedef mVec4t<size_t> mVec4s;
 typedef mVec4t<int64_t> mVec4i;

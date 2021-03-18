@@ -530,6 +530,32 @@ mFUNCTION(mHardwareWindow_AddOnDarkModeChangedEvent, mPtr<mHardwareWindow> &wind
   mRETURN_SUCCESS();
 }
 
+mFUNCTION(mHardwareWindow_GetWindowDPIScalingFactor, mPtr<mHardwareWindow> &window, OUT float_t *pScalingFactor)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(window == nullptr || pScalingFactor == nullptr, mR_ArgumentNull);
+
+  HMODULE User32_dll = LoadLibraryW(L"User32.dll");
+  mERROR_IF(User32_dll == INVALID_HANDLE_VALUE || User32_dll == NULL, mR_NotSupported);
+
+  typedef UINT (* GetDpiForWindowFunc)(
+    HWND hwnd
+  );
+
+  GetDpiForWindowFunc pGetDpiForWindow = reinterpret_cast<GetDpiForWindowFunc>(GetProcAddress(User32_dll, "GetDpiForWindow"));
+  mERROR_IF(pGetDpiForWindow == nullptr, mR_NotSupported);
+
+  HWND hwnd;
+  mERROR_CHECK(mHardwareWindow_GetWindowHandle(window, &hwnd));
+
+  const UINT dpi = pGetDpiForWindow(hwnd);
+
+  *pScalingFactor = ((float_t)dpi / 96.f);
+
+  mRETURN_SUCCESS();
+}
+
 //////////////////////////////////////////////////////////////////////////
 
 static mFUNCTION(mHardwareWindow_Create_Internal, IN_OUT mHardwareWindow *pWindow, IN mAllocator *pAllocator, const mString &title, const mVec2s &size, const mHardwareWindow_DisplayMode displaymode, const bool stereo3dIfAvailable)

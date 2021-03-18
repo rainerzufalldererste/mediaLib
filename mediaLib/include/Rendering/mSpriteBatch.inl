@@ -76,8 +76,9 @@ inline mFUNCTION(mSpriteBatch_Begin, mPtr<mSpriteBatch<Args...>> &spriteBatch)
 
   if (mSpriteBatch_Internal_DrawInstantly(spriteBatch))
   {
-    mERROR_CHECK(mSpriteBatch_Internal_BindMesh(spriteBatch));
-    mERROR_CHECK(mShader_Bind(*spriteBatch->shader.GetPointer()));
+    mERROR_CHECK(mSpriteBatch_Internal_BindMesh(spriteBatch, spriteBatch->shader));
+    spriteBatch->lastWasMultisampleTexture = false;
+
     mERROR_CHECK(mSpriteBatch_Internal_SetAlphaBlending(spriteBatch));
     mERROR_CHECK(mSpriteBatch_Internal_SetDrawOrder(spriteBatch));
     mERROR_CHECK(mSpriteBatch_Internal_SetTextureFilterMode(spriteBatch));
@@ -353,8 +354,9 @@ inline mFUNCTION(mSpriteBatch_End, mPtr<mSpriteBatch<Args...>> &spriteBatch)
 
   if (!mSpriteBatch_Internal_DrawInstantly(spriteBatch))
   {
-    mERROR_CHECK(mSpriteBatch_Internal_BindMesh(spriteBatch));
-    mERROR_CHECK(mShader_Bind(*spriteBatch->shader.GetPointer()));
+    mERROR_CHECK(mSpriteBatch_Internal_BindMesh(spriteBatch, spriteBatch->shader));
+    spriteBatch->lastWasMultisampleTexture = false;
+
     mERROR_CHECK(mSpriteBatch_Internal_SetAlphaBlending(spriteBatch));
     mERROR_CHECK(mSpriteBatch_Internal_SetDrawOrder(spriteBatch));
     mERROR_CHECK(mSpriteBatch_Internal_SetTextureFilterMode(spriteBatch));
@@ -702,18 +704,25 @@ inline mFUNCTION(mSpriteBatch_Internal_InitializeMesh, mPtr<mSpriteBatch<Args...
 }
 
 template<typename ...Args>
-inline mFUNCTION(mSpriteBatch_Internal_BindMesh, mPtr<mSpriteBatch<Args...>> &spriteBatch)
+inline mFUNCTION(mSpriteBatch_Internal_BindMesh, mPtr<mSpriteBatch<Args...>> &spriteBatch, mPtr<mShader> &shader)
 {
   mFUNCTION_SETUP();
   mUnused(spriteBatch);
 
+  mERROR_CHECK(mShader_Bind(shader));
+
   glBindBuffer(GL_ARRAY_BUFFER, spriteBatch->vbo);
 
-  glEnableVertexAttribArray((GLuint)0);
-  glVertexAttribPointer((GLuint)0, (GLint)2, GL_FLOAT, GL_FALSE, (GLsizei)sizeof(mVec2f) * 2, (const void *)0);
+  const GLuint vertexPositiondAttributeIndex = glGetAttribLocation(shader->shaderProgram, "position0");
+  mGL_DEBUG_ERROR_CHECK();
+  const GLuint textureCoordAttributeIndex = glGetAttribLocation(shader->shaderProgram, "texCoord0");
+  mGL_DEBUG_ERROR_CHECK();
 
-  glEnableVertexAttribArray((GLuint)1);
-  glVertexAttribPointer((GLuint)1, (GLint)2, GL_FLOAT, GL_FALSE, (GLsizei)sizeof(mVec2f) * 2, (const void *)sizeof(mVec2f));
+  glEnableVertexAttribArray(vertexPositiondAttributeIndex);
+  glVertexAttribPointer(vertexPositiondAttributeIndex, (GLint)2, GL_FLOAT, GL_FALSE, (GLsizei)sizeof(mVec2f) * 2, (const void *)0);
+
+  glEnableVertexAttribArray(textureCoordAttributeIndex);
+  glVertexAttribPointer(textureCoordAttributeIndex, (GLint)2, GL_FLOAT, GL_FALSE, (GLsizei)sizeof(mVec2f) * 2, (const void *)sizeof(mVec2f));
 
   mRETURN_SUCCESS();
 }
@@ -818,9 +827,15 @@ inline mFUNCTION(mSpriteBatch_Internal_RenderObject_Render, mSpriteBatch_Interna
 {
   mFUNCTION_SETUP();
 
-  mShader &shader = renderObject.texture->sampleCount > 0 ? *spriteBatch->multisampleShader : *spriteBatch->shader;
+  const bool isMultisampleTexture = renderObject.texture->sampleCount > 0;
+  mShader &shader = isMultisampleTexture ? *spriteBatch->multisampleShader : *spriteBatch->shader;
 
-  mERROR_CHECK(mShader_Bind(shader));
+  if (spriteBatch->lastWasMultisampleTexture != isMultisampleTexture)
+  {
+    mERROR_CHECK(mSpriteBatch_Internal_BindMesh(spriteBatch, spriteBatch->shader));
+    spriteBatch->lastWasMultisampleTexture = isMultisampleTexture;
+  }
+
   mERROR_CHECK(mTexture_Bind(*renderObject.texture));
   mERROR_CHECK(mShader_SetUniform(shader, "texture0", renderObject.texture));
   mERROR_CHECK(mShader_SetUniform(shader, "screenSize0", mRenderParams_CurrentRenderResolutionF));
