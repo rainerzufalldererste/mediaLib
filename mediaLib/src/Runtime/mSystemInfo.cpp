@@ -109,7 +109,7 @@ void mSystemInfo_SetDPIAware()
   if (User32_dll == INVALID_HANDLE_VALUE || User32_dll == NULL)
     return;
 
-#ifndef DPI_AWARENESS_CONTEXT
+#ifndef DPI_AWARENESS_CONTEXT_UNAWARE
   DECLARE_HANDLE(DPI_AWARENESS_CONTEXT);
 
   typedef enum DPI_AWARENESS
