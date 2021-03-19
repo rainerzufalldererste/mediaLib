@@ -14,6 +14,10 @@ project(ProjectName)
   ignoredefaultlibraries { "msvcrt" }
   disablewarnings  { '4127' } -- ignore conditional expression is constant
 
+  filter { "system:windows", "action:vs2019" }
+    cppdialect "C++17"
+  filter { }
+
   filter {}
   defines { "_CRT_SECURE_NO_WARNINGS", "SSE2" }
 

@@ -16,7 +16,10 @@ project(ProjectName)
     ignoredefaultlibraries { "msvcrt" }
   
     defines { "_CRT_SECURE_NO_WARNINGS", "SSE2", "GLEW_STATIC" }
-  
+  filter { }
+
+  filter { "system:windows", "action:vs2019" }
+    cppdialect "C++17"
   filter { }
 
   -- Strings
