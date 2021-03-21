@@ -71,11 +71,6 @@ static mFUNCTION(mThread_Destroy_Internal, IN_OUT mThread *pThread)
 
   mERROR_IF(pThread == nullptr, mR_ArgumentNull);
 
-  if (pThread->handle.joinable())
-    pThread->handle.join();
-  else
-    pThread->handle.detach();
-
   pThread->handle.~thread();
   pThread->threadState.~atomic();
 
