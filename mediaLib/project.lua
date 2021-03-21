@@ -104,6 +104,7 @@ filter {"configurations:Release"}
   targetname "%{prj.name}"
 filter {"configurations:Debug"}
   targetname "%{prj.name}D"
+filter { }
 
 flags { "NoMinimalRebuild", "NoPCH" }
 exceptionhandling "Off"
