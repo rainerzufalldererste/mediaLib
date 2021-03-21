@@ -11,6 +11,31 @@ static mFUNCTION(mThread_Destroy_Internal, IN_OUT mThread *pThread);
 
 //////////////////////////////////////////////////////////////////////////
 
+#if defined (mPLATFORM_WINDOWS)
+DWORD _mThread_ThreadFuncInternal(void *pThreadParam)
+{
+  mThread *pThread = reinterpret_cast<mThread *>(pThreadParam);
+
+  mASSERT(pThread != nullptr, "pThread cannot be nullptr.");
+
+  pThread->threadFunc(pThread);
+
+  return (DWORD)pThread->result;
+}
+
+mFUNCTION(_mThread_CreateHandleInternal, IN mThread *pThread)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pThread == nullptr, mR_ArgumentNull);
+  
+  pThread->handle = CreateThread(NULL, 0, &_mThread_ThreadFuncInternal, pThread, 0, NULL);
+  mERROR_IF(pThread->handle == NULL, mR_InternalError);
+
+  mRETURN_SUCCESS();
+}
+#endif
+
 mFUNCTION(mThread_Destroy, IN_OUT mThread **ppThread)
 {
   mFUNCTION_SETUP();
@@ -31,14 +56,32 @@ mFUNCTION(mThread_Join, IN mThread *pThread)
   mFUNCTION_SETUP();
 
   mERROR_IF(pThread == nullptr, mR_ArgumentNull);
+
+#if defined(mPLATFORM_WINDOWS)
+  const DWORD result = WaitForSingleObject(pThread->handle, INFINITE);
+  mERROR_IF(result != WAIT_OBJECT_0, mR_InternalError);
+#else
   mERROR_IF(pThread->handle.native_handle() == nullptr, mR_Success);
   mERROR_IF(!pThread->handle.joinable(), mR_OperationNotSupported);
 
   pThread->handle.join();
+#endif
 
   mRETURN_SUCCESS();
 }
 
+#if defined(mPLATFORM_WINDOWS)
+mFUNCTION(mThread_GetNativeHandle, IN mThread *pThread, OUT HANDLE *pNativeHandle)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pThread == nullptr || pNativeHandle == nullptr, mR_ArgumentNull);
+
+  *pNativeHandle = pThread->handle;
+
+  mRETURN_SUCCESS();
+}
+#else
 mFUNCTION(mThread_GetNativeHandle, IN mThread *pThread, OUT std::thread::native_handle_type *pNativeHandle)
 {
   mFUNCTION_SETUP();
@@ -49,6 +92,7 @@ mFUNCTION(mThread_GetNativeHandle, IN mThread *pThread, OUT std::thread::native_
 
   mRETURN_SUCCESS();
 }
+#endif
 
 mFUNCTION(mThread_GetMaximumConcurrentThreads, OUT size_t *pMaximumConcurrentThreadCount)
 {
@@ -71,7 +115,21 @@ static mFUNCTION(mThread_Destroy_Internal, IN_OUT mThread *pThread)
 
   mERROR_IF(pThread == nullptr, mR_ArgumentNull);
 
+#if defined (mPLATFORM_WINDOWS)
+  if (pThread->handle != NULL)
+  {
+    const DWORD result = WaitForSingleObject(pThread->handle, INFINITE);
+
+    if (result != WAIT_OBJECT_0)
+      TerminateThread(pThread->handle, 0xDEADF00D);
+
+    CloseHandle(pThread->handle);
+  }
+
+  pThread->threadFunc.~function();
+#else
   pThread->handle.~thread();
+#endif
   pThread->threadState.~atomic();
 
   mRETURN_SUCCESS();

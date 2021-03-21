@@ -22,7 +22,12 @@ enum mThread_ThreadState
 struct mThread
 {
   mAllocator *pAllocator;
+#if defined(mPLATFORM_WINDOWS)
+  HANDLE handle;
+  std::function<void(mThread *)> threadFunc;
+#else
   std::thread handle;
+#endif
   std::atomic<mThread_ThreadState> threadState;
   mResult result;
 };
@@ -80,6 +85,10 @@ void _mThread_ThreadInternalFunc(mThread *pThread, TFunction function, Args args
   pThread->threadState = mT_TS_Stopped;
 }
 
+#if defined(mPLATFORM_WINDOWS)
+mFUNCTION(_mThread_CreateHandleInternal, IN mThread *pThread);
+#endif
+
 // Creates and starts a thread.
 template<typename TFunction, typename... Args>
 mFUNCTION(mThread_Create, OUT mThread **ppThread, IN OPTIONAL mAllocator *pAllocator, TFunction function, Args&&... args)
@@ -98,14 +107,26 @@ mFUNCTION(mThread_Create, OUT mThread **ppThread, IN OPTIONAL mAllocator *pAlloc
   new (&(*ppThread)->threadState) std::atomic<mThread_ThreadState>(mT_TS_NotStarted);
 
   auto tupleRef = std::make_tuple(std::forward<Args>(args)...);
+
+#if defined(mPLATFORM_WINDOWS)
+  new (&(*ppThread)->threadFunc) std::function<void (mThread *)>([=](mThread *pThread) { _mThread_ThreadInternalFunc<TFunction, decltype(tupleRef)>(pThread, function, tupleRef); });
+
+  mERROR_CHECK(_mThread_CreateHandleInternal(*ppThread));
+#else
   new (&(*ppThread)->handle) std::thread (&_mThread_ThreadInternalFunc<TFunction, decltype(tupleRef)>, *ppThread, function, tupleRef);
-  
+#endif
+
   mRETURN_SUCCESS();
 }
 
 mFUNCTION(mThread_Destroy, IN_OUT mThread **ppThread);
 mFUNCTION(mThread_Join, IN mThread *pThread);
+
+#if defined(mPLATFORM_WINDOWS)
+mFUNCTION(mThread_GetNativeHandle, IN mThread *pThread, OUT HANDLE *pNativeHandle);
+#else
 mFUNCTION(mThread_GetNativeHandle, IN mThread *pThread, OUT std::thread::native_handle_type *pNativeHandle);
+#endif
 
 mFUNCTION(mThread_GetMaximumConcurrentThreads, OUT size_t *pMaximumConcurrentThreadCount);
 
