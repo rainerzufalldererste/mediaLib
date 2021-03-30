@@ -51,6 +51,16 @@ mFUNCTION(mShader_Bind, mShader &shader);
 mFUNCTION(mShader_Bind, mPtr<mShader> &shader);
 mFUNCTION(mShader_AfterForeign);
 
+bool mShader_IsActive(const mShader &shader);
+
+inline bool mShader_IsActive(const mPtr<mShader> &shader)
+{
+  if (shader == nullptr)
+    return false;
+  
+  return mShader_IsActive(*shader);
+}
+
 #if defined(mRENDERER_OPENGL)
 typedef GLuint shaderAttributeIndex_t;
 #else

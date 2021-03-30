@@ -99,7 +99,10 @@ mFUNCTION(mFile_GetDirectoryContents, const mString &directoryPath, const mStrin
 mFUNCTION(mFile_GetDirectoryContents, const mString &directoryPath, const char *searchTerm, OUT mPtr<mQueue<mFileInfo>> *pFiles, IN mAllocator *pAllocator);
 mFUNCTION(mFile_GetDirectoryContents, const mString &directoryPath, const wchar_t *searchTerm, OUT mPtr<mQueue<mFileInfo>> *pFiles, IN mAllocator *pAllocator);
 mFUNCTION(mFile_GetDirectoryContents, const mString &directoryPath, const bool recursive, OUT mPtr<mQueue<mFileInfo>> *pFiles, IN mAllocator *pAllocator);
+
+#define mFile_GetFileInfo mFile_GetInfo
 mFUNCTION(mFile_GetInfo, const mString &filename, OUT mFileInfo *pFileInfo);
+mFUNCTION(mFile_GetFileSize, const mString &filename, OUT size_t *pSizeBytes);
 
 enum mDriveType
 {

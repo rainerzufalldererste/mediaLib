@@ -32,4 +32,17 @@ bool mSystemInfo_IsDarkMode();
 
 void mSystemInfo_SetDPIAware();
 
+mFUNCTION(mSystemInfo_GetSystemMemory, OUT OPTIONAL size_t *pTotalRamBytes, OUT OPTIONAL size_t *pAvailableRamBytes);
+mFUNCTION(mSystemInfo_GetCpuBaseFrequency, OUT size_t *pBaseFrequencyHz);
+
+struct mSystemInfo_VideoCardInfo
+{
+  size_t dedicatedVideoMemory, sharedVideoMemory, totalVideoMemory, freeVideoMemory, driverVersion;
+  uint32_t vendorId, deviceChipsetId, deviceChipsetRevision, deviceBoardId;
+  mString deviceName;
+  mString driverInfo;
+};
+
+mFUNCTION(mSystemInfo_GetVideoCardInfo, OUT mSystemInfo_VideoCardInfo *pGpuInfo);
+
 #endif // mSystemInfo_h__

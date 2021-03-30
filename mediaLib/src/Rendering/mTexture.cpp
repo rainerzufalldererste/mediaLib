@@ -207,16 +207,12 @@ mFUNCTION(mTexture_Destroy, IN_OUT mTexture *pTexture)
 #if defined(mRENDERER_OPENGL)
     if (pTexture->uploadState != mRP_US_NotInitialized)
       glDeleteTextures(1, &pTexture->textureId);
-
-    pTexture->textureId = (GLuint)-1;
 #endif
   }
-  else
-  {
+  
 #if defined(mRENDERER_OPENGL)
-    pTexture->textureId = (GLuint)-1;
+  pTexture->textureId = (GLuint)-1;
 #endif
-  }
 
   if (pTexture->imageBuffer != nullptr)
     mERROR_CHECK(mImageBuffer_Destroy(&pTexture->imageBuffer));

@@ -4,6 +4,18 @@
 
 #include <thread>
 
+#if defined(mPLATFORM_WINDOWS)
+#define INITGUID
+#include <ddraw.h>
+#undef INITGUID
+
+#pragma comment(lib, "dxguid.lib")
+
+#include <powerbase.h>
+
+#pragma comment(lib, "PowrProf.lib")
+#endif
+
 #ifdef GIT_BUILD // Define __M_FILE__
   #ifdef __M_FILE__
     #undef __M_FILE__
@@ -138,4 +150,140 @@ void mSystemInfo_SetDPIAware()
 
   pSetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE);
 #endif
+}
+
+mFUNCTION(mSystemInfo_GetSystemMemory, OUT OPTIONAL size_t *pTotalRamBytes, OUT OPTIONAL size_t *pAvailableRamBytes)
+{
+  mFUNCTION_SETUP();
+
+#if defined(mPLATFORM_WINDOWS)
+  MEMORYSTATUSEX memStatus;
+  memStatus.dwLength = sizeof(memStatus);
+  mERROR_IF(0 == GlobalMemoryStatusEx(&memStatus), mR_InternalError);
+
+  if (pTotalRamBytes != nullptr)
+    *pTotalRamBytes = memStatus.ullTotalPhys;
+
+  if (pAvailableRamBytes != nullptr)
+    *pAvailableRamBytes = memStatus.ullAvailPhys;
+
+  mRETURN_SUCCESS();
+#else
+  mRETURN_RESULT(mR_NotImplemented);
+#endif
+}
+
+template <class T>
+inline static void mSafeRelease(T **ppT)
+{
+  if (*ppT)
+  {
+    (*ppT)->Release();
+    *ppT = nullptr;
+  }
+}
+
+mFUNCTION(mSystemInfo_GetVideoCardInfo, OUT mSystemInfo_VideoCardInfo *pGpuInfo)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pGpuInfo == nullptr, mR_ArgumentNull);
+
+#if defined(mPLATFORM_WINDOWS)
+  HRESULT hr;
+
+  HMODULE ddraw_dll = LoadLibraryW(TEXT("ddraw.dll"));
+  mDEFER_CALL(ddraw_dll, FreeLibrary);
+  mERROR_IF(ddraw_dll == nullptr, mR_NotSupported);
+
+  typedef HRESULT(DirectDrawCreateFunc)(GUID *lpGUID, LPDIRECTDRAW *lplpDD, IUnknown *pUnkOuter);
+  DirectDrawCreateFunc *pDirectDrawCreate = reinterpret_cast<DirectDrawCreateFunc *>(GetProcAddress(ddraw_dll, mSTRINGIFY(DirectDrawCreate)));
+  mERROR_IF(pDirectDrawCreate == nullptr, mR_NotSupported);
+
+  IDirectDraw *pDirectDraw = nullptr;
+  mDEFER_CALL(&pDirectDraw, mSafeRelease);
+
+  // Create DirectDraw instance.
+  mERROR_IF(FAILED(hr = pDirectDrawCreate(nullptr, &pDirectDraw, nullptr)), mR_InternalError);
+
+  IDirectDraw7 *pDirectDraw7 = nullptr;
+  mDEFER_CALL(&pDirectDraw7, mSafeRelease);
+
+  // Get IDirectDraw7 Interface.
+  mERROR_IF(FAILED(hr = pDirectDraw->QueryInterface(IID_IDirectDraw7, reinterpret_cast<void **>(&pDirectDraw7))), mR_InternalError);
+
+  DDCAPS caps;
+  mZeroMemory(&caps);
+  caps.dwSize = sizeof(caps);
+
+  // Query Combined Video Memory.
+  mERROR_IF(FAILED(hr = pDirectDraw->GetCaps(&caps, NULL)), mR_InternalError);
+
+  DDSCAPS2 surfaceCaps;
+  mZeroMemory(&surfaceCaps);
+  surfaceCaps.dwCaps = DDSCAPS_VIDEOMEMORY | DDSCAPS_LOCALVIDMEM;
+
+  DWORD dedicatedVideoMemory = 0;
+
+  // Query Dedicated Video Memory.
+  mERROR_IF(FAILED(hr = pDirectDraw7->GetAvailableVidMem(&surfaceCaps, &dedicatedVideoMemory, nullptr)), mR_InternalError);
+
+  int64_t sharedVideoMemory = caps.dwVidMemTotal - dedicatedVideoMemory;
+
+  if (sharedVideoMemory < 0)
+    sharedVideoMemory = 0;
+
+  DDDEVICEIDENTIFIER2 deviceIdentifier;
+  mZeroMemory(&deviceIdentifier);
+
+  mERROR_IF(FAILED(hr = pDirectDraw7->GetDeviceIdentifier(&deviceIdentifier, 0)), mR_InternalError);
+
+  pGpuInfo->dedicatedVideoMemory = dedicatedVideoMemory;
+  pGpuInfo->sharedVideoMemory = (size_t)sharedVideoMemory;
+  pGpuInfo->totalVideoMemory = (size_t)caps.dwVidMemTotal;
+  pGpuInfo->freeVideoMemory = (size_t)caps.dwVidMemFree;
+  pGpuInfo->driverVersion = (size_t)deviceIdentifier.liDriverVersion.QuadPart;
+  pGpuInfo->vendorId = deviceIdentifier.dwVendorId;
+  pGpuInfo->deviceChipsetId = deviceIdentifier.dwDeviceId;
+  pGpuInfo->deviceChipsetRevision = deviceIdentifier.dwRevision;
+  pGpuInfo->deviceBoardId = deviceIdentifier.dwSubSysId;
+
+  mERROR_CHECK(mString_Create(&pGpuInfo->deviceName, deviceIdentifier.szDescription, mARRAYSIZE(deviceIdentifier.szDescription), pGpuInfo->deviceName.pAllocator));
+  mERROR_CHECK(mString_Create(&pGpuInfo->driverInfo, deviceIdentifier.szDriver, mARRAYSIZE(deviceIdentifier.szDriver), pGpuInfo->driverInfo.pAllocator));
+
+  mRETURN_SUCCESS();
+#else
+  mRETURN_RESULT(mR_NotImplemented);
+#endif
+}
+
+mFUNCTION(mSystemInfo_GetCpuBaseFrequency, OUT size_t *pBaseFrequencyHz)
+{
+  mFUNCTION_SETUP();
+
+  // This looks dodgy, but MSDN states the following:
+  // "Note that this structure definition was accidentally omitted from WinNT.h. This error will be corrected in the future. In the meantime, to compile your application, include the structure definition contained in this topic in your source code." (https://docs.microsoft.com/de-de/windows/win32/power/processor-power-information-str?redirectedfrom=MSDN, March 2021)
+  struct PROCESSOR_POWER_INFORMATION
+  {
+    ULONG Number;
+    ULONG MaxMhz;
+    ULONG CurrentMhz;
+    ULONG MhzLimit;
+    ULONG MaxIdleState;
+    ULONG CurrentIdleState;
+  } powerInformation[256];
+
+  // I don't want to dynamically allocate memory for the CPU cores. If you have more than 256, sorry, you're not supported atm.
+  // Btw: This seems reasonable as `PROCESSOR_NUMBER::Number` is an 8 bit value anyways.
+  mERROR_IF(mSystemInfo_GetCpuThreadCount() > mARRAYSIZE(powerInformation), mR_InternalError);
+
+  mERROR_IF(0 != CallNtPowerInformation(ProcessorInformation, nullptr, 0, powerInformation, sizeof(powerInformation)), mR_InternalError);
+
+  PROCESSOR_NUMBER processorNumber;
+  GetCurrentProcessorNumberEx(&processorNumber);
+
+  if (pBaseFrequencyHz != nullptr)
+    *pBaseFrequencyHz = (size_t)powerInformation[processorNumber.Number].MaxMhz * 1000000ULL;
+
+  mRETURN_SUCCESS();
 }
