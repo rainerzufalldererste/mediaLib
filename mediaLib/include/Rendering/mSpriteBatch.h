@@ -76,6 +76,9 @@ template <typename ...Args>
 mFUNCTION(mSpriteBatch_Internal_RenderObject_Destroy, IN_OUT mSpriteBatch_Internal_RenderObject<Args...> *pRenderObject);
 
 template <typename ...Args>
+mFUNCTION(mSpriteBatch_Internal_RenderObject_Render_Raw, mSpriteBatch_Internal_RenderObject<Args...> &renderObject, mPtr<mSpriteBatch<Args...>> &spriteBatch, mTexture &texture, mPtr<mShader> &shader);
+
+template <typename ...Args>
 mFUNCTION(mSpriteBatch_Internal_RenderObject_Render, mSpriteBatch_Internal_RenderObject<Args...> &renderObject, mPtr<mSpriteBatch<Args...>> &spriteBatch);
 
 template <typename ...Args>

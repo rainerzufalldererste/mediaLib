@@ -458,6 +458,19 @@ mFUNCTION(mShader_AfterForeign)
   return mR_Success;
 }
 
+bool mShader_IsActive(const mShader &shader)
+{
+  if (!shader.initialized)
+    return false;
+
+#if defined (mRENDERER_OPENGL)
+  return shader.shaderProgram == mShader_CurrentlyBoundShader;
+#else
+  mFAIL("Not Implemented!");
+  return false;
+#endif
+}
+
 //////////////////////////////////////////////////////////////////////////
 
 mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex_t index, const int32_t v)

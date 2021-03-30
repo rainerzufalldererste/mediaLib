@@ -29,7 +29,7 @@ template <typename ...Args>
 mFUNCTION(mSpriteBatch_Internal_InitializeMesh, mPtr<mSpriteBatch<Args...>> &spriteBatch);
 
 template <typename ...Args>
-mFUNCTION(mSpriteBatch_Internal_BindMesh, mPtr<mSpriteBatch<Args...>> &spriteBatch);
+mFUNCTION(mSpriteBatch_Internal_BindMesh, mPtr<mSpriteBatch<Args...>> &spriteBatch, mPtr<mShader> &shader);
 
 template <typename ...Args>
 bool mSpriteBatch_Internal_DrawInstantly(mPtr<mSpriteBatch<Args...>> &spriteBatch)
@@ -109,16 +109,9 @@ inline mFUNCTION(mSpriteBatch_DrawWithDepth, mPtr<mSpriteBatch<Args...>> &sprite
 {
   mFUNCTION_SETUP();
 
-  mERROR_IF(spriteBatch == nullptr || texture == nullptr, mR_ArgumentNull);
-  mERROR_IF(!spriteBatch->isStarted, mR_ResourceStateInvalid);
+  mERROR_IF(texture == nullptr, mR_ArgumentNull);
 
-  mSpriteBatch_Internal_RenderObject<Args...> renderObject;
-  mERROR_CHECK(mSpriteBatch_Internal_RenderObject_Create(&renderObject, texture, position, texture->resolutionF, depth, std::forward<Args>(args)...));
-
-  if (mSpriteBatch_Internal_DrawInstantly(spriteBatch))
-    mERROR_CHECK(mSpriteBatch_Internal_RenderObject_Render(renderObject, spriteBatch));
-  else
-    mERROR_CHECK(mQueue_PushBack(spriteBatch->enqueuedRenderObjects, renderObject));
+  mERROR_CHECK(mSpriteBatch_DrawWithDepth(spriteBatch, texture, mRectangle<float_t>(position, texture->resolutionF), depth, std::forward<Args>(args)...));
 
   mRETURN_SUCCESS();
 }
@@ -132,12 +125,29 @@ inline mFUNCTION(mSpriteBatch_DrawWithDepth, mPtr<mSpriteBatch<Args...>> &sprite
   mERROR_IF(!spriteBatch->isStarted, mR_ResourceStateInvalid);
 
   mSpriteBatch_Internal_RenderObject<Args...> renderObject;
-  mERROR_CHECK(mSpriteBatch_Internal_RenderObject_Create(&renderObject, texture, mVec2f(rect.x, rect.y), mVec2f(rect.w, rect.h), depth, std::forward<Args>(args)...));
+  mERROR_CHECK(mSpriteBatch_Internal_RenderObject_Create(&renderObject, texture, rect.position, rect.size, depth, std::forward<Args>(args)...));
 
   if (mSpriteBatch_Internal_DrawInstantly(spriteBatch))
-    mERROR_CHECK(mSpriteBatch_Internal_RenderObject_Render(renderObject, spriteBatch));
+  {
+    const bool isMultisampleTexture = texture->sampleCount != 0;
+    mPtr<mShader> &shader = isMultisampleTexture ? spriteBatch->multisampleShader : spriteBatch->shader;
+
+    if (!mShader_IsActive(*shader))
+    {
+      mERROR_CHECK(mSpriteBatch_Internal_BindMesh(spriteBatch, shader));
+      spriteBatch->lastWasMultisampleTexture = isMultisampleTexture;
+
+      mERROR_CHECK(mSpriteBatch_Internal_SetAlphaBlending(spriteBatch));
+      mERROR_CHECK(mSpriteBatch_Internal_SetDrawOrder(spriteBatch));
+      mERROR_CHECK(mSpriteBatch_Internal_SetTextureFilterMode(spriteBatch));
+    }
+
+    mERROR_CHECK(mSpriteBatch_Internal_RenderObject_Render_Raw(renderObject, spriteBatch, *texture, shader));
+  }
   else
+  {
     mERROR_CHECK(mQueue_PushBack(spriteBatch->enqueuedRenderObjects, renderObject));
+  }
 
   mRETURN_SUCCESS();
 }
@@ -147,16 +157,10 @@ inline mFUNCTION(mSpriteBatch_DrawWithDepth, mPtr<mSpriteBatch<Args...>> &sprite
 {
   mFUNCTION_SETUP();
 
-  mERROR_IF(spriteBatch == nullptr || framebuffer == nullptr, mR_ArgumentNull);
-  mERROR_IF(!spriteBatch->isStarted, mR_ResourceStateInvalid);
+  mERROR_IF(framebuffer == nullptr, mR_ArgumentNull);
 
-  mPtr<mTexture> texture;
-  mDEFER_CALL(&texture, mSharedPointer_Destroy);
-  mERROR_CHECK(mSharedPointer_Allocate<mTexture>(&texture, &mDefaultTempAllocator, [](mTexture *pTexture) { mTexture_Destroy(pTexture); }, 1));
-  mERROR_CHECK(mTexture_CreateFromUnownedIndex(texture.GetPointer(), framebuffer->textureId, 0, framebuffer->sampleCount));
-
-  mERROR_CHECK(mSpriteBatch_DrawWithDepth(spriteBatch, texture, position, depth, std::forward<Args>(args)...));
-
+  mERROR_CHECK(mSpriteBatch_DrawWithDepth(spriteBatch, framebuffer, mRectangle<float_t>(position, (mVec2f)framebuffer->size), depth, std::forward<Args>(args)...));
+  
   mRETURN_SUCCESS();
 }
 
@@ -168,12 +172,33 @@ inline mFUNCTION(mSpriteBatch_DrawWithDepth, mPtr<mSpriteBatch<Args...>> &sprite
   mERROR_IF(spriteBatch == nullptr || framebuffer == nullptr, mR_ArgumentNull);
   mERROR_IF(!spriteBatch->isStarted, mR_ResourceStateInvalid);
 
-  mPtr<mTexture> texture;
-  mDEFER_CALL(&texture, mSharedPointer_Destroy);
-  mERROR_CHECK(mSharedPointer_Allocate<mTexture>(&texture, &mDefaultTempAllocator, [](mTexture *pTexture) { mTexture_Destroy(pTexture); }, 1));
-  mERROR_CHECK(mTexture_CreateFromUnownedIndex(texture.GetPointer(), framebuffer->textureId, 0, framebuffer->sampleCount));
+  if (mSpriteBatch_Internal_DrawInstantly(spriteBatch))
+  {
+    mTexture texture;
+    mDEFER_CALL(&texture, mTexture_Destroy);
+    mERROR_CHECK(mTexture_CreateFromUnownedIndex(&texture, framebuffer->textureId, 0, framebuffer->sampleCount));
 
-  mERROR_CHECK(mSpriteBatch_DrawWithDepth(spriteBatch, texture, rect, depth, std::forward<Args>(args)...));
+    mERROR_CHECK(mSpriteBatch_DrawWithDepth(spriteBatch, &texture, rect, depth, std::forward<Args>(args)...));
+  }
+  else
+  {
+#if defined(_DEBUG) && !defined(GIT_BUILD)
+    static bool first = true;
+
+    if (first)
+    {
+      first = false;
+      mFAIL("Please be aware, that this functionality can cause horrible issues if you destroy the related framebuffer before calling `mSpriteBatch_End`.");
+    }
+#endif
+
+    mPtr<mTexture> texture;
+    mDEFER_CALL(&texture, mSharedPointer_Destroy);
+    mERROR_CHECK(mSharedPointer_Allocate<mTexture>(&texture, &mDefaultTempAllocator, [](mTexture *pTexture) { mTexture_Destroy(pTexture); }, 1));
+    mERROR_CHECK(mTexture_CreateFromUnownedIndex(texture.GetPointer(), framebuffer->textureId, 0, framebuffer->sampleCount));
+
+    mERROR_CHECK(mSpriteBatch_DrawWithDepth(spriteBatch, texture, rect, depth, std::forward<Args>(args)...));
+  }
 
   mRETURN_SUCCESS();
 }
@@ -183,14 +208,9 @@ inline mFUNCTION(mSpriteBatch_DrawWithDepth, mPtr<mSpriteBatch<Args...>> &sprite
 {
   mFUNCTION_SETUP();
 
-  mERROR_IF(spriteBatch == nullptr || pTexture == nullptr, mR_ArgumentNull);
-  mERROR_IF(!spriteBatch->isStarted, mR_ResourceStateInvalid);
+  mERROR_IF(pTexture == nullptr, mR_ArgumentNull);
 
-  mPtr<mTexture> texture;
-  mDEFER_CALL(&texture, mSharedPointer_Destroy);
-  mERROR_CHECK(mSharedPointer_Create(&texture, pTexture, mSHARED_POINTER_FOREIGN_RESOURCE));
-
-  mERROR_CHECK(mSpriteBatch_DrawWithDepth(spriteBatch, texture, position, depth, std::forward<Args>(args)...));
+  mERROR_CHECK(mSpriteBatch_DrawWithDepth(spriteBatch, texture, mRectangle<float_t>(position, pTexture->resolutionF), depth, std::forward<Args>(args)...));
 
   mRETURN_SUCCESS();
 }
@@ -203,11 +223,44 @@ inline mFUNCTION(mSpriteBatch_DrawWithDepth, mPtr<mSpriteBatch<Args...>> &sprite
   mERROR_IF(spriteBatch == nullptr || pTexture == nullptr, mR_ArgumentNull);
   mERROR_IF(!spriteBatch->isStarted, mR_ResourceStateInvalid);
 
-  mPtr<mTexture> texture;
-  mDEFER_CALL(&texture, mSharedPointer_Destroy);
-  mERROR_CHECK(mSharedPointer_Create(&texture, pTexture, mSHARED_POINTER_FOREIGN_RESOURCE));
+  if (mSpriteBatch_Internal_DrawInstantly(spriteBatch))
+  {
+    const bool isMultisampleTexture = pTexture->sampleCount != 0;
+    mPtr<mShader> &shader = isMultisampleTexture ? spriteBatch->multisampleShader : spriteBatch->shader;
 
-  mERROR_CHECK(mSpriteBatch_DrawWithDepth(spriteBatch, texture, rect, depth, std::forward<Args>(args)...));
+    if (!mShader_IsActive(*shader))
+    {
+      mERROR_CHECK(mSpriteBatch_Internal_BindMesh(spriteBatch, shader));
+      spriteBatch->lastWasMultisampleTexture = isMultisampleTexture;
+
+      mERROR_CHECK(mSpriteBatch_Internal_SetAlphaBlending(spriteBatch));
+      mERROR_CHECK(mSpriteBatch_Internal_SetDrawOrder(spriteBatch));
+      mERROR_CHECK(mSpriteBatch_Internal_SetTextureFilterMode(spriteBatch));
+    }
+
+    mSpriteBatch_Internal_RenderObject<Args...> renderObject;
+    mERROR_CHECK(mSpriteBatch_Internal_RenderObject_Create(&renderObject, nullptr, rect.position, rect.size, depth, std::forward<Args>(args)...));
+
+    mERROR_CHECK(mSpriteBatch_Internal_RenderObject_Render_Raw(renderObject, spriteBatch, *pTexture, shader));
+  }
+  else
+  {
+#if defined(_DEBUG) && !defined(GIT_BUILD)
+    static bool first = true;
+
+    if (first)
+    {
+      first = false;
+      mFAIL("Please be aware, that this functionality can cause horrible issues if you destroy the related texture before calling `mSpriteBatch_End`.");
+    }
+#endif
+
+    mPtr<mTexture> texture;
+    mDEFER_CALL(&texture, mSharedPointer_Destroy);
+    mERROR_CHECK(mSharedPointer_Create(&texture, pTexture, mSHARED_POINTER_FOREIGN_RESOURCE));
+
+    mERROR_CHECK(mSpriteBatch_DrawWithDepth(spriteBatch, texture, rect, depth, std::forward<Args>(args)...));
+  }
 
   mRETURN_SUCCESS();
 }
@@ -260,11 +313,17 @@ inline mFUNCTION(mSpriteBatch_Draw, mPtr<mSpriteBatch<Args...>> &spriteBatch, mT
   mERROR_IF(spriteBatch == nullptr || pTexture == nullptr, mR_ArgumentNull);
   mERROR_IF(!spriteBatch->isStarted, mR_ResourceStateInvalid);
 
-  mPtr<mTexture> texture;
-  mDEFER_CALL(&texture, mSharedPointer_Destroy);
-  mERROR_CHECK(mSharedPointer_Create(&texture, pTexture, mSHARED_POINTER_FOREIGN_RESOURCE));
+  mERROR_CHECK(mSpriteBatch_DrawWithDepth(spriteBatch, pTexture, position, 0, std::forward<Args>(args)...));
 
-  mERROR_CHECK(mSpriteBatch_DrawWithDepth(spriteBatch, texture, position, 0, std::forward<Args>(args)...));
+  mRETURN_SUCCESS();
+}
+
+template<typename ...Args>
+inline mFUNCTION(mSpriteBatch_Draw, mPtr<mSpriteBatch<Args...>> &spriteBatch, mTexture *pTexture, const mRectangle2D<float_t> &rect, Args &&...args)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_CHECK(mSpriteBatch_DrawWithDepth(spriteBatch, pTexture, rect, 0, std::forward<Args>(args)...));
 
   mRETURN_SUCCESS();
 }
@@ -325,20 +384,6 @@ mFUNCTION(mSpriteBatch_QuickSortRenderObjects, mPtr<mQueue<mSpriteBatch_Internal
 
   if (l < right)
     mERROR_CHECK(mSpriteBatch_QuickSortRenderObjects(queue, l, right));
-
-  mRETURN_SUCCESS();
-}
-
-template<typename ...Args>
-inline mFUNCTION(mSpriteBatch_Draw, mPtr<mSpriteBatch<Args...>> &spriteBatch, mTexture *pTexture, const mRectangle2D<float_t> &rect, Args &&...args)
-{
-  mFUNCTION_SETUP();
-
-  mPtr<mTexture> texture;
-  mDEFER_CALL(&texture, mSharedPointer_Destroy);
-  mERROR_CHECK(mSharedPointer_Create(&texture, pTexture, mSHARED_POINTER_FOREIGN_RESOURCE));
-
-  mERROR_CHECK(mSpriteBatch_DrawWithDepth(spriteBatch, texture, rect, 0, std::forward<Args>(args)...));
 
   mRETURN_SUCCESS();
 }
@@ -828,25 +873,37 @@ inline mFUNCTION(mSpriteBatch_Internal_RenderObject_Render, mSpriteBatch_Interna
   mFUNCTION_SETUP();
 
   const bool isMultisampleTexture = renderObject.texture->sampleCount > 0;
-  mShader &shader = isMultisampleTexture ? *spriteBatch->multisampleShader : *spriteBatch->shader;
+  mPtr<mShader> &shader = isMultisampleTexture ? spriteBatch->multisampleShader : spriteBatch->shader;
 
   if (spriteBatch->lastWasMultisampleTexture != isMultisampleTexture)
   {
-    mERROR_CHECK(mSpriteBatch_Internal_BindMesh(spriteBatch, spriteBatch->shader));
+    mERROR_CHECK(mSpriteBatch_Internal_BindMesh(spriteBatch, shader));
     spriteBatch->lastWasMultisampleTexture = isMultisampleTexture;
   }
 
-  mERROR_CHECK(mTexture_Bind(*renderObject.texture));
-  mERROR_CHECK(mShader_SetUniform(shader, "texture0", renderObject.texture));
+  mERROR_CHECK(mSpriteBatch_Internal_RenderObject_Render_Raw(renderObject, spriteBatch, *renderObject.texture, shader));
+
+  mRETURN_SUCCESS();
+}
+
+template <typename ...Args>
+mFUNCTION(mSpriteBatch_Internal_RenderObject_Render_Raw, mSpriteBatch_Internal_RenderObject<Args...> &renderObject, mPtr<mSpriteBatch<Args...>> &spriteBatch, mTexture &texture, mPtr<mShader> &shader)
+{
+  mFUNCTION_SETUP();
+
+  mUnused(spriteBatch);
+
+  mERROR_CHECK(mTexture_Bind(texture));
+  mERROR_CHECK(mShader_SetUniform(shader, "texture0", texture));
   mERROR_CHECK(mShader_SetUniform(shader, "screenSize0", mRenderParams_CurrentRenderResolutionF));
   mERROR_CHECK(mShader_SetUniform(shader, "scale0", renderObject.size));
   mERROR_CHECK(mShader_SetUniform(shader, "startOffset0", renderObject.position));
 
   // Set uniforms.
-  mERROR_CHECK(mForwardTuple(mSpriteBatch_Internal_RenderObject_Render_Unpacker<Args...>::Unpack, shader, renderObject.args));
+  mERROR_CHECK(mForwardTuple(mSpriteBatch_Internal_RenderObject_Render_Unpacker<Args...>::Unpack, *shader, renderObject.args));
 
-  if (renderObject.texture->sampleCount > 0)
-    mERROR_CHECK(mShader_SetUniform(shader, mSB_MultisampleCountUniformName, (int32_t)renderObject.texture->sampleCount));
+  if (texture.sampleCount > 0)
+    mERROR_CHECK(mShader_SetUniform(shader, mSB_MultisampleCountUniformName, (int32_t)texture.sampleCount));
 
   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 

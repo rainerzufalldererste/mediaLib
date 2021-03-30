@@ -7526,6 +7526,12 @@ void ImGui::PushMultiItemsWidths(int components, float w_full)
 void ImGui::PopItemWidth()
 {
     ImGuiWindow* window = GetCurrentWindow();
+
+    IM_ASSERT(window != nullptr && window->DC.ItemWidthStack.Size != 0);
+
+    if (window == nullptr || window->DC.ItemWidthStack.Size == 0)
+      return;
+
     window->DC.ItemWidth = window->DC.ItemWidthStack.back();
     window->DC.ItemWidthStack.pop_back();
 }
