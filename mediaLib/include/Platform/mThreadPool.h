@@ -11,6 +11,7 @@
   #define __M_FILE__ "6JvMOAuXIp739fQr49g1bav087hKSpbsPiUkIUX2ZAimpzXy/DszXK+xyq0dEvTqznMYniI/7XKVEivM"
 #endif
 
+// `mTask`s are _reference_counted_! No need to worry about leaving tasks behind.
 struct mTask;
 
 // Ordered so that every `mTask_State` >= `mT_S_Running` will not be executed and `mTask_State` >= `mT_S_Complete` is considered to be done.
@@ -27,15 +28,18 @@ enum mTask_State
 mFUNCTION(mTask_CreateWithLambda, OUT mTask **ppTask, IN OPTIONAL mAllocator *pAllocator, const std::function<mResult(void)> &function);
 mFUNCTION(mTask_CreateInplace, IN mTask *pTask, const std::function<mResult(void)> &function);
 mFUNCTION(mTask_Destroy, IN_OUT mTask **ppTask);
+mFUNCTION(mTask_AddReference, IN mTask *pTask);
 
 mFUNCTION(mTask_Join, IN mTask *pTask, const size_t timeoutMilliseconds = mSemaphore_SleepTime::mS_ST_Infinite);
 mFUNCTION(mTask_Execute, IN mTask *pTask);
+
+// Will only abort the task if it can still be aborted. Will not fail if a task can no longer be aborted.
 mFUNCTION(mTask_Abort, IN mTask *pTask);
 
 mFUNCTION(mTask_GetResult, IN mTask *pTask, OUT mResult *pResult);
 mFUNCTION(mTask_GetState, IN mTask *pTask, OUT mTask_State *pTaskState);
 
-template <class TFunction, class ...Args, class = typename enable_if<!is_same<typename decay<TFunction>::type, thread>::value>::type>
+template <class TFunction, class ...Args, class = typename std::enable_if<!std::is_same<typename std::decay<TFunction>::type, std::thread>::value>::type>
 mFUNCTION(mTask_Create, OUT mTask **ppTask, TFunction &&function, Args &&...args)
 {
   mTask_Create(ppTask, (std::function<mResult(void)>)
