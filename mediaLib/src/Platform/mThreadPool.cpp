@@ -75,6 +75,18 @@ mFUNCTION(mTask_Destroy, IN_OUT mTask **ppTask)
   mRETURN_SUCCESS();
 }
 
+mFUNCTION(mTask_AddReference, IN mTask *pTask)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pTask == nullptr, mR_ArgumentNull);
+  mERROR_IF(pTask->referenceCount == 0, mR_ResourceStateInvalid);
+
+  pTask->referenceCount++;
+
+  mRETURN_SUCCESS();
+}
+
 mFUNCTION(mTask_Join, IN mTask *pTask, const size_t timeoutMilliseconds /* = mSemaphore_SleepTime::mS_ST_Infinite */)
 {
   mFUNCTION_SETUP();
@@ -180,7 +192,8 @@ mFUNCTION(mTask_Abort, IN mTask *pTask)
     if (pTask->pSemaphore != nullptr)
       mERROR_CHECK(mSemaphore_Lock(pTask->pSemaphore));
 
-    pTask->state = mTask_State::mT_S_Aborted;
+    if (pTask->state < mTask_State::mT_S_Running)
+      pTask->state = mTask_State::mT_S_Aborted;
 
     if (pTask->pSemaphore != nullptr)
     {
@@ -352,10 +365,12 @@ mFUNCTION(mThreadPool_EnqueueTask, mPtr<mThreadPool> &asyncTaskHandler, IN mTask
 
   // Enqueue task.
   {
-    ++pTask->referenceCount;
-
     mERROR_CHECK(mSemaphore_Lock(asyncTaskHandler->pSemaphore));
     mDEFER_CALL(asyncTaskHandler->pSemaphore, mSemaphore_Unlock);
+    
+    ++pTask->referenceCount;
+    mDEFER_ON_ERROR(--pTask->referenceCount);
+
     mERROR_CHECK(mQueue_PushBack(asyncTaskHandler->queue, pTask));
   }
 
