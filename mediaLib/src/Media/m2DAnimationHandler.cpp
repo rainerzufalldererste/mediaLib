@@ -391,12 +391,12 @@ static mFUNCTION(m2DAH_Sprite_Serialize, IN const m2DAH_Sprite *pSprite, mPtr<mJ
   // Keyframes.
   {
     mERROR_CHECK(mJsonWriter_BeginArray(jsonWriter, m2DAH_Sprite_Keyframes));
-    mDEFER(mJsonWriter_EndArray(jsonWriter));
+    mDEFER_CALL(jsonWriter, mJsonWriter_EndArray);
 
     for (const auto &_keyframe : pSprite->keyframes->Iterate())
     {
       mERROR_CHECK(mJsonWriter_BeginUnnamed(jsonWriter));
-      mDEFER(mJsonWriter_EndUnnamed(jsonWriter));
+      mDEFER_CALL(jsonWriter, mJsonWriter_EndUnnamed);
 
       mERROR_CHECK(m2DAH_Keyframe_Serialize(&_keyframe, jsonWriter));
     }
@@ -419,7 +419,7 @@ static mFUNCTION(m2DAH_Sprite_Deserialize, OUT m2DAH_Sprite *pSprite, mPtr<mJson
   // Keyframes.
   {
     mERROR_CHECK(mJsonReader_StepIntoArray(jsonReader, m2DAH_Sprite_Keyframes));
-    mDEFER(mJsonReader_ExitArray(jsonReader));
+    mDEFER_CALL(jsonReader, mJsonReader_ExitArray);
 
     const auto &keyframeFunc = [&](mPtr<mJsonReader> &_jsonReader, const size_t /* index */) -> mResult 
     {
@@ -666,12 +666,12 @@ mFUNCTION(m2DAnimationHandler_SaveToFile, mPtr<m2DAnimationHandler> &animationHa
   // Sprites.
   {
     mERROR_CHECK(mJsonWriter_BeginArray(jsonWriter, m2DAnimationHandler_Sprites));
-    mDEFER(mJsonWriter_EndArray(jsonWriter));
+    mDEFER_CALL(jsonWriter, mJsonWriter_EndArray);
 
     for (const auto &_sprite : animationHandler->sprites->Iterate())
     {
       mERROR_CHECK(mJsonWriter_BeginUnnamed(jsonWriter));
-      mDEFER(mJsonWriter_EndUnnamed(jsonWriter));
+      mDEFER_CALL(jsonWriter, mJsonWriter_EndUnnamed);
 
       mERROR_CHECK(m2DAH_Sprite_Serialize(&_sprite, jsonWriter));
     }

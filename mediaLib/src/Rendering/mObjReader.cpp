@@ -612,7 +612,7 @@ mFUNCTION(mObjReader_ParseFromFile, const mString &filename, IN mAllocator *pAll
   size_t size = 0;
   mAllocator *pTempAllocator = &mDefaultTempAllocator;
 
-  mDEFER(mAllocator_FreePtr(pTempAllocator, &text));
+  mDEFER_CALL_2(mAllocator_FreePtr, pTempAllocator, &text);
   mERROR_CHECK(mFile_ReadRaw(filename, &text, pTempAllocator, &size));
 
   mERROR_CHECK(mObjReader_Parse(text, size, pAllocator, pObjInfo, parseMode));

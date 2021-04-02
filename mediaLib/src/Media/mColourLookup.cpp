@@ -47,7 +47,7 @@ mFUNCTION(mColourLookup_LoadFromFile, mPtr<mColourLookup> &colourLookup, const m
   mERROR_IF(filename.hasFailed, mR_InvalidParameter);
 
   char *fileContents = nullptr;
-  mDEFER(mAllocator_FreePtr(&mDefaultTempAllocator, &fileContents));
+  mDEFER_CALL_2(mAllocator_FreePtr, &mDefaultTempAllocator, &fileContents);
   size_t length = 0;
   mERROR_CHECK(mFile_ReadRaw(filename, &fileContents, &mDefaultTempAllocator, &length));
 

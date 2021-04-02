@@ -130,7 +130,7 @@ mFUNCTION(mXmlReader_CreateFromFile, OUT mPtr<mXmlReader> *pXmlReader, IN mAlloc
   mAllocator *pTempAllocator = &mDefaultTempAllocator;
 
   mERROR_CHECK(mFile_ReadRaw(filename, &text, pTempAllocator, &size));
-  mDEFER(mAllocator_FreePtr(pTempAllocator, &text));
+  mDEFER_CALL_2(mAllocator_FreePtr, pTempAllocator, &text);
 
   mERROR_CHECK(mXmlReader_CreateFromString(pXmlReader, pAllocator, text, size));
 

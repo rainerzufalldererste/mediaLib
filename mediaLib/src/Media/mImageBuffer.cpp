@@ -485,7 +485,7 @@ mFUNCTION(mImageBuffer_SetToFile, mPtr<mImageBuffer> &imageBuffer, const mString
   uint8_t *pData = nullptr;
   size_t size = 0;
   mERROR_CHECK(mFile_ReadRaw(filename, &pData, &mDefaultTempAllocator, &size));
-  mDEFER(mAllocator_FreePtr(&mDefaultTempAllocator, &pData));
+  mDEFER_CALL_2(mAllocator_FreePtr, &mDefaultTempAllocator, &pData);
 
   mERROR_CHECK(mImageBuffer_SetToData(imageBuffer, pData, size, pixelFormat));
 
@@ -646,7 +646,7 @@ mFUNCTION(mImageBuffer_FlipY, mPtr<mImageBuffer> &imageBuffer)
   mERROR_CHECK(mPixelFormat_GetSubBufferCount(imageBuffer->pixelFormat, &subBufferCount));
 
   uint8_t *pBuffer = nullptr;
-  mDEFER(mAllocator_FreePtr(nullptr, &pBuffer));
+  mDEFER_CALL_2(mAllocator_FreePtr, nullptr, &pBuffer);
   size_t bufferSize = 0;
 
   for (size_t subBuffer = 0; subBuffer < subBufferCount; ++subBuffer)

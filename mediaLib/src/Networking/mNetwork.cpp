@@ -61,7 +61,7 @@ mFUNCTION(mNetwork_GetLocalAddresses, OUT mPtr<mQueue<mIPAddress>> *pAddresses, 
 
   IP_ADAPTER_ADDRESSES *pAdapterAddresses = nullptr;
   mAllocator *pTempAllocator = &mDefaultTempAllocator;
-  mDEFER(mAllocator_FreePtr(pTempAllocator, &pAdapterAddresses));
+  mDEFER_CALL_2(mAllocator_FreePtr, pTempAllocator, &pAdapterAddresses);
 
   ULONG bytes = 0;
 
@@ -136,7 +136,7 @@ mFUNCTION(mNetwork_GetAdapters, OUT mPtr<mQueue<mNetworkAdapter>> *pAdapters, IN
 
   IP_ADAPTER_ADDRESSES *pAdapterAddresses = nullptr;
   mAllocator *pTempAllocator = &mDefaultTempAllocator;
-  mDEFER(mAllocator_FreePtr(pTempAllocator, &pAdapterAddresses));
+  mDEFER_CALL_2(mAllocator_FreePtr, pTempAllocator, &pAdapterAddresses);
 
   ULONG bytes = 0;
 

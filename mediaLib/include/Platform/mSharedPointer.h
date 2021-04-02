@@ -499,7 +499,7 @@ inline mFUNCTION(mSharedPointer_Allocate, OUT mSharedPointer<T> *pOutSharedPoint
   mERROR_IF(pOutSharedPointer == nullptr, mR_ArgumentNull);
 
   T *pData = nullptr;
-  mDEFER(mAllocator_FreePtr(pAllocator, &pData));
+  mDEFER_CALL_2(mAllocator_FreePtr, pAllocator, &pData);
   mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &pData, count));
 
   mERROR_CHECK(mSharedPointer_Create(pOutSharedPointer, pData, pAllocator));
@@ -517,7 +517,7 @@ inline mFUNCTION(mSharedPointer_Allocate, OUT mSharedPointer<T> *pOutSharedPoint
   mERROR_IF(pOutSharedPointer == nullptr, mR_ArgumentNull);
 
   T *pData = nullptr;
-  mDEFER(mAllocator_FreePtr(pAllocator, &pData));
+  mDEFER_CALL_2(mAllocator_FreePtr, pAllocator, &pData);
   mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &pData, count));
 
   mERROR_CHECK(mSharedPointer_Create(pOutSharedPointer, pData, function, pAllocator));
@@ -535,7 +535,7 @@ inline mFUNCTION(mSharedPointer_AllocateWithFlexArray, OUT mSharedPointer<T> *pO
   mERROR_IF(pOutSharedPointer == nullptr, mR_ArgumentNull);
 
   uint8_t *pData = nullptr;
-  mDEFER(mAllocator_FreePtr(pAllocator, &pData));
+  mDEFER_CALL_2(mAllocator_FreePtr, pAllocator, &pData);
   mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &pData, sizeof(T) + sizeof(TFlexArrayType) * flexArrayCount));
 
   mERROR_CHECK(mSharedPointer_Create(pOutSharedPointer, reinterpret_cast<T *>(pData), function, pAllocator));
@@ -553,7 +553,7 @@ inline mFUNCTION(mSharedPointer_AllocateInherited, OUT mSharedPointer<T> *pOutSh
   mERROR_IF(pOutSharedPointer == nullptr, mR_ArgumentNull);
 
   TInherited *pData = nullptr;
-  mDEFER(mAllocator_FreePtr(pAllocator, &pData));
+  mDEFER_CALL_2(mAllocator_FreePtr, pAllocator, &pData);
   mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &pData, 1));
 
   if (function != nullptr)
@@ -582,7 +582,7 @@ inline mFUNCTION(mSharedPointer_AllocateInheritedWithFlexArray, OUT mSharedPoint
   mERROR_IF(pOutSharedPointer == nullptr, mR_ArgumentNull);
 
   uint8_t *pData = nullptr;
-  mDEFER(mAllocator_FreePtr(pAllocator, &pData));
+  mDEFER_CALL_2(mAllocator_FreePtr, pAllocator, &pData);
   mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &pData, sizeof(TInherited) + sizeof(TFlexArrayType) * flexArrayCount));
 
   if (function != nullptr)
@@ -610,7 +610,7 @@ inline mFUNCTION(mSharedPointer_AllocateWithSize, OUT mSharedPointer<T> *pOutSha
   mERROR_IF(pOutSharedPointer == nullptr, mR_ArgumentNull);
 
   uint8_t *pData = nullptr;
-  mDEFER(mAllocator_FreePtr(pAllocator, &pData));
+  mDEFER_CALL_2(mAllocator_FreePtr, pAllocator, &pData);
   mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &pData, size));
 
   mERROR_CHECK(mSharedPointer_Create(pOutSharedPointer, reinterpret_cast<T *>(pData), function, pAllocator));

@@ -641,7 +641,7 @@ inline mFUNCTION(mQueue_Reserve, mPtr<mQueue<T>> &queue, const size_t count)
   else
   {
     T *pNewData = nullptr;
-    mDEFER(mAllocator_FreePtr(queue->pAllocator, &pNewData));
+    mDEFER_CALL_2(mAllocator_FreePtr, queue->pAllocator, &pNewData);
     mERROR_CHECK(mAllocator_Allocate(queue->pAllocator, &pNewData, count));
 
     if (queue->startIndex + queue->count <= queue->size)
@@ -1353,7 +1353,7 @@ inline mFUNCTION(mQueue_Grow_Internal, mPtr<mQueue<T>> &queue)
   const size_t doubleSize = originalSize * 2;
 
   T *pNewData = nullptr;
-  mDEFER(mAllocator_FreePtr(queue->pAllocator, &pNewData));
+  mDEFER_CALL_2(mAllocator_FreePtr, queue->pAllocator, &pNewData);
   mERROR_CHECK(mAllocator_Allocate(queue->pAllocator, &pNewData, doubleSize));
 
   if (queue->startIndex + queue->count <= queue->size)

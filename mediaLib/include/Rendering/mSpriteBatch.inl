@@ -210,7 +210,7 @@ inline mFUNCTION(mSpriteBatch_DrawWithDepth, mPtr<mSpriteBatch<Args...>> &sprite
 
   mERROR_IF(pTexture == nullptr, mR_ArgumentNull);
 
-  mERROR_CHECK(mSpriteBatch_DrawWithDepth(spriteBatch, texture, mRectangle<float_t>(position, pTexture->resolutionF), depth, std::forward<Args>(args)...));
+  mERROR_CHECK(mSpriteBatch_DrawWithDepth(spriteBatch, pTexture, mRectangle2D<float_t>(position, pTexture->resolutionF), depth, std::forward<Args>(args)...));
 
   mRETURN_SUCCESS();
 }

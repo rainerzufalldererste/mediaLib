@@ -195,3 +195,76 @@ mTEST(mDefer, TestExecuteIncrementPtrValueOnNoSuccess)
 
   mTEST_RETURN_SUCCESS();
 }
+
+static size_t testValue0;
+
+void IncrementTestValue0()
+{
+  testValue0++;
+}
+
+mTEST(mDefer, TestDeferCall0)
+{
+  testValue0 = 1234;
+
+  {
+    mDEFER_CALL_0(IncrementTestValue0);
+    mTEST_ASSERT_EQUAL(1234, testValue0);
+  }
+
+  mTEST_ASSERT_EQUAL(1235, testValue0);
+
+  mTEST_RETURN_SUCCESS();
+}
+
+template <typename T>
+void IncrementDecrementValues(T *pValue0, T *pValue1)
+{
+  (*pValue0)++;
+  (*pValue1)--;
+}
+
+mTEST(mDefer, TestDeferCall2)
+{
+  size_t value0 = 1234;
+  size_t value1 = 4321;
+
+  {
+    mDEFER_CALL_2(IncrementDecrementValues, &value0, &value1);
+    mTEST_ASSERT_EQUAL(1234, value0);
+    mTEST_ASSERT_EQUAL(4321, value1);
+  }
+
+  mTEST_ASSERT_EQUAL(1235, value0);
+  mTEST_ASSERT_EQUAL(4320, value1);
+
+  mTEST_RETURN_SUCCESS();
+}
+
+template <typename T>
+void IncrementDecrementSquareValues(T *pValue0, T *pValue1, T *pValue2)
+{
+  (*pValue0)++;
+  (*pValue1)--;
+  *pValue2 *= *pValue2;
+}
+
+mTEST(mDefer, TestDeferCall3)
+{
+  size_t value0 = 1234;
+  size_t value1 = 4321;
+  size_t value2 = 9876;
+
+  {
+    mDEFER_CALL_3(IncrementDecrementSquareValues, &value0, &value1, &value2);
+    mTEST_ASSERT_EQUAL(1234, value0);
+    mTEST_ASSERT_EQUAL(4321, value1);
+    mTEST_ASSERT_EQUAL(9876, value2);
+  }
+
+  mTEST_ASSERT_EQUAL(1235, value0);
+  mTEST_ASSERT_EQUAL(4320, value1);
+  mTEST_ASSERT_EQUAL(97535376, value2);
+
+  mTEST_RETURN_SUCCESS();
+}
