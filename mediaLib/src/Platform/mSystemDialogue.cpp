@@ -174,7 +174,7 @@ static mFUNCTION(mSystemDialogue_OpenFile_Internal, HWND window, const mString &
 
   wchar_t *pExtensions = nullptr;
   mAllocator *pAllocator = &mDefaultTempAllocator;
-  mDEFER(mAllocator_FreePtr(pAllocator, &pExtensions));
+  mDEFER_CALL_2(mAllocator_FreePtr, pAllocator, &pExtensions);
   mERROR_CHECK(mSystemDialogue_GetWStringFromFileExtensionPairs(&pExtensions, pAllocator, fileTypeExtensionPairs));
 
   wchar_t headline[2048];
@@ -275,7 +275,7 @@ static mFUNCTION(mSystemDialogue_SaveFile_Internal, HWND window, const mString &
 
   wchar_t *pExtensions = nullptr;
   mAllocator *pAllocator = &mDefaultTempAllocator;
-  mDEFER(mAllocator_FreePtr(pAllocator, &pExtensions));
+  mDEFER_CALL_2(mAllocator_FreePtr, pAllocator, &pExtensions);
   mERROR_CHECK(mSystemDialogue_GetWStringFromFileExtensionPairs(&pExtensions, pAllocator, fileTypeExtensionPairs));
 
   wchar_t headline[2048];

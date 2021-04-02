@@ -11,7 +11,7 @@ mTEST(mCachedFileReader, TestRead)
   const mString filename = "mCachedFileReaderTest.bin";
 
   size_t *pData = nullptr;
-  mDEFER(mAllocator_FreePtr(pAllocator, &pData));
+  mDEFER_CALL_2(mAllocator_FreePtr, pAllocator, &pData);
   mTEST_ASSERT_SUCCESS(mAllocator_AllocateZero(pAllocator, &pData, fileSize));
 
   for (size_t i = 0; i < fileSize; i++)

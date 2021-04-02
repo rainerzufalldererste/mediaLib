@@ -383,7 +383,7 @@ mFUNCTION(mJsonWriter_AddValueX, mPtr<mJsonWriter> &jsonWriter, const char *name
   mFUNCTION_SETUP();
 
   mERROR_CHECK(mJsonWriter_BeginArray(jsonWriter, name));
-  mDEFER(mJsonWriter_EndArray(jsonWriter));
+  mDEFER_CALL(jsonWriter, mJsonWriter_EndArray);
 
   mERROR_CHECK(mJsonWriter_AddArrayValue(jsonWriter, value.x));
   mERROR_CHECK(mJsonWriter_AddArrayValue(jsonWriter, value.y));
@@ -396,7 +396,7 @@ mFUNCTION(mJsonWriter_AddValueX, mPtr<mJsonWriter> &jsonWriter, const char *name
   mFUNCTION_SETUP();
 
   mERROR_CHECK(mJsonWriter_BeginArray(jsonWriter, name));
-  mDEFER(mJsonWriter_EndArray(jsonWriter));
+  mDEFER_CALL(jsonWriter, mJsonWriter_EndArray);
 
   mERROR_CHECK(mJsonWriter_AddArrayValue(jsonWriter, value.x));
   mERROR_CHECK(mJsonWriter_AddArrayValue(jsonWriter, value.y));
@@ -410,7 +410,7 @@ mFUNCTION(mJsonWriter_AddValueX, mPtr<mJsonWriter> &jsonWriter, const char *name
   mFUNCTION_SETUP();
 
   mERROR_CHECK(mJsonWriter_BeginArray(jsonWriter, name));
-  mDEFER(mJsonWriter_EndArray(jsonWriter));
+  mDEFER_CALL(jsonWriter, mJsonWriter_EndArray);
 
   mERROR_CHECK(mJsonWriter_AddArrayValue(jsonWriter, value.x));
   mERROR_CHECK(mJsonWriter_AddArrayValue(jsonWriter, value.y));
@@ -425,7 +425,7 @@ mFUNCTION(mJsonWriter_AddValueX, mPtr<mJsonWriter> &jsonWriter, const char *name
   mFUNCTION_SETUP();
 
   mERROR_CHECK(mJsonWriter_BeginArray(jsonWriter, name));
-  mDEFER(mJsonWriter_EndArray(jsonWriter));
+  mDEFER_CALL(jsonWriter, mJsonWriter_EndArray);
 
   mERROR_CHECK(mJsonWriter_AddArrayValue(jsonWriter, value.x));
   mERROR_CHECK(mJsonWriter_AddArrayValue(jsonWriter, value.y));
@@ -564,7 +564,7 @@ mFUNCTION(mJsonWriter_AddArrayValueX, mPtr<mJsonWriter> &jsonWriter, const mVec2
   mFUNCTION_SETUP();
 
   mERROR_CHECK(mJsonWriter_BeginArray(jsonWriter));
-  mDEFER(mJsonWriter_EndArray(jsonWriter));
+  mDEFER_CALL(jsonWriter, mJsonWriter_EndArray);
 
   mERROR_CHECK(mJsonWriter_AddArrayValue(jsonWriter, value.x));
   mERROR_CHECK(mJsonWriter_AddArrayValue(jsonWriter, value.y));
@@ -577,7 +577,7 @@ mFUNCTION(mJsonWriter_AddArrayValueX, mPtr<mJsonWriter> &jsonWriter, const mVec3
   mFUNCTION_SETUP();
 
   mERROR_CHECK(mJsonWriter_BeginArray(jsonWriter));
-  mDEFER(mJsonWriter_EndArray(jsonWriter));
+  mDEFER_CALL(jsonWriter, mJsonWriter_EndArray);
 
   mERROR_CHECK(mJsonWriter_AddArrayValue(jsonWriter, value.x));
   mERROR_CHECK(mJsonWriter_AddArrayValue(jsonWriter, value.y));
@@ -591,7 +591,7 @@ mFUNCTION(mJsonWriter_AddArrayValueX, mPtr<mJsonWriter> &jsonWriter, const mVec4
   mFUNCTION_SETUP();
 
   mERROR_CHECK(mJsonWriter_BeginArray(jsonWriter));
-  mDEFER(mJsonWriter_EndArray(jsonWriter));
+  mDEFER_CALL(jsonWriter, mJsonWriter_EndArray);
 
   mERROR_CHECK(mJsonWriter_AddArrayValue(jsonWriter, value.x));
   mERROR_CHECK(mJsonWriter_AddArrayValue(jsonWriter, value.y));
@@ -606,7 +606,7 @@ mFUNCTION(mJsonWriter_AddArrayValueX, mPtr<mJsonWriter> &jsonWriter, const mVect
   mFUNCTION_SETUP();
 
   mERROR_CHECK(mJsonWriter_BeginArray(jsonWriter));
-  mDEFER(mJsonWriter_EndArray(jsonWriter));
+  mDEFER_CALL(jsonWriter, mJsonWriter_EndArray);
 
   mERROR_CHECK(mJsonWriter_AddArrayValue(jsonWriter, value.x));
   mERROR_CHECK(mJsonWriter_AddArrayValue(jsonWriter, value.y));
@@ -627,7 +627,7 @@ mFUNCTION(mJsonWriter_ToString, mPtr<mJsonWriter> &jsonWriter, OUT mString *pStr
 
   char *text = cJSON_Print(pJson);
   mERROR_IF(text == nullptr, mR_InternalError);
-  mDEFER(cJSON_free(text));
+  mDEFER_CALL(text, cJSON_free);
 
   mERROR_CHECK(mString_Create(pString, text));
 
@@ -645,7 +645,7 @@ mFUNCTION(mJsonWriter_ToFile, mPtr<mJsonWriter> &jsonWriter, const mString &file
 
   char *text = cJSON_Print(pJson);
   mERROR_IF(text == nullptr, mR_InternalError);
-  mDEFER(cJSON_free(text));
+  mDEFER_CALL(text, cJSON_free);
 
   mERROR_CHECK(mFile_WriteAllText(filename, text));
 
@@ -948,7 +948,7 @@ mFUNCTION(mJsonReader_ReadNamedValue, mPtr<mJsonReader> &jsonReader, const char 
   mERROR_IF(jsonReader == nullptr || name == nullptr || pVec2 == nullptr, mR_ArgumentNull);
 
   mERROR_CHECK(mJsonReader_StepIntoNamed(jsonReader, name));
-  mDEFER(mJsonReader_ExitNamed(jsonReader));
+  mDEFER_CALL(jsonReader, mJsonReader_ExitNamed);
   mERROR_CHECK(mJsonReader_ReadVec2_Internal(jsonReader, pVec2));
 
   mRETURN_SUCCESS();
@@ -961,7 +961,7 @@ mFUNCTION(mJsonReader_ReadNamedValue, mPtr<mJsonReader> &jsonReader, const char 
   mERROR_IF(jsonReader == nullptr || name == nullptr || pVec3 == nullptr, mR_ArgumentNull);
 
   mERROR_CHECK(mJsonReader_StepIntoNamed(jsonReader, name));
-  mDEFER(mJsonReader_ExitNamed(jsonReader));
+  mDEFER_CALL(jsonReader, mJsonReader_ExitNamed);
   mERROR_CHECK(mJsonReader_ReadVec3_Internal(jsonReader, pVec3));
 
   mRETURN_SUCCESS();
@@ -974,7 +974,7 @@ mFUNCTION(mJsonReader_ReadNamedValue, mPtr<mJsonReader> &jsonReader, const char 
   mERROR_IF(jsonReader == nullptr || name == nullptr || pVec4 == nullptr, mR_ArgumentNull);
 
   mERROR_CHECK(mJsonReader_StepIntoNamed(jsonReader, name));
-  mDEFER(mJsonReader_ExitNamed(jsonReader));
+  mDEFER_CALL(jsonReader, mJsonReader_ExitNamed);
   mERROR_CHECK(mJsonReader_ReadVec4_Internal(jsonReader, pVec4));
 
   mRETURN_SUCCESS();
@@ -1065,7 +1065,7 @@ mFUNCTION(mJsonReader_ReadArrayValue, mPtr<mJsonReader> &jsonReader, const size_
   mERROR_IF(index > INT_MAX, mR_ArgumentOutOfBounds);
 
   mERROR_CHECK(mJsonReader_StepIntoArrayItem(jsonReader, index));
-  mDEFER(mJsonReader_ExitArrayItem(jsonReader));
+  mDEFER_CALL(jsonReader, mJsonReader_ExitArrayItem);
 
   mERROR_CHECK(mJsonReader_ReadVec2_Internal(jsonReader, pVec2));
 
@@ -1080,7 +1080,7 @@ mFUNCTION(mJsonReader_ReadArrayValue, mPtr<mJsonReader> &jsonReader, const size_
   mERROR_IF(index > INT_MAX, mR_ArgumentOutOfBounds);
 
   mERROR_CHECK(mJsonReader_StepIntoArrayItem(jsonReader, index));
-  mDEFER(mJsonReader_ExitArrayItem(jsonReader));
+  mDEFER_CALL(jsonReader, mJsonReader_ExitArrayItem);
 
   mERROR_CHECK(mJsonReader_ReadVec3_Internal(jsonReader, pVec3));
 
@@ -1095,7 +1095,7 @@ mFUNCTION(mJsonReader_ReadArrayValue, mPtr<mJsonReader> &jsonReader, const size_
   mERROR_IF(index > INT_MAX, mR_ArgumentOutOfBounds);
 
   mERROR_CHECK(mJsonReader_StepIntoArrayItem(jsonReader, index));
-  mDEFER(mJsonReader_ExitArrayItem(jsonReader));
+  mDEFER_CALL(jsonReader, mJsonReader_ExitArrayItem);
 
   mERROR_CHECK(mJsonReader_ReadVec4_Internal(jsonReader, pVec4));
 
@@ -1209,7 +1209,7 @@ mFUNCTION(mJsonReader_ArrayForEach, mPtr<mJsonReader> &jsonReader, const std::fu
   cJSON_ArrayForEach(pElement, pJson)
   {
     mERROR_CHECK(mJsonReader_PushValue_Internal(jsonReader, pElement));
-    mDEFER(mJsonReader_PopLast_Internal(jsonReader));
+    mDEFER_CALL(jsonReader, mJsonReader_PopLast_Internal);
 
     mERROR_CHECK(callback(jsonReader, index));
 

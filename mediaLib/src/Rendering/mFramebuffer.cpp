@@ -326,7 +326,7 @@ mFUNCTION(mFramebuffer_BlitToFramebuffer, mPtr<mFramebuffer> &target, mPtr<mFram
   if (source->sampleCount == target->sampleCount)
   {
     mERROR_CHECK(mFramebuffer_Push(target));
-    mDEFER(mFramebuffer_Pop());
+    mDEFER_CALL_0(mFramebuffer_Pop);
     mGL_DEBUG_ERROR_CHECK();
 
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, target->frameBufferHandle);
@@ -341,7 +341,7 @@ mFUNCTION(mFramebuffer_BlitToFramebuffer, mPtr<mFramebuffer> &target, mPtr<mFram
   else if (source->sampleCount != 0)
   {
     mERROR_CHECK(mFramebuffer_Push(target));
-    mDEFER(mFramebuffer_Pop());
+    mDEFER_CALL_0(mFramebuffer_Pop);
     mGL_DEBUG_ERROR_CHECK();
 
     mPtr<mScreenQuad> screenQuad;
@@ -356,7 +356,7 @@ mFUNCTION(mFramebuffer_BlitToFramebuffer, mPtr<mFramebuffer> &target, mPtr<mFram
   else
   {
     mERROR_CHECK(mFramebuffer_Push(target));
-    mDEFER(mFramebuffer_Pop());
+    mDEFER_CALL_0(mFramebuffer_Pop);
     mGL_DEBUG_ERROR_CHECK();
 
     mPtr<mScreenQuad> screenQuad;

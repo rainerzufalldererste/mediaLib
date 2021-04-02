@@ -1141,8 +1141,8 @@ mTEST(mString, TestKmpAscii)
   size_t *pKmp = nullptr;
   mchar_t *pChars = nullptr;
 
-  mDEFER(mAllocator_FreePtr(&mDefaultTempAllocator, &pKmp));
-  mDEFER(mAllocator_FreePtr(&mDefaultTempAllocator, &pChars));
+  mDEFER_CALL_2(mAllocator_FreePtr, &mDefaultTempAllocator, &pKmp);
+  mDEFER_CALL_2(mAllocator_FreePtr, &mDefaultTempAllocator, &pChars);
   mTEST_ASSERT_SUCCESS(mAllocator_AllocateZero(&mDefaultTempAllocator, &pKmp, testString.count - 1));
   mTEST_ASSERT_SUCCESS(mAllocator_Allocate(&mDefaultTempAllocator, &pChars, testString.count - 1));
 
@@ -1168,8 +1168,8 @@ mTEST(mString, TestKmpUnicode)
   size_t *pKmp = nullptr;
   mchar_t *pChars = nullptr;
 
-  mDEFER(mAllocator_FreePtr(&mDefaultTempAllocator, &pKmp));
-  mDEFER(mAllocator_FreePtr(&mDefaultTempAllocator, &pChars));
+  mDEFER_CALL_2(mAllocator_FreePtr, &mDefaultTempAllocator, &pKmp);
+  mDEFER_CALL_2(mAllocator_FreePtr, &mDefaultTempAllocator, &pChars);
   mTEST_ASSERT_SUCCESS(mAllocator_AllocateZero(&mDefaultTempAllocator, &pKmp, testString.count - 1));
   mTEST_ASSERT_SUCCESS(mAllocator_Allocate(&mDefaultTempAllocator, &pChars, testString.count - 1));
 

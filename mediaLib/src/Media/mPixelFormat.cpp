@@ -970,7 +970,7 @@ namespace mPixelFormat_Transform
       mERROR_CHECK(mThreadPool_GetThreadCount(asyncTaskHandler, &threadCount));
 
       mAllocator *pAllocator = &mDefaultAllocator;
-      mDEFER(mAllocator_FreePtr(pAllocator, &ppTasks));
+      mDEFER_CALL_2(mAllocator_FreePtr, pAllocator, &ppTasks);
       mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &ppTasks, threadCount));
 
       const size_t subHeight = target->currentSize.y / threadCount;
@@ -1077,7 +1077,7 @@ namespace mPixelFormat_Transform
       mERROR_CHECK(mThreadPool_GetThreadCount(asyncTaskHandler, &threadCount));
 
       mAllocator *pAllocator = &mDefaultAllocator;
-      mDEFER(mAllocator_FreePtr(pAllocator, &ppTasks));
+      mDEFER_CALL_2(mAllocator_FreePtr, pAllocator, &ppTasks);
       mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &ppTasks, threadCount));
 
       const size_t subHeight = size.y / threadCount;

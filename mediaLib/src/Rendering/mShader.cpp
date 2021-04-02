@@ -39,7 +39,7 @@ mFUNCTION(mShader_Create, OUT mShader *pShader, const mString &vertexShader, con
 #if defined(mRENDERER_OPENGL)
 
   char *vertexSource = nullptr;
-  mDEFER(mAllocator_FreePtr(nullptr, &vertexSource));
+  mDEFER_CALL_2(mAllocator_FreePtr, nullptr, &vertexSource);
   mERROR_CHECK(mAllocator_Allocate(nullptr, &vertexSource, vertexShader.bytes));
 
   size_t position = 0;
@@ -85,7 +85,7 @@ mFUNCTION(mShader_Create, OUT mShader *pShader, const mString &vertexShader, con
   }
 
   char *fragmentSource = nullptr;
-  mDEFER(mAllocator_FreePtr(nullptr, &fragmentSource));
+  mDEFER_CALL_2(mAllocator_FreePtr, nullptr, &fragmentSource);
   mERROR_CHECK(mAllocator_Allocate(nullptr, &fragmentSource, fragmentShader.bytes));
 
   position = 0;
@@ -251,7 +251,7 @@ mFUNCTION(mShader_SetTo, mPtr<mShader> &shader, const mString &vertexShader, con
   }
 
   char *vertexSource = nullptr;
-  mDEFER(mAllocator_FreePtr(nullptr, &vertexSource));
+  mDEFER_CALL_2(mAllocator_FreePtr, nullptr, &vertexSource);
   mERROR_CHECK(mAllocator_Allocate(nullptr, &vertexSource, vertexShader.bytes));
 
   size_t position = 0;
@@ -295,7 +295,7 @@ mFUNCTION(mShader_SetTo, mPtr<mShader> &shader, const mString &vertexShader, con
   }
 
   char *fragmentSource = nullptr;
-  mDEFER(mAllocator_FreePtr(nullptr, &fragmentSource));
+  mDEFER_CALL_2(mAllocator_FreePtr, nullptr, &fragmentSource);
   mERROR_CHECK(mAllocator_Allocate(nullptr, &fragmentSource, fragmentShader.bytes));
 
   position = 0;

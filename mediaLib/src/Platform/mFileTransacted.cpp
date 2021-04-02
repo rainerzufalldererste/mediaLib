@@ -425,7 +425,7 @@ mFUNCTION(mFileTransaction_WriteRegistryKey, mPtr<mFileTransaction> &transaction
   mERROR_CHECK(mString_GetRequiredWideStringCount(pathString, &wPathOrValueCount));
 
   mAllocator *pAllocator = &mDefaultTempAllocator;
-  mDEFER(mAllocator_FreePtr(pAllocator, &wPathOrValue));
+  mDEFER_CALL_2(mAllocator_FreePtr, pAllocator, &wPathOrValue);
   mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &wPathOrValue, wPathOrValueCount));
 
   mERROR_CHECK(mString_ToWideString(pathString, wPathOrValue, wPathOrValueCount));
@@ -434,7 +434,7 @@ mFUNCTION(mFileTransaction_WriteRegistryKey, mPtr<mFileTransaction> &transaction
   size_t wValueNameCount = 0;
   mERROR_CHECK(mString_GetRequiredWideStringCount(valueName, &wValueNameCount));
 
-  mDEFER(mAllocator_FreePtr(pAllocator, &wValueName));
+  mDEFER_CALL_2(mAllocator_FreePtr, pAllocator, &wValueName);
   mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &wValueName, wValueNameCount));
 
   mERROR_CHECK(mString_ToWideString(valueName, wValueName, wValueNameCount));
@@ -443,7 +443,7 @@ mFUNCTION(mFileTransaction_WriteRegistryKey, mPtr<mFileTransaction> &transaction
   DWORD disposition = 0;
 
   LSTATUS result = RegCreateKeyTransactedW(parentKey, wPathOrValue, 0, NULL, 0, KEY_ALL_ACCESS, NULL, &key, &disposition, transaction->transactionHandle, nullptr);
-  mDEFER(if (key != nullptr) RegCloseKey(key));
+  mDEFER_IF(key != nullptr, RegCloseKey(key));
   mERROR_IF(result != ERROR_SUCCESS, mR_InternalError);
 
   if (pNewlyCreated != nullptr)
@@ -515,7 +515,7 @@ mFUNCTION(mFileTransaction_SetRegistryKeyAccessibleToAllUsers, mPtr<mFileTransac
   mERROR_CHECK(mString_GetRequiredWideStringCount(subAddress, &wPathCount));
 
   mAllocator *pAllocator = &mDefaultTempAllocator;
-  mDEFER(mAllocator_FreePtr(pAllocator, &wPath));
+  mDEFER_CALL_2(mAllocator_FreePtr, pAllocator, &wPath);
   mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &wPath, wPathCount));
 
   mERROR_CHECK(mString_ToWideString(subAddress, wPath, wPathCount));
@@ -523,20 +523,18 @@ mFUNCTION(mFileTransaction_SetRegistryKeyAccessibleToAllUsers, mPtr<mFileTransac
   HKEY key = nullptr;
 
   LSTATUS result = RegOpenKeyTransactedW(parentKey, wPath, 0, KEY_QUERY_VALUE, &key, transaction->transactionHandle, nullptr);
-  mDEFER(if (key != nullptr) RegCloseKey(key));
+  mDEFER_IF(key != nullptr, RegCloseKey(key));
   mERROR_IF(result != ERROR_SUCCESS, mR_ResourceNotFound);
 
   ACL *pOldDACL = nullptr;
   SECURITY_DESCRIPTOR *pSD = nullptr;
 
-  mDEFER(
-    LocalFree(pSD);
-  );
+  mDEFER_CALL(pSD, LocalFree);
 
   mERROR_IF(ERROR_SUCCESS != GetSecurityInfo(key, SE_REGISTRY_KEY, DACL_SECURITY_INFORMATION, nullptr, nullptr, &pOldDACL, nullptr, reinterpret_cast<void **>(&pSD)), mR_InternalError);
 
   PSID pSid = nullptr;
-  mDEFER(FreeSid(pSid));
+  mDEFER_CALL(pSid, FreeSid);
 
   SID_IDENTIFIER_AUTHORITY authNt = SECURITY_NT_AUTHORITY;
 
@@ -557,7 +555,7 @@ mFUNCTION(mFileTransaction_SetRegistryKeyAccessibleToAllUsers, mPtr<mFileTransac
   ea.Trustee.ptstrName = (LPTSTR)pSid;
 
   ACL *pNewDACL = nullptr;
-  mDEFER(LocalFree(pNewDACL));
+  mDEFER_CALL(pNewDACL, LocalFree);
   mERROR_IF(ERROR_SUCCESS != SetEntriesInAclW(1, &ea, pOldDACL, &pNewDACL), mR_InternalError);
 
   if (pNewDACL)

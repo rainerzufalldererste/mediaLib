@@ -12,23 +12,26 @@
   #define __M_FILE__ "A+934z9PYhluwBWnEIhoe2p1q13IqcW4R6uOt5lbuTbxIrC3XjhrgWPOciisAzSUpD7SGPKFkcXc1tan"
 #endif
 
-enum mFile_Encoding
+enum class mFile_Encoding
 {
   mF_E_UTF8,
+  mF_E_UTF16,
 };
 
+#define mFile_FileExists mFile_Exists
 mFUNCTION(mFile_Exists, const mString &filename, OUT bool *pExists);
 mFUNCTION(mFile_Exists, IN const wchar_t *filename, OUT bool *pExists);
+
 mFUNCTION(mFile_DirectoryExists, const mString &path, OUT bool *pExists);
 mFUNCTION(mFile_DirectoryExists, IN const wchar_t *path, OUT bool *pExists);
 
 mFUNCTION(mFile_ReadAllBytes, const mString &filename, IN OPTIONAL mAllocator *pAllocator, OUT mArray<uint8_t> *pBytes);
 mFUNCTION(mFile_ReadAllBytes, IN const wchar_t *filename, IN OPTIONAL mAllocator *pAllocator, OUT mArray<uint8_t> *pBytes);
-mFUNCTION(mFile_ReadAllText, const mString &filename, IN OPTIONAL mAllocator *pAllocator, OUT mString *pText, const mFile_Encoding encoding = mF_E_UTF8);
+mFUNCTION(mFile_ReadAllText, const mString &filename, IN OPTIONAL mAllocator *pAllocator, OUT mString *pText, const mFile_Encoding encoding = mFile_Encoding::mF_E_UTF8);
 
 mFUNCTION(mFile_WriteAllBytes, IN const wchar_t *filename, mArray<uint8_t> &bytes);
 mFUNCTION(mFile_WriteAllBytes, const mString &filename, mArray<uint8_t> &bytes);
-mFUNCTION(mFile_WriteAllText, const mString &filename, const mString &text, const mFile_Encoding encoding = mF_E_UTF8);
+mFUNCTION(mFile_WriteAllText, const mString &filename, const mString &text, const mFile_Encoding encoding = mFile_Encoding::mF_E_UTF8);
 
 template <typename T>
 mFUNCTION(mFile_ReadAllItems, IN const wchar_t *filename, IN OPTIONAL mAllocator *pAllocator, OUT mArray<T> *pData);
@@ -57,6 +60,8 @@ mFUNCTION(mFile_Copy, const mString &destinationFileName, const mString &sourceF
 mFUNCTION(mFile_Copy, const mString &destinationFileName, const mString &sourceFileName, const std::function<mResult(const double_t progress)> &progressCallback, const bool overrideFileIfExistent);
 mFUNCTION(mFile_Move, const mString &destinationFileName, const mString &sourceFileName, const bool overrideFileIfExistent = false);
 mFUNCTION(mFile_Move, const mString &destinationFileName, const mString &sourceFileName, const std::function<mResult(const double_t progress)> &progressCallback, const bool overrideFileIfExistent = false);
+
+#define mFile_DeleteFile mFile_Delete
 mFUNCTION(mFile_Delete, const mString &filename);
 
 mFUNCTION(mFile_GetTempDirectory, OUT mString *pString);
@@ -102,7 +107,9 @@ mFUNCTION(mFile_GetDirectoryContents, const mString &directoryPath, const bool r
 
 #define mFile_GetFileInfo mFile_GetInfo
 mFUNCTION(mFile_GetInfo, const mString &filename, OUT mFileInfo *pFileInfo);
-mFUNCTION(mFile_GetFileSize, const mString &filename, OUT size_t *pSizeBytes);
+
+#define mFile_GetFileSize mFile_GetSize
+mFUNCTION(mFile_GetSize, const mString &filename, OUT size_t *pSizeBytes);
 
 enum mDriveType
 {

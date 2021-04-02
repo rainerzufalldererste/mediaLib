@@ -113,7 +113,7 @@ mFUNCTION(mFile_ReadAllBytes, IN const wchar_t *filename, IN OPTIONAL mAllocator
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mFile_ReadAllText, const mString &filename, IN OPTIONAL mAllocator *pAllocator, OUT mString *pText, const mFile_Encoding /* encoding = mF_E_UTF8 */)
+mFUNCTION(mFile_ReadAllText, const mString &filename, IN OPTIONAL mAllocator *pAllocator, OUT mString *pText, const mFile_Encoding encoding /* = mFile_Encoding::mF_E_UTF8 */)
 {
   mFUNCTION_SETUP();
 
@@ -122,17 +122,45 @@ mFUNCTION(mFile_ReadAllText, const mString &filename, IN OPTIONAL mAllocator *pA
   wchar_t wfilename[MAX_PATH];
   mERROR_CHECK(mString_ToWideString(filename, wfilename, mARRAYSIZE(wfilename)));
 
-  size_t count = 0;
-  char *text = nullptr;
+  switch (encoding)
+  {
+  case mFile_Encoding::mF_E_UTF8:
+  {
+    size_t count = 0;
+    char *text = nullptr;
 
-  mDEFER(mAllocator_FreePtr(nullptr, &text));
-  mERROR_CHECK(mFile_ReadRaw(wfilename, &text, pAllocator, &count));
+    mDEFER_CALL_2(mAllocator_FreePtr, nullptr, &text);
+    mERROR_CHECK(mFile_ReadRaw(wfilename, &text, pAllocator, &count));
 
-  mERROR_IF(count == 0, mR_ResourceNotFound);
+    mERROR_IF(count == 0, mR_ResourceNotFound);
 
-  text[count] = '\0';
-  *pText = mString(text);
-  mERROR_CHECK(mAllocator_FreePtr(pAllocator, &text));
+    text[count] = '\0';
+    mERROR_CHECK(mString_Create(pText, text, count + 1, pAllocator));
+    mERROR_CHECK(mAllocator_FreePtr(pAllocator, &text));
+    
+    break;
+  }
+
+  case mFile_Encoding::mF_E_UTF16:
+  {
+    size_t count = 0;
+    wchar_t *text = nullptr;
+
+    mDEFER_CALL_2(mAllocator_FreePtr, nullptr, &text);
+    mERROR_CHECK(mFile_ReadRaw(wfilename, &text, pAllocator, &count));
+
+    mERROR_IF(count == 0, mR_ResourceNotFound);
+
+    text[count] = L'\0';
+    mERROR_CHECK(mString_Create(pText, text, count + 1, pAllocator));
+    mERROR_CHECK(mAllocator_FreePtr(pAllocator, &text));
+
+    break;
+  }
+
+  default:
+    mRETURN_RESULT(mR_InvalidParameter);
+  }
 
   mRETURN_SUCCESS();
 }
@@ -161,14 +189,43 @@ mFUNCTION(mFile_WriteAllBytes, const mString &filename, mArray<uint8_t> &bytes)
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mFile_WriteAllText, const mString &filename, const mString &text, const mFile_Encoding /* encoding = mF_E_UTF8 */)
+mFUNCTION(mFile_WriteAllText, const mString &filename, const mString &text, const mFile_Encoding encoding /* = mFile_Encoding::mF_E_UTF8 */)
 {
   mFUNCTION_SETUP();
+
+  mERROR_IF(text.bytes == 0, mR_NotInitialized);
 
   wchar_t wfilename[MAX_PATH];
   mERROR_CHECK(mString_ToWideString(filename, wfilename, mARRAYSIZE(wfilename)));
 
-  mERROR_CHECK(mFile_WriteRawBytes(wfilename, reinterpret_cast<const uint8_t *>(text.c_str()), text.bytes - 1));
+  switch (encoding)
+  {
+  case mFile_Encoding::mF_E_UTF8:
+  {
+    mERROR_CHECK(mFile_WriteRawBytes(wfilename, reinterpret_cast<const uint8_t *>(text.c_str()), text.bytes - 1));
+    break;
+  }
+
+  case mFile_Encoding::mF_E_UTF16:
+  {
+    size_t wTextCount = 0;
+    mERROR_CHECK(mString_GetRequiredWideStringCount(text, &wTextCount));
+    mERROR_IF(wTextCount == 0, mR_InternalError);
+
+    wchar_t *wText = nullptr;
+    mAllocator *pAllocator = &mDefaultTempAllocator;
+    mDEFER_CALL_2(mAllocator_FreePtr, pAllocator, &wText);
+    mERROR_CHECK(mAllocator_Allocate(pAllocator, &wText, wTextCount));
+
+    mERROR_CHECK(mString_ToWideString(text, wText, wTextCount));
+
+    mERROR_CHECK(mFile_WriteRawBytes(wfilename, reinterpret_cast<const uint8_t *>(wTextCount), (wTextCount - 1) * sizeof(wchar_t)));
+    break;
+  }
+
+  default:
+    mRETURN_RESULT(mR_InvalidParameter);
+  }
 
   mRETURN_SUCCESS();
 }
@@ -746,6 +803,10 @@ mFUNCTION(mFile_Delete, const mString &filename)
   case ERROR_FILE_NOT_FOUND:
     mRETURN_RESULT(mR_ResourceNotFound);
 
+  case ERROR_SHARING_VIOLATION:
+  case ERROR_LOCK_VIOLATION:
+    mRETURN_RESULT(mR_ResourceBusy);
+
   default:
     mRETURN_RESULT(mR_IOFailure);
   }
@@ -1247,7 +1308,7 @@ mFUNCTION(mFile_GetInfo, const mString &filename, OUT mFileInfo *pFileInfo)
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mFile_GetFileSize, const mString &filename, OUT size_t *pSizeBytes)
+mFUNCTION(mFile_GetSize, const mString &filename, OUT size_t *pSizeBytes)
 {
   mFUNCTION_SETUP();
 
@@ -1527,7 +1588,7 @@ mFUNCTION(mFile_LaunchApplication, const mString &applicationFilename, const mSt
   size_t wPathCount = 0;
 
   mERROR_CHECK(mString_GetRequiredWideStringCount(applicationFilename, &wPathCount));
-  mDEFER(mAllocator_FreePtr(pAllocator, &wPath));
+  mDEFER_CALL_2(mAllocator_FreePtr, pAllocator, &wPath);
   mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &wPath, wPathCount));
   mERROR_CHECK(mString_ToWideString(applicationFilename, wPath, wPathCount));
 
@@ -1535,7 +1596,7 @@ mFUNCTION(mFile_LaunchApplication, const mString &applicationFilename, const mSt
   size_t wArgumentsCount = 0;
 
   mERROR_CHECK(mString_GetRequiredWideStringCount(arguments, &wArgumentsCount));
-  mDEFER(mAllocator_FreePtr(pAllocator, &wArguments));
+  mDEFER_CALL_2(mAllocator_FreePtr, pAllocator, &wArguments);
   mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &wArguments, wArgumentsCount));
   mERROR_CHECK(mString_ToWideString(arguments, wArguments, wArgumentsCount));
 
@@ -1543,7 +1604,7 @@ mFUNCTION(mFile_LaunchApplication, const mString &applicationFilename, const mSt
   size_t wWorkingDirectoryCount = 0;
 
   mERROR_CHECK(mString_GetRequiredWideStringCount(workingDirectory, &wWorkingDirectoryCount));
-  mDEFER(mAllocator_FreePtr(pAllocator, &wWorkingDirectory));
+  mDEFER_CALL_2(mAllocator_FreePtr, pAllocator, &wWorkingDirectory);
   mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &wWorkingDirectory, wWorkingDirectoryCount));
   mERROR_CHECK(mString_ToWideString(workingDirectory, wWorkingDirectory, wWorkingDirectoryCount));
 
@@ -1585,7 +1646,7 @@ mFUNCTION(mFile_CreateShortcut, const mString &path, const mString &targetDestin
   size_t wPathCount = 0;
 
   mERROR_CHECK(mString_GetRequiredWideStringCount(path, &wPathCount));
-  mDEFER(mAllocator_FreePtr(pAllocator, &wPath));
+  mDEFER_CALL_2(mAllocator_FreePtr, pAllocator, &wPath);
   mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &wPath, wPathCount));
   mERROR_CHECK(mString_ToWideString(path, wPath, wPathCount));
   
@@ -1593,7 +1654,7 @@ mFUNCTION(mFile_CreateShortcut, const mString &path, const mString &targetDestin
   size_t wTargetDestinationCount = 0;
 
   mERROR_CHECK(mString_GetRequiredWideStringCount(targetDestination, &wTargetDestinationCount));
-  mDEFER(mAllocator_FreePtr(pAllocator, &wTargetDestination));
+  mDEFER_CALL_2(mAllocator_FreePtr, pAllocator, &wTargetDestination);
   mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &wTargetDestination, wTargetDestinationCount));
   mERROR_CHECK(mString_ToWideString(targetDestination, wTargetDestination, wTargetDestinationCount));
 
@@ -1601,7 +1662,7 @@ mFUNCTION(mFile_CreateShortcut, const mString &path, const mString &targetDestin
   size_t wArgumentsCount = 0;
 
   mERROR_CHECK(mString_GetRequiredWideStringCount(arguments, &wArgumentsCount));
-  mDEFER(mAllocator_FreePtr(pAllocator, &wArguments));
+  mDEFER_CALL_2(mAllocator_FreePtr, pAllocator, &wArguments);
   mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &wArguments, wArgumentsCount));
   mERROR_CHECK(mString_ToWideString(arguments, wArguments, wArgumentsCount));
 
@@ -1609,7 +1670,7 @@ mFUNCTION(mFile_CreateShortcut, const mString &path, const mString &targetDestin
   size_t wWorkingDirectoryCount = 0;
 
   mERROR_CHECK(mString_GetRequiredWideStringCount(workingDirectory, &wWorkingDirectoryCount));
-  mDEFER(mAllocator_FreePtr(pAllocator, &wWorkingDirectory));
+  mDEFER_CALL_2(mAllocator_FreePtr, pAllocator, &wWorkingDirectory);
   mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &wWorkingDirectory, wWorkingDirectoryCount));
   mERROR_CHECK(mString_ToWideString(workingDirectory, wWorkingDirectory, wWorkingDirectoryCount));
 
@@ -1617,7 +1678,7 @@ mFUNCTION(mFile_CreateShortcut, const mString &path, const mString &targetDestin
   size_t wDescriptionCount = 0;
 
   mERROR_CHECK(mString_GetRequiredWideStringCount(description, &wDescriptionCount));
-  mDEFER(mAllocator_FreePtr(pAllocator, &wDescription));
+  mDEFER_CALL_2(mAllocator_FreePtr, pAllocator, &wDescription);
   mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &wDescription, wDescriptionCount));
   mERROR_CHECK(mString_ToWideString(description, wDescription, wDescriptionCount));
 
@@ -1625,7 +1686,7 @@ mFUNCTION(mFile_CreateShortcut, const mString &path, const mString &targetDestin
   size_t wIconLocationCount = 0;
 
   mERROR_CHECK(mString_GetRequiredWideStringCount(iconLocation, &wIconLocationCount));
-  mDEFER(mAllocator_FreePtr(pAllocator, &wIconLocation));
+  mDEFER_CALL_2(mAllocator_FreePtr, pAllocator, &wIconLocation);
   mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &wIconLocation, wIconLocationCount));
   mERROR_CHECK(mString_ToWideString(iconLocation, wIconLocation, wIconLocationCount));
 
@@ -2168,11 +2229,11 @@ mFUNCTION(mRegistry_WriteKey, const mString &keyUrl, const mString &value, OUT O
   wchar_t *wPathOrValue = nullptr;
   size_t wPathOrValueCount = 0;
   mAllocator *pAllocator = &mDefaultTempAllocator;
-  mDEFER(mAllocator_FreePtr(pAllocator, &wPathOrValue));
+  mDEFER_CALL_2(mAllocator_FreePtr, pAllocator, &wPathOrValue);
 
   wchar_t *wValueName = nullptr;
   size_t wValueNameCount = 0;
-  mDEFER(mAllocator_FreePtr(pAllocator, &wValueName));
+  mDEFER_CALL_2(mAllocator_FreePtr, pAllocator, &wValueName);
 
   HKEY parentKey = nullptr;
 
@@ -2206,11 +2267,11 @@ mFUNCTION(mRegistry_WriteKey, const mString &keyUrl, const uint32_t value, OUT O
   wchar_t *wPathOrValue = nullptr;
   size_t wPathOrValueCount = 0;
   mAllocator *pAllocator = &mDefaultTempAllocator;
-  mDEFER(mAllocator_FreePtr(pAllocator, &wPathOrValue));
+  mDEFER_CALL_2(mAllocator_FreePtr, pAllocator, &wPathOrValue);
 
   wchar_t *wValueName = nullptr;
   size_t wValueNameCount = 0;
-  mDEFER(mAllocator_FreePtr(pAllocator, &wValueName));
+  mDEFER_CALL_2(mAllocator_FreePtr, pAllocator, &wValueName);
 
   HKEY parentKey = nullptr;
 
@@ -2239,11 +2300,11 @@ mFUNCTION(mRegistry_WriteKey, const mString &keyUrl, const uint64_t value, OUT O
   wchar_t *wPathOrValue = nullptr;
   size_t wPathOrValueCount = 0;
   mAllocator *pAllocator = &mDefaultTempAllocator;
-  mDEFER(mAllocator_FreePtr(pAllocator, &wPathOrValue));
+  mDEFER_CALL_2(mAllocator_FreePtr, pAllocator, &wPathOrValue);
 
   wchar_t *wValueName = nullptr;
   size_t wValueNameCount = 0;
-  mDEFER(mAllocator_FreePtr(pAllocator, &wValueName));
+  mDEFER_CALL_2(mAllocator_FreePtr, pAllocator, &wValueName);
 
   HKEY parentKey = nullptr;
 
@@ -2274,11 +2335,11 @@ mFUNCTION(mRegistry_ReadKey, const mString &keyUrl, OUT mString *pValue)
   wchar_t *wPathOrValue = nullptr;
   size_t wPathOrValueCount = 0;
   mAllocator *pAllocator = &mDefaultTempAllocator;
-  mDEFER(mAllocator_FreePtr(pAllocator, &wPathOrValue));
+  mDEFER_CALL_2(mAllocator_FreePtr, pAllocator, &wPathOrValue);
 
   wchar_t *wValueName = nullptr;
   size_t wValueNameCount = 0;
-  mDEFER(mAllocator_FreePtr(pAllocator, &wValueName));
+  mDEFER_CALL_2(mAllocator_FreePtr, pAllocator, &wValueName);
 
   HKEY parentKey = nullptr;
 
@@ -2322,11 +2383,11 @@ mFUNCTION(mRegistry_ReadKey, const mString &keyUrl, OUT uint32_t *pValue)
   wchar_t *wPathOrValue = nullptr;
   size_t wPathOrValueCount = 0;
   mAllocator *pAllocator = &mDefaultTempAllocator;
-  mDEFER(mAllocator_FreePtr(pAllocator, &wPathOrValue));
+  mDEFER_CALL_2(mAllocator_FreePtr, pAllocator, &wPathOrValue);
 
   wchar_t *wValueName = nullptr;
   size_t wValueNameCount = 0;
-  mDEFER(mAllocator_FreePtr(pAllocator, &wValueName));
+  mDEFER_CALL_2(mAllocator_FreePtr, pAllocator, &wValueName);
 
   HKEY parentKey = nullptr;
 
@@ -2366,11 +2427,11 @@ mFUNCTION(mRegistry_ReadKey, const mString &keyUrl, OUT uint64_t *pValue)
   wchar_t *wPathOrValue = nullptr;
   size_t wPathOrValueCount = 0;
   mAllocator *pAllocator = &mDefaultTempAllocator;
-  mDEFER(mAllocator_FreePtr(pAllocator, &wPathOrValue));
+  mDEFER_CALL_2(mAllocator_FreePtr, pAllocator, &wPathOrValue);
 
   wchar_t *wValueName = nullptr;
   size_t wValueNameCount = 0;
-  mDEFER(mAllocator_FreePtr(pAllocator, &wValueName));
+  mDEFER_CALL_2(mAllocator_FreePtr, pAllocator, &wValueName);
 
   HKEY parentKey = nullptr;
 
@@ -2486,7 +2547,7 @@ mFUNCTION(mRegistry_DeleteKey, const mString &keyUrl)
   mERROR_CHECK(mString_GetRequiredWideStringCount(pathString, &wPathCount));
 
   mAllocator *pAllocator = &mDefaultTempAllocator;
-  mDEFER(mAllocator_FreePtr(pAllocator, &wPath));
+  mDEFER_CALL_2(mAllocator_FreePtr, pAllocator, &wPath);
   mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &wPath, wPathCount));
 
   mERROR_CHECK(mString_ToWideString(pathString, wPath, wPathCount));
@@ -2524,7 +2585,7 @@ mFUNCTION(mRegistry_DeleteKey, const mString &keyUrl)
     size_t wValueNameCount = 0;
     mERROR_CHECK(mString_GetRequiredWideStringCount(valueName, &wValueNameCount));
 
-    mDEFER(mAllocator_FreePtr(pAllocator, &wValueName));
+    mDEFER_CALL_2(mAllocator_FreePtr, pAllocator, &wValueName);
     mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &wValueName, wValueNameCount));
 
     mERROR_CHECK(mString_ToWideString(valueName, wValueName, wValueNameCount));

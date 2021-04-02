@@ -1456,8 +1456,8 @@ mFUNCTION(mString_FindFirst, const mString &string, const mString &find, OUT siz
   size_t *pKmp = nullptr;
   mchar_t *pChars = nullptr;
 
-  mDEFER(mAllocator_FreePtr(&mDefaultTempAllocator, &pKmp));
-  mDEFER(mAllocator_FreePtr(&mDefaultTempAllocator, &pChars));
+  mDEFER_CALL_2(mAllocator_FreePtr, &mDefaultTempAllocator, &pKmp);
+  mDEFER_CALL_2(mAllocator_FreePtr, &mDefaultTempAllocator, &pChars);
   mERROR_CHECK(mAllocator_AllocateZero(&mDefaultTempAllocator, &pKmp, find.count - 1));
   mERROR_CHECK(mAllocator_Allocate(&mDefaultTempAllocator, &pChars, find.count - 1));
 
@@ -1490,8 +1490,8 @@ mFUNCTION(mString_Contains, const mString &string, const mString &contained, OUT
   size_t *pKmp = nullptr;
   mchar_t *pChars = nullptr;
 
-  mDEFER(mAllocator_FreePtr(&mDefaultTempAllocator, &pKmp));
-  mDEFER(mAllocator_FreePtr(&mDefaultTempAllocator, &pChars));
+  mDEFER_CALL_2(mAllocator_FreePtr, &mDefaultTempAllocator, &pKmp);
+  mDEFER_CALL_2(mAllocator_FreePtr, &mDefaultTempAllocator, &pChars);
   mERROR_CHECK(mAllocator_AllocateZero(&mDefaultTempAllocator, &pKmp, contained.count - 1));
   mERROR_CHECK(mAllocator_Allocate(&mDefaultTempAllocator, &pChars, contained.count - 1));
 
@@ -1663,8 +1663,8 @@ mFUNCTION(mString_RemoveString, const mString &string, const mString &remove, OU
   size_t *pKmp = nullptr;
   mchar_t *pChars = nullptr;
 
-  mDEFER(mAllocator_FreePtr(&mDefaultTempAllocator, &pKmp));
-  mDEFER(mAllocator_FreePtr(&mDefaultTempAllocator, &pChars));
+  mDEFER_CALL_2(mAllocator_FreePtr, &mDefaultTempAllocator, &pKmp);
+  mDEFER_CALL_2(mAllocator_FreePtr, &mDefaultTempAllocator, &pChars);
   mERROR_CHECK(mAllocator_AllocateZero(&mDefaultTempAllocator, &pKmp, remove.count - 1));
   mERROR_CHECK(mAllocator_Allocate(&mDefaultTempAllocator, &pChars, remove.count - 1));
 
@@ -1730,8 +1730,8 @@ mFUNCTION(mString_Replace, const mString &string, const mString &replace, const 
   size_t *pKmp = nullptr;
   mchar_t *pChars = nullptr;
 
-  mDEFER(mAllocator_FreePtr(&mDefaultTempAllocator, &pKmp));
-  mDEFER(mAllocator_FreePtr(&mDefaultTempAllocator, &pChars));
+  mDEFER_CALL_2(mAllocator_FreePtr, &mDefaultTempAllocator, &pKmp);
+  mDEFER_CALL_2(mAllocator_FreePtr, &mDefaultTempAllocator, &pChars);
   mERROR_CHECK(mAllocator_AllocateZero(&mDefaultTempAllocator, &pKmp, replace.count - 1));
   mERROR_CHECK(mAllocator_Allocate(&mDefaultTempAllocator, &pChars, replace.count - 1));
 
