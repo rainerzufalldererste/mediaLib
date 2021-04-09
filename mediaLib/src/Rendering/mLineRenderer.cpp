@@ -204,6 +204,8 @@ mFUNCTION(mLineRenderer_DrawCubicBezierLineSegment, mPtr<mLineRenderer> &lineRen
   mERROR_IF(lineRenderer == nullptr, mR_ArgumentNull);
   mERROR_IF(!lineRenderer->started, mR_ResourceStateInvalid);
 
+  mPROFILE_SCOPED("mLineRenderer_DrawCubicBezierLineSegment");
+
   constexpr size_t MaxRecursionDepth = 9;
   constexpr float_t MaxOrthogonalChangeLengthSquared = 0.125f;
   constexpr float_t SegmentSize = 1.f / 10.f;

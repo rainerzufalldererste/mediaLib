@@ -45,7 +45,7 @@ void mSetConsoleColour(const mConsoleColour foregroundColour, const mConsoleColo
   const size_t fgColour = (foregroundColour & 0xF);
   const size_t bgColour = (backgroundColour & 0xF);
 
-  printf("\x1b[%" PRIu64 ";%" PRIu64 "m", fgColour < 0x8 ? (30 + fgColour) : (90 - 8 + fgColour) | bgColour < 0x8 ? (30 + bgColour) : (90 - 8 + bgColour));
+  printf("\x1b[%" PRIu64 ";%" PRIu64 "m", fgColour < 0x8 ? (30 + fgColour) : (90 - 8 + fgColour), bgColour < 0x8 ? (30 + bgColour) : (90 - 8 + bgColour));
 #endif
 }
 

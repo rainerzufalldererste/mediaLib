@@ -1,6 +1,7 @@
 #include "mUI.h"
 
 #include "mShader.h"
+#include "mProfiler.h"
 
 #if defined(mRENDERER_OPENGL)
 #define IMGUI_IMPL_OPENGL_LOADER_GLEW
@@ -112,7 +113,7 @@ mFUNCTION(mUI_Initilialize, mPtr<mHardwareWindow> &hardwareWindow, const bool ad
   pColors[ImGuiCol_ResizeGripActive] = ImVec4(0.37f, 0.37f, 0.37f, 0.95f);
   pColors[ImGuiCol_PlotLines] = ImVec4(0.39f, 0.39f, 0.39f, 1.00f);
   pColors[ImGuiCol_PlotLinesHovered] = ImVec4(1.00f, 0.43f, 0.35f, 1.00f);
-  pColors[ImGuiCol_PlotHistogram] = ImVec4(0.90f, 0.70f, 0.00f, 1.00f);
+  pColors[ImGuiCol_PlotHistogram] = ImVec4(0.864f, 0.464f, 0.156f, 1.000f);
   pColors[ImGuiCol_PlotHistogramHovered] = ImVec4(1.00f, 0.45f, 0.00f, 1.00f);
   pColors[ImGuiCol_TextSelectedBg] = ImVec4(0.61f, 0.61f, 0.61f, 0.35f);
   pColors[ImGuiCol_DragDropTarget] = ImVec4(0.33f, 0.33f, 0.33f, 0.95f);
@@ -145,6 +146,8 @@ mFUNCTION(mUI_SetIniFilePath, const mString &path)
 mFUNCTION(mUI_StartFrame, mPtr<mHardwareWindow> &hardwareWindow)
 {
   mFUNCTION_SETUP();
+
+  mPROFILE_SCOPED("mUI_StartFrame");
 
   mERROR_IF(mUI_pImguiIO == nullptr, mR_ResourceStateInvalid);
   mERROR_IF(hardwareWindow == nullptr, mR_ArgumentNull);
@@ -179,6 +182,8 @@ mFUNCTION(mUI_Bake)
 {
   mFUNCTION_SETUP();
 
+  mPROFILE_SCOPED("mUI_Bake");
+
   mERROR_IF(mUI_pImguiIO == nullptr, mR_ResourceStateInvalid);
 
   ImGui::Render();
@@ -189,6 +194,8 @@ mFUNCTION(mUI_Bake)
 mFUNCTION(mUI_Render)
 {
   mFUNCTION_SETUP();
+
+  mPROFILE_SCOPED("mUI_Render");
 
   mERROR_IF(mUI_pImguiIO == nullptr, mR_ResourceStateInvalid);
 
