@@ -206,8 +206,8 @@ mFUNCTION(mLineRenderer_DrawCubicBezierLineSegment, mPtr<mLineRenderer> &lineRen
 
   mPROFILE_SCOPED("mLineRenderer_DrawCubicBezierLineSegment");
 
-  constexpr size_t MaxRecursionDepth = 9;
-  constexpr float_t MaxOrthogonalChangeLengthSquared = 0.125f;
+  constexpr size_t MaxRecursionDepth = 7;
+  constexpr float_t MaxOrthogonalChangeLengthSquared = 0.25f;
   constexpr float_t SegmentSize = 1.f / 10.f;
 
   struct _inner
