@@ -323,8 +323,10 @@ mFUNCTION(mFramebuffer_BlitToFramebuffer, mPtr<mFramebuffer> &target, mPtr<mFram
 
   mERROR_IF(target == nullptr || source == nullptr, mR_ArgumentNull);
 
-  if (source->sampleCount == target->sampleCount)
+#if defined(mRENDERER_OPENGL)
   {
+    mGL_DEBUG_ERROR_CHECK();
+
     mERROR_CHECK(mFramebuffer_Push(target));
     mDEFER_CALL_0(mFramebuffer_Pop);
     mGL_DEBUG_ERROR_CHECK();
@@ -332,41 +334,13 @@ mFUNCTION(mFramebuffer_BlitToFramebuffer, mPtr<mFramebuffer> &target, mPtr<mFram
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, target->frameBufferHandle);
     glBindFramebuffer(GL_READ_FRAMEBUFFER, source->frameBufferHandle);
 
-    glDrawBuffer(GL_BACK);
-
     glBlitFramebuffer(0, 0, (GLsizei)source->size.x, (GLsizei)source->size.y, 0, 0, (GLsizei)target->size.x, (GLsizei)target->size.y, GL_COLOR_BUFFER_BIT, GL_LINEAR);
 
     mGL_DEBUG_ERROR_CHECK();
   }
-  else if (source->sampleCount != 0)
-  {
-    mERROR_CHECK(mFramebuffer_Push(target));
-    mDEFER_CALL_0(mFramebuffer_Pop);
-    mGL_DEBUG_ERROR_CHECK();
-
-    mPtr<mScreenQuad> screenQuad;
-    mDEFER_CALL(&screenQuad, mScreenQuad_Destroy);
-    mERROR_CHECK(mScreenQuad_CreateForMultisampleTexture(&screenQuad, &mDefaultTempAllocator));
-
-    mERROR_CHECK(mTexture_Bind(source, 0));
-    mERROR_CHECK(mShader_SetUniform(screenQuad->shader, "_texture0", source));
-    mERROR_CHECK(mShader_SetUniform(screenQuad->shader, "_texture0sampleCount", (int32_t)source->sampleCount));
-    mERROR_CHECK(mScreenQuad_Render(screenQuad));
-  }
-  else
-  {
-    mERROR_CHECK(mFramebuffer_Push(target));
-    mDEFER_CALL_0(mFramebuffer_Pop);
-    mGL_DEBUG_ERROR_CHECK();
-
-    mPtr<mScreenQuad> screenQuad;
-    mDEFER_CALL(&screenQuad, mScreenQuad_Destroy);
-    mERROR_CHECK(mScreenQuad_Create(&screenQuad, &mDefaultTempAllocator));
-
-    mERROR_CHECK(mTexture_Bind(source, 0));
-    mERROR_CHECK(mShader_SetUniform(screenQuad->shader, "_texture0", source));
-    mERROR_CHECK(mScreenQuad_Render(screenQuad));
-  }
+#else
+  mRETURN_RESULT(mR_NotImplemented);
+#endif
 
   mRETURN_SUCCESS();
 }

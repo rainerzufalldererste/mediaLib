@@ -8,6 +8,17 @@
   #define __M_FILE__ "qgl523t3vQYdvPDcFGW8An9gs1fWNQGjMnAf2GapKD0ru9ZEb3bc8MpLfZdV2CJ8IQdzzsAZRoW4MvB4"
 #endif
 
+//////////////////////////////////////////////////////////////////////////
+
+// Use the dedicated GPU mode when an integrated GPU is also available.
+extern "C"
+{
+  _declspec(dllexport) DWORD NvOptimusEnablement = 1;
+  _declspec(dllexport) int32_t AmdPowerXpressRequestHighPerformance = 1;
+}
+
+//////////////////////////////////////////////////////////////////////////
+
 mVec2s mRenderParams_CurrentRenderResolution;
 mVec2f mRenderParams_CurrentRenderResolutionF;
 
@@ -25,6 +36,8 @@ size_t mRenderParams_RenderContextCount = 0;
 size_t mRenderParams_InitializedRenderContextCount = 0;
 
 bool mRenderParams_OnErrorCallbackAllowed = true;
+
+//////////////////////////////////////////////////////////////////////////
 
 mFUNCTION(mRenderParams_InitializeToDefault)
 {
