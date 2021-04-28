@@ -59,4 +59,6 @@ mFUNCTION(mHardwareWindow_AddOnCloseEvent, mPtr<mHardwareWindow> &window, const 
 mFUNCTION(mHardwareWindow_AddOnAnyEvent, mPtr<mHardwareWindow> &window, const std::function<mResult(IN SDL_Event *)> &callback);
 mFUNCTION(mHardwareWindow_ClearEventHandlers, mPtr<mHardwareWindow> &window);
 
+mFUNCTION(mHardwareWindow_EnableDragAndDrop);
+
 #endif // mHardwareWindow_h__

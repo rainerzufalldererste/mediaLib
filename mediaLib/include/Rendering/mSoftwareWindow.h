@@ -45,4 +45,6 @@ mFUNCTION(mSoftwareWindow_IsMaximized, const mPtr<mSoftwareWindow> &window, OUT 
 mFUNCTION(mSoftwareWindow_RespectDarkModePreference, mPtr<mSoftwareWindow> &window);
 mFUNCTION(mSoftwareWindow_AddOnDarkModeChangedEvent, mPtr<mSoftwareWindow> &window, const std::function<mResult(const bool isDarkMode)> &callback);
 
+mFUNCTION(mSoftwareWindow_EnableDragAndDrop);
+
 #endif // mSoftwareWindow_h__

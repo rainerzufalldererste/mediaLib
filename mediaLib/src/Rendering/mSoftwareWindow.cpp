@@ -442,6 +442,23 @@ mFUNCTION(mSoftwareWindow_AddOnDarkModeChangedEvent, mPtr<mSoftwareWindow> &wind
   mRETURN_SUCCESS();
 }
 
+mFUNCTION(mSoftwareWindow_EnableDragAndDrop)
+{
+  mFUNCTION_SETUP();
+
+  SDL_EventState(SDL_DROPFILE, SDL_ENABLE);
+  SDL_EventState(SDL_DROPTEXT, SDL_ENABLE);
+
+  // Now allow drag and drop if the application is privileged, but the user isn't Administrator.
+  {
+    ChangeWindowMessageFilter(WM_DROPFILES, MSGFLT_ADD);
+    ChangeWindowMessageFilter(WM_COPYDATA, MSGFLT_ADD);
+    ChangeWindowMessageFilter(0x0049, MSGFLT_ADD); // don't ask. but it doesn't work without this.
+  }
+
+  mRETURN_SUCCESS();
+}
+
 //////////////////////////////////////////////////////////////////////////
 
 static mFUNCTION(mSoftwareWindow_Create_Internal, IN mSoftwareWindow *pWindow, IN mAllocator *pAllocator, const mString &title, const mVec2s &size, const mSoftwareWindow_DisplayMode displaymode)
