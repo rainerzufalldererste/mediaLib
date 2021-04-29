@@ -29,7 +29,7 @@ struct mHardwareWindow
   bool respectDarkMode, isDarkMode;
 };
 
-static mFUNCTION(mHardwareWindow_Create_Internal, IN_OUT mHardwareWindow *pWindow, IN mAllocator *pAllocator, const mString &title, const mVec2s &size, const mHardwareWindow_DisplayMode displaymode, const bool stereo3dIfAvailable);
+static mFUNCTION(mHardwareWindow_Create_Internal, IN_OUT mHardwareWindow *pWindow, IN mAllocator *pAllocator, const mString &title, const mVec2i &position, const mVec2s &size, const mHardwareWindow_DisplayMode displaymode, const bool stereo3dIfAvailable);
 static mFUNCTION(mHardwareWindow_Destroy_Internal, IN mHardwareWindow *pWindow);
 static mFUNCTION(mHardwareWindow_UpdateWindowTitleColour_Internal, mPtr<mHardwareWindow> &window);
 
@@ -37,13 +37,18 @@ static mFUNCTION(mHardwareWindow_UpdateWindowTitleColour_Internal, mPtr<mHardwar
 
 mFUNCTION(mHardwareWindow_Create, OUT mPtr<mHardwareWindow> *pWindow, IN mAllocator *pAllocator, const mString &title, const mVec2s &size, const mHardwareWindow_DisplayMode displaymode /* = mHW_DM_Windowed */, const bool stereo3dIfAvailable /* = false */)
 {
+  return mHardwareWindow_Create(pWindow, pAllocator, title, mVec2i(SDL_WINDOWPOS_CENTERED), size, displaymode, stereo3dIfAvailable);
+}
+
+mFUNCTION(mHardwareWindow_Create, OUT mPtr<mHardwareWindow> *pWindow, IN mAllocator *pAllocator, const mString &title, const mVec2i &position, const mVec2s &size, const mHardwareWindow_DisplayMode displaymode /* = mHW_DM_Windowed */, const bool stereo3dIfAvailable /* = false */)
+{
   mFUNCTION_SETUP();
 
   mERROR_IF(SDL_Init(SDL_INIT_EVERYTHING), mR_InternalError);
 
   mERROR_CHECK(mSharedPointer_Allocate(pWindow, pAllocator, (std::function<void(mHardwareWindow *)>)[](mHardwareWindow *pData) { mHardwareWindow_Destroy_Internal(pData); }, 1));
 
-  mERROR_CHECK(mHardwareWindow_Create_Internal(pWindow->GetPointer(), pAllocator, title, size, displaymode, stereo3dIfAvailable));
+  mERROR_CHECK(mHardwareWindow_Create_Internal(pWindow->GetPointer(), pAllocator, title, position, size, displaymode, stereo3dIfAvailable));
 
   mERROR_CHECK(mRenderParams_CreateRenderContext(&(*pWindow)->renderContextID, *pWindow));
 
@@ -241,7 +246,7 @@ mFUNCTION(mHardwareWindow_SetSize, mPtr<mHardwareWindow> &window, const mVec2s &
   mERROR_IF(window == nullptr, mR_ArgumentNull);
   mERROR_IF(size.x > INT_MAX || size.y > INT_MAX, mR_ArgumentOutOfBounds);
 
-  SDL_SetWindowSize(window->pWindow, (int)size.x, (int)size.y);
+  SDL_SetWindowSize(window->pWindow, (int32_t)size.x, (int32_t)size.y);
 
   // Update Back Buffer Resolution.
   {
@@ -251,6 +256,18 @@ mFUNCTION(mHardwareWindow_SetSize, mPtr<mHardwareWindow> &window, const mVec2s &
     mRenderParams_BackBufferResolution = _size;
     mRenderParams_BackBufferResolutionF = mVec2f(_size);
   }
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mHardwareWindow_SetPosition, mPtr<mHardwareWindow> &window, const mVec2i &position)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(window == nullptr, mR_ArgumentNull);
+  mERROR_IF(position.x > INT_MAX || position.y > INT_MAX || position.x < INT_MIN || position.y < INT_MIN, mR_ArgumentOutOfBounds);
+
+  SDL_SetWindowPosition(window->pWindow, (int32_t)position.x, (int32_t)position.y);
 
   mRETURN_SUCCESS();
 }
@@ -575,11 +592,12 @@ mFUNCTION(mHardwareWindow_EnableDragAndDrop)
 
 //////////////////////////////////////////////////////////////////////////
 
-static mFUNCTION(mHardwareWindow_Create_Internal, IN_OUT mHardwareWindow *pWindow, IN mAllocator *pAllocator, const mString &title, const mVec2s &size, const mHardwareWindow_DisplayMode displaymode, const bool stereo3dIfAvailable)
+static mFUNCTION(mHardwareWindow_Create_Internal, IN_OUT mHardwareWindow *pWindow, IN mAllocator *pAllocator, const mString &title, const mVec2i &position, const mVec2s &size, const mHardwareWindow_DisplayMode displaymode, const bool stereo3dIfAvailable)
 {
   mFUNCTION_SETUP();
 
   mERROR_IF(size.x > INT_MAX || size.y > INT_MAX, mR_ArgumentOutOfBounds);
+  mERROR_IF(position.x > INT_MAX || position.y > INT_MAX || position.x < INT_MIN || position.y < INT_MIN, mR_ArgumentOutOfBounds);
 
   const mHardwareWindow_DisplayMode innerDisplayMode = ((displaymode & SDL_WINDOW_FULLSCREEN_DESKTOP) == SDL_WINDOW_FULLSCREEN_DESKTOP) ? (mHardwareWindow_DisplayMode)((displaymode ^ SDL_WINDOW_FULLSCREEN_DESKTOP) | SDL_WINDOW_MAXIMIZED | SDL_WINDOW_BORDERLESS | SDL_WINDOW_RESIZABLE) : displaymode;
 
@@ -587,7 +605,7 @@ static mFUNCTION(mHardwareWindow_Create_Internal, IN_OUT mHardwareWindow *pWindo
 retry_without_3d:
   SDL_GL_SetAttribute(SDL_GL_STEREO, try3d ? 1 : 0);
 
-  pWindow->pWindow = SDL_CreateWindow(title.c_str(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, (int32_t)size.x, (int32_t)size.y
+  pWindow->pWindow = SDL_CreateWindow(title.c_str(), (int32_t)position.x, (int32_t)position.y, (int32_t)size.x, (int32_t)size.y
     , 
 #if defined(mRENDERER_OPENGL)
     SDL_WINDOW_OPENGL |

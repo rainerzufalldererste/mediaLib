@@ -287,3 +287,71 @@ mFUNCTION(mSystemInfo_GetCpuBaseFrequency, OUT size_t *pBaseFrequencyHz)
 
   mRETURN_SUCCESS();
 }
+
+mFUNCTION(mSystemInfo_GetDisplayCount, OUT size_t *pDisplayCount)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pDisplayCount == nullptr, mR_ArgumentNull);
+
+  struct _internal
+  {
+    static BOOL CALLBACK IncrementMonitors(HMONITOR, HDC, LPRECT, LPARAM pParam)
+    {
+      size_t *pCount = reinterpret_cast<size_t*>(pParam);
+      (*pCount)++;
+
+      return TRUE;
+    }
+  };
+
+  size_t displayCount = 0;
+  mERROR_IF(0 != EnumDisplayMonitors(NULL, NULL, _internal::IncrementMonitors, reinterpret_cast<LPARAM>(&displayCount)), mR_InternalError);
+
+  *pDisplayCount = displayCount;
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mSystemInfo_GetDisplayBounds, const size_t displayIndex, OUT mRectangle2D<int64_t> *pDisplayBounds)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pDisplayBounds == nullptr, mR_ArgumentNull);
+
+  struct _internal
+  {
+    size_t displayIndex = 0;
+    bool failed = true;
+
+    size_t requestedDisplayIndex;
+    mRectangle2D<int64_t> bounds;
+
+    static BOOL CALLBACK IncrementMonitors(HMONITOR, HDC, LPRECT pRect, LPARAM pParam)
+    {
+      _internal *pData = reinterpret_cast<_internal *>(pParam);
+
+      if (pData->requestedDisplayIndex == pData->displayIndex)
+      {
+        if (pRect != nullptr)
+        {
+          pData->failed = false;
+          pData->bounds = mRectangle2D<int64_t>((size_t)pRect->left, (size_t)pRect->top, (size_t)pRect->right - (size_t)pRect->left, (size_t)pRect->bottom - (size_t)pRect->top);
+        }
+      }
+
+      pData->displayIndex++;
+
+      return TRUE;
+    }
+  } data;
+
+  data.requestedDisplayIndex = displayIndex;
+
+  mERROR_IF(0 == EnumDisplayMonitors(NULL, NULL, _internal::IncrementMonitors, reinterpret_cast<LPARAM>(&data)), mR_InternalError);
+  mERROR_IF(data.failed, mR_InternalError);
+
+  *pDisplayBounds = data.bounds;
+
+  mRETURN_SUCCESS();
+}
