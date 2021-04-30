@@ -1253,7 +1253,7 @@ mFUNCTION(mFile_GetDirectoryContents, const mString &directoryPath, const bool r
       mERROR_CHECK(mString_Append(currentFile, "\\"));
       mERROR_CHECK(mString_Append(currentFile, _file.name));
 
-      if (_file.size == 0)
+      if (_file.size == 0 || _file.isDirectory)
       {
         mERROR_CHECK(mQueue_PushBack(enqueuedDirectories, currentFile));
       }
