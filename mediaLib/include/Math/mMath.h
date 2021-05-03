@@ -408,6 +408,18 @@ struct mVec2t
 
   __host__ __device__ inline typename mMath_FloatTypeFrom<T>::type Angle() const { return mATan2(mMath_FloatTypeFrom<T>::type(y), mMath_FloatTypeFrom<T>::type(x)); };
 
+  __host__ __device__ inline typename mMath_FloatTypeFrom<T>::type AngleTo(const mVec2t<T> &other) const
+  {
+    mMath_FloatTypeFrom<T>::type ret = other.Angle() - Angle();
+
+    if (ret > (mMath_FloatTypeFrom<T>::type)mPI)
+      return ret - (mMath_FloatTypeFrom<T>::type)mTWOPI;
+    else if (ret < -(mMath_FloatTypeFrom<T>::type)mPI)
+      return ret + (mMath_FloatTypeFrom<T>::type)mTWOPI;
+    else
+      return ret;
+  };
+
   __host__ __device__ inline typename mMath_FloatTypeFrom<T>::type AspectRatio() const { return mMath_FloatTypeFrom<T>::type(x) / mMath_FloatTypeFrom<T>::type(y); };
   __host__ __device__ inline typename mMath_FloatTypeFrom<T>::type InverseAspectRatio() const { return mMath_FloatTypeFrom<T>::type(y) / mMath_FloatTypeFrom<T>::type(x); };
 
