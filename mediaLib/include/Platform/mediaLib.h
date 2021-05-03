@@ -274,6 +274,21 @@ namespace mCpuExtensions
   extern bool avxSupported;
   extern bool avx2Supported;
   extern bool fma3Supported;
+  extern bool avx512FSupported;
+  extern bool avx512PFSupported;
+  extern bool avx512ERSupported;
+  extern bool avx512CDSupported;
+  extern bool avx512BWSupported;
+  extern bool avx512DQSupported;
+  extern bool avx512VLSupported;
+  extern bool avx512IFMASupported;
+  extern bool avx512VBMISupported;
+  extern bool avx512VNNISupported;
+  extern bool avx512VBMI2Supported;
+  extern bool avx512POPCNTDQSupported;
+  extern bool avx512BITALGSupported;
+  extern bool avx5124VNNIWSupported;
+  extern bool avx5124FMAPSSupported;
 
   void Detect();
 };

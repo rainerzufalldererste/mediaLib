@@ -26,7 +26,7 @@ struct mSoftwareWindow
   bool respectDarkMode, isDarkMode;
 };
 
-static mFUNCTION(mSoftwareWindow_Create_Internal, IN mSoftwareWindow *pWindow, IN mAllocator *pAllocator, const mString &title, const mVec2s &size, const mSoftwareWindow_DisplayMode displaymode);
+static mFUNCTION(mSoftwareWindow_Create_Internal, IN mSoftwareWindow *pWindow, IN mAllocator *pAllocator, const mString &title, const mVec2i &position, const mVec2s &size, const mSoftwareWindow_DisplayMode displaymode);
 static mFUNCTION(mSoftwareWindow_Destroy_Internal, IN mSoftwareWindow *pWindow);
 static mFUNCTION(mSoftwareWindow_UpdateWindowTitleColour_Internal, mPtr<mSoftwareWindow> &window);
 
@@ -34,13 +34,18 @@ static mFUNCTION(mSoftwareWindow_UpdateWindowTitleColour_Internal, mPtr<mSoftwar
 
 mFUNCTION(mSoftwareWindow_Create, OUT mPtr<mSoftwareWindow> *pWindow, IN mAllocator *pAllocator, const mString &title, const mVec2s &size, const mSoftwareWindow_DisplayMode displaymode /* = mSW_DM_Windowed */)
 {
+  return mSoftwareWindow_Create(pWindow, pAllocator, title, mVec2i(SDL_WINDOWPOS_CENTERED), size, displaymode);
+}
+
+mFUNCTION(mSoftwareWindow_Create, OUT mPtr<mSoftwareWindow> *pWindow, IN mAllocator *pAllocator, const mString &title, const mVec2i &position, const mVec2s &size, const mSoftwareWindow_DisplayMode displaymode /* = mSW_DM_Windowed */)
+{
   mFUNCTION_SETUP();
 
   mERROR_IF(SDL_Init(SDL_INIT_EVERYTHING), mR_InternalError);
 
   mERROR_CHECK(mSharedPointer_Allocate(pWindow, pAllocator, (std::function<void (mSoftwareWindow *)>)[](mSoftwareWindow *pData) { mSoftwareWindow_Destroy_Internal(pData); }, 1));
 
-  mERROR_CHECK(mSoftwareWindow_Create_Internal(pWindow->GetPointer(), pAllocator, title, size, displaymode));
+  mERROR_CHECK(mSoftwareWindow_Create_Internal(pWindow->GetPointer(), pAllocator, title, position, size, displaymode));
 
   mRETURN_SUCCESS();
 }
@@ -244,6 +249,18 @@ mFUNCTION(mSoftwareWindow_SetSize, mPtr<mSoftwareWindow> &window, const mVec2s &
     window->buffer->pixelFormat = mPF_B8G8R8A8;
     window->buffer->pPixels = (uint8_t *)pSurface->pixels;
   }
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mSoftwareWindow_SetPosition, mPtr<mSoftwareWindow> &window, const mVec2i &position)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(window == nullptr, mR_ArgumentNull);
+  mERROR_IF(position.x > INT_MAX || position.y > INT_MAX || position.x < INT_MIN || position.y < INT_MIN, mR_ArgumentOutOfBounds);
+
+  SDL_SetWindowPosition(window->pWindow, (int32_t)position.x, (int32_t)position.y);
 
   mRETURN_SUCCESS();
 }
@@ -461,16 +478,17 @@ mFUNCTION(mSoftwareWindow_EnableDragAndDrop)
 
 //////////////////////////////////////////////////////////////////////////
 
-static mFUNCTION(mSoftwareWindow_Create_Internal, IN mSoftwareWindow *pWindow, IN mAllocator *pAllocator, const mString &title, const mVec2s &size, const mSoftwareWindow_DisplayMode displaymode)
+static mFUNCTION(mSoftwareWindow_Create_Internal, IN mSoftwareWindow *pWindow, IN mAllocator *pAllocator, const mString &title, const mVec2i &position, const mVec2s &size, const mSoftwareWindow_DisplayMode displaymode)
 {
   mFUNCTION_SETUP();
 
   mERROR_IF(size.x > INT_MAX || size.y > INT_MAX, mR_ArgumentOutOfBounds);
+  mERROR_IF(position.x > INT_MAX || position.y > INT_MAX || position.x < INT_MIN || position.y < INT_MIN, mR_ArgumentOutOfBounds);
   mERROR_IF((displaymode & SDL_WINDOW_OPENGL) != 0, mR_OperationNotSupported);
 
   const mSoftwareWindow_DisplayMode innerDisplayMode = ((displaymode & SDL_WINDOW_FULLSCREEN_DESKTOP) == SDL_WINDOW_FULLSCREEN_DESKTOP) ? (mSoftwareWindow_DisplayMode)((displaymode ^ SDL_WINDOW_FULLSCREEN_DESKTOP) | SDL_WINDOW_MAXIMIZED | SDL_WINDOW_BORDERLESS | SDL_WINDOW_RESIZABLE) : displaymode;
 
-  pWindow->pWindow = SDL_CreateWindow(title.c_str(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, (int32_t)size.x, (int32_t)size.y, innerDisplayMode);
+  pWindow->pWindow = SDL_CreateWindow(title.c_str(), (int32_t)position.x, (int32_t)position.y, (int32_t)size.x, (int32_t)size.y, innerDisplayMode);
   
   mERROR_IF(pWindow->pWindow == nullptr, mR_InternalError);
 
