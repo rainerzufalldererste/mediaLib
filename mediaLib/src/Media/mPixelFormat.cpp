@@ -16,21 +16,32 @@ mFUNCTION(mPixelFormat_HasSubBuffers, const mPixelFormat pixelFormat, OUT bool *
 
   switch (pixelFormat)
   {
-  case mPF_B8G8R8:
-  case mPF_R8G8B8:
-  case mPF_B8G8R8A8:
-  case mPF_R8G8B8A8:
   case mPF_Monochrome8:
   case mPF_Monochrome16:
-  case mPF_Rf16Gf16Bf16Af16:
+  case mPF_Monochromef16:
+  case mPF_Monochromef32:
+  case mPF_R8G8:
+  case mPF_R16G16:
+  case mPF_Rf16Gf16:
+  case mPF_Rf32Gf32:
+  case mPF_R8G8B8:
+  case mPF_R16G16B16:
   case mPF_Rf16Gf16Bf16:
-  case mPF_Rf32Gf32Bf32Af32:
   case mPF_Rf32Gf32Bf32:
+  case mPF_R8G8B8A8:
+  case mPF_R16G16B16A16:
+  case mPF_Rf16Gf16Bf16Af16:
+  case mPF_Rf32Gf32Bf32Af32:
+  case mPF_B8G8R8:
+  case mPF_B8G8R8A8:
     *pValue = false;
     break;
 
+  case mPF_YUV444:
   case mPF_YUV422:
+  case mPF_YUV440:
   case mPF_YUV420:
+  case mPF_YUV411:
     *pValue = true;
     break;
 
@@ -49,21 +60,32 @@ mFUNCTION(mPixelFormat_IsChromaSubsampled, const mPixelFormat pixelFormat, OUT b
 
   switch (pixelFormat)
   {
-  case mPF_B8G8R8:
-  case mPF_R8G8B8:
-  case mPF_B8G8R8A8:
-  case mPF_R8G8B8A8:
   case mPF_Monochrome8:
   case mPF_Monochrome16:
-  case mPF_Rf16Gf16Bf16Af16:
+  case mPF_Monochromef16:
+  case mPF_Monochromef32:
+  case mPF_R8G8:
+  case mPF_R16G16:
+  case mPF_Rf16Gf16:
+  case mPF_Rf32Gf32:
+  case mPF_R8G8B8:
+  case mPF_R16G16B16:
   case mPF_Rf16Gf16Bf16:
-  case mPF_Rf32Gf32Bf32Af32:
   case mPF_Rf32Gf32Bf32:
+  case mPF_R8G8B8A8:
+  case mPF_R16G16B16A16:
+  case mPF_Rf16Gf16Bf16Af16:
+  case mPF_Rf32Gf32Bf32Af32:
+  case mPF_B8G8R8:
+  case mPF_B8G8R8A8:
     *pValue = false;
     break;
 
+  case mPF_YUV444:
   case mPF_YUV422:
+  case mPF_YUV440:
   case mPF_YUV420:
+  case mPF_YUV411:
     *pValue = true;
     break;
 
@@ -82,17 +104,69 @@ mFUNCTION(mPixelFormat_GetSize, const mPixelFormat pixelFormat, const mVec2s &si
 
   switch (pixelFormat)
   {
-  case mPF_B8G8R8:
+  case mPF_Monochrome8:
+    *pBytes = sizeof(uint8_t) * size.x * size.y;
+    break;
+
+  case mPF_Monochrome16:
+  case mPF_Monochromef16:
+    *pBytes = sizeof(uint16_t) * size.x * size.y;
+    break;
+
+  case mPF_Monochromef32:
+    *pBytes = sizeof(float_t) * size.x * size.y;
+    break;
+
+  case mPF_R8G8:
+    *pBytes = sizeof(uint8_t) * 2 * size.x * size.y;
+    break;
+
+  case mPF_R16G16:
+  case mPF_Rf16Gf16:
+    *pBytes = sizeof(uint16_t) * 2 * size.x * size.y;
+    break;
+
+  case mPF_Rf32Gf32:
+    *pBytes = sizeof(float_t) * 2 * size.x * size.y;
+    break;
+
   case mPF_R8G8B8:
+  case mPF_B8G8R8:
     *pBytes = sizeof(uint8_t) * 3 * size.x * size.y;
     break;
 
-  case mPF_B8G8R8A8:
+  case mPF_R16G16B16:
+  case mPF_Rf16Gf16Bf16:
+    *pBytes = sizeof(uint16_t) * 3 * size.x * size.y;
+    break;
+
+  case mPF_Rf32Gf32Bf32:
+    *pBytes = sizeof(float_t) * 3 * size.x * size.y;
+    break;
+
   case mPF_R8G8B8A8:
-    *pBytes = sizeof(uint32_t) * size.x * size.y;
+  case mPF_B8G8R8A8:
+    *pBytes = sizeof(uint8_t) * 4 * size.x * size.y;
+    break;
+
+  case mPF_R16G16B16A16:
+  case mPF_Rf16Gf16Bf16Af16:
+    *pBytes = sizeof(uint16_t) * 4 * size.x * size.y;
+    break;
+
+  case mPF_Rf32Gf32Bf32Af32:
+    *pBytes = sizeof(float_t) * 4 * size.x * size.y;
+    break;
+
+  case mPF_YUV444:
+    *pBytes = sizeof(uint8_t) * size.x * size.y * 3;
     break;
 
   case mPF_YUV422:
+    *pBytes = sizeof(uint8_t) * size.x * size.y * 2;
+    break;
+
+  case mPF_YUV440:
     *pBytes = sizeof(uint8_t) * size.x * size.y * 2;
     break;
 
@@ -100,28 +174,95 @@ mFUNCTION(mPixelFormat_GetSize, const mPixelFormat pixelFormat, const mVec2s &si
     *pBytes = sizeof(uint8_t) * size.x * size.y * 3 / 2;
     break;
 
+  case mPF_YUV411:
+    *pBytes = sizeof(uint8_t) * size.x * size.y * 3 / 2;
+    break;
+
+  default:
+    mRETURN_RESULT(mR_InvalidParameter);
+  }
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mPixelFormat_GetComponentCount, const mPixelFormat pixelFormat, OUT size_t *pCount)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pCount == nullptr, mR_ArgumentNull);
+
+  switch (pixelFormat)
+  {
   case mPF_Monochrome8:
-    *pBytes = sizeof(uint8_t) * size.x * size.y;
+  case mPF_Monochrome16:
+  case mPF_Monochromef16:
+  case mPF_Monochromef32:
+    *pCount = 1;
+    break;
+
+  case mPF_R8G8:
+  case mPF_R16G16:
+  case mPF_Rf16Gf16:
+  case mPF_Rf32Gf32:
+    *pCount = 2;
+    break;
+
+  case mPF_R8G8B8:
+  case mPF_R16G16B16:
+  case mPF_Rf16Gf16Bf16:
+  case mPF_Rf32Gf32Bf32:
+  case mPF_B8G8R8:
+  case mPF_B8G8R8A8:
+    *pCount = 3;
+    break;
+
+  case mPF_R8G8B8A8:
+  case mPF_R16G16B16A16:
+  case mPF_Rf16Gf16Bf16Af16:
+  case mPF_Rf32Gf32Bf32Af32:
+    *pCount = 4;
+    break;
+
+  default:
+    mRETURN_RESULT(mR_InvalidParameter);
+  }
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mPixelFormat_GetComponentSize, const mPixelFormat pixelFormat, OUT size_t *pBytes)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pBytes == nullptr, mR_ArgumentNull);
+
+  switch (pixelFormat)
+  {
+  case mPF_Monochrome8:
+  case mPF_R8G8:
+  case mPF_R8G8B8:
+  case mPF_R8G8B8A8:
+  case mPF_B8G8R8:
+  case mPF_B8G8R8A8:
+    *pBytes = sizeof(uint8_t);
     break;
 
   case mPF_Monochrome16:
-    *pBytes = sizeof(uint16_t) * size.x * size.y;
-    break;
-
-  case mPF_Rf16Gf16Bf16Af16:
-    *pBytes = sizeof(half_t) * 4 * size.x * size.y;
-    break;
-
+  case mPF_Monochromef16:
+  case mPF_R16G16:
+  case mPF_Rf16Gf16:
+  case mPF_R16G16B16:
   case mPF_Rf16Gf16Bf16:
-    *pBytes = sizeof(half_t) * 3 * size.x * size.y;
+  case mPF_R16G16B16A16:
+  case mPF_Rf16Gf16Bf16Af16:
+    *pBytes = sizeof(uint16_t);
     break;
 
-  case mPF_Rf32Gf32Bf32Af32:
-    *pBytes = sizeof(float_t) * 4 * size.x * size.y;
-    break;
-
+  case mPF_Monochromef32:
+  case mPF_Rf32Gf32:
   case mPF_Rf32Gf32Bf32:
-    *pBytes = sizeof(float_t) * 3 * size.x * size.y;
+  case mPF_Rf32Gf32Bf32Af32:
+    *pBytes = sizeof(float_t);
     break;
 
   default:
@@ -137,45 +278,13 @@ mFUNCTION(mPixelFormat_GetUnitSize, const mPixelFormat pixelFormat, OUT size_t *
 
   mERROR_IF(pBytes == nullptr, mR_ArgumentNull);
 
-  switch (pixelFormat)
-  {
-  case mPF_B8G8R8:
-  case mPF_R8G8B8:
-    *pBytes = sizeof(uint8_t) * 3;
-    break;
+  size_t componentCount = 0;
+  mERROR_CHECK(mPixelFormat_GetComponentCount(pixelFormat, &componentCount));
 
-  case mPF_B8G8R8A8:
-  case mPF_R8G8B8A8:
-    *pBytes = sizeof(uint32_t);
-    break;
+  size_t componentSize = 0;
+  mERROR_CHECK(mPixelFormat_GetComponentSize(pixelFormat, &componentSize));
 
-  case mPF_Monochrome8:
-    *pBytes = sizeof(uint8_t);
-    break;
-
-  case mPF_Monochrome16:
-    *pBytes = sizeof(uint16_t);
-    break;
-
-  case mPF_Rf16Gf16Bf16Af16:
-    *pBytes = sizeof(half_t) * 4;
-    break;
-
-  case mPF_Rf16Gf16Bf16:
-    *pBytes = sizeof(half_t) * 3;
-    break;
-
-  case mPF_Rf32Gf32Bf32Af32:
-    *pBytes = sizeof(float_t) * 4;
-    break;
-
-  case mPF_Rf32Gf32Bf32:
-    *pBytes = sizeof(float_t) * 3;
-    break;
-
-  default:
-    mRETURN_RESULT(mR_InvalidParameter);
-  }
+  *pBytes = componentCount * componentSize;
 
   mRETURN_SUCCESS();
 }
@@ -188,21 +297,32 @@ mFUNCTION(mPixelFormat_GetSubBufferCount, const mPixelFormat pixelFormat, OUT si
 
   switch (pixelFormat)
   {
-  case mPF_B8G8R8:
-  case mPF_R8G8B8:
-  case mPF_B8G8R8A8:
-  case mPF_R8G8B8A8:
   case mPF_Monochrome8:
   case mPF_Monochrome16:
-  case mPF_Rf16Gf16Bf16Af16:
+  case mPF_Monochromef16:
+  case mPF_Monochromef32:
+  case mPF_R8G8:
+  case mPF_R16G16:
+  case mPF_Rf16Gf16:
+  case mPF_Rf32Gf32:
+  case mPF_R8G8B8:
+  case mPF_R16G16B16:
   case mPF_Rf16Gf16Bf16:
-  case mPF_Rf32Gf32Bf32Af32:
   case mPF_Rf32Gf32Bf32:
+  case mPF_R8G8B8A8:
+  case mPF_R16G16B16A16:
+  case mPF_Rf16Gf16Bf16Af16:
+  case mPF_Rf32Gf32Bf32Af32:
+  case mPF_B8G8R8:
+  case mPF_B8G8R8A8:
     *pBufferCount = 1;
     break;
 
+  case mPF_YUV444:
   case mPF_YUV422:
+  case mPF_YUV440:
   case mPF_YUV420:
+  case mPF_YUV411:
     *pBufferCount = 3;
     break;
 
@@ -257,7 +377,38 @@ mFUNCTION(mPixelFormat_GetSubBufferSize, const mPixelFormat pixelFormat, const s
 
   switch (pixelFormat)
   {
+  case mPF_YUV444:
+    switch (bufferIndex)
+    {
+    case 0:
+    case 1:
+    case 2:
+      *pSubBufferSize = size;
+      break;
+
+    default:
+      mRETURN_RESULT(mR_IndexOutOfBounds);
+    }
+    break;
+
   case mPF_YUV422:
+    switch (bufferIndex)
+    {
+    case 0:
+      *pSubBufferSize = size;
+      break;
+
+    case 1:
+    case 2:
+      *pSubBufferSize = mVec2s(size.x / 2, size.y);
+      break;
+
+    default:
+      mRETURN_RESULT(mR_IndexOutOfBounds);
+    }
+    break;
+
+  case mPF_YUV440:
     switch (bufferIndex)
     {
     case 0:
@@ -284,6 +435,23 @@ mFUNCTION(mPixelFormat_GetSubBufferSize, const mPixelFormat pixelFormat, const s
     case 1:
     case 2:
       *pSubBufferSize = mVec2s(size.x / 2, size.y / 2);
+      break;
+
+    default:
+      mRETURN_RESULT(mR_IndexOutOfBounds);
+    }
+    break;
+
+  case mPF_YUV411:
+    switch (bufferIndex)
+    {
+    case 0:
+      *pSubBufferSize = size;
+      break;
+
+    case 1:
+    case 2:
+      *pSubBufferSize = mVec2s(size.x / 4, size.y);
       break;
 
     default:
@@ -324,21 +492,32 @@ mFUNCTION(mPixelFormat_GetSubBufferPixelFormat, const mPixelFormat pixelFormat, 
 
   switch (pixelFormat)
   {
+  case mPF_YUV444:
   case mPF_YUV422:
+  case mPF_YUV440:
   case mPF_YUV420:
+  case mPF_YUV411:
     *pSubBufferPixelFormat = mPixelFormat::mPF_Monochrome8;
     break;
 
-  case mPF_B8G8R8:
-  case mPF_R8G8B8:
-  case mPF_B8G8R8A8:
-  case mPF_R8G8B8A8:
   case mPF_Monochrome8:
   case mPF_Monochrome16:
-  case mPF_Rf16Gf16Bf16Af16:
+  case mPF_Monochromef16:
+  case mPF_Monochromef32:
+  case mPF_R8G8:
+  case mPF_R16G16:
+  case mPF_Rf16Gf16:
+  case mPF_Rf32Gf32:
+  case mPF_R8G8B8:
+  case mPF_R16G16B16:
   case mPF_Rf16Gf16Bf16:
-  case mPF_Rf32Gf32Bf32Af32:
   case mPF_Rf32Gf32Bf32:
+  case mPF_R8G8B8A8:
+  case mPF_R16G16B16A16:
+  case mPF_Rf16Gf16Bf16Af16:
+  case mPF_Rf32Gf32Bf32Af32:
+  case mPF_B8G8R8:
+  case mPF_B8G8R8A8:
     *pSubBufferPixelFormat = pixelFormat;
     break;
 
@@ -362,6 +541,11 @@ mFUNCTION(mPixelFormat_GetSubBufferStride, const mPixelFormat pixelFormat, const
 
   switch (pixelFormat)
   {
+  case mPF_YUV444:
+  case mPF_YUV440:
+    *pSubBufferLineStride = originalLineStride;
+    break;
+
   case mPF_YUV422:
   case mPF_YUV420:
     if (bufferIndex == 0)
@@ -370,16 +554,31 @@ mFUNCTION(mPixelFormat_GetSubBufferStride, const mPixelFormat pixelFormat, const
       *pSubBufferLineStride = originalLineStride / 2;
     break;
 
-  case mPF_B8G8R8:
-  case mPF_R8G8B8:
-  case mPF_B8G8R8A8:
-  case mPF_R8G8B8A8:
+  case mPF_YUV411:
+    if (bufferIndex == 0)
+      *pSubBufferLineStride = originalLineStride;
+    else
+      *pSubBufferLineStride = originalLineStride / 4;
+    break;
+
   case mPF_Monochrome8:
   case mPF_Monochrome16:
-  case mPF_Rf16Gf16Bf16Af16:
+  case mPF_Monochromef16:
+  case mPF_Monochromef32:
+  case mPF_R8G8:
+  case mPF_R16G16:
+  case mPF_Rf16Gf16:
+  case mPF_Rf32Gf32:
+  case mPF_R8G8B8:
+  case mPF_R16G16B16:
   case mPF_Rf16Gf16Bf16:
-  case mPF_Rf32Gf32Bf32Af32:
   case mPF_Rf32Gf32Bf32:
+  case mPF_R8G8B8A8:
+  case mPF_R16G16B16A16:
+  case mPF_Rf16Gf16Bf16Af16:
+  case mPF_Rf32Gf32Bf32Af32:
+  case mPF_B8G8R8:
+  case mPF_B8G8R8A8:
     *pSubBufferLineStride = originalLineStride;
     break;
 
@@ -430,15 +629,15 @@ namespace mPixelFormat_Transform
   #define __M_FILE__ "WxZHdolxaOsVMVztMcLWewBh6hSpEpuquqmpB8m6HcA9zdae0FuZIHcxgKjRdXKBj5HQQfLkazzf6tq9"
 #endif
 
-  const int mPixelFormatTransform_YUV_SIMD_Y_ADJUST = 16;
-  const int mPixelFormatTransform_YUV_SIMD_UV_ADJUST = 128;
-  const int mPixelFormatTransform_YUV_SIMD_YUV_TO_BGR_AVERAGING_SHIFT = 13;
-  const int mPixelFormatTransform_YUV_SIMD_YUV_TO_BGR_ROUND_TERM = 1 << (mPixelFormatTransform_YUV_SIMD_YUV_TO_BGR_AVERAGING_SHIFT - 1);
-  const int mPixelFormatTransform_YUV_SIMD_Y_TO_RGB_WEIGHT = int(1.164*(1 << mPixelFormatTransform_YUV_SIMD_YUV_TO_BGR_AVERAGING_SHIFT) + 0.5);
-  const int mPixelFormatTransform_YUV_SIMD_U_TO_BLUE_WEIGHT = int(2.018*(1 << mPixelFormatTransform_YUV_SIMD_YUV_TO_BGR_AVERAGING_SHIFT) + 0.5);
-  const int mPixelFormatTransform_YUV_SIMD_U_TO_GREEN_WEIGHT = -int(0.391*(1 << mPixelFormatTransform_YUV_SIMD_YUV_TO_BGR_AVERAGING_SHIFT) + 0.5);
-  const int mPixelFormatTransform_YUV_SIMD_V_TO_GREEN_WEIGHT = -int(0.813*(1 << mPixelFormatTransform_YUV_SIMD_YUV_TO_BGR_AVERAGING_SHIFT) + 0.5);
-  const int mPixelFormatTransform_YUV_SIMD_V_TO_RED_WEIGHT = int(1.596*(1 << mPixelFormatTransform_YUV_SIMD_YUV_TO_BGR_AVERAGING_SHIFT) + 0.5);
+  const int32_t mPixelFormatTransform_YUV_SIMD_Y_ADJUST = 16;
+  const int32_t mPixelFormatTransform_YUV_SIMD_UV_ADJUST = 128;
+  const int32_t mPixelFormatTransform_YUV_SIMD_YUV_TO_BGR_AVERAGING_SHIFT = 13;
+  const int32_t mPixelFormatTransform_YUV_SIMD_YUV_TO_BGR_ROUND_TERM = 1 << (mPixelFormatTransform_YUV_SIMD_YUV_TO_BGR_AVERAGING_SHIFT - 1);
+  const int32_t mPixelFormatTransform_YUV_SIMD_Y_TO_RGB_WEIGHT = int32_t(1.164 * (1 << mPixelFormatTransform_YUV_SIMD_YUV_TO_BGR_AVERAGING_SHIFT) + 0.5);
+  const int32_t mPixelFormatTransform_YUV_SIMD_U_TO_BLUE_WEIGHT = int32_t(2.018 * (1 << mPixelFormatTransform_YUV_SIMD_YUV_TO_BGR_AVERAGING_SHIFT) + 0.5);
+  const int32_t mPixelFormatTransform_YUV_SIMD_U_TO_GREEN_WEIGHT = -int32_t(0.391 * (1 << mPixelFormatTransform_YUV_SIMD_YUV_TO_BGR_AVERAGING_SHIFT) + 0.5);
+  const int32_t mPixelFormatTransform_YUV_SIMD_V_TO_GREEN_WEIGHT = -int32_t(0.813 * (1 << mPixelFormatTransform_YUV_SIMD_YUV_TO_BGR_AVERAGING_SHIFT) + 0.5);
+  const int32_t mPixelFormatTransform_YUV_SIMD_V_TO_RED_WEIGHT = int32_t(1.596 * (1 << mPixelFormatTransform_YUV_SIMD_YUV_TO_BGR_AVERAGING_SHIFT) + 0.5);
 
   const __m128i mPixelFormatTransform_YUV_SIMD_K16_Y_ADJUST = mSIMD_MM_SET1_EPI16(mPixelFormatTransform_YUV_SIMD_Y_ADJUST);
   const __m128i mPixelFormatTransform_YUV_SIMD_K16_UV_ADJUST = mSIMD_MM_SET1_EPI16(mPixelFormatTransform_YUV_SIMD_UV_ADJUST);
@@ -539,7 +738,7 @@ namespace mPixelFormat_Transform
   }
 
   template <bool align> mFUNCTION(Yuv444pToBgra, const uint8_t *pY, size_t yStride, const uint8_t *pU, size_t uStride, const uint8_t *pV, size_t vStride,
-    size_t width, size_t height, uint8_t * bgra, size_t bgraStride, uint8_t alpha)
+    size_t width, size_t height, uint8_t *bgra, size_t bgraStride, uint8_t alpha)
   {
     mFUNCTION_SETUP();
 
@@ -590,7 +789,7 @@ namespace mPixelFormat_Transform
     mRETURN_SUCCESS();
   }
 
-  mFUNCTION(Yuv444pToBgra, const uint8_t *pY, size_t yStride, const uint8_t *pU, size_t uStride, const uint8_t *pV, size_t vStride, size_t width, size_t height, uint8_t *pBgra, size_t bgraStride, uint8_t alpha)
+  mFUNCTION(mPixelFormat_Yuv444pToBgra, const uint8_t *pY, size_t yStride, const uint8_t *pU, size_t uStride, const uint8_t *pV, size_t vStride, size_t width, size_t height, uint8_t *pBgra, size_t bgraStride, uint8_t alpha)
   {
     mFUNCTION_SETUP();
 
@@ -698,13 +897,12 @@ namespace mPixelFormat_Transform
     mRETURN_SUCCESS();
   }
 
-
-  template <bool align> mINLINE void Yuv422pToBgra(const uint8_t * y, const uint8_t * u, const uint8_t * v, const __m128i & a_0, uint8_t * bgra)
+  template <bool align> mINLINE void Yuv422pToBgra(const uint8_t *y, const uint8_t *u, const uint8_t *v, const __m128i & a_0, uint8_t *bgra)
   {
     Yuv422pToBgra<align>(y, mSimd_Load<align>((__m128i*)u), mSimd_Load<align>((__m128i*)v), a_0, bgra);
   }
 
-  template <bool align> mFUNCTION(Yuv422pToBgra, const uint8_t * y, size_t yStride, const uint8_t * u, size_t uStride, const uint8_t * v, size_t vStride, size_t width, size_t height, uint8_t * bgra, size_t bgraStride, uint8_t alpha)
+  template <bool align> mFUNCTION(Yuv422pToBgra, const uint8_t *y, size_t yStride, const uint8_t *u, size_t uStride, const uint8_t *v, size_t vStride, size_t width, size_t height, uint8_t *bgra, size_t bgraStride, uint8_t alpha)
   {
     mFUNCTION_SETUP();
 
@@ -752,7 +950,7 @@ namespace mPixelFormat_Transform
     mRETURN_SUCCESS();
   }
 
-  mFUNCTION(Yuv422pToBgra, const uint8_t * y, size_t yStride, const uint8_t * u, size_t uStride, const uint8_t * v, size_t vStride, size_t width, size_t height, uint8_t * bgra, size_t bgraStride, uint8_t alpha)
+  mFUNCTION(mPixelFormat_Yuv422pToBgra, const uint8_t *y, size_t yStride, const uint8_t *u, size_t uStride, const uint8_t *v, size_t vStride, size_t width, size_t height, uint8_t *bgra, size_t bgraStride, uint8_t alpha)
   {
     mFUNCTION_SETUP();
 
@@ -771,6 +969,68 @@ namespace mPixelFormat_Transform
       Yuv422pToBgra<true>(y, yStride, u, uStride, v, vStride, width, height, bgra, bgraStride, alpha);
     else
       Yuv422pToBgra<false>(y, yStride, u, uStride, v, vStride, width, height, bgra, bgraStride, alpha);
+
+    mRETURN_SUCCESS();
+  }
+
+  mFUNCTION(mPixelFormat_Transform_YUV422ToBgra, mPtr<mImageBuffer> &source, mPtr<mImageBuffer> &target, mPtr<mThreadPool> & /* asyncTaskHandler */)
+  {
+    mFUNCTION_SETUP();
+
+    uint8_t *pOutPixels = target->pPixels;
+    uint8_t *pBuffer0 = source->pPixels;
+    uint8_t *pBuffer1 = source->pPixels;
+    uint8_t *pBuffer2 = source->pPixels;
+
+    size_t offset;
+    mERROR_CHECK(mPixelFormat_GetSubBufferOffset(source->pixelFormat, 0, mVec2s(source->lineStride, source->currentSize.y), &offset));
+    pBuffer0 += offset;
+
+    mERROR_CHECK(mPixelFormat_GetSubBufferOffset(source->pixelFormat, 1, mVec2s(source->lineStride, source->currentSize.y), &offset));
+    pBuffer1 += offset;
+
+    mERROR_CHECK(mPixelFormat_GetSubBufferOffset(source->pixelFormat, 2, mVec2s(source->lineStride, source->currentSize.y), &offset));
+    pBuffer2 += offset;
+
+    size_t sourceLineStride0, sourceLineStride1;
+    mERROR_CHECK(mPixelFormat_GetSubBufferStride(source->pixelFormat, 0, source->lineStride, &sourceLineStride0));
+    mERROR_CHECK(mPixelFormat_GetSubBufferStride(source->pixelFormat, 1, source->lineStride, &sourceLineStride1));
+
+    size_t targetUnitSize;
+    mERROR_CHECK(mPixelFormat_GetUnitSize(target->pixelFormat, &targetUnitSize));
+
+    mERROR_CHECK(mPixelFormat_Yuv422pToBgra(pBuffer0, sourceLineStride0, pBuffer1, sourceLineStride1, pBuffer2, sourceLineStride1, target->currentSize.x, target->currentSize.y, pOutPixels, target->lineStride, 0xFF));
+
+    mRETURN_SUCCESS();
+  }
+
+  mFUNCTION(mPixelFormat_Transform_YUV444ToBgra, mPtr<mImageBuffer> &source, mPtr<mImageBuffer> &target, mPtr<mThreadPool> & /* asyncTaskHandler */)
+  {
+    mFUNCTION_SETUP();
+
+    uint8_t *pOutPixels = target->pPixels;
+    uint8_t *pBuffer0 = source->pPixels;
+    uint8_t *pBuffer1 = source->pPixels;
+    uint8_t *pBuffer2 = source->pPixels;
+
+    size_t offset;
+    mERROR_CHECK(mPixelFormat_GetSubBufferOffset(source->pixelFormat, 0, mVec2s(source->lineStride, source->currentSize.y), &offset));
+    pBuffer0 += offset;
+
+    mERROR_CHECK(mPixelFormat_GetSubBufferOffset(source->pixelFormat, 1, mVec2s(source->lineStride, source->currentSize.y), &offset));
+    pBuffer1 += offset;
+
+    mERROR_CHECK(mPixelFormat_GetSubBufferOffset(source->pixelFormat, 2, mVec2s(source->lineStride, source->currentSize.y), &offset));
+    pBuffer2 += offset;
+
+    size_t sourceLineStride0, sourceLineStride1;
+    mERROR_CHECK(mPixelFormat_GetSubBufferStride(source->pixelFormat, 0, source->lineStride, &sourceLineStride0));
+    mERROR_CHECK(mPixelFormat_GetSubBufferStride(source->pixelFormat, 1, source->lineStride, &sourceLineStride1));
+
+    size_t targetUnitSize;
+    mERROR_CHECK(mPixelFormat_GetUnitSize(target->pixelFormat, &targetUnitSize));
+
+    mERROR_CHECK(mPixelFormat_Yuv444pToBgra(pBuffer0, sourceLineStride0, pBuffer1, sourceLineStride1, pBuffer2, sourceLineStride1, target->currentSize.x, target->currentSize.y, pOutPixels, target->lineStride, 0xFF));
 
     mRETURN_SUCCESS();
   }
@@ -937,7 +1197,7 @@ namespace mPixelFormat_Transform
   {
     mFUNCTION_SETUP();
 
-    uint32_t *pOutPixels = (uint32_t *)target->pPixels;
+    uint32_t *pOutPixels = reinterpret_cast<uint32_t *>(target->pPixels);
     uint8_t *pBuffer0 = source->pPixels;
     uint8_t *pBuffer1 = source->pPixels;
     uint8_t *pBuffer2 = source->pPixels;
@@ -1192,8 +1452,417 @@ namespace mPixelFormat_Transform
     mRETURN_SUCCESS();
   }
 
-} // end namespace mPixelFormat_Transform
+  mFUNCTION(mPixelFormat_Transform_Yuv444ToYuv420, mPtr<mImageBuffer> &source, mPtr<mImageBuffer> &target, mPtr<mThreadPool> & /*asyncTaskHandler */)
+  {
+    mFUNCTION_SETUP();
 
+    const uint8_t *pSource = source->pPixels;
+    uint8_t *pTarget = target->pPixels;
+
+    const mVec2s size = source->currentSize;
+
+    if (pSource != pTarget)
+      mMemcpy(pTarget, pSource, size.x * size.y);
+
+    pSource += size.x * size.y;
+    pTarget += size.x * size.y;
+
+    const mVec2s targetSubBufferSize = size / 2;
+
+    const __m128i mask00FF = _mm_set1_epi16(0x00FF);
+    const __m128i two_epi16 = _mm_set1_epi16(2);
+
+    for (size_t subBuffer = 0; subBuffer < 2; subBuffer++)
+    {
+      for (size_t y = 0; y < targetSubBufferSize.y; y++)
+      {
+        const uint8_t *pSourceLine2 = pSource + size.x;
+
+        size_t x = 0;
+
+        if (targetSubBufferSize.x >= sizeof(__m128i))
+        {
+          for (; x < targetSubBufferSize.x - (sizeof(__m128i) - 1); x += sizeof(__m128i))
+          {
+            // Presume pSource/pSourceLine2 are
+            // A B C D E F G H A B C D E F G H I J K L M N O P I J K L M N O P
+            // a b c d e f g h a b c d e f g h i j k l m n o p i j k l m n o p
+
+            // A B C D E F G H A B C D E F G H
+            const __m128i line00 = _mm_loadu_si128(reinterpret_cast<const __m128i *>(pSource));
+            // a b c d e f g h a b c d e f g h
+            const __m128i line10 = _mm_loadu_si128(reinterpret_cast<const __m128i *>(pSourceLine2));
+
+            // A   C   E   G   A   C   E   G
+            const __m128i line00_16a = _mm_and_si128(line00, mask00FF);
+            // B   D   F   H   B   D   F   H
+            const __m128i line00_16b = _mm_srli_epi16(line00, 8);
+            // a   c   e   g   a   c   e   g
+            const __m128i line01_16a = _mm_and_si128(line10, mask00FF);
+            // b   d   f   h   b   d   f   h
+            const __m128i line01_16b = _mm_srli_epi16(line10, 8);
+
+            // Calculate Averages & Round to the next integer.
+            // (A + B + a + b + 2) / 4, 0, (C + D + c + d + 2) / 4, 0, (E + F + e + f + 2) / 4, 0, (G + H + g + h + 2) / 4, 0, ...
+            // => avg0, 0, avg1, 0, avg2, 0, avg3, ...
+            const __m128i add0 = _mm_srli_epi16(_mm_add_epi16(two_epi16, _mm_add_epi16(_mm_add_epi16(line00_16a, line00_16b), _mm_add_epi16(line01_16a, line01_16b))), 2);
+
+            // I J K L M N O P I J K L M N O P
+            const __m128i line01 = _mm_loadu_si128(reinterpret_cast<const __m128i *>(pSource) + 1);
+            // i j k l m n o p i j k l m n o p
+            const __m128i line11 = _mm_loadu_si128(reinterpret_cast<const __m128i *>(pSourceLine2) + 1);
+
+            // I   K   M   O   I   K   M   O
+            const __m128i line10_16a = _mm_and_si128(line01, mask00FF);
+            // J   L   N   P   J   L   N   P
+            const __m128i line10_16b = _mm_srli_epi16(line01, 8);
+            // i   k   m   o   i   k   m   o
+            const __m128i line11_16a = _mm_and_si128(line11, mask00FF);
+            // j   l   n   p   j   l   n   p
+            const __m128i line11_16b = _mm_srli_epi16(line11, 8);
+
+            // Calculate Averages & Round to the next integer.
+            // (I + J + i + j + 2) / 4, 0, (K + L + k + l + 2) / 4, 0, (M + N + m + n + 2) / 4, 0, (O + P + o + p + 2) / 4, 0, ...
+            // => avg8, 0, avg9, 0, avg10, 0, avg11, ...
+            const __m128i add1 = _mm_srli_epi16(_mm_add_epi16(two_epi16, _mm_add_epi16(_mm_add_epi16(line10_16a, line10_16b), _mm_add_epi16(line11_16a, line11_16b))), 2);
+
+            // avg0, avg1, avg2, avg3, avg4, avg5, avg6, avg7, avg8, avg9, avg10, avg11, avg12, avg13, avg14, avg15
+            const __m128i added = _mm_packus_epi16(add0, add1);
+
+            _mm_storeu_si128(reinterpret_cast<__m128i *>(pTarget), added);
+
+            pTarget += sizeof(__m128i);
+            pSource += sizeof(__m128i) * 2;
+            pSourceLine2 += sizeof(__m128i) * 2;
+          }
+        }
+
+        for (; x < targetSubBufferSize.x; x++)
+        {
+          *pTarget = (uint8_t)(((uint16_t)pSource[0] + (uint16_t)pSource[1] + (uint16_t)pSourceLine2[0] + (uint16_t)pSourceLine2[1] + 2) >> 2);
+
+          pTarget++;
+          pSource += 2;
+          pSourceLine2 += 2;
+        }
+
+        pSource = pSourceLine2;
+      }
+    }
+
+    mRETURN_SUCCESS();
+  }
+
+  mFUNCTION(mPixelFormat_Transform_Yuv422ToYuv420, mPtr<mImageBuffer> &source, mPtr<mImageBuffer> &target, mPtr<mThreadPool> & /*asyncTaskHandler */)
+  {
+    mFUNCTION_SETUP();
+
+    const uint8_t *pSource = source->pPixels;
+    uint8_t *pTarget = target->pPixels;
+
+    const mVec2s size = source->currentSize;
+
+    if (pSource != pTarget)
+      mMemcpy(pTarget, pSource, size.x * size.y);
+
+    pSource += size.x * size.y;
+    pTarget += size.x * size.y;
+
+    const mVec2s targetSubBufferSize = size / 2;
+
+    const __m128i mask00FF = _mm_set1_epi16(0x00FF);
+    const __m128i one_epi16 = _mm_set1_epi16(1);
+
+    for (size_t subBuffer = 0; subBuffer < 2; subBuffer++)
+    {
+      for (size_t y = 0; y < targetSubBufferSize.y; y++)
+      {
+        const uint8_t *pSourceLine2 = pSource + size.x / 2;
+
+        size_t x = 0;
+
+        if (targetSubBufferSize.x >= sizeof(__m128i))
+        {
+          for (; x < targetSubBufferSize.x - (sizeof(__m128i) - 1); x += sizeof(__m128i))
+          {
+            // Presume pSource/pSourceLine2 are
+            // A B C D E F G H ...
+            // a b c d e f g h ...
+
+            // A B C D E F G H ...
+            const __m128i line0 = _mm_loadu_si128(reinterpret_cast<const __m128i *>(pSource));
+            // a b c d e f g h ...
+            const __m128i line1 = _mm_loadu_si128(reinterpret_cast<const __m128i *>(pSourceLine2));
+
+            // A   C   E   G   ...
+            const __m128i line0_16a = _mm_and_si128(line0, mask00FF);
+            // B   D   F   H   ...
+            const __m128i line0_16b = _mm_srli_epi16(line0, 8);
+            // a   c   e   g   ...
+            const __m128i line1_16a = _mm_and_si128(line1, mask00FF);
+            // b   d   f   h   ...
+            const __m128i line1_16b = _mm_srli_epi16(line1, 8);
+
+            // Calculate Averages & Round to the next integer.
+
+            // (A + a + 1) / 2, 0, (C + c + 1) / 2, 0, (E + e + 1) / 2, 0, (G + g + 1) / 2, 0, ...
+            // avg0, 0, avg2, 0, avg4, 0, avg6, 0, ...
+            const __m128i add0 = _mm_srli_epi16(_mm_add_epi16(one_epi16, _mm_add_epi16(line0_16a, line1_16a)), 1);
+
+            // (B + b + 1) / 2, 0, (D + d + 1) / 2, 0, (F + f + 1) / 2, 0, (H + h + 1) / 2, 0, ...
+            // avg1, 0, avg3, 0, avg5, 0, avg7, 0, ...
+            const __m128i add1 = _mm_srli_epi16(_mm_add_epi16(one_epi16, _mm_add_epi16(line0_16b, line1_16b)), 1);
+
+            // avg0, avg1, avg2, avg3, avg4, avg5, avg6, avg7, ...
+            const __m128i packed = _mm_packus_epi16(_mm_unpacklo_epi16(add0, add1), _mm_unpackhi_epi16(add0, add1));
+
+            _mm_storeu_si128(reinterpret_cast<__m128i *>(pTarget), packed);
+
+            pTarget += sizeof(__m128i);
+            pSource += sizeof(__m128i);
+            pSourceLine2 += sizeof(__m128i);
+          }
+        }
+
+        for (; x < targetSubBufferSize.x; x++)
+        {
+          *pTarget = (uint8_t)(((uint16_t)*pSource + (uint16_t)*pSourceLine2 + 1) >> 1);
+
+          pTarget++;
+          pSource++;
+          pSourceLine2++;
+        }
+
+        pSource = pSourceLine2;
+      }
+    }
+
+    mRETURN_SUCCESS();
+  }
+
+  mFUNCTION(mPixelFormat_Transform_Yuv440ToYuv420, mPtr<mImageBuffer> &source, mPtr<mImageBuffer> &target, mPtr<mThreadPool> & /*asyncTaskHandler */)
+  {
+    mFUNCTION_SETUP();
+
+    const uint8_t *pSource = source->pPixels;
+    uint8_t *pTarget = target->pPixels;
+
+    const mVec2s size = source->currentSize;
+
+    if (pSource != pTarget)
+      mMemcpy(pTarget, pSource, size.x * size.y);
+
+    pSource += size.x * size.y;
+    pTarget += size.x * size.y;
+
+    const mVec2s targetSubBufferSize = size / 2;
+
+    const __m128i mask00FF = _mm_set1_epi16(0x00FF);
+    const __m128i one_epi16 = _mm_set1_epi16(1);
+
+    for (size_t subBuffer = 0; subBuffer < 2; subBuffer++)
+    {
+      for (size_t y = 0; y < targetSubBufferSize.y; y++)
+      {
+        size_t x = 0;
+
+        if (targetSubBufferSize.x >= sizeof(__m128i))
+        {
+          for (; x < targetSubBufferSize.x - (sizeof(__m128i) - 1); x += sizeof(__m128i))
+          {
+            // Presume pSource is
+            // A B C D E F G H A B C D E F G H I J K L M N O P I J K L M N O P
+
+            // A B C D E F G H ...
+            const __m128i values0 = _mm_loadu_si128(reinterpret_cast<const __m128i *>(pSource));
+
+            // I J K L M N O P ...
+            const __m128i values1 = _mm_loadu_si128(reinterpret_cast<const __m128i *>(pSource) + 1);
+
+            // A   C   E   G   ...
+            const __m128i values0_16a = _mm_and_si128(values0, mask00FF);
+            // B   D   F   H   ...
+            const __m128i values0_16b = _mm_srli_epi16(values0, 8);
+            // I   K   M   O   ...
+            const __m128i values1_16a = _mm_and_si128(values1, mask00FF);
+            // J   L   N   P   ...
+            const __m128i values1_16b = _mm_srli_epi16(values1, 8);
+
+            // Calculate Averages & Round to the next integer.
+
+            // (A + B + 1) / 2, 0, (C + D + 1) / 2, 0, (E + F + 1) / 2, 0, (G + H + 1) / 2, 0
+            // avg0, 0, avg1, 0, avg2, 0, avg3, 0, ...
+            const __m128i add0 = _mm_srli_epi16(_mm_add_epi16(one_epi16, _mm_add_epi16(values0_16a, values0_16b)), 1);
+
+            // (I + J + 1) / 2, 0, (K + L + 1) / 2, 0, (M + N + 1) / 2, 0, (O + P + 1) / 2, 0
+            // avg8, 0, avg9, 0, avg10, 0, avg11, 0, ...
+            const __m128i add1 = _mm_srli_epi16(_mm_add_epi16(one_epi16, _mm_add_epi16(values1_16a, values1_16b)), 1);
+
+            // avg0, avg1, avg2, avg3, avg4, avg5, avg6, avg7, avg8, avg9, avg10, avg11, avg12, avg13, avg14, avg15
+            const __m128i added = _mm_packus_epi16(add0, add1);
+
+            _mm_storeu_si128(reinterpret_cast<__m128i *>(pTarget), added);
+
+            pTarget += sizeof(__m128i);
+            pSource += sizeof(__m128i) * 2;
+          }
+        }
+
+        for (; x < targetSubBufferSize.x; x++)
+        {
+          *pTarget = (uint8_t)(((uint16_t)pSource[0] + (uint16_t)pSource[1] + 1) >> 1);
+
+          pTarget++;
+          pSource += 2;
+        }
+      }
+    }
+
+    mRETURN_SUCCESS();
+  }
+
+  mFUNCTION(mPixelFormat_Transform_Yuv411ToYuv420, mPtr<mImageBuffer> &source, mPtr<mImageBuffer> &target, mPtr<mThreadPool> & /*asyncTaskHandler */)
+  {
+    mFUNCTION_SETUP();
+
+    const uint8_t *pSource = source->pPixels;
+    uint8_t *pTarget = target->pPixels;
+
+    const mVec2s size = source->currentSize;
+
+    if (pSource != pTarget)
+      mMemcpy(pTarget, pSource, size.x * size.y);
+
+    pSource += size.x * size.y;
+    pTarget += size.x * size.y;
+
+    const mVec2s targetSubBufferSize = size / 2;
+
+    const __m128i mask00FF = _mm_set1_epi16(0x00FF);
+    const __m128i one_epi16 = _mm_set1_epi16(1);
+
+    for (size_t subBuffer = 0; subBuffer < 2; subBuffer++)
+    {
+      for (size_t y = 0; y < targetSubBufferSize.y; y++)
+      {
+        const uint8_t *pSourceLine2 = pSource + size.x / 4;
+
+        size_t x = 0;
+
+        if (targetSubBufferSize.x >= sizeof(__m128i) * 2)
+        {
+          for (; x < targetSubBufferSize.x - (sizeof(__m128i) * 2 - 1); x += sizeof(__m128i) * 2)
+          {
+            // Presume pSource/pSourceLine2 are
+            // A B C D E F G H ...
+            // a b c d e f g h ...
+
+            // A B C D E F G H ...
+            const __m128i line0 = _mm_loadu_si128(reinterpret_cast<const __m128i *>(pSource));
+            // a b c d e f g h ...
+            const __m128i line1 = _mm_loadu_si128(reinterpret_cast<const __m128i *>(pSourceLine2));
+
+            // A   C   E   G   ...
+            const __m128i line0_16a = _mm_and_si128(line0, mask00FF);
+            // B   D   F   H   ...
+            const __m128i line0_16b = _mm_srli_epi16(line0, 8);
+            // a   c   e   g   ...
+            const __m128i line1_16a = _mm_and_si128(line1, mask00FF);
+            // b   d   f   h   ...
+            const __m128i line1_16b = _mm_srli_epi16(line1, 8);
+
+            // Calculate Averages & Round to the next integer.
+
+            // (A + a + 1) / 2, 0, (C + c + 1) / 2, 0, (E + e + 1) / 2, 0, (G + g + 1) / 2, 0, ...
+            // avg0, 0, avg2, 0, avg4, 0, avg6, 0, ...
+            const __m128i add0 = _mm_srli_epi16(_mm_add_epi16(one_epi16, _mm_add_epi16(line0_16a, line1_16a)), 1);
+
+            // (B + b + 1) / 2, 0, (D + d + 1) / 2, 0, (F + f + 1) / 2, 0, (H + h + 1) / 2, 0, ...
+            // avg1, 0, avg3, 0, avg5, 0, avg7, 0, ...
+            const __m128i add1 = _mm_srli_epi16(_mm_add_epi16(one_epi16, _mm_add_epi16(line0_16b, line1_16b)), 1);
+
+            // avg0, avg1, avg2, avg3, avg4, avg5, avg6, avg7, avg8, avg9, avg10, avg11, avg12, avg13, avg14, avg15
+            const __m128i packed = _mm_packus_epi16(_mm_unpacklo_epi16(add0, add1), _mm_unpackhi_epi16(add0, add1));
+
+            // avg0, avg0, avg1, avg1, avg2, avg2, avg3, avg3, avg4, avg4, avg5, avg5, avg6, avg6, avg7, avg7
+            const __m128i packed0 = _mm_unpacklo_epi8(packed, packed);
+
+            // avg8, avg8, avg9, avg9, avg10, avg10, avg11, avg11, avg12, avg12, avg13, avg13, avg14, avg14, avg15, avg15
+            const __m128i packed1 = _mm_unpackhi_epi8(packed, packed);
+
+            _mm_storeu_si128(reinterpret_cast<__m128i *>(pTarget), packed0);
+            _mm_storeu_si128(reinterpret_cast<__m128i *>(pTarget) + 1, packed1);
+
+            pTarget += sizeof(__m128i) * 2;
+            pSource += sizeof(__m128i);
+            pSourceLine2 += sizeof(__m128i);
+          }
+        }
+
+        for (; x < targetSubBufferSize.x - 1; x += 2)
+        {
+          pTarget[0] = pTarget[1] = (uint8_t)(((uint16_t)*pSource + (uint16_t)*pSourceLine2 + 1) >> 1);
+
+          pTarget += 2;
+          pSource++;
+          pSourceLine2++;
+        }
+
+        if (x < targetSubBufferSize.x)
+        {
+          if (x > 0)
+            *pTarget = *(pTarget - 1);
+          else
+            *pTarget = 0x7F;
+
+          pTarget++;
+        }
+
+        pSource = pSourceLine2;
+      }
+    }
+
+    mRETURN_SUCCESS();
+  }
+
+  mFUNCTION(mPixelFormat_Transform_YuvXXXToMonochrome8, mPtr<mImageBuffer> &source, mPtr<mImageBuffer> &target, mPtr<mThreadPool> & /*asyncTaskHandler */)
+  {
+    mFUNCTION_SETUP();
+
+    const uint8_t *pSource = source->pPixels;
+    uint8_t *pTarget = target->pPixels;
+
+    const mVec2s size = source->currentSize;
+
+    if (pSource != pTarget)
+      mMemcpy(pTarget, pSource, size.x * size.y);
+
+    mRETURN_SUCCESS();
+  }
+
+  mFUNCTION(mPixelFormat_Transform_Monochrome8ToYuvXXX, mPtr<mImageBuffer> &source, mPtr<mImageBuffer> &target, const mPixelFormat targetPixelFormat, mPtr<mThreadPool> & /*asyncTaskHandler */)
+  {
+    mFUNCTION_SETUP();
+
+    const uint8_t *pSource = source->pPixels;
+    uint8_t *pTarget = target->pPixels;
+
+    const mVec2s size = source->currentSize;
+
+    if (pSource != pTarget)
+      mMemcpy(pTarget, pSource, size.x * size.y);
+
+    pTarget += size.x * size.y;
+
+    mVec2s subBuffer1Size, subBuffer2Size;
+    mERROR_CHECK(mPixelFormat_GetSubBufferSize(targetPixelFormat, 1, size, &subBuffer1Size));
+    mERROR_CHECK(mPixelFormat_GetSubBufferSize(targetPixelFormat, 2, size, &subBuffer2Size));
+
+    mMemset(pTarget, subBuffer1Size.x * subBuffer1Size.y + subBuffer2Size.x * subBuffer2Size.y, 0x7F);
+
+    mRETURN_SUCCESS();
+  }
+} // end namespace mPixelFormat_Transform
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -1213,6 +1882,7 @@ mFUNCTION(mPixelFormat_TransformBuffer, mPtr<mImageBuffer> &source, mPtr<mImageB
   }
 
   mERROR_IF(source->currentSize != target->currentSize, mR_InvalidParameter);
+  mERROR_IF(source->allocatedSize == 0, mR_InvalidParameter);
 
   switch (target->pixelFormat)
   {
@@ -1226,28 +1896,27 @@ mFUNCTION(mPixelFormat_TransformBuffer, mPtr<mImageBuffer> &source, mPtr<mImageB
       break;
     }
 
+    case mPF_YUV422:
+    {
+      mERROR_CHECK(mPixelFormat_Transform_YUV422ToBgra(source, target, asyncTaskHandler));
+      break;
+    }
+
+    case mPF_YUV444:
+    {
+      mERROR_CHECK(mPixelFormat_Transform_YUV444ToBgra(source, target, asyncTaskHandler));
+      break;
+    }
+
     case mPF_R8G8B8A8:
     {
       mERROR_CHECK(mPixelFormat_Transform_RgbaToBgra(source, target, asyncTaskHandler));
       break;
     }
 
-    case mPF_B8G8R8:
-    case mPF_R8G8B8:
-    case mPF_Monochrome8:
-    case mPF_Monochrome16:
-    case mPF_YUV422:
-    case mPF_Rf16Gf16Bf16Af16:
-    case mPF_Rf16Gf16Bf16:
-    case mPF_Rf32Gf32Bf32Af32:
-    case mPF_Rf32Gf32Bf32:
-    {
-      mRETURN_RESULT(mR_NotImplemented);
-    }
-
     default:
     {
-      mRETURN_RESULT(mR_InvalidParameter);
+      mRETURN_RESULT(mR_NotImplemented);
     }
     }
 
@@ -1266,23 +1935,9 @@ mFUNCTION(mPixelFormat_TransformBuffer, mPtr<mImageBuffer> &source, mPtr<mImageB
       break;
     }
 
-    case mPF_B8G8R8:
-    case mPF_R8G8B8:
-    case mPF_YUV422:
-    case mPF_YUV420:
-    case mPF_Monochrome8:
-    case mPF_Monochrome16:
-    case mPF_Rf16Gf16Bf16Af16:
-    case mPF_Rf16Gf16Bf16:
-    case mPF_Rf32Gf32Bf32Af32:
-    case mPF_Rf32Gf32Bf32:
-    {
-      mRETURN_RESULT(mR_NotImplemented);
-    }
-
     default:
     {
-      mRETURN_RESULT(mR_InvalidParameter);
+      mRETURN_RESULT(mR_NotImplemented);
     }
     }
 
@@ -1292,12 +1947,27 @@ mFUNCTION(mPixelFormat_TransformBuffer, mPtr<mImageBuffer> &source, mPtr<mImageB
   //////////////////////////////////////////////////////////////////////////
 
   case mPF_B8G8R8:
+  {
+    switch (source->pixelFormat)
+    {
+    case mPF_R8G8B8:
+      mERROR_CHECK(mPixelFormat_Transform_BgrToRgb(source, target, asyncTaskHandler));
+      break;
+
+    default:
+      mRETURN_RESULT(mR_NotImplemented);
+    }
+
+    break;
+  }
+  
+  //////////////////////////////////////////////////////////////////////////
+  
   case mPF_R8G8B8:
   {
     switch (source->pixelFormat)
     {
     case mPF_B8G8R8:
-    case mPF_R8G8B8:
       mERROR_CHECK(mPixelFormat_Transform_RgbToBgr(source, target, asyncTaskHandler));
       break;
 
@@ -1308,14 +1978,143 @@ mFUNCTION(mPixelFormat_TransformBuffer, mPtr<mImageBuffer> &source, mPtr<mImageB
     break;
   }
 
-  case mPF_Monochrome8:
-  case mPF_Monochrome16:
-  case mPF_YUV422:
+  //////////////////////////////////////////////////////////////////////////
+
   case mPF_YUV420:
-  case mPF_Rf16Gf16Bf16Af16:
+  {
+    switch (source->pixelFormat)
+    {
+    case mPF_YUV444:
+      mERROR_CHECK(mPixelFormat_Transform_Yuv444ToYuv420(source, target, asyncTaskHandler));
+      break;
+
+    case mPF_YUV422:
+      mERROR_CHECK(mPixelFormat_Transform_Yuv422ToYuv420(source, target, asyncTaskHandler));
+      break;
+    
+    case mPF_YUV440:
+      mERROR_CHECK(mPixelFormat_Transform_Yuv440ToYuv420(source, target, asyncTaskHandler));
+      break;
+    
+    case mPF_YUV411:
+      mERROR_CHECK(mPixelFormat_Transform_Yuv411ToYuv420(source, target, asyncTaskHandler));
+      break;
+
+    case mPF_Monochrome8:
+      mERROR_CHECK(mPixelFormat_Transform_Monochrome8ToYuvXXX(source, target, target->pixelFormat, asyncTaskHandler));
+      break;
+
+    default:
+      mRETURN_RESULT(mR_NotImplemented);
+    }
+
+    break;
+  }
+
+  //////////////////////////////////////////////////////////////////////////
+
+  case mPF_YUV444:
+  {
+    switch (source->pixelFormat)
+    {
+    case mPF_Monochrome8:
+      mERROR_CHECK(mPixelFormat_Transform_Monochrome8ToYuvXXX(source, target, target->pixelFormat, asyncTaskHandler));
+      break;
+
+    default:
+      mRETURN_RESULT(mR_NotImplemented);
+    }
+
+    break;
+  }
+
+  //////////////////////////////////////////////////////////////////////////
+
+  case mPF_YUV422:
+  {
+    switch (source->pixelFormat)
+    {
+    case mPF_Monochrome8:
+      mERROR_CHECK(mPixelFormat_Transform_Monochrome8ToYuvXXX(source, target, target->pixelFormat, asyncTaskHandler));
+      break;
+
+    default:
+      mRETURN_RESULT(mR_NotImplemented);
+    }
+
+    break;
+  }
+
+  //////////////////////////////////////////////////////////////////////////
+
+  case mPF_YUV440:
+  {
+    switch (source->pixelFormat)
+    {
+    case mPF_Monochrome8:
+      mERROR_CHECK(mPixelFormat_Transform_Monochrome8ToYuvXXX(source, target, target->pixelFormat, asyncTaskHandler));
+      break;
+
+    default:
+      mRETURN_RESULT(mR_NotImplemented);
+    }
+
+    break;
+  }
+
+  //////////////////////////////////////////////////////////////////////////
+
+  case mPF_YUV411:
+  {
+    switch (source->pixelFormat)
+    {
+    case mPF_Monochrome8:
+      mERROR_CHECK(mPixelFormat_Transform_Monochrome8ToYuvXXX(source, target, target->pixelFormat, asyncTaskHandler));
+      break;
+
+    default:
+      mRETURN_RESULT(mR_NotImplemented);
+    }
+
+    break;
+  }
+
+  //////////////////////////////////////////////////////////////////////////
+
+  case mPF_Monochrome8:
+  {
+    switch (source->pixelFormat)
+    {
+    case mPF_YUV444:
+    case mPF_YUV422:
+    case mPF_YUV440:
+    case mPF_YUV420:
+    case mPF_YUV411:
+      mERROR_CHECK(mPixelFormat_Transform_YuvXXXToMonochrome8(source, target, asyncTaskHandler));
+      break;
+
+    default:
+      mRETURN_RESULT(mR_NotImplemented);
+    }
+
+    break;
+  }
+
+  //////////////////////////////////////////////////////////////////////////
+
+  case mPF_Monochrome16:
+  case mPF_Monochromef16:
+  case mPF_Monochromef32:
+  case mPF_R8G8:
+  case mPF_R16G16:
+  case mPF_Rf16Gf16:
+  case mPF_Rf32Gf32:
+  case mPF_R16G16B16:
   case mPF_Rf16Gf16Bf16:
-  case mPF_Rf32Gf32Bf32Af32:
   case mPF_Rf32Gf32Bf32:
+  case mPF_R16G16B16A16:
+  case mPF_Rf16Gf16Bf16Af16:
+  case mPF_Rf32Gf32Bf32Af32:
   {
     mRETURN_RESULT(mR_NotImplemented);
   }
@@ -1335,6 +2134,288 @@ mFUNCTION(mPixelFormat_TransformBuffer, mPtr<mImageBuffer> &source, mPtr<mImageB
 
   mPtr<mThreadPool> nullThreadPool = nullptr;
   mERROR_CHECK(mPixelFormat_TransformBuffer(source, target, nullThreadPool));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mPixelFormat_CanInplaceTransform, const mPixelFormat source, const mPixelFormat target, OUT bool *pCanInplaceTransform)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pCanInplaceTransform == nullptr, mR_ArgumentNull);
+
+  if (source == target)
+  {
+    *pCanInplaceTransform = true;
+  }
+  else
+  {
+    bool subSamplingSource = false;
+    mERROR_CHECK(mPixelFormat_IsChromaSubsampled(source, &subSamplingSource));
+
+    bool subSamplingTarget = false;
+    mERROR_CHECK(mPixelFormat_IsChromaSubsampled(target, &subSamplingTarget));
+
+    if (subSamplingSource != subSamplingTarget)
+    {
+      *pCanInplaceTransform = (subSamplingSource && target == mPF_Monochrome8) || (subSamplingTarget && source == mPF_Monochrome8);
+    }
+    else if (subSamplingSource) // both are chroma subsampled.
+    {
+      mVec2s sourceChromaSubBufferSize, targetChromaSubBufferSize;
+      mERROR_CHECK(mPixelFormat_GetSubBufferSize(source, 1, mVec2s(16, 16), &sourceChromaSubBufferSize));
+      mERROR_CHECK(mPixelFormat_GetSubBufferSize(target, 1, mVec2s(16, 16), &targetChromaSubBufferSize));
+
+      *pCanInplaceTransform = (targetChromaSubBufferSize.x <= sourceChromaSubBufferSize.x && targetChromaSubBufferSize.y <= sourceChromaSubBufferSize.y);
+    }
+    else // none are chroma subsampled.
+    {
+      size_t sourceUnitSize, targetUnitSize;
+      mERROR_CHECK(mPixelFormat_GetUnitSize(source, &sourceUnitSize));
+      mERROR_CHECK(mPixelFormat_GetUnitSize(target, &targetUnitSize));
+
+      *pCanInplaceTransform = (sourceUnitSize >= targetUnitSize);
+    }
+  }
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mPixelFormat_InplaceTransformBuffer, mPtr<mImageBuffer> &source, const mPixelFormat target)
+{
+  mFUNCTION_SETUP();
+
+  mPtr<mThreadPool> nullThreadPool = nullptr;
+  mERROR_CHECK(mPixelFormat_InplaceTransformBuffer(source, target, nullThreadPool));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mPixelFormat_InplaceTransformBuffer, mPtr<mImageBuffer> &source, const mPixelFormat target, mPtr<mThreadPool> &asyncTaskHandler)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(source == nullptr, mR_ArgumentNull);
+  mERROR_IF(source->allocatedSize == 0, mR_InvalidParameter);
+  mERROR_IF(!source->ownedResource, mR_ResourceIncompatible);
+
+  bool canTechnicallyInplaceTransform = false;
+  mERROR_CHECK(mPixelFormat_CanInplaceTransform(source->pixelFormat, target, &canTechnicallyInplaceTransform));
+  mERROR_IF(!canTechnicallyInplaceTransform, mR_ResourceIncompatible);
+
+  size_t requiredSize = 0;
+  mERROR_CHECK(mPixelFormat_GetSize(target, source->currentSize, &requiredSize));
+
+  if (requiredSize > source->allocatedSize)
+  {
+    const mResult result = mAllocator_Reallocate(source->pAllocator, &source->pPixels, requiredSize);
+    
+    if (mFAILED(result))
+    {
+      source->allocatedSize = 0;
+      source->currentSize = mVec2s(0);
+
+      mRETURN_RESULT(result);
+    }
+
+    source->allocatedSize = requiredSize;
+  }
+
+  using namespace mPixelFormat_Transform;
+
+  switch (target)
+  {
+  case mPF_B8G8R8:
+  {
+    switch (source->pixelFormat)
+    {
+    case mPF_R8G8B8:
+      mERROR_CHECK(mPixelFormat_Transform_RgbToBgr(source, source, asyncTaskHandler));
+      break;
+
+    default:
+      mRETURN_RESULT(mR_NotImplemented);
+    }
+
+    break;
+  }
+
+  //////////////////////////////////////////////////////////////////////////
+
+  case mPF_R8G8B8:
+  {
+    switch (source->pixelFormat)
+    {
+    case mPF_B8G8R8:
+      mERROR_CHECK(mPixelFormat_Transform_BgrToRgb(source, source, asyncTaskHandler));
+      break;
+
+    default:
+      mRETURN_RESULT(mR_NotImplemented);
+    }
+
+    break;
+  }
+
+  //////////////////////////////////////////////////////////////////////////
+
+  case mPF_R8G8B8A8:
+  {
+    switch (source->pixelFormat)
+    {
+    case mPF_B8G8R8A8:
+      mERROR_CHECK(mPixelFormat_Transform_BgraToRgba(source, source, asyncTaskHandler));
+      break;
+
+    default:
+      mRETURN_RESULT(mR_NotImplemented);
+    }
+
+    break;
+  }
+
+  //////////////////////////////////////////////////////////////////////////
+
+  case mPF_B8G8R8A8:
+  {
+    switch (source->pixelFormat)
+    {
+    case mPF_B8G8R8A8:
+      mERROR_CHECK(mPixelFormat_Transform_RgbaToBgra(source, source, asyncTaskHandler));
+      break;
+
+    default:
+      mRETURN_RESULT(mR_NotImplemented);
+    }
+
+    break;
+  }
+
+  //////////////////////////////////////////////////////////////////////////
+
+  case mPF_YUV420:
+  {
+    switch (source->pixelFormat)
+    {
+    case mPF_YUV444:
+      mERROR_CHECK(mPixelFormat_Transform_Yuv444ToYuv420(source, source, asyncTaskHandler));
+      break;
+
+    case mPF_YUV422:
+      mERROR_CHECK(mPixelFormat_Transform_Yuv422ToYuv420(source, source, asyncTaskHandler));
+      break;
+
+    case mPF_YUV440:
+      mERROR_CHECK(mPixelFormat_Transform_Yuv440ToYuv420(source, source, asyncTaskHandler));
+      break;
+
+    case mPF_Monochrome8:
+      mERROR_CHECK(mPixelFormat_Transform_Monochrome8ToYuvXXX(source, source, target, asyncTaskHandler));
+      break;
+
+    default:
+      mRETURN_RESULT(mR_NotImplemented);
+    }
+
+    break;
+  }
+
+  //////////////////////////////////////////////////////////////////////////
+
+  case mPF_YUV444:
+  {
+    switch (source->pixelFormat)
+    {
+    case mPF_Monochrome8:
+      mERROR_CHECK(mPixelFormat_Transform_Monochrome8ToYuvXXX(source, source, target, asyncTaskHandler));
+      break;
+
+    default:
+      mRETURN_RESULT(mR_NotImplemented);
+    }
+
+    break;
+  }
+
+  //////////////////////////////////////////////////////////////////////////
+
+  case mPF_YUV422:
+  {
+    switch (source->pixelFormat)
+    {
+    case mPF_Monochrome8:
+      mERROR_CHECK(mPixelFormat_Transform_Monochrome8ToYuvXXX(source, source, target, asyncTaskHandler));
+      break;
+
+    default:
+      mRETURN_RESULT(mR_NotImplemented);
+    }
+
+    break;
+  }
+
+  //////////////////////////////////////////////////////////////////////////
+
+  case mPF_YUV440:
+  {
+    switch (source->pixelFormat)
+    {
+    case mPF_Monochrome8:
+      mERROR_CHECK(mPixelFormat_Transform_Monochrome8ToYuvXXX(source, source, target, asyncTaskHandler));
+      break;
+
+    default:
+      mRETURN_RESULT(mR_NotImplemented);
+    }
+
+    break;
+  }
+
+  //////////////////////////////////////////////////////////////////////////
+
+  case mPF_YUV411:
+  {
+    switch (source->pixelFormat)
+    {
+    case mPF_Monochrome8:
+      mERROR_CHECK(mPixelFormat_Transform_Monochrome8ToYuvXXX(source, source, target, asyncTaskHandler));
+      break;
+
+    default:
+      mRETURN_RESULT(mR_NotImplemented);
+    }
+
+    break;
+  }
+
+  //////////////////////////////////////////////////////////////////////////
+
+  case mPF_Monochrome8:
+  {
+    switch (source->pixelFormat)
+    {
+    case mPF_YUV444:
+    case mPF_YUV422:
+    case mPF_YUV440:
+    case mPF_YUV420:
+    case mPF_YUV411:
+      mERROR_CHECK(mPixelFormat_Transform_YuvXXXToMonochrome8(source, source, asyncTaskHandler));
+      break;
+
+    default:
+      mRETURN_RESULT(mR_NotImplemented);
+    }
+
+    break;
+  }
+
+  //////////////////////////////////////////////////////////////////////////
+
+  default:
+    mRETURN_RESULT(mR_NotImplemented);
+  }
+
+  source->pixelFormat = target;
 
   mRETURN_SUCCESS();
 }

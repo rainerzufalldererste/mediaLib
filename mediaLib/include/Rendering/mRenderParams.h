@@ -3,6 +3,7 @@
 
 #include "mediaLib.h"
 #include "mQueue.h"
+#include "mPixelFormat.h"
 
 #define mRENDERER_OPENGL
 
@@ -206,6 +207,9 @@ mFUNCTION(mRenderParams_PrintRenderState, const bool onlyNewValues = false, cons
 
 #if defined(mRENDERER_OPENGL)
 mFUNCTION(mRenderParams_SetOnErrorDebugCallback, const std::function<mResult (const GLenum source, const GLenum type, const GLuint id, const GLenum severity, const GLsizei length, const char *msg)> &callback);
+
+mFUNCTION(mRenderParams_PixelFormatToGLenumChannels, const mPixelFormat pixelFormat, OUT GLenum *pValue);
+mFUNCTION(mRenderParams_PixelFormatToGLenumDataType, const mPixelFormat pixelFormat, OUT GLenum *pValue);
 #endif
 
 #endif // mRenderParams_h__

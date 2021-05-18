@@ -199,6 +199,7 @@ mFUNCTION(mTestAllocator_Realloc, OUT uint8_t **ppData, const size_t size, const
     *ppData -= mTestAllocator_BeginOffset;
   }
 
+  mDEFER_ON_ERROR(--(reinterpret_cast<mTestAllocatorUserData *>(pUserData))->allocationCount);
   mERROR_CHECK(mRealloc(ppData, size * count + mTestAllocator_BeginOffset + mTestAllocator_EndOffset));
 
   *(size_t *)*ppData = size * count;
