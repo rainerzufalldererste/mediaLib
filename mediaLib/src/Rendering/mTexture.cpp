@@ -158,8 +158,6 @@ mFUNCTION(mTexture_Allocate, OUT mTexture *pTexture, const mVec2s size, const mP
   pTexture->foreignTexture = false;
   pTexture->textureParams = textureParams;
 
-  mERROR_IF(!(pixelFormat == mPF_R8G8B8 || pixelFormat == mPF_R8G8B8A8 || pixelFormat == mPF_Monochrome8), mR_NotSupported);
-
 #if defined(mRENDERER_OPENGL)
   pTexture->sampleCount = 0;
 
@@ -170,14 +168,13 @@ mFUNCTION(mTexture_Allocate, OUT mTexture *pTexture, const mVec2s size, const mP
   glGenTextures(1, &pTexture->textureId);
   glBindTexture(pTexture->sampleCount > 0 ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, pTexture->textureId);
 
-  if (pixelFormat == mPF_R8G8B8A8)
-    glTexImage2D(pTexture->sampleCount > 0 ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)size.x, (GLsizei)size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-  else if (pixelFormat == mPF_R8G8B8)
-    glTexImage2D(pTexture->sampleCount > 0 ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, 0, GL_RGB, (GLsizei)size.x, (GLsizei)size.y, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
-  else if (pixelFormat == mPF_Monochrome8)
-    glTexImage2D(pTexture->sampleCount > 0 ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, 0, GL_R8, (GLsizei)size.x, (GLsizei)size.y, 0, GL_RED, GL_UNSIGNED_BYTE, nullptr);
-  else
-    mRETURN_RESULT(mR_NotSupported);
+  GLenum glPixelFormat = GL_RGBA;
+  mERROR_CHECK(mRenderParams_PixelFormatToGLenumChannels(pixelFormat, &glPixelFormat));
+
+  GLenum glType = GL_UNSIGNED_BYTE;
+  mERROR_CHECK(mRenderParams_PixelFormatToGLenumDataType(pixelFormat, &glType));
+
+  glTexImage2D(pTexture->sampleCount > 0 ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, 0, glPixelFormat, (GLsizei)size.x, (GLsizei)size.y, 0, glPixelFormat, glType, nullptr);
 
   mGL_DEBUG_ERROR_CHECK();
 
@@ -258,13 +255,7 @@ mFUNCTION(mTexture_Upload, mTexture &texture)
 
   mERROR_CHECK(mTexture2DParams_ApplyToBoundTexture(texture.textureParams, texture.sampleCount > 0));
 
-  if (texture.imageBuffer->pixelFormat == mPF_R8G8B8A8)
-    glTexImage2D(texture.sampleCount > 0 ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)texture.imageBuffer->currentSize.x, (GLsizei)texture.imageBuffer->currentSize.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, texture.imageBuffer->pPixels);
-  else if (texture.imageBuffer->pixelFormat == mPF_R8G8B8)
-    glTexImage2D(texture.sampleCount > 0 ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, 0, GL_RGB, (GLsizei)texture.imageBuffer->currentSize.x, (GLsizei)texture.imageBuffer->currentSize.y, 0, GL_RGB, GL_UNSIGNED_BYTE, texture.imageBuffer->pPixels);
-  else if (texture.imageBuffer->pixelFormat == mPF_Monochrome8)
-    glTexImage2D(texture.sampleCount > 0 ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, 0, GL_RED, (GLsizei)texture.imageBuffer->currentSize.x, (GLsizei)texture.imageBuffer->currentSize.y, 0, GL_RED, GL_UNSIGNED_BYTE, texture.imageBuffer->pPixels);
-  else
+  if (texture.imageBuffer->pixelFormat == mPF_YUV420 || texture.imageBuffer->pixelFormat == mPF_YUV422 || texture.imageBuffer->pixelFormat == mPF_B8G8R8 || texture.imageBuffer->pixelFormat == mPF_B8G8R8A8)
   {
     mPtr<mImageBuffer> imageBuffer;
     mDEFER_CALL(&imageBuffer, mImageBuffer_Destroy);
@@ -272,6 +263,16 @@ mFUNCTION(mTexture_Upload, mTexture &texture)
     mERROR_CHECK(mPixelFormat_TransformBuffer(texture.imageBuffer, imageBuffer));
 
     glTexImage2D(texture.sampleCount > 0 ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)imageBuffer->currentSize.x, (GLsizei)imageBuffer->currentSize.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, imageBuffer->pPixels);
+  }
+  else
+  {
+    GLenum glPixelFormat = GL_RGBA;
+    mERROR_CHECK(mRenderParams_PixelFormatToGLenumChannels(texture.imageBuffer->pixelFormat, &glPixelFormat));
+
+    GLenum glType = GL_UNSIGNED_BYTE;
+    mERROR_CHECK(mRenderParams_PixelFormatToGLenumDataType(texture.imageBuffer->pixelFormat, &glType));
+
+    glTexImage2D(texture.sampleCount > 0 ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, 0, glPixelFormat, (GLsizei)texture.imageBuffer->currentSize.x, (GLsizei)texture.imageBuffer->currentSize.y, 0, glPixelFormat, glType, texture.imageBuffer->pPixels);
   }
 
   texture.resolution = texture.imageBuffer->currentSize;
@@ -356,7 +357,7 @@ mFUNCTION(mTexture_SetTo, mTexture &texture, const uint8_t *pData, const mVec2s 
   {
     mPtr<mImageBuffer> imageBuffer;
     mDEFER_CALL(&imageBuffer, mImageBuffer_Destroy);
-    mERROR_CHECK(mImageBuffer_Create(&imageBuffer, nullptr, (void *)pData, size, pixelFormat));
+    mERROR_CHECK(mImageBuffer_Create(&imageBuffer, nullptr, reinterpret_cast<const uint8_t *>(pData), size, pixelFormat));
 
     mERROR_CHECK(mTexture_SetTo(texture, imageBuffer, upload));
   }
@@ -375,29 +376,24 @@ mFUNCTION(mTexture_SetTo, mTexture &texture, const uint8_t *pData, const mVec2s 
 
     mGL_DEBUG_ERROR_CHECK();
 
-    if (pixelFormat == mPF_R8G8B8A8)
+    if (pixelFormat == mPF_YUV420 || pixelFormat == mPF_YUV422 || pixelFormat == mPF_B8G8R8 || pixelFormat == mPF_B8G8R8A8)
     {
-      glTexImage2D(texture.sampleCount > 0 ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)size.x, (GLsizei)size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, pData);
-    }
-    else if (pixelFormat == mPF_R8G8B8)
-    {
-      glTexImage2D(texture.sampleCount > 0 ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, 0, GL_RGB, (GLsizei)size.x, (GLsizei)size.y, 0, GL_RGB, GL_UNSIGNED_BYTE, pData);
-    }
-    else if (pixelFormat == mPF_Monochrome8)
-    {
-      glTexImage2D(texture.sampleCount > 0 ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, 0, GL_RED, (GLsizei)size.x, (GLsizei)size.y, 0, GL_RED, GL_UNSIGNED_BYTE, pData);
-    }
-    else
-    {
-      mPtr<mImageBuffer> sourceImageBuffer;
-      mERROR_CHECK(mImageBuffer_Create(&sourceImageBuffer, &mDefaultTempAllocator, reinterpret_cast<const void *>(pData), size, pixelFormat));
-
       mPtr<mImageBuffer> imageBuffer;
       mDEFER_CALL(&imageBuffer, mImageBuffer_Destroy);
       mERROR_CHECK(mImageBuffer_Create(&imageBuffer, nullptr, size, mPF_R8G8B8A8));
-      mERROR_CHECK(mPixelFormat_TransformBuffer(sourceImageBuffer, imageBuffer));
+      mERROR_CHECK(mPixelFormat_TransformBuffer(texture.imageBuffer, imageBuffer));
 
       glTexImage2D(texture.sampleCount > 0 ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)imageBuffer->currentSize.x, (GLsizei)imageBuffer->currentSize.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, imageBuffer->pPixels);
+    }
+    else
+    {
+      GLenum glPixelFormat = GL_RGBA;
+      mERROR_CHECK(mRenderParams_PixelFormatToGLenumChannels(pixelFormat, &glPixelFormat));
+
+      GLenum glType = GL_UNSIGNED_BYTE;
+      mERROR_CHECK(mRenderParams_PixelFormatToGLenumDataType(pixelFormat, &glType));
+
+      glTexImage2D(texture.sampleCount > 0 ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, 0, glPixelFormat, (GLsizei)size.x, (GLsizei)size.y, 0, glPixelFormat, glType, pData);
     }
 
     texture.resolution = size;
@@ -436,18 +432,26 @@ mFUNCTION(mTexture_Download, mTexture &texture, OUT mPtr<mImageBuffer> *pImageBu
   }
 
   GLenum glPixelFormat = GL_RGBA;
+
+  GLenum glType = GL_UNSIGNED_BYTE;
+  mERROR_CHECK(mRenderParams_PixelFormatToGLenumDataType(pixelFormat, &glType));
+
   mPixelFormat internalPixelFormat = mPF_B8G8R8A8;
 
   switch (pixelFormat)
   {
   case mPF_B8G8R8:
   case mPF_R8G8B8:
+  case mPF_Rf16Gf16Bf16:
+  case mPF_Rf32Gf32Bf32:
     glPixelFormat = GL_RGB;
     internalPixelFormat = mPF_R8G8B8;
     break;
 
   case mPF_B8G8R8A8:
   case mPF_R8G8B8A8:
+  case mPF_Rf16Gf16Bf16Af16:
+  case mPF_Rf32Gf32Bf32Af32:
     glPixelFormat = GL_RGBA;
     internalPixelFormat = mPF_R8G8B8A8;
     break;
@@ -455,7 +459,7 @@ mFUNCTION(mTexture_Download, mTexture &texture, OUT mPtr<mImageBuffer> *pImageBu
   case mPF_Monochrome8:
   case mPF_Monochrome16:
     glPixelFormat = GL_RED;
-    internalPixelFormat = mPF_Monochrome8;
+    internalPixelFormat = pixelFormat;
     break;
 
   case mPF_YUV422:
@@ -469,7 +473,7 @@ mFUNCTION(mTexture_Download, mTexture &texture, OUT mPtr<mImageBuffer> *pImageBu
   mERROR_CHECK(mImageBuffer_Create(&imageBuffer, internalPixelFormat == pixelFormat ? pAllocator : &mDefaultTempAllocator, texture.resolution, internalPixelFormat));
 
   glBindTexture(texture.sampleCount > 0 ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, texture.textureId);
-  glGetTexImage(texture.sampleCount > 0 ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, 0, glPixelFormat, GL_UNSIGNED_BYTE, imageBuffer->pPixels);
+  glGetTexImage(texture.sampleCount > 0 ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, 0, glPixelFormat, glType, imageBuffer->pPixels);
 
   mERROR_CHECK(mImageBuffer_FlipY(imageBuffer));
 
@@ -535,23 +539,13 @@ mFUNCTION(mTexture3D_Create, OUT mTexture3D *pTexture, const uint8_t *pData, con
 
   mERROR_CHECK(mTexture3DParams_ApplyToBoundTexture(textureParams, false));
 
-  switch (pixelFormat)
-  {
-  case mPF_R8G8B8A8:
-    glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA8, (GLsizei)size.x, (GLsizei)size.y, (GLsizei)size.z, 0, GL_RGBA, GL_UNSIGNED_BYTE, pData);
-    break;
+  GLenum glPixelFormat = GL_RGBA;
+  mERROR_CHECK(mRenderParams_PixelFormatToGLenumChannels(pixelFormat, &glPixelFormat));
 
-  case mPF_R8G8B8:
-    glTexImage3D(GL_TEXTURE_3D, 0, GL_RGB8, (GLsizei)size.x, (GLsizei)size.y, (GLsizei)size.z, 0, GL_RGB, GL_UNSIGNED_BYTE, pData);
-    break;
+  GLenum glType = GL_UNSIGNED_BYTE;
+  mERROR_CHECK(mRenderParams_PixelFormatToGLenumDataType(pixelFormat, &glType));
 
-  case mPF_Monochrome8:
-    glTexImage3D(GL_TEXTURE_3D, 0, GL_R8, (GLsizei)size.x, (GLsizei)size.y, (GLsizei)size.z, 0, GL_RED, GL_UNSIGNED_BYTE, pData);
-    break;
-
-  default:
-    mRETURN_RESULT(mR_NotSupported);
-  }
+  glTexImage3D(GL_TEXTURE_3D, 0, glPixelFormat, (GLsizei)size.x, (GLsizei)size.y, (GLsizei)size.z, 0, glPixelFormat, glType, pData);
 
   mGL_ERROR_CHECK();
 
@@ -577,23 +571,13 @@ mFUNCTION(mTexture3D_Allocate, OUT mTexture3D *pTexture, const mVec3s &size, con
 
   mERROR_CHECK(mTexture3DParams_ApplyToBoundTexture(textureParams, false));
 
-  switch (pixelFormat)
-  {
-  case mPF_R8G8B8A8:
-    glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA8, (GLsizei)size.x, (GLsizei)size.y, (GLsizei)size.z, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-    break;
+  GLenum glPixelFormat = GL_RGBA;
+  mERROR_CHECK(mRenderParams_PixelFormatToGLenumChannels(pixelFormat, &glPixelFormat));
 
-  case mPF_R8G8B8:
-    glTexImage3D(GL_TEXTURE_3D, 0, GL_RGB8, (GLsizei)size.x, (GLsizei)size.y, (GLsizei)size.z, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
-    break;
+  GLenum glType = GL_UNSIGNED_BYTE;
+  mERROR_CHECK(mRenderParams_PixelFormatToGLenumDataType(pixelFormat, &glType));
 
-  case mPF_Monochrome8:
-    glTexImage3D(GL_TEXTURE_3D, 0, GL_R8, (GLsizei)size.x, (GLsizei)size.y, (GLsizei)size.z, 0, GL_RED, GL_UNSIGNED_BYTE, nullptr);
-    break;
-
-  default:
-    mRETURN_RESULT(mR_NotSupported);
-  }
+  glTexImage3D(GL_TEXTURE_3D, 0, glPixelFormat, (GLsizei)size.x, (GLsizei)size.y, (GLsizei)size.z, 0, glPixelFormat, glType, nullptr);
 
   mGL_ERROR_CHECK();
 
@@ -631,23 +615,13 @@ mFUNCTION(mTexture3D_SetTo, mTexture3D &texture, const uint8_t *pData, const mVe
 
   glBindTexture(GL_TEXTURE_3D, texture.textureId);
 
-  switch (pixelFormat)
-  {
-  case mPF_R8G8B8A8:
-    glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA8, (GLsizei)size.x, (GLsizei)size.y, (GLsizei)size.z, 0, GL_RGBA, GL_UNSIGNED_BYTE, pData);
-    break;
+  GLenum glPixelFormat = GL_RGBA;
+  mERROR_CHECK(mRenderParams_PixelFormatToGLenumChannels(pixelFormat, &glPixelFormat));
 
-  case mPF_R8G8B8:
-    glTexImage3D(GL_TEXTURE_3D, 0, GL_RGB8, (GLsizei)size.x, (GLsizei)size.y, (GLsizei)size.z, 0, GL_RGB, GL_UNSIGNED_BYTE, pData);
-    break;
+  GLenum glType = GL_UNSIGNED_BYTE;
+  mERROR_CHECK(mRenderParams_PixelFormatToGLenumDataType(pixelFormat, &glType));
 
-  case mPF_Monochrome8:
-    glTexImage3D(GL_TEXTURE_3D, 0, GL_R8, (GLsizei)size.x, (GLsizei)size.y, (GLsizei)size.z, 0, GL_RED, GL_UNSIGNED_BYTE, pData);
-    break;
-
-  default:
-    mRETURN_RESULT(mR_NotSupported);
-  }
+  glTexImage3D(GL_TEXTURE_3D, 0, glPixelFormat, (GLsizei)size.x, (GLsizei)size.y, (GLsizei)size.z, 0, glPixelFormat, glType, pData);
 
   mGL_ERROR_CHECK();
 

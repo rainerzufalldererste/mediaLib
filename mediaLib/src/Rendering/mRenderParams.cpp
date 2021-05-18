@@ -1064,6 +1064,7 @@ mFUNCTION(mRenderParams_PrintRenderState, const bool onlyNewValues /* = false */
   mRETURN_SUCCESS();
 }
 
+#ifdef mRENDERER_OPENGL
 mFUNCTION(mRenderParams_SetOnErrorDebugCallback, const std::function<mResult(const GLenum source, const GLenum type, const GLuint id, const GLenum severity, const GLsizei length, const char *msg)> &callback)
 {
   mFUNCTION_SETUP();
@@ -1097,3 +1098,102 @@ mFUNCTION(mRenderParams_SetOnErrorDebugCallback, const std::function<mResult(con
 
   mRETURN_SUCCESS();
 }
+
+mFUNCTION(mRenderParams_PixelFormatToGLenumChannels, const mPixelFormat pixelFormat, OUT GLenum *pValue)
+{
+  mFUNCTION_SETUP();
+
+  switch (pixelFormat)
+  {
+  case mPF_YUV444:
+  case mPF_YUV422:
+  case mPF_YUV440:
+  case mPF_YUV420:
+  case mPF_YUV411:
+    mRETURN_RESULT(mR_NotSupported);
+    break;
+
+  case mPF_Monochrome8:
+  case mPF_Monochrome16:
+  case mPF_Monochromef16:
+  case mPF_Monochromef32:
+    *pValue = GL_RED;
+    break;
+
+  case mPF_R8G8:
+  case mPF_R16G16:
+  case mPF_Rf16Gf16:
+  case mPF_Rf32Gf32:
+    *pValue = GL_RG;
+    break;
+
+  case mPF_R8G8B8:
+  case mPF_R16G16B16:
+  case mPF_Rf16Gf16Bf16:
+  case mPF_Rf32Gf32Bf32:
+    *pValue = GL_RGB;
+    break;
+
+  case mPF_R8G8B8A8:
+  case mPF_R16G16B16A16:
+  case mPF_Rf16Gf16Bf16Af16:
+  case mPF_Rf32Gf32Bf32Af32:
+    *pValue = GL_RGBA;
+    break;
+
+  case mPF_B8G8R8:
+  case mPF_B8G8R8A8:
+  default:
+    mRETURN_RESULT(mR_InvalidParameter);
+  }
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mRenderParams_PixelFormatToGLenumDataType, const mPixelFormat pixelFormat, OUT GLenum *pValue)
+{
+  mFUNCTION_SETUP();
+
+  switch (pixelFormat)
+  {
+  case mPF_YUV444:
+  case mPF_YUV422:
+  case mPF_YUV440:
+  case mPF_YUV420:
+  case mPF_YUV411:
+  default:
+    mRETURN_RESULT(mR_NotSupported);
+    break;
+
+  case mPF_Monochrome8:
+  case mPF_R8G8:
+  case mPF_R8G8B8:
+  case mPF_R8G8B8A8:
+    *pValue = GL_UNSIGNED_BYTE;
+    break;
+
+  case mPF_Monochrome16:
+  case mPF_R16G16:
+  case mPF_R16G16B16:
+  case mPF_R16G16B16A16:
+    *pValue = GL_UNSIGNED_SHORT;
+    break;
+
+  case mPF_Monochromef16:
+  case mPF_Rf16Gf16:
+  case mPF_Rf16Gf16Bf16:
+  case mPF_Rf16Gf16Bf16Af16:
+    *pValue = GL_HALF_FLOAT;
+    break;
+
+  case mPF_Monochromef32:
+  case mPF_Rf32Gf32:
+  case mPF_Rf32Gf32Bf32:
+  case mPF_Rf32Gf32Bf32Af32:
+    *pValue = GL_FLOAT;
+    break;
+  }
+
+  mRETURN_SUCCESS();
+}
+#endif

@@ -508,17 +508,49 @@ mFUNCTION(mImageBuffer_SetToData, mPtr<mImageBuffer> &imageBuffer, IN const uint
   {
     tjhandle decoder = tjInitDecompress();
 
-    int32_t width, height;
+    int32_t width, height, subSampling;
 
     if (decoder == nullptr)
       goto jpeg_decoder_failed;
 
     mDEFER(tjDestroy(decoder));
 
-    if (0 != tjDecompressHeader(decoder, const_cast<uint8_t *>(reinterpret_cast<const uint8_t *>(pData)), (uint32_t)size, &width, &height))
+    if (0 != tjDecompressHeader2(decoder, const_cast<uint8_t *>(reinterpret_cast<const uint8_t *>(pData)), (uint32_t)size, &width, &height, &subSampling))
       goto jpeg_decoder_failed;
 
-    if (pixelFormat == mPF_YUV420)
+    mPixelFormat sourcePixelFormat;
+
+    switch (subSampling)
+    {
+    case TJSAMP_444:
+      sourcePixelFormat = mPF_YUV444;
+      break;
+
+    case TJSAMP_422:
+      sourcePixelFormat = mPF_YUV422;
+      break;
+
+    case TJSAMP_420:
+      sourcePixelFormat = mPF_YUV420;
+      break;
+
+    case TJSAMP_440:
+      sourcePixelFormat = mPF_YUV440;
+      break;
+
+    case TJSAMP_411:
+      sourcePixelFormat = mPF_YUV411;
+      break;
+
+    case TJSAMP_GRAY:
+      sourcePixelFormat = mPF_Monochrome8;
+      break;
+
+    default:
+      goto jpeg_decoder_failed;
+    }
+
+    if (pixelFormat == sourcePixelFormat)
     {
       if (mFAILED(mImageBuffer_AllocateBuffer(imageBuffer, mVec2s((size_t)width, (size_t)height), pixelFormat)))
         goto jpeg_decoder_failed;
@@ -528,41 +560,78 @@ mFUNCTION(mImageBuffer_SetToData, mPtr<mImageBuffer> &imageBuffer, IN const uint
     }
     else
     {
-      int32_t tjPixelFormat = 0;
-      size_t pixelSize = 1;
+      bool isChromaSubSampled = false;
+      mERROR_CHECK(mPixelFormat_IsChromaSubsampled(pixelFormat, &isChromaSubSampled));
 
-      switch (pixelFormat)
+      if (isChromaSubSampled)
       {
-      case mPF_B8G8R8:
-        tjPixelFormat = TJPF_BGR;
-        break;
+        bool canInplaceTransform = false;
+        mERROR_CHECK(mPixelFormat_CanInplaceTransform(sourcePixelFormat, pixelFormat, &canInplaceTransform));
 
-      case mPF_R8G8B8:
-        tjPixelFormat = TJPF_RGB;
-        break;
+        if (canInplaceTransform)
+        {
+          if (mFAILED(mImageBuffer_AllocateBuffer(imageBuffer, mVec2s((size_t)width, (size_t)height), sourcePixelFormat)))
+            goto jpeg_decoder_failed;
 
-      case mPF_B8G8R8A8:
-        tjPixelFormat = TJPF_BGRA;
-        break;
+          if (0 != tjDecompressToYUV2(decoder, pData, (uint32_t)size, imageBuffer->pPixels, width, 1, height, TJFLAG_FASTDCT))
+            goto jpeg_decoder_failed;
 
-      case mPF_R8G8B8A8:
-        tjPixelFormat = TJPF_RGBA;
-        break;
+          mERROR_CHECK(mPixelFormat_InplaceTransformBuffer(imageBuffer, pixelFormat));
+        }
+        else
+        {
+          if (mFAILED(mImageBuffer_AllocateBuffer(imageBuffer, mVec2s((size_t)width, (size_t)height), pixelFormat)))
+            goto jpeg_decoder_failed;
 
-      case mPF_Monochrome8:
-        tjPixelFormat = TJPF_GRAY;
-        break;
+          mPtr<mImageBuffer> tmp;
 
-      default:
-        goto jpeg_decoder_failed;
-        break;
+          if (mFAILED(mImageBuffer_Create(&tmp, &mDefaultTempAllocator, mVec2s((size_t)width, (size_t)height), sourcePixelFormat)))
+            goto jpeg_decoder_failed;
+
+          if (0 != tjDecompressToYUV2(decoder, pData, (uint32_t)size, tmp->pPixels, width, 1, height, TJFLAG_FASTDCT))
+            goto jpeg_decoder_failed;
+
+          mERROR_CHECK(mPixelFormat_TransformBuffer(tmp, imageBuffer));
+        }
       }
+      else
+      {
+        int32_t tjPixelFormat = 0;
+        size_t pixelSize = 1;
 
-      if (mFAILED(mImageBuffer_AllocateBuffer(imageBuffer, mVec2s((size_t)width, (size_t)height), pixelFormat)) || mFAILED(mPixelFormat_GetUnitSize(pixelFormat, &pixelSize)))
-        goto jpeg_decoder_failed;
+        switch (pixelFormat)
+        {
+        case mPF_B8G8R8:
+          tjPixelFormat = TJPF_BGR;
+          break;
 
-      if (0 != tjDecompress2(decoder, pData, (uint32_t)size, imageBuffer->pPixels, width, (int)(width * pixelSize), height, tjPixelFormat, TJFLAG_FASTDCT))
-        goto jpeg_decoder_failed;
+        case mPF_R8G8B8:
+          tjPixelFormat = TJPF_RGB;
+          break;
+
+        case mPF_B8G8R8A8:
+          tjPixelFormat = TJPF_BGRA;
+          break;
+
+        case mPF_R8G8B8A8:
+          tjPixelFormat = TJPF_RGBA;
+          break;
+
+        case mPF_Monochrome8:
+          tjPixelFormat = TJPF_GRAY;
+          break;
+
+        default:
+          goto jpeg_decoder_failed;
+          break;
+        }
+
+        if (mFAILED(mImageBuffer_AllocateBuffer(imageBuffer, mVec2s((size_t)width, (size_t)height), pixelFormat)) || mFAILED(mPixelFormat_GetUnitSize(pixelFormat, &pixelSize)))
+          goto jpeg_decoder_failed;
+
+        if (0 != tjDecompress2(decoder, pData, (uint32_t)size, imageBuffer->pPixels, width, (int)(width * pixelSize), height, tjPixelFormat, TJFLAG_FASTDCT))
+          goto jpeg_decoder_failed;
+      }
     }
 
     mRETURN_SUCCESS();
@@ -584,8 +653,11 @@ jpeg_decoder_failed:
     readPixelFormat = mPF_R8G8B8A8;
     break;
 
+  case mPF_YUV444:
   case mPF_YUV422:
+  case mPF_YUV440:
   case mPF_YUV420:
+  case mPF_YUV411:
     components = 3;
     readPixelFormat = mPF_R8G8B8;
     break;
@@ -601,7 +673,7 @@ jpeg_decoder_failed:
     break;
   }
 
-  int x, y, originalChannelCount;
+  int32_t x, y, originalChannelCount;
   stbi_uc *pResult = stbi_load_from_memory(pData, (int)size, &x, &y, &originalChannelCount, components);
 
   if (pResult == nullptr)
