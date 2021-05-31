@@ -164,14 +164,19 @@ extern mPrintCallbackFunc *mPrintDebugCallback;
 extern mPrintCallbackFunc *mPrintTraceCallback;
 
 void mDefaultPrint(const char *text);
+void mSilencablePrint(const char *text);
+void mSilencablePrintError(const char *text);
+void mSilencablePrintLog(const char *text);
+void mSilencablePrintDebug(const char *text);
+void mSilencablePrintTrace(const char *text);
 void mPrintPrepare(mPrintCallbackFunc *pFunc, const char *format, ...);
 
 #ifdef _DEBUG
 #define mASSERT_DEBUG(expr, text, ...) mASSERT(expr, text, __VA_ARGS__)
 #define mFAIL_DEBUG(text, ...) mFAIL(text, __VA_ARGS__)
 #else // !_DEBUG
-#define mASSERT_DEBUG(expr, text, ...) mUnused(expr, text, __VA_ARGS__)
-#define mFAIL_DEBUG(text, ...) mUnused(text, __VA_ARGS__)
+#define mASSERT_DEBUG(expr, text, ...)
+#define mFAIL_DEBUG(text, ...)
 #endif
 
 #define mCONCAT_LITERALS_INTERNAL(x, y) x ## y
@@ -181,13 +186,10 @@ void mPrintPrepare(mPrintCallbackFunc *pFunc, const char *format, ...);
 
 #ifdef mPLATFORM_WINDOWS
 #define mDLL_FUNC_PREFIX __dll__
-#define mDLL_TYPEDEF_POSTFIX __dll__FUNC_TYPE__
-
-#define mTYPEDEF_DLL_FUNC(name, returnType, ...) typedef returnType mCONCAT_LITERALS(name, mDLL_TYPEDEF_POSTFIX) (__VA_ARGS__)
 
 #define mLOAD_FROM_DLL(symbol, module) \
   do \
-  { mCONCAT_LITERALS(mDLL_FUNC_PREFIX, symbol) = (mCONCAT_LITERALS(symbol, mDLL_TYPEDEF_POSTFIX) *)GetProcAddress(module, #symbol); \
+  { mCONCAT_LITERALS(mDLL_FUNC_PREFIX, symbol) = (decltype(symbol) *)GetProcAddress(module, #symbol); \
     if (mCONCAT_LITERALS(mDLL_FUNC_PREFIX, symbol) == nullptr) \
     { const DWORD errorCode = GetLastError(); \
       mPRINT_ERROR("Symbol '" #symbol "' could not be loaded from dynamic library. (error code: 0x%" PRIx64 ")\n", (uint64_t)errorCode); \
@@ -195,7 +197,7 @@ void mPrintPrepare(mPrintCallbackFunc *pFunc, const char *format, ...);
     } \
   } while (0)
 
-#define mDLL_DEFINE_SYMBOL(symbol) mCONCAT_LITERALS(symbol, mDLL_TYPEDEF_POSTFIX) *mCONCAT_LITERALS(mDLL_FUNC_PREFIX, symbol) = nullptr
+#define mDLL_DEFINE_SYMBOL(symbol) decltype(symbol) *mCONCAT_LITERALS(mDLL_FUNC_PREFIX, symbol) = nullptr
 #define mDLL_CALL(symbol, ...) ((*mCONCAT_LITERALS(mDLL_FUNC_PREFIX, symbol))(__VA_ARGS__))
 
 #endif // !mPLATFORM_WINDOWS

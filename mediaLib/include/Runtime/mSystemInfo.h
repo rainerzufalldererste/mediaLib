@@ -48,4 +48,6 @@ mFUNCTION(mSystemInfo_GetVideoCardInfo, OUT mSystemInfo_VideoCardInfo *pGpuInfo)
 mFUNCTION(mSystemInfo_GetDisplayCount, OUT size_t *pDisplayCount);
 mFUNCTION(mSystemInfo_GetDisplayBounds, const size_t displayIndex, OUT mRectangle2D<int64_t> *pDisplayBounds);
 
+mFUNCTION(mSystemInfo_IsElevated, OUT bool *pIsElevated);
+
 #endif // mSystemInfo_h__

@@ -355,3 +355,24 @@ mFUNCTION(mSystemInfo_GetDisplayBounds, const size_t displayIndex, OUT mRectangl
 
   mRETURN_SUCCESS();
 }
+
+mFUNCTION(mSystemInfo_IsElevated, OUT bool *pIsElevated)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pIsElevated == nullptr, mR_ArgumentNull);
+
+  *pIsElevated = false;
+
+  HANDLE processToken = nullptr;
+  mERROR_IF(0 == OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &processToken), mR_InternalError);
+  mDEFER_IF(processToken != nullptr, CloseHandle(processToken));
+
+  TOKEN_ELEVATION tokenElevation;
+  DWORD size = sizeof(tokenElevation);
+  mERROR_IF(0 == GetTokenInformation(processToken, TokenElevation, &tokenElevation, sizeof(tokenElevation), &size), mR_InternalError);
+  
+  *pIsElevated = (tokenElevation.TokenIsElevated == TRUE);
+
+  mRETURN_SUCCESS();
+}

@@ -130,18 +130,20 @@ mFUNCTION(mAllocator_Allocate, IN OPTIONAL mAllocator *pAllocator, OUT T **ppDat
   mFUNCTION_SETUP();
 
   mERROR_IF(ppData == nullptr, mR_ArgumentNull);
+  mERROR_IF(count == 0, mR_ArgumentOutOfBounds);
+  mERROR_IF(pAllocator != nullptr && (!pAllocator->initialized || (pAllocator->pAllocate == nullptr && pAllocator->pAllocateZero == nullptr)), mR_ResourceInvalid);
   mDEFER_CALL_ON_ERROR(ppData, mSetToNullptr);
 
 #ifdef mDEBUG_MEMORY_ALLOCATIONS_PRINT_ALLOCATIONS
   mLOG("Allocating %" PRIu64 " bytes for %" PRIu64 " elements of type %s (to zero).\n", sizeof(T) * count, count, typeid(T).name());
 #endif
 
-  if (pAllocator == nullptr || !pAllocator->initialized || (pAllocator->pAllocate == nullptr && pAllocator->pAllocateZero == nullptr))
-    mERROR_CHECK(mDefaultAllocator_Alloc((uint8_t **)ppData, sizeof(T), count));
+  if (pAllocator == nullptr)
+    mERROR_CHECK(mDefaultAllocator_Alloc(reinterpret_cast<uint8_t **>(ppData), sizeof(T), count));
   else if (pAllocator->pAllocate != nullptr)
-    mERROR_CHECK(pAllocator->pAllocate((uint8_t **)ppData, sizeof(T), count, pAllocator->pUserData));
+    mERROR_CHECK(pAllocator->pAllocate(reinterpret_cast<uint8_t **>(ppData), sizeof(T), count, pAllocator->pUserData));
   else
-    mERROR_CHECK(pAllocator->pAllocateZero((uint8_t **)ppData, sizeof(T), count, pAllocator->pUserData));
+    mERROR_CHECK(pAllocator->pAllocateZero(reinterpret_cast<uint8_t **>(ppData), sizeof(T), count, pAllocator->pUserData));
 
 #ifdef mDEBUG_MEMORY_ALLOCATIONS
   char stacktrace[1024 * 15];
@@ -162,23 +164,25 @@ mFUNCTION(mAllocator_AllocateZero, IN OPTIONAL mAllocator *pAllocator, OUT T **p
   mFUNCTION_SETUP();
 
   mERROR_IF(ppData == nullptr, mR_ArgumentNull);
+  mERROR_IF(count == 0, mR_ArgumentOutOfBounds);
+  mERROR_IF(pAllocator != nullptr && (!pAllocator->initialized || (pAllocator->pAllocate == nullptr && pAllocator->pAllocateZero == nullptr)), mR_ResourceInvalid);
   mDEFER_CALL_ON_ERROR(ppData, mSetToNullptr);
 
 #ifdef mDEBUG_MEMORY_ALLOCATIONS_PRINT_ALLOCATIONS
   mLOG("Allocating %" PRIu64 " bytes for %" PRIu64 " elements of type %s.\n", sizeof(T) * count, count, typeid(T).name());
 #endif
 
-  if (pAllocator == nullptr || !pAllocator->initialized || (pAllocator->pAllocate == nullptr && pAllocator->pAllocateZero == nullptr))
+  if (pAllocator == nullptr)
   {
-    mERROR_CHECK(mDefaultAllocator_AllocZero((uint8_t **)ppData, sizeof(T), count));
+    mERROR_CHECK(mDefaultAllocator_AllocZero(reinterpret_cast<uint8_t **>(ppData), sizeof(T), count));
   }
   else if (pAllocator->pAllocateZero != nullptr)
   {
-    mERROR_CHECK(pAllocator->pAllocateZero((uint8_t **)ppData, sizeof(T), count, pAllocator->pUserData));
+    mERROR_CHECK(pAllocator->pAllocateZero(reinterpret_cast<uint8_t **>(ppData), sizeof(T), count, pAllocator->pUserData));
   }
   else
   {
-    mERROR_CHECK(pAllocator->pAllocate((uint8_t **)ppData, sizeof(T), count, pAllocator->pUserData));
+    mERROR_CHECK(pAllocator->pAllocate(reinterpret_cast<uint8_t **>(ppData), sizeof(T), count, pAllocator->pUserData));
     mERROR_CHECK(mMemset(*ppData, count, 0));
   }
 
@@ -200,6 +204,9 @@ inline mFUNCTION(mAllocator_Reallocate, IN OPTIONAL mAllocator *pAllocator, OUT 
 {
   mFUNCTION_SETUP();
 
+  mERROR_IF(ppData == nullptr, mR_ArgumentNull);
+  mERROR_IF(pAllocator != nullptr && (!pAllocator->initialized || pAllocator->pReallocate == nullptr), mR_ResourceInvalid);
+
 #ifdef mDEBUG_MEMORY_ALLOCATIONS
   const size_t originalPointer = reinterpret_cast<size_t>(*ppData);
 #endif
@@ -210,10 +217,10 @@ inline mFUNCTION(mAllocator_Reallocate, IN OPTIONAL mAllocator *pAllocator, OUT 
 
   mSTATIC_ASSERT(mIsTriviallyMemoryMovable<T>::value, "This type is not trivially memory movable.");
 
-  if (pAllocator == nullptr || !pAllocator->initialized || pAllocator->pReallocate == nullptr)
-    mERROR_CHECK(mDefaultAllocator_Realloc((uint8_t **)ppData, sizeof(T), count));
+  if (pAllocator == nullptr)
+    mERROR_CHECK(mDefaultAllocator_Realloc(reinterpret_cast<uint8_t **>(ppData), sizeof(T), count));
   else
-    mERROR_CHECK(pAllocator->pReallocate((uint8_t **)ppData, sizeof(T), count, pAllocator->pUserData));
+    mERROR_CHECK(pAllocator->pReallocate(reinterpret_cast<uint8_t **>(ppData), sizeof(T), count, pAllocator->pUserData));
 
 #ifdef mDEBUG_MEMORY_ALLOCATIONS
   char stacktrace[1024 * 15];
@@ -248,10 +255,12 @@ inline mFUNCTION(mAllocator_FreePtr, IN OPTIONAL mAllocator *pAllocator, IN_OUT 
   if (*ppData == nullptr)
     mRETURN_SUCCESS();
 
-  if (pAllocator == nullptr || !pAllocator->initialized || pAllocator->pFree == nullptr)
-    mERROR_CHECK(mDefaultAllocator_Free((uint8_t *)*ppData));
+  mERROR_IF(pAllocator != nullptr && (!pAllocator->initialized || pAllocator->pFree == nullptr), mR_ResourceInvalid);
+
+  if (pAllocator == nullptr)
+    mERROR_CHECK(mDefaultAllocator_Free(reinterpret_cast<uint8_t *>(*ppData)));
   else
-    mERROR_CHECK(pAllocator->pFree((uint8_t *)*ppData, pAllocator->pUserData));
+    mERROR_CHECK(pAllocator->pFree(reinterpret_cast<uint8_t *>(*ppData), pAllocator->pUserData));
 
 #ifdef mDEBUG_MEMORY_ALLOCATIONS
   mAllocatorDebugging_StoreFreeCall(pAllocator, originalPointer);
@@ -268,6 +277,8 @@ inline mFUNCTION(mAllocator_Free, IN OPTIONAL mAllocator *pAllocator, IN T *pDat
   if (pData == nullptr)
     mRETURN_SUCCESS();
 
+  mERROR_IF(pAllocator != nullptr && !pAllocator->initialized, mR_ResourceInvalid);
+
 #ifdef mDEBUG_MEMORY_ALLOCATIONS
   const size_t originalPointer = reinterpret_cast<size_t>(pData);
 #endif
@@ -276,10 +287,12 @@ inline mFUNCTION(mAllocator_Free, IN OPTIONAL mAllocator *pAllocator, IN T *pDat
   mLOG("Freeing element(s) of type %s.\n", typeid(T).name());
 #endif
 
-  if (pAllocator == nullptr || !pAllocator->initialized || pAllocator->pFree == nullptr)
-    mERROR_CHECK(mDefaultAllocator_Free((uint8_t *)pData));
+  mERROR_IF(pAllocator != nullptr && (!pAllocator->initialized || pAllocator->pFree == nullptr), mR_ResourceInvalid);
+
+  if (pAllocator == nullptr)
+    mERROR_CHECK(mDefaultAllocator_Free(reinterpret_cast<uint8_t *>(pData)));
   else
-    mERROR_CHECK(pAllocator->pFree((uint8_t *)pData, pAllocator->pUserData));
+    mERROR_CHECK(pAllocator->pFree(reinterpret_cast<uint8_t *>(pData), pAllocator->pUserData));
 
 #ifdef mDEBUG_MEMORY_ALLOCATIONS
   mAllocatorDebugging_StoreFreeCall(pAllocator, originalPointer);

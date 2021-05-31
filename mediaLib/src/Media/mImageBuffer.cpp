@@ -502,7 +502,7 @@ mFUNCTION(mImageBuffer_SetToData, mPtr<mImageBuffer> &imageBuffer, IN const uint
   int32_t components = 4;
   mPixelFormat readPixelFormat = mPF_R8G8B8A8;
 
-  const bool tryJpeg = (size > 3 && pData[0] == 0xFF && pData[1] == 0xD8 && pData[2] == 0xFF);
+  const bool tryJpeg = (size > 2 && pData[0] == 0xFF && pData[1] == 0xD8);
 
   if (tryJpeg)
   {

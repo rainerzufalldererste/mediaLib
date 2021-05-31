@@ -497,6 +497,7 @@ inline mFUNCTION(mSharedPointer_Allocate, OUT mSharedPointer<T> *pOutSharedPoint
   mFUNCTION_SETUP();
 
   mERROR_IF(pOutSharedPointer == nullptr, mR_ArgumentNull);
+  mERROR_IF(count == 0, mR_ArgumentOutOfBounds);
 
   T *pData = nullptr;
   mDEFER_CALL_2(mAllocator_FreePtr, pAllocator, &pData);
@@ -515,6 +516,7 @@ inline mFUNCTION(mSharedPointer_Allocate, OUT mSharedPointer<T> *pOutSharedPoint
   mFUNCTION_SETUP();
 
   mERROR_IF(pOutSharedPointer == nullptr, mR_ArgumentNull);
+  mERROR_IF(count == 0, mR_ArgumentOutOfBounds);
 
   T *pData = nullptr;
   mDEFER_CALL_2(mAllocator_FreePtr, pAllocator, &pData);
