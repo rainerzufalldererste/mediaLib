@@ -98,6 +98,36 @@ void mTracePrint(const char *text)
   mDebugOut("[Trace] %s", text);
 }
 
+void mSilencablePrint(const char *text)
+{
+  if (!g_mResult_silent && mPrintCallback != nullptr)
+    mPrintCallback(text);
+}
+
+void mSilencablePrintError(const char *text)
+{
+  if (!g_mResult_silent && mPrintErrorCallback != nullptr)
+    mPrintErrorCallback(text);
+}
+
+void mSilencablePrintLog(const char *text)
+{
+  if (!g_mResult_silent && mPrintLogCallback != nullptr)
+    mPrintLogCallback(text);
+}
+
+void mSilencablePrintDebug(const char *text)
+{
+  if (!g_mResult_silent && mPrintDebugCallback != nullptr)
+    mPrintDebugCallback(text);
+}
+
+void mSilencablePrintTrace(const char *text)
+{
+  if (!g_mResult_silent && mPrintTraceCallback != nullptr)
+    mPrintTraceCallback(text);
+}
+
 mPrintCallbackFunc *mPrintCallback = &mDefaultPrint;
 mPrintCallbackFunc *mPrintErrorCallback = &mErrorPrint;
 mPrintCallbackFunc *mPrintLogCallback = &mLogPrint;

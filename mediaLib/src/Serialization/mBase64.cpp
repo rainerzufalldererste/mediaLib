@@ -248,9 +248,10 @@ mFUNCTION(mBase64_Decode, const mString &text, OUT mPtr<uint8_t> *pData, IN mAll
   mERROR_CHECK(mBase64_GetDecodedLength(text, pCapacity));
   
   mDEFER_CALL_ON_ERROR(pData, mSharedPointer_Destroy);
-  mERROR_CHECK(mSharedPointer_Allocate(pData, pAllocator, *pCapacity));
+  mERROR_CHECK(mSharedPointer_Allocate(pData, pAllocator, mMax(1ULL, *pCapacity)));
 
-  mERROR_CHECK(mBase64_Decode(text, pData->GetPointer(), *pCapacity));
+  if (*pCapacity > 0)
+    mERROR_CHECK(mBase64_Decode(text, pData->GetPointer(), *pCapacity));
 
   mRETURN_SUCCESS();
 }

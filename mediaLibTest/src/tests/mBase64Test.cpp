@@ -187,7 +187,7 @@ mTEST(mBase64, TestEncodeDecode)
   mTEST_ALLOCATOR_SETUP();
 
   mPtr<uint8_t> data;
-  size_t length;
+  size_t length = (size_t)-1;
   mString text, text2;
 
   mTEST_ASSERT_SUCCESS(mString_Create(&text, "", pAllocator));
