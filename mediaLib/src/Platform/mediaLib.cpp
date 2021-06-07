@@ -170,7 +170,30 @@ void mAssert_Internal(const char *expression, const char *text, const char *func
   mUnused(expression, text, function, file, line);
 #endif
 
-  __debugbreak();
+  BOOL isRemoteDebuggerPresent = FALSE;
+
+  if (!CheckRemoteDebuggerPresent(GetCurrentProcess(), &isRemoteDebuggerPresent))
+    isRemoteDebuggerPresent = FALSE;
+
+  if (isRemoteDebuggerPresent || IsDebuggerPresent())
+    __debugbreak();
+}
+
+void mFail_Internal(const char *text, const char *function, const char *file, const int32_t line)
+{
+#if defined (_DEBUG)
+  _CrtDbgReport(_CRT_ASSERT, file, line, function, "Error: '%s'.\n", text);
+#else
+  mUnused(text, function, file, line);
+#endif
+
+  BOOL isRemoteDebuggerPresent = FALSE;
+
+  if (!CheckRemoteDebuggerPresent(GetCurrentProcess(), &isRemoteDebuggerPresent))
+    isRemoteDebuggerPresent = FALSE;
+
+  if (isRemoteDebuggerPresent || IsDebuggerPresent())
+    __debugbreak();
 }
 
 int64_t mGetCurrentTimeMs()
@@ -182,7 +205,6 @@ int64_t mGetCurrentTimeNs()
 {
   return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
 }
-
 
 #ifdef _MSC_VER
 #define cpuid __cpuid
