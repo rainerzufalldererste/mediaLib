@@ -99,6 +99,8 @@
 #define __M_FILE__ __FILE__
 #endif
 
+#ifndef GIT_BUILD
+
 #define mASSERT(expression, text, ...) \
   do \
   { if(!(expression)) \
@@ -116,8 +118,32 @@
     sprintf_s(___buffer___, text, __VA_ARGS__); \
     ___buffer___[mARRAYSIZE(___buffer___) - 1] = '\0'; \
     mPRINT_ERROR("Assertion Failed: '%s'\n\nIn File '%s' : Line '%" PRIi32 "' (Function '%s')\n", ___buffer___, __M_FILE__, __LINE__, __FUNCTION__); \
-    __debugbreak(); \
+    mFail_Internal(___buffer___, __FUNCTION__, __M_FILE__, __LINE__); \
   } while (0)
+
+#else
+
+#define mASSERT(expression, text, ...) \
+  do \
+  { if(!(expression)) \
+    { char ___buffer___[1024 * 8]; \
+      sprintf_s(___buffer___, text, __VA_ARGS__); \
+      ___buffer___[mARRAYSIZE(___buffer___) - 1] = '\0'; \
+      mPRINT_ERROR("Assertion Failed. '%s'\n\nIn File '%s' : Line '%" PRIi32 "'\n", ___buffer___, __M_FILE__, __LINE__); \
+      mAssert_Internal("<EXPRESSION_NOT_AVAILABLE>", ___buffer___, "<FUNCTION_NAME_NOT_AVAILABLE>", __M_FILE__, __LINE__); \
+    } \
+  } while (0)
+
+#define mFAIL(text, ...) \
+  do \
+  { char ___buffer___[1024 * 8]; \
+    sprintf_s(___buffer___, text, __VA_ARGS__); \
+    ___buffer___[mARRAYSIZE(___buffer___) - 1] = '\0'; \
+      mPRINT_ERROR("Assertion Failed. '%s'\n\nIn File '%s' : Line '%" PRIi32 "'\n", ___buffer___, __M_FILE__, __LINE__); \
+    mFail_Internal(___buffer___, "<FUNCTION_NAME_NOT_AVAILABLE>", __M_FILE__, __LINE__); \
+  } while (0)
+
+#endif
 
 #define mPRINT(text, ...) mPrintPrepare(mPrintCallback, text, __VA_ARGS__)
 #define mLOG(text, ...) mPrintPrepare(mPrintLogCallback, text, __VA_ARGS__)
@@ -197,8 +223,9 @@ void mPrintPrepare(mPrintCallbackFunc *pFunc, const char *format, ...);
     } \
   } while (0)
 
-#define mDLL_DEFINE_SYMBOL(symbol) decltype(symbol) *mCONCAT_LITERALS(mDLL_FUNC_PREFIX, symbol) = nullptr
-#define mDLL_CALL(symbol, ...) ((*mCONCAT_LITERALS(mDLL_FUNC_PREFIX, symbol))(__VA_ARGS__))
+#define mDLL_NAME(symbol) mCONCAT_LITERALS(mDLL_FUNC_PREFIX, symbol)
+#define mDLL_DEFINE_SYMBOL(symbol) decltype(symbol) *mDLL_NAME(symbol) = nullptr
+#define mDLL_CALL(symbol, ...) ((*mDLL_NAME(symbol))(__VA_ARGS__))
 
 #endif // !mPLATFORM_WINDOWS
 
@@ -220,6 +247,7 @@ void mPrintPrepare(mPrintCallbackFunc *pFunc, const char *format, ...);
 
 mFUNCTION(mSleep, const size_t milliseconds = 0);
 void mAssert_Internal(const char *expression, const char *text, const char *function, const char *file, const int32_t line);
+void mFail_Internal(const char *text, const char *function, const char *file, const int32_t line);
 int64_t mGetCurrentTimeMs();
 int64_t mGetCurrentTimeNs();
 
