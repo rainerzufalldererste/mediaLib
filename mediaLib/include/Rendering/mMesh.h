@@ -81,11 +81,11 @@ struct mMesh2dPosition : mRenderObjectParam
   static const size_t size = sizeof(mVec2f);
   static const mMeshFactory_AttributeInformationType attributeInformationType = mMF_AIT_Attribute;
 
-  static inline const std::string attributeName(const size_t index = 0) 
+  static inline const mString attributeName(const size_t index = 0) 
   {
     char text[1024];
     sprintf_s(text, "%s%" PRIu64, mRenderObjectParam_Position_AttributeName, index);
-    return std::string(text);
+    return mString(text);
   };
 };
 
@@ -101,11 +101,11 @@ struct mMesh3dPosition : mRenderObjectParam
   static const size_t size = sizeof(mVec3f);
   static const mMeshFactory_AttributeInformationType attributeInformationType = mMF_AIT_Attribute;
 
-  static inline const std::string attributeName(const size_t index = 0)
+  static inline const mString attributeName(const size_t index = 0)
   {
     char text[1024];
     sprintf_s(text, "%s%" PRIu64, mRenderObjectParam_Position_AttributeName, index);
-    return std::string(text);
+    return mString(text);
   };
 };
 
@@ -121,11 +121,11 @@ struct mMeshTexcoord : mRenderObjectParam
   static const size_t size = sizeof(mVec2f);
   static const mMeshFactory_AttributeInformationType attributeInformationType = mMF_AIT_Attribute;
 
-  static inline const std::string attributeName(const size_t index = 0)
+  static inline const mString attributeName(const size_t index = 0)
   {
     char text[1024];
     sprintf_s(text, "%s%" PRIu64, mMeshTexcoord_AttributeName, index);
-    return std::string(text);
+    return mString(text);
   };
 };
 
@@ -141,11 +141,11 @@ struct mMeshColour : mRenderObjectParam
   static const size_t size = sizeof(mVec3f);
   static const mMeshFactory_AttributeInformationType attributeInformationType = mMF_AIT_Attribute;
 
-  static inline const std::string attributeName(const size_t index = 0)
+  static inline const mString attributeName(const size_t index = 0)
   {
     char text[1024];
     sprintf_s(text, "%s%" PRIu64, mMeshColour_AttributeName, index);
-    return std::string(text);
+    return mString(text);
   };
 };
 
@@ -160,11 +160,11 @@ struct mMeshTextureBlendFactor : mRenderObjectParam
   static const size_t size = sizeof(float_t);
   static const mMeshFactory_AttributeInformationType attributeInformationType = mMF_AIT_Attribute;
 
-  static inline const std::string attributeName(const size_t index = 0)
+  static inline const mString attributeName(const size_t index = 0)
   {
     char text[1024];
     sprintf_s(text, "%s%" PRIu64, mMeshTextureBlendFactor_AttributeName, index);
-    return std::string(text);
+    return mString(text);
   };
 };
 
@@ -180,11 +180,11 @@ struct mMeshNormalPosition : mRenderObjectParam
   static const size_t size = sizeof(mVec3f);
   static const mMeshFactory_AttributeInformationType attributeInformationType = mMF_AIT_Attribute;
 
-  static inline const std::string attributeName(const size_t index = 0)
+  static inline const mString attributeName(const size_t index = 0)
   {
     char text[1024];
     sprintf_s(text, "%s%" PRIu64, mMeshNormalPosition_AttributeName, index);
-    return std::string(text);
+    return mString(text);
   };
 };
 
@@ -199,11 +199,11 @@ struct mMeshAlphaChannel : mRenderObjectParam
   static const size_t size = sizeof(float_t);
   static const mMeshFactory_AttributeInformationType attributeInformationType = mMF_AIT_Attribute;
 
-  static inline const std::string attributeName(const size_t index = 0)
+  static inline const mString attributeName(const size_t index = 0)
   {
     char text[1024];
     sprintf_s(text, "%s%" PRIu64, mMeshAlphaChannel_AttributeName, index);
-    return std::string(text);
+    return mString(text);
   };
 };
 
@@ -217,11 +217,11 @@ struct mMeshScaleUniform : mRenderObjectParam
   static const size_t size = 0;
   static const mMeshFactory_AttributeInformationType attributeInformationType = mMF_AIT_Uniform;
 
-  static inline const std::string uniformName(const size_t index = 0)
+  static inline const mString uniformName(const size_t index = 0)
   {
     char text[1024];
     sprintf_s(text, "%s%" PRIu64, mMeshScaleUniform_AttributeName, index);
-    return std::string(text);
+    return mString(text);
   };
 };
 
@@ -235,11 +235,11 @@ struct mMeshScale2dUniform : mRenderObjectParam
   static const size_t size = 0;
   static const mMeshFactory_AttributeInformationType attributeInformationType = mMF_AIT_Uniform;
 
-  static inline const std::string uniformName(const size_t index = 0)
+  static inline const mString uniformName(const size_t index = 0)
   {
     char text[1024];
     sprintf_s(text, "%s%" PRIu64, mMeshScale2dUniform_AttributeName, index);
-    return std::string(text);
+    return mString(text);
   };
 };
 
