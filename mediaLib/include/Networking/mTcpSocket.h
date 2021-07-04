@@ -17,10 +17,19 @@ struct mTcpConnectionInfo : mIPAddress
 
   inline mFUNCTION(ToString, OUT char *string, const size_t maxLength) const
   {
+    mFUNCTION_SETUP();
+
     if (isIPv6)
-      return mSprintf(string, maxLength, "[%02" PRIx8 "%02" PRIx8 ":%02" PRIx8 "%02" PRIx8 ":%02" PRIx8 "%02" PRIx8 ":%02" PRIx8 "%02" PRIx8 ":%02" PRIx8 "%02" PRIx8 ":%02" PRIx8 "%02" PRIx8 ":%02" PRIx8 "%02" PRIx8 ":%02" PRIx8 "%02" PRIx8 "]:" PRIu16, ipv6[0], ipv6[1], ipv6[2], ipv6[3], ipv6[4], ipv6[5], ipv6[6], ipv6[7], ipv6[8], ipv6[9], ipv6[10], ipv6[11], ipv6[12], ipv6[13], ipv6[14], ipv6[15], port);
+    {
+      char buffer[4 * 8 + 7 + 1];
+      mERROR_CHECK(mIPAddress_ToString(*this, buffer, mARRAYSIZE(buffer)));
+
+      mRETURN_RESULT(mFormatTo(string, maxLength, '[', buffer, "]:", port));
+    }
     else
-      return mSprintf(string, maxLength, "%" PRIu8 ".%" PRIu8 ".%" PRIu8 ".%" PRIu8 ":" PRIu16, ipv4[0], ipv4[1], ipv4[2], ipv4[3], port);
+    {
+      mRETURN_RESULT(mFormatTo(string, maxLength, ipv4[0], '.', ipv4[1], '.', ipv4[2], '.', ipv4[3], ':', port));
+    }
   }
 
   inline bool operator == (const mTcpConnectionInfo &other)

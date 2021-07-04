@@ -135,7 +135,7 @@ mFUNCTION(mAllocator_Allocate, IN OPTIONAL mAllocator *pAllocator, OUT T **ppDat
   mDEFER_CALL_ON_ERROR(ppData, mSetToNullptr);
 
 #ifdef mDEBUG_MEMORY_ALLOCATIONS_PRINT_ALLOCATIONS
-  mLOG("Allocating %" PRIu64 " bytes for %" PRIu64 " elements of type %s (to zero).\n", sizeof(T) * count, count, typeid(T).name());
+  mLOG("Allocating ", sizeof(T) * count, " bytes for ", count, " elements of type ", typeid(T).name(), " (to zero).\n");
 #endif
 
   if (pAllocator == nullptr)
@@ -169,7 +169,7 @@ mFUNCTION(mAllocator_AllocateZero, IN OPTIONAL mAllocator *pAllocator, OUT T **p
   mDEFER_CALL_ON_ERROR(ppData, mSetToNullptr);
 
 #ifdef mDEBUG_MEMORY_ALLOCATIONS_PRINT_ALLOCATIONS
-  mLOG("Allocating %" PRIu64 " bytes for %" PRIu64 " elements of type %s.\n", sizeof(T) * count, count, typeid(T).name());
+  mLOG("Allocating ", sizeof(T) * count, " bytes for ", count, " elements of type ", typeid(T).name(), ".\n");
 #endif
 
   if (pAllocator == nullptr)
@@ -212,7 +212,7 @@ inline mFUNCTION(mAllocator_Reallocate, IN OPTIONAL mAllocator *pAllocator, OUT 
 #endif
 
 #ifdef mDEBUG_MEMORY_ALLOCATIONS_PRINT_ALLOCATIONS
-  mLOG("Reallocating %" PRIu64 " bytes for %" PRIu64 " elements of type %s.\n", sizeof(T) * count, count, typeid(T).name());
+  mLOG("Reallocating ", sizeof(T) * count, " bytes for ", count, " elements of type ", typeid(T).name(), ".\n");
 #endif
 
   mSTATIC_ASSERT(mIsTriviallyMemoryMovable<T>::value, "This type is not trivially memory movable.");
@@ -249,7 +249,7 @@ inline mFUNCTION(mAllocator_FreePtr, IN OPTIONAL mAllocator *pAllocator, IN_OUT 
   mDEFER_CALL(ppData, mSetToNullptr);
 
 #ifdef mDEBUG_MEMORY_ALLOCATIONS_PRINT_ALLOCATIONS
-  mLOG("Freeing element(s) of type %s.\n", typeid(T).name());
+  mLOG("Freeing element(s) of type ", typeid(T).name(), ".\n");
 #endif
 
   if (*ppData == nullptr)
@@ -284,7 +284,7 @@ inline mFUNCTION(mAllocator_Free, IN OPTIONAL mAllocator *pAllocator, IN T *pDat
 #endif
 
 #ifdef mDEBUG_MEMORY_ALLOCATIONS_PRINT_ALLOCATIONS
-  mLOG("Freeing element(s) of type %s.\n", typeid(T).name());
+  mLOG("Freeing element(s) of type ", typeid(T).name(), ".\n");
 #endif
 
   mERROR_IF(pAllocator != nullptr && (!pAllocator->initialized || pAllocator->pFree == nullptr), mR_ResourceInvalid);

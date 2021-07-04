@@ -97,13 +97,20 @@ extern thread_local bool g_mResult_silent;
   #define mDEBUG_BREAK()
 #endif
 
-void mDebugOut(const char *format, ...);
+void mDebugOut(const char *text);
+
+template <typename ...Args>
+inline void mDebugOut(Args && ... args)
+{
+  mDebugOut(mFormat(args...));
+}
+
 void mPrintError(char *function, char *file, const int32_t line, const mResult error, const char *expression);
 
 #ifdef GIT_BUILD
-#define mRESULT_PRINT_FUNCTION_TITLE nullptr
-#define mRESULT_PRINT_DEBUG_STRINGIFY(x) nullptr
-#define mRESULT_PRINT_DEBUG_STRINGIFY_RETURN_RESULT(result) nullptr
+#define mRESULT_PRINT_FUNCTION_TITLE ""
+#define mRESULT_PRINT_DEBUG_STRINGIFY(x) reinterpret_cast<const char *>(nullptr)
+#define mRESULT_PRINT_DEBUG_STRINGIFY_RETURN_RESULT(result) reinterpret_cast<const char *>(nullptr)
 #else
 #define mRESULT_PRINT_FUNCTION_TITLE __FUNCTION__
 #define mRESULT_PRINT_DEBUG_STRINGIFY(x) #x

@@ -200,13 +200,13 @@ mFUNCTION(mColourLookup_WriteToFile, mPtr<mColourLookup> &colourLookup, const mS
   mERROR_CHECK(mString_Create(&tempText, startText, sizeof(startText), &mDefaultTempAllocator));
   mERROR_CHECK(mFileWriter_Write(fileWriter, tempText.c_str(), tempText.bytes - 1));
 
-  mERROR_CHECK(mString_CreateFormat(&tempText, tempText.pAllocator, "%" PRIu64 "\r\n\r\n", colourLookup->resolution.x));
+  mERROR_CHECK(mString_Format(&tempText, tempText.pAllocator, colourLookup->resolution.x, "\r\n\r\n"));
   mERROR_CHECK(mFileWriter_Write(fileWriter, tempText.c_str(), tempText.bytes - 1));
 
   for (size_t i = 0; i < colourLookup->resolution.x * colourLookup->resolution.y * colourLookup->resolution.z; i++)
   {
     const mVec3f &colour = colourLookup->pData[i];
-    mERROR_CHECK(mString_CreateFormat(&tempText, tempText.pAllocator, "%f %f %f\r\n", colour.x, colour.y, colour.z));
+    mERROR_CHECK(mString_Format(&tempText, tempText.pAllocator, colour.x, ' ', colour.y, ' ', colour.z, "\r\n"));
     mERROR_CHECK(mFileWriter_Write(fileWriter, tempText.c_str(), tempText.bytes - 1));
   }
 

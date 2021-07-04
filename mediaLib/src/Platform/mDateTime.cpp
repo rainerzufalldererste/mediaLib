@@ -19,7 +19,7 @@ mFUNCTION(mGetCurrentDate, OUT mString *pDate)
   wchar_t localDate[0xFF];
   localDate[0] = 0;
 
-  mERROR_IF(0 == GetDateFormatW(LOCALE_USER_DEFAULT, DATE_SHORTDATE, &systemtime, nullptr, localDate, mARRAYSIZE(localDate)), mR_InternalError);
+  mERROR_IF(0 == GetDateFormatW(LOCALE_USER_DEFAULT, DATE_SHORTDATE, &systemtime, nullptr, localDate, (int32_t)mARRAYSIZE(localDate)), mR_InternalError);
   mERROR_CHECK(mString_Create(pDate, localDate, mARRAYSIZE(localDate), pDate->pAllocator));
 
   mRETURN_SUCCESS();
@@ -59,7 +59,7 @@ mFUNCTION(mGetCurrentTime, OUT mString *pTime)
   wchar_t localTime[0xFF];
   localTime[0] = 0;
 
-  mERROR_IF(0 == GetTimeFormatW(LOCALE_USER_DEFAULT, TIME_NOSECONDS, &systemtime, nullptr, localTime, mARRAYSIZE(localTime)), mR_InternalError);
+  mERROR_IF(0 == GetTimeFormatW(LOCALE_USER_DEFAULT, TIME_NOSECONDS, &systemtime, nullptr, localTime, (int32_t)mARRAYSIZE(localTime)), mR_InternalError);
   mERROR_CHECK(mString_Create(pTime, localTime, mARRAYSIZE(localTime), pTime->pAllocator));
 
   mRETURN_SUCCESS();
@@ -98,7 +98,7 @@ mFUNCTION(mGetCurrentDateTime, OUT mString *pDateTime)
 
   size_t chars = 0;
 
-  mERROR_IF(0 == (chars = GetDateFormatW(LOCALE_USER_DEFAULT, DATE_SHORTDATE, &systemtime, nullptr, localDateTime, mARRAYSIZE(localDateTime))), mR_InternalError);
+  mERROR_IF(0 == (chars = GetDateFormatW(LOCALE_USER_DEFAULT, DATE_SHORTDATE, &systemtime, nullptr, localDateTime, (int32_t)mARRAYSIZE(localDateTime))), mR_InternalError);
   localDateTime[chars - 1] = ' ';
   localDateTime[chars] = '\0';
   mERROR_IF(0 == GetTimeFormatW(LOCALE_USER_DEFAULT, TIME_NOSECONDS, &systemtime, nullptr, localDateTime + chars, (int32_t)(mARRAYSIZE(localDateTime) - chars)), mR_InternalError);

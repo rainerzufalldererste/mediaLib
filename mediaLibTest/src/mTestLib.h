@@ -13,7 +13,7 @@ static_assert(false, "mDEBUG_TESTS has to be turned off for Buildserver builds."
 #endif
 
 void mTest_PrintTestFailure(const char *text);
-#define mTEST_PRINT_FAILURE(...) mPrintPrepare(&mTest_PrintTestFailure, __VA_ARGS__)
+#define mTEST_PRINT_FAILURE(...) mPrintToFunction(&mTest_PrintTestFailure, __VA_ARGS__)
 
 #ifdef mDEBUG_TESTS
 
@@ -38,7 +38,7 @@ mTest_TestInit mTest_CreateTestInit(const char *component, const char *testCase,
 
 #define mTEST_FAIL() \
   do \
-  { mTEST_PRINT_FAILURE("Test Failed\n at " __FUNCTION__ "\n in File '" __FILE__ "' Line %" PRIi32 ".\n", __LINE__); \
+  { mTEST_PRINT_FAILURE("Test Failed\n at " __FUNCTION__ "\n in File '" __FILE__ "' Line " mSTRINGIFY_VALUE(__LINE__) ".\n"); \
     __debugbreak(); \
       mTEST_RETURN_FAILURE(); \
   } while(0)
@@ -49,7 +49,7 @@ mTest_TestInit mTest_CreateTestInit(const char *component, const char *testCase,
     auto b_ = (b); \
     \
     if (!(a_ == b_)) \
-    { mTEST_PRINT_FAILURE("Test Failed\n on '" #a " == " #b "'\n at " __FUNCTION__ "\n in File '" __FILE__ "' Line %" PRIi32 ".\n", __LINE__); \
+    { mTEST_PRINT_FAILURE("Test Failed\n on '" #a " == " #b "'\n at " __FUNCTION__ "\n in File '" __FILE__ "' Line " mSTRINGIFY_VALUE(__LINE__) ".\n"); \
       __debugbreak(); \
       mTEST_RETURN_FAILURE(); \
     } \
@@ -64,7 +64,7 @@ mTest_TestInit mTest_CreateTestInit(const char *component, const char *testCase,
     auto b_ = (b); \
     \
     if (!(a_ != b_)) \
-    { mTEST_PRINT_FAILURE("Test Failed\n on '" #a " != " #b "'\n at " __FUNCTION__ "\n in File '" __FILE__ "' Line %" PRIi32 ".\n", __LINE__); \
+    { mTEST_PRINT_FAILURE("Test Failed\n on '" #a " != " #b "'\n at " __FUNCTION__ "\n in File '" __FILE__ "' Line " mSTRINGIFY_VALUE(__LINE__) ".\n"); \
       __debugbreak(); \
       mTEST_RETURN_FAILURE(); \
     } \
@@ -75,7 +75,7 @@ mTest_TestInit mTest_CreateTestInit(const char *component, const char *testCase,
   { const mResult __result = (functionCall); \
     \
     if (mFAILED(__result)) \
-    { mTEST_PRINT_FAILURE("Test Failed on 'mFAILED(%s)'\n with Result '%s' [0x%" PRIx64 "]\n at " __FUNCTION__ "\n in File '" __FILE__ "' Line %" PRIi32 ".\n", #functionCall, mResult_ToString(__result), (uint64_t)__result, __LINE__); \
+    { mTEST_PRINT_FAILURE("Test Failed on 'mFAILED(" #functionCall ")'\n with Result '", mResult_ToString(__result), "' [0x", mFUInt<mFHex>(__result), "]\n at " __FUNCTION__ "\n in File '" __FILE__ "' Line " mSTRINGIFY_VALUE(__LINE__) ".\n"); \
       mDEBUG_BREAK(); \
       mTEST_RETURN_FAILURE(); \
     } \

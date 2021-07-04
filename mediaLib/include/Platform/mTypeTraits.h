@@ -120,4 +120,57 @@ struct mFnWrapper
 
 #define mFN_WRAPPER(fn) mFnWrapper<decltype((fn)), (fn)>
 
+constexpr inline int64_t mIsEquivalentIntegerTypeSigned(int64_t) { return true; }
+constexpr inline int32_t mIsEquivalentIntegerTypeSigned(int32_t) { return true; }
+constexpr inline long mIsEquivalentIntegerTypeSigned(long) { return true; }
+constexpr inline int16_t mIsEquivalentIntegerTypeSigned(int16_t) { return true; }
+constexpr inline int8_t mIsEquivalentIntegerTypeSigned(int8_t) { return true; }
+constexpr inline uint64_t mIsEquivalentIntegerTypeSigned(uint64_t) { return false; }
+constexpr inline uint32_t mIsEquivalentIntegerTypeSigned(uint32_t) { return false; }
+constexpr inline unsigned long mIsEquivalentIntegerTypeSigned(unsigned long) { return false; }
+constexpr inline uint16_t mIsEquivalentIntegerTypeSigned(uint16_t) { return false; }
+constexpr inline uint8_t mIsEquivalentIntegerTypeSigned(uint8_t) { return false; }
+
+template <typename T>
+struct mEnumEquivalentIntegerType
+{
+  typedef decltype(mIsEquivalentIntegerTypeSigned((T)0)) type;
+};
+
+template <typename T>
+struct mUnsignedEquivalent
+{
+
+};
+
+template <>
+struct mUnsignedEquivalent<int64_t>
+{
+  typedef uint64_t type;
+};
+
+template <>
+struct mUnsignedEquivalent<int32_t>
+{
+  typedef uint32_t type;
+};
+
+template <>
+struct mUnsignedEquivalent<long>
+{
+  typedef unsigned long type;
+};
+
+template <>
+struct mUnsignedEquivalent<int16_t>
+{
+  typedef uint16_t type;
+};
+
+template <>
+struct mUnsignedEquivalent<int8_t>
+{
+  typedef uint8_t type;
+};
+
 #endif // mTypeTraits_h__

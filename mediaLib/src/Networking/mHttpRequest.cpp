@@ -129,7 +129,7 @@ mFUNCTION(mHttpRequest_AddHeadParameter, mPtr<mHttpRequest> &httpRequest, const 
     {
       for (size_t i = 0; i < _char.characterSize; i++)
       {
-        mERROR_CHECK(mSprintf(encodedChar + 1, sizeof(encodedChar) - 1, "%02" PRIX8, (uint8_t)_char.character[i]));
+        mERROR_CHECK(mFormatTo(encodedChar + 1, sizeof(encodedChar) - 1, mFX(Min(2), Fill0)((uint8_t)_char.character[i])));
         mERROR_CHECK(mString_Append(httpRequest->url, encodedChar, sizeof(encodedChar)));
       }
     }
@@ -149,7 +149,7 @@ mFUNCTION(mHttpRequest_AddHeadParameter, mPtr<mHttpRequest> &httpRequest, const 
       {
         for (size_t i = 0; i < _char.characterSize; i++)
         {
-          mERROR_CHECK(mSprintf(encodedChar + 1, sizeof(encodedChar) - 1, "%02" PRIX8, (uint8_t)_char.character[i]));
+          mERROR_CHECK(mFormatTo(encodedChar + 1, sizeof(encodedChar) - 1, mFX(Min(2), Fill0)((uint8_t)_char.character[i])));
           mERROR_CHECK(mString_Append(httpRequest->url, encodedChar, sizeof(encodedChar)));
         }
       }

@@ -52,7 +52,7 @@ mTEST(mJsonWriter, TestCleanupMString)
   {
     mString string;
     mDEFER_CALL(&string, mString_Destroy);
-    mTEST_ASSERT_SUCCESS(mString_CreateFormat(&string, pAllocator, "%" PRIu64, i));
+    mTEST_ASSERT_SUCCESS(mString_Format(&string, pAllocator, i));
     mTEST_ASSERT_SUCCESS(mJsonWriter_AddArrayValue(jsonWriter, string));
   }
 

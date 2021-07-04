@@ -91,7 +91,7 @@ inline mFUNCTION(mRefPool_AddEmpty, mPtr<mRefPool<T>> &refPool, OUT mPtr<T> *pIn
   void *pRefPool = refPool.GetPointer();
 
 #if defined (_DEBUG)
-#define mRefPool_Internal_ERROR_CHECK(expr) do { mResult __result = (expr); mASSERT_DEBUG(mSUCCEEDED(__result), "Assertion Failed! [Result is %" PRIi32 "]", __result); if (mFAILED(__result)) return; } while (0)
+#define mRefPool_Internal_ERROR_CHECK(expr) do { mResult __result = (expr); mASSERT_DEBUG(mSUCCEEDED(__result), mFormat("Assertion Failed! [Result is ", (int32_t)__result ,"]")); if (mFAILED(__result)) return; } while (0)
 #else
 #define mRefPool_Internal_ERROR_CHECK(expr) do { if (mFAILED(expr)) return; } while (0)
 #endif
@@ -501,7 +501,7 @@ inline bool mRefPoolIterator<T>::operator != (const typename mRefPoolIterator<T>
 {
   for (blockIndex; blockIndex < pPool->size; ++blockIndex)
   {
-    for (; index < mBYTES_OF(pPool->pIndexes[0]); ++index)
+    for (; index < mBITS_OF(pPool->pIndexes[0]); ++index)
     {
       if (pPool->pIndexes[blockIndex] & flag)
       {
@@ -509,7 +509,7 @@ inline bool mRefPoolIterator<T>::operator != (const typename mRefPoolIterator<T>
 
         if (mFAILED(result))
         {
-          mFAIL_DEBUG("mChunkedArray_PointerAt failed in mRefPoolIterator::operator != with errorcode %" PRIu64 ".", (uint64_t)result);
+          mFAIL_DEBUG(mFormat("mChunkedArray_PointerAt failed in mRefPoolIterator::operator != with errorcode 0x", mFUInt<mFHex>(result), "."));
           return false;
         }
 
@@ -578,7 +578,7 @@ inline bool mRefPoolConstIterator<T>::operator != (const typename mRefPoolConstI
 {
   for (blockIndex; blockIndex < pPool->size; ++blockIndex)
   {
-    for (; index < mBYTES_OF(pPool->pIndexes[0]); ++index)
+    for (; index < mBITS_OF(pPool->pIndexes[0]); ++index)
     {
       if (pPool->pIndexes[blockIndex] & flag)
       {
@@ -586,7 +586,7 @@ inline bool mRefPoolConstIterator<T>::operator != (const typename mRefPoolConstI
 
         if (mFAILED(result))
         {
-          mFAIL_DEBUG("mChunkedArray_PointerAt failed in mRefPoolConstIterator::operator != with errorcode %" PRIu64 ".", (uint64_t)result);
+          mFAIL_DEBUG(mFormat("mChunkedArray_PointerAt failed in mRefPoolConstIterator::operator != with errorcode 0x", mFUInt<mFHex>(result), "."));
           return false;
         }
 

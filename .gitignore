@@ -274,3 +274,4 @@ mediaLib/lib/*.idb
 enc_temp_folder/*
 *.lastcode*
 * Advisor Results */
+*/.opencppcov/*

@@ -302,14 +302,14 @@ mTEST(mPool, TestClear)
     for (size_t j = 0; j < size; j++)
     {
       mString data;
-      mTEST_ASSERT_SUCCESS(mString_CreateFormat(&data, pAllocator, "#TEST %" PRIu64, j));
+      mTEST_ASSERT_SUCCESS(mString_Format(&data, pAllocator, "#TEST ", j));
 
       size_t index;
       mTEST_ASSERT_SUCCESS(mPool_Add(pool, &data, &index));
 
       mString *pData = nullptr;
       mTEST_ASSERT_SUCCESS(mPool_PointerAt(pool, index, &pData));
-      mTEST_ASSERT_SUCCESS(mString_CreateFormat(pData, pAllocator, "%" PRIu64, index));
+      mTEST_ASSERT_SUCCESS(mString_Format(pData, pAllocator, index));
 
       mTEST_ASSERT_TRUE(index < size);
     }
@@ -329,7 +329,7 @@ mTEST(mPool, TestClear)
       mTEST_ASSERT_SUCCESS(mPool_RemoveAt(pool, j, &data));
 
       mString cmpData;
-      mTEST_ASSERT_SUCCESS(mString_CreateFormat(&cmpData, pAllocator, "%" PRIu64, j));
+      mTEST_ASSERT_SUCCESS(mString_Format(&cmpData, pAllocator, j));
 
       mTEST_ASSERT_EQUAL(data, cmpData);
     }
@@ -341,7 +341,7 @@ mTEST(mPool, TestClear)
     for (const auto &&_item : pool->Iterate())
     {
       mString cmpData;
-      mTEST_ASSERT_SUCCESS(mString_CreateFormat(&cmpData, pAllocator, "%" PRIu64, _item.index));
+      mTEST_ASSERT_SUCCESS(mString_Format(&cmpData, pAllocator, _item.index));
 
       mTEST_ASSERT_EQUAL((*_item), cmpData);
     }
@@ -349,14 +349,14 @@ mTEST(mPool, TestClear)
     for (size_t j = expectedCount; j < size; j++)
     {
       mString data;
-      mTEST_ASSERT_SUCCESS(mString_CreateFormat(&data, pAllocator, "#TEST %" PRIu64, j));
+      mTEST_ASSERT_SUCCESS(mString_Format(&data, pAllocator, "#TEST ", j));
 
       size_t index;
       mTEST_ASSERT_SUCCESS(mPool_Add(pool, &data, &index));
 
       mString *pData = nullptr;
       mTEST_ASSERT_SUCCESS(mPool_PointerAt(pool, index, &pData));
-      mTEST_ASSERT_SUCCESS(mString_CreateFormat(pData, pAllocator, "%" PRIu64, index));
+      mTEST_ASSERT_SUCCESS(mString_Format(pData, pAllocator, index));
 
       mTEST_ASSERT_TRUE(index < size);
     }
@@ -368,7 +368,7 @@ mTEST(mPool, TestClear)
     for (const auto &&_item : pool->Iterate())
     {
       mString cmpData;
-      mTEST_ASSERT_SUCCESS(mString_CreateFormat(&cmpData, pAllocator, "%" PRIu64, _item.index));
+      mTEST_ASSERT_SUCCESS(mString_Format(&cmpData, pAllocator, _item.index));
 
       mTEST_ASSERT_EQUAL((*_item), cmpData);
     }

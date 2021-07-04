@@ -244,7 +244,7 @@ mTEST(mChunkedArray, TestGenericUsage)
     for (size_t i = 0; i < size; i++)
     {
       mString data;
-      mTEST_ASSERT_SUCCESS(mString_CreateFormat(&data, pAllocator, "%" PRIu64, i));
+      mTEST_ASSERT_SUCCESS(mString_Format(&data, pAllocator, i));
       mTEST_ASSERT_SUCCESS(mChunkedArray_PushBack(chunkedArray, &data));
     }
 
@@ -263,7 +263,7 @@ mTEST(mChunkedArray, TestGenericUsage)
 
     for (size_t i = count; i < size; i++)
     {
-      mTEST_ASSERT_SUCCESS(mString_CreateFormat(&data, pAllocator, "%" PRIu64, i));
+      mTEST_ASSERT_SUCCESS(mString_Format(&data, pAllocator, i));
 
       size_t index;
       mTEST_ASSERT_SUCCESS(mChunkedArray_Push(chunkedArray, &data, &index));
@@ -291,7 +291,7 @@ mTEST(mChunkedArray, TestGenericUsage)
 
     for (size_t i = count; i < size; i++)
     {
-      mTEST_ASSERT_SUCCESS(mString_CreateFormat(&data, pAllocator, "%" PRIu64, i));
+      mTEST_ASSERT_SUCCESS(mString_Format(&data, pAllocator, i));
 
       mTEST_ASSERT_SUCCESS(mChunkedArray_PushBack(chunkedArray, &data));
       mTEST_ASSERT_SUCCESS(mChunkedArray_GetCount(chunkedArray, &expectedCount));
@@ -389,7 +389,7 @@ mTEST(mChunkedArray, TestClear)
       for (size_t j = 0; j < size; j++)
       {
         mString data;
-        mTEST_ASSERT_SUCCESS(mString_CreateFormat(&data, pAllocator, "%" PRIu64, j));
+        mTEST_ASSERT_SUCCESS(mString_Format(&data, pAllocator, j));
         mTEST_ASSERT_SUCCESS(mChunkedArray_PushBack(chunkedArray, &data));
       }
 
@@ -408,7 +408,7 @@ mTEST(mChunkedArray, TestClear)
 
       for (size_t j = count; j < size; j++)
       {
-        mTEST_ASSERT_SUCCESS(mString_CreateFormat(&data, pAllocator, "%" PRIu64, j));
+        mTEST_ASSERT_SUCCESS(mString_Format(&data, pAllocator, j));
 
         size_t index;
         mTEST_ASSERT_SUCCESS(mChunkedArray_Push(chunkedArray, &data, &index));
@@ -436,7 +436,7 @@ mTEST(mChunkedArray, TestClear)
 
       for (size_t j = count; j < size; j++)
       {
-        mTEST_ASSERT_SUCCESS(mString_CreateFormat(&data, pAllocator, "%" PRIu64, j));
+        mTEST_ASSERT_SUCCESS(mString_Format(&data, pAllocator, j));
 
         mTEST_ASSERT_SUCCESS(mChunkedArray_PushBack(chunkedArray, &data));
         mTEST_ASSERT_SUCCESS(mChunkedArray_GetCount(chunkedArray, &expectedCount));

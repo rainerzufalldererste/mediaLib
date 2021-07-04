@@ -22,10 +22,10 @@ mTest_TestInit mTest_CreateTestInit(const char *component, const char *testCase,
 void mTest_PrintTestFailure(const char *text)
 {
   mSetConsoleColour(mCC_BrightYellow, mCC_DarkRed);
-  fputs("\n[ERROR]", stdout);
+  mPrintToOutputArray("\n[ERROR]");
   mSetConsoleColour(mCC_BrightRed, mCC_Black);
-  fputs(" ", stdout);
-  fputs(text, stdout);
+  mPrintToOutputArray(" ");
+  mPrintToOutput(text);
   mResetConsoleColour();
 }
 
@@ -55,7 +55,7 @@ mFUNCTION(mTestLib_RunAllTests, int *pArgc, char **pArgv)
   std::vector<std::tuple<std::string, std::string, mResult>> failedTests;
 
   mSetConsoleColour(mCC_BrightBlue, mCC_Black);
-  fputs("[START OF TESTS]\n\n", stdout);
+  mPrintToOutputArray("[START OF TESTS]\n\n");
   mResetConsoleColour();
 
   const auto &beforeTests = std::chrono::high_resolution_clock::now();
@@ -66,7 +66,7 @@ mFUNCTION(mTestLib_RunAllTests, int *pArgc, char **pArgv)
     ++testCount;
 
     mSetConsoleColour(mCC_BrightGreen, mCC_Black);
-    fputs("[RUNNING TEST]", stdout);
+    mPrintToOutputArray("[RUNNING TEST]");
     mResetConsoleColour();
     printf("  %s : %s\n", std::get<0>(test).c_str(), std::get<1>(test).c_str());
     printf("\r(Test %" PRIu64 " / %" PRIu64 ")", testCount, mTest_TestContainer().size());
@@ -80,12 +80,12 @@ mFUNCTION(mTestLib_RunAllTests, int *pArgc, char **pArgv)
     if (mSUCCEEDED(result))
     {
       mSetConsoleColour(mCC_BrightGreen, mCC_Black);
-      fputs("\r[TEST PASSED ]", stdout);
+      mPrintToOutputArray("\r[TEST PASSED ]");
     }
     else
     {
       mSetConsoleColour(mCC_BrightYellow, mCC_DarkRed);
-      fputs("\r[TEST FAILED ]", stdout);
+      mPrintToOutputArray("\r[TEST FAILED ]");
       failedTests.push_back(make_tuple(std::get<0>(test), std::get<1>(test), result));
     }
 
@@ -96,7 +96,7 @@ mFUNCTION(mTestLib_RunAllTests, int *pArgc, char **pArgv)
   const size_t afterTestsMilliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - beforeTests).count();
 
   mSetConsoleColour(mCC_BrightBlue, mCC_Black);
-  fputs("[END OF TESTS]\n", stdout);
+  mPrintToOutputArray("[END OF TESTS]\n");
   mResetConsoleColour();
 
   if (failedTests.size() == 0)
@@ -116,7 +116,7 @@ mFUNCTION(mTestLib_RunAllTests, int *pArgc, char **pArgv)
     for (const auto &failedTest : failedTests)
     {
       mSetConsoleColour(mCC_DarkGray, mCC_Black);
-      fputs(" ## ", stdout);
+      mPrintToOutputArray(" ## ");
       mResetConsoleColour();
 
       printf("%s : %s with %s (0x%" PRIx64 ")\n", std::get<0>(failedTest).c_str(), std::get<1>(failedTest).c_str(), mResult_ToString(std::get<2>(failedTest)), (uint64_t)std::get<2>(failedTest));
@@ -245,11 +245,11 @@ mFUNCTION(mTestAllocator_Destroy, IN mAllocator *pAllocator, IN void *pUserData)
   if ((reinterpret_cast<mTestAllocatorUserData *>(pUserData))->allocationCount != 0)
   {
     mAllocatorDebugging_PrintRemainingMemoryAllocations(pAllocator);
-    mFAIL("Memory leak detected: not all memory allocated by this allocator has been released (%" PRIu64 " Allocations).", (reinterpret_cast<mTestAllocatorUserData *>(pUserData))->allocationCount);
+    mFAIL(mFormat("Memory leak detected: not all memory allocated by this allocator has been released (", (reinterpret_cast<mTestAllocatorUserData *>(pUserData))->allocationCount, " Allocations)."));
   }
 #else
   mUnused(pAllocator);
-  mASSERT((reinterpret_cast<mTestAllocatorUserData *>(pUserData))->allocationCount == 0, "Memory leak detected: not all memory allocated by this allocator has been released (%" PRIu64 " Allocations).", (reinterpret_cast<mTestAllocatorUserData *>(pUserData))->allocationCount);
+  mASSERT((reinterpret_cast<mTestAllocatorUserData *>(pUserData))->allocationCount == 0, mFormat("Memory leak detected: not all memory allocated by this allocator has been released (", (reinterpret_cast<mTestAllocatorUserData *>(pUserData))->allocationCount, " Allocations)."));
 #endif
 
   mERROR_CHECK(mFree(pUserData));

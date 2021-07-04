@@ -391,7 +391,7 @@ mFUNCTION(mFile_DeleteFolder, const mString &folderPath)
   HRESULT hr = S_OK;
 
   wchar_t absolutePath[MAX_PATH];
-  const DWORD length = GetFullPathNameW(wdirectoryName, mARRAYSIZE(absolutePath), absolutePath, nullptr);
+  const DWORD length = GetFullPathNameW(wdirectoryName, (DWORD)mARRAYSIZE(absolutePath), absolutePath, nullptr);
   mUnused(length);
 
   IShellItem *pItem = nullptr;
@@ -819,7 +819,7 @@ mFUNCTION(mFile_GetTempDirectory, OUT mString *pString)
   mERROR_IF(pString == nullptr, mR_ArgumentNull);
   
   wchar_t buffer[MAX_PATH + 1];
-  const DWORD length = GetTempPathW(mARRAYSIZE(buffer), buffer);
+  const DWORD length = GetTempPathW((DWORD)mARRAYSIZE(buffer), buffer);
 
   mERROR_IF(length == 0, mR_InternalError); // This would theoretically set GetLastError() to some error code, however msdn doesn't list any possible error codes.
 
@@ -971,7 +971,7 @@ mFUNCTION(mFile_GetWorkingDirectory, OUT mString *pWorkingDirectory)
 
   wchar_t directory[MAX_PATH];
 
-  DWORD result = GetCurrentDirectoryW(mARRAYSIZE(directory), directory);
+  DWORD result = GetCurrentDirectoryW((DWORD)mARRAYSIZE(directory), directory);
 
   if (result == 0)
   {
@@ -983,7 +983,7 @@ mFUNCTION(mFile_GetWorkingDirectory, OUT mString *pWorkingDirectory)
 
   wchar_t fullPathName[MAX_PATH];
 
-  result = GetFullPathNameW(directory, mARRAYSIZE(fullPathName), fullPathName, nullptr);
+  result = GetFullPathNameW(directory, (DWORD)mARRAYSIZE(fullPathName), fullPathName, nullptr);
 
   if (result == 0)
   {
@@ -1026,7 +1026,7 @@ mFUNCTION(mFile_GetCurrentApplicationFilePath, OUT mString *pAppDirectory)
 
   wchar_t filePath[MAX_PATH];
 
-  const DWORD result = GetModuleFileNameW(nullptr, filePath, mARRAYSIZE(filePath));
+  const DWORD result = GetModuleFileNameW(nullptr, filePath, (DWORD)mARRAYSIZE(filePath));
 
   if (result != 0)
   {
@@ -1136,7 +1136,7 @@ mFUNCTION(mFile_GetDirectoryContents, const mString &directoryPath, const mStrin
   mERROR_CHECK(mString_ToWideString(actualFolderPath, folderPath, mARRAYSIZE(folderPath)));
 
   wchar_t absolutePath[MAX_PATH];
-  const DWORD length = GetFullPathNameW(folderPath, mARRAYSIZE(absolutePath), absolutePath, nullptr);
+  const DWORD length = GetFullPathNameW(folderPath, (DWORD)mARRAYSIZE(absolutePath), absolutePath, nullptr);
   mERROR_IF(length == 0, mR_InternalError);
 
   if (*pFiles == nullptr)
@@ -1359,7 +1359,7 @@ mFUNCTION(mFile_GetDrives, OUT mPtr<mQueue<mDriveInfo>> *pDrives, IN mAllocator 
     mERROR_CHECK(mQueue_Clear(*pDrives));
 
   wchar_t driveLabels[MAX_PATH];
-  const size_t length = GetLogicalDriveStringsW(mARRAYSIZE(driveLabels), driveLabels);
+  const size_t length = GetLogicalDriveStringsW((DWORD)mARRAYSIZE(driveLabels), driveLabels);
   
   if (length == 0 || length >= mARRAYSIZE(driveLabels))
   {
@@ -1381,7 +1381,7 @@ mFUNCTION(mFile_GetDrives, OUT mPtr<mQueue<mDriveInfo>> *pDrives, IN mAllocator 
 
     wchar_t driveName[MAX_PATH + 1];
     wchar_t volumeTypeName[MAX_PATH + 1]; // FAT, NTFS, ...
-    const BOOL result = GetVolumeInformationW(nextDriveLabel, driveName, mARRAYSIZE(driveName), nullptr, nullptr, nullptr, volumeTypeName, mARRAYSIZE(volumeTypeName));
+    const BOOL result = GetVolumeInformationW(nextDriveLabel, driveName, (DWORD)mARRAYSIZE(driveName), nullptr, nullptr, nullptr, volumeTypeName, (DWORD)mARRAYSIZE(volumeTypeName));
 
     if (result)
       mERROR_CHECK(mString_Create(&driveInfo.driveName, driveName, pAllocator));
@@ -1437,7 +1437,7 @@ mFUNCTION(mFile_GetDrives, OUT mPtr<mQueue<mString>> *pDrives, IN mAllocator *pA
     mERROR_CHECK(mQueue_Clear(*pDrives));
 
   wchar_t driveLabels[MAX_PATH];
-  const size_t length = GetLogicalDriveStringsW(mARRAYSIZE(driveLabels), driveLabels);
+  const size_t length = GetLogicalDriveStringsW((DWORD)mARRAYSIZE(driveLabels), driveLabels);
 
   if (length == 0 || length >= mARRAYSIZE(driveLabels))
   {
@@ -1500,7 +1500,7 @@ mFUNCTION(mFile_GetAbsoluteDirectoryPath, OUT mString *pAbsolutePath, const mStr
   mERROR_CHECK(mString_ToWideString(directoryPath, folderPath, mARRAYSIZE(folderPath)));
 
   wchar_t absolutePath[MAX_PATH];
-  const DWORD length = GetFullPathNameW(folderPath, mARRAYSIZE(absolutePath), absolutePath, nullptr);
+  const DWORD length = GetFullPathNameW(folderPath, (DWORD)mARRAYSIZE(absolutePath), absolutePath, nullptr);
 
   if (length == 0)
   {
@@ -1526,7 +1526,7 @@ mFUNCTION(mFile_GetAbsoluteFilePath, OUT mString *pAbsolutePath, const mString &
   mERROR_CHECK(mString_ToWideString(filePath, wfilepath, mARRAYSIZE(wfilepath)));
 
   wchar_t absolutePath[MAX_PATH];
-  const DWORD length = GetFullPathNameW(wfilepath, mARRAYSIZE(absolutePath), absolutePath, nullptr);
+  const DWORD length = GetFullPathNameW(wfilepath, (DWORD)mARRAYSIZE(absolutePath), absolutePath, nullptr);
 
   if (length == 0)
   {
@@ -1822,7 +1822,7 @@ mFUNCTION(mFile_GetDriveFromFilePath, OUT mString *pDrivePath, const mString &fi
 
   wchar_t volumePath[MAX_PATH];
 
-  if (0 == GetVolumePathNameW(wfilepath, volumePath, mARRAYSIZE(volumePath)))
+  if (0 == GetVolumePathNameW(wfilepath, volumePath, (DWORD)mARRAYSIZE(volumePath)))
   {
     const DWORD error = GetLastError();
     mUnused(error);
@@ -1847,7 +1847,7 @@ mFUNCTION(mFile_GetDriveInfo, const mString &drivePath, OUT mDriveInfo *pDriveIn
 
   wchar_t driveName[MAX_PATH + 1];
   wchar_t volumeTypeName[MAX_PATH + 1]; // FAT, NTFS, ...
-  const BOOL result = GetVolumeInformationW(wDrivePath, driveName, mARRAYSIZE(driveName), nullptr, nullptr, nullptr, volumeTypeName, mARRAYSIZE(volumeTypeName));
+  const BOOL result = GetVolumeInformationW(wDrivePath, driveName, (DWORD)mARRAYSIZE(driveName), nullptr, nullptr, nullptr, volumeTypeName, (DWORD)mARRAYSIZE(volumeTypeName));
 
   if (result)
     mERROR_CHECK(mString_Create(&pDriveInfo->driveName, driveName, pAllocator));

@@ -147,7 +147,7 @@ inline mFUNCTION(mResourceManager_GetResource, OUT mPtr<TValue> *pValue, TKey ke
   mERROR_CHECK(mHashMap_Add(CurrentResourceManagerType::Instance()->keys, key, &resourceIndex));
 
 #if defined(mPRINT_RESOURCE_MANAGER_LOG)
-  mPRINT("Creating Resource %" PRIu64 " of type %s at index %" PRIu64 ".\n", resourceIndex, typeid(TValue *).name(), resourceIndex);
+  mPRINT("Creating Resource ", resourceIndex, " of type ", typeid(TValue *).name(), " at index ", resourceIndex, ".\n");
 #endif
 
   CurrentResourceManagerType::ResourceData *pRetrievedResourceData = nullptr;
@@ -173,7 +173,7 @@ inline mFUNCTION(mResourceManager_GetResource, OUT mPtr<TValue> *pValue, TKey ke
     resourceData0.sharedPointer.m_pParams = nullptr;
 
 #if defined(mPRINT_RESOURCE_MANAGER_LOG)
-    mPRINT("Destroying Resource %" PRIu64 " of type %s at index %" PRIu64 ".\n", resourceIndex, typeid(TValue *).name(), resourceIndex);
+    mPRINT("Destroying Resource ", resourceIndex, " of type ", typeid(TValue *).name(), " at index ", resourceIndex, ".\n");
 #endif
 
     mDestruct(&resourceData0);

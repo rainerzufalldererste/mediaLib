@@ -1,4 +1,5 @@
-#include "mString.h"
+#include "mediaLib.h"
+
 #include "utf8proc.h"
 
 #ifdef GIT_BUILD // Define __M_FILE__
@@ -465,10 +466,10 @@ mFUNCTION(mString_Create, OUT mString *pString, const wchar_t *text, IN OPTIONAL
     *pString = mString();
     pString->pAllocator = pAllocator;
 
-    if (pString->capacity < size * sizeof(wchar_t))
+    if (pString->capacity < size * mString_MaxUtf16CharInUtf8Chars)
     {
-      mERROR_CHECK(mAllocator_Reallocate(pString->pAllocator, &pString->text, size * sizeof(wchar_t)));
-      pString->capacity = size * sizeof(wchar_t);
+      mERROR_CHECK(mAllocator_Reallocate(pString->pAllocator, &pString->text, size * mString_MaxUtf16CharInUtf8Chars));
+      pString->capacity = size * mString_MaxUtf16CharInUtf8Chars;
     }
   }
   else
@@ -478,11 +479,11 @@ mFUNCTION(mString_Create, OUT mString *pString, const wchar_t *text, IN OPTIONAL
 
     pString->pAllocator = pAllocator;
 
-    mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &pString->text, size * sizeof(wchar_t)));
-    pString->capacity = size * sizeof(wchar_t);
+    mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &pString->text, size * mString_MaxUtf16CharInUtf8Chars));
+    pString->capacity = size * mString_MaxUtf16CharInUtf8Chars;
   }
 
-  if (0 == (pString->bytes = WideCharToMultiByte(CP_UTF8, 0, text, (int)size, pString->text, (int)pString->capacity, nullptr, false)))
+  if (0 == (pString->bytes = WideCharToMultiByte(CP_UTF8, 0, text, (int32_t)size, pString->text, (int32_t)pString->capacity, nullptr, false)))
   {
     DWORD error = GetLastError();
     mUnused(error);
@@ -546,10 +547,10 @@ mFUNCTION(mString_Create, OUT mString *pString, const wchar_t *text, const size_
     *pString = mString();
     pString->pAllocator = pAllocator;
 
-    if (pString->capacity < size * sizeof(wchar_t) * 2)
+    if (pString->capacity < size * mString_MaxUtf16CharInUtf8Chars)
     {
-      mERROR_CHECK(mAllocator_Reallocate(pString->pAllocator, &pString->text, size * sizeof(wchar_t) * 2));
-      pString->capacity = size * sizeof(wchar_t) * 2;
+      mERROR_CHECK(mAllocator_Reallocate(pString->pAllocator, &pString->text, size * mString_MaxUtf16CharInUtf8Chars));
+      pString->capacity = size * mString_MaxUtf16CharInUtf8Chars;
     }
   }
   else
@@ -559,11 +560,11 @@ mFUNCTION(mString_Create, OUT mString *pString, const wchar_t *text, const size_
 
     pString->pAllocator = pAllocator;
 
-    mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &pString->text, size * sizeof(wchar_t) * 2));
-    pString->capacity = size * sizeof(wchar_t) * 2;
+    mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &pString->text, size * mString_MaxUtf16CharInUtf8Chars));
+    pString->capacity = size * mString_MaxUtf16CharInUtf8Chars;
   }
 
-  if (0 == (pString->bytes = WideCharToMultiByte(CP_UTF8, 0, text, (int)(size - 1), pString->text, (int)pString->capacity, nullptr, false)))
+  if (0 == (pString->bytes = WideCharToMultiByte(CP_UTF8, 0, text, (int32_t)(size - 1), pString->text, (int32_t)pString->capacity, nullptr, false)))
   {
     DWORD error = GetLastError();
     mUnused(error);
