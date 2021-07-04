@@ -1,11 +1,11 @@
 #ifdef _HAS_EXCEPTIONS
-#undef _HAS_EXCEPTIONS
+ #undef _HAS_EXCEPTIONS
 #endif
 
 #define _HAS_EXCEPTIONS 0
 
 #ifndef _USE_MATH_DEFINES
-#define _USE_MATH_DEFINES 1
+ #define _USE_MATH_DEFINES 1
 #endif // !_USE_MATH_DEFINES
 
 #ifndef _DEPENDENCIES_DEFINED
@@ -23,160 +23,191 @@
 #include <malloc.h>
 
 #ifndef mPLATFORM_WINDOWS
-#if defined(_WIN64) || defined(_WIN32)
-#define mPLATFORM_WINDOWS 1
-#endif
+ #if defined(_WIN64) || defined(_WIN32)
+  #define mPLATFORM_WINDOWS 1
+ #endif
 #endif
 
 #ifndef mPLATFORM_UNIX
-#if !defined(_WIN32) && (defined(__unix__) || defined(__unix) || (defined(__APPLE__) && defined(__MACH__)))
-#define mPLATFORM_UNIX 1
-#endif
+ #if !defined(_WIN32) && (defined(__unix__) || defined(__unix) || (defined(__APPLE__) && defined(__MACH__)))
+  #define mPLATFORM_UNIX 1
+ #endif
 #endif
 
 #ifndef mPLATFORM_APPLE
-#if defined(__APPLE__) && defined(__MACH__)
-#define mPLATFORM_APPLE 1
-#endif
+ #if defined(__APPLE__) && defined(__MACH__)
+  #define mPLATFORM_APPLE 1
+ #endif
 #endif
 
 #ifndef mPLATFORM_LINUX
-#if defined(__linux__)
-#define mPLATFORM_LINUX 1
-#endif
+ #if defined(__linux__)
+  #define mPLATFORM_LINUX 1
+ #endif
 #endif
 
 #ifndef mPLATFORM_BSD
-#if defined(BSD)
-#define mPLATFORM_BSD 1
-#endif
+ #if defined(BSD)
+  #define mPLATFORM_BSD 1
+ #endif
 #endif
 
 #ifdef mPLATFORM_WINDOWS
-#include <windows.h>
+ #include <windows.h>
 #endif // !mPLATFORM_WINDOWS
 
 #ifndef RETURN
-#define RETURN return
+ #define RETURN return
 #endif // !RETURN
 
 #ifndef IN
-#define IN
+ #define IN
 #endif // !IN
 
 #ifndef OUT
-#define OUT
+ #define OUT
 #endif // !OUT
 
 #ifndef IN_OUT
-#define IN_OUT IN OUT
+ #define IN_OUT IN OUT
 #endif // !IN_OUT
 
 #ifndef OPTIONAL
-#define OPTIONAL
+ #define OPTIONAL
 #endif // !OPTIONAL
 
 #ifndef CONST_FIELD
-#define CONST_FIELD
+ #define CONST_FIELD
 #endif // !CONST_FIELD
 
 #ifndef PUBLIC_FIELD
-#define PUBLIC_FIELD
+ #define PUBLIC_FIELD
 #endif // !PUBLIC_FIELD
 
 #define mVECTORCALL __vectorcall
-#define mINLINE __forceinline
+ #define mINLINE __forceinline
 #define mALIGN(x) __declspec(align(x))
 
 #if defined(_MSC_VER) && _MSC_VER < 1920
-#define noexcept
+ #define noexcept
 #endif
 
-#define mARRAYSIZE(arrayName) (sizeof(arrayName) / sizeof(arrayName[0]))
-#define mBYTES_OF(type) (sizeof(type) << 3)
+#if defined(_MSVC_LANG)
+ #if _MSVC_LANG < 201703L
+  #define mIF_CONSTEXPR if
+ #else
+  #define mIF_CONSTEXPR if constexpr
+ #endif
+#else
+ #if defined(__cplusplus)
+  #if __cplusplus < 201703L
+   #define mIF_CONSTEXPR if
+  #else
+   #define mIF_CONSTEXPR if constexpr
+  #endif
+ #endif
+#endif
+
+#define mARRAYSIZE_C_STYLE(arrayName) (sizeof(arrayName) / sizeof(arrayName[0]))
+
+#ifdef mFORCE_ARRAYSIZE_C_STYLE
+#define mARRAYSIZE(arrayName) mARRAYSIZE_C_STYLE(arrayName)
+#else
+template <typename T, size_t TCount>
+inline constexpr size_t mARRAYSIZE(const T(&)[TCount]) { return TCount; }
+#endif
+
+#define mBITS_OF(type) (sizeof(type) * CHAR_BIT)
 
 #ifndef __M_FILE__
 #define __M_FILE__ __FILE__
 #endif
 
+#define mCONCAT_LITERALS_INTERNAL(x, y) x ## y
+#define mCONCAT_LITERALS(x, y) mCONCAT_LITERALS_INTERNAL(x, y)
+#define mCONCAT_LITERALS_INTERNAL3(x, y, z) x ## y ## z
+#define mCONCAT_LITERALS3(x, y, z) mCONCAT_LITERALS_INTERNAL3(x, y, z)
+#define mSTRINGIFY(x) #x
+#define mSTRINGIFY_VALUE(x) mSTRINGIFY(x)
+
 #ifndef GIT_BUILD
 
-#define mASSERT(expression, text, ...) \
+#define mASSERT(expression, text) \
   do \
   { if(!(expression)) \
-    { char ___buffer___[1024 * 8]; \
-      sprintf_s(___buffer___, text, __VA_ARGS__); \
-      ___buffer___[mARRAYSIZE(___buffer___) - 1] = '\0'; \
-      mPRINT_ERROR("Assertion Failed: %s\n'%s'\n\nIn File '%s' : Line '%" PRIi32 "' (Function '%s')\n", #expression, ___buffer___, __M_FILE__, __LINE__, __FUNCTION__); \
-      mAssert_Internal(#expression, ___buffer___, __FUNCTION__, __M_FILE__, __LINE__); \
+    { const char *__text__ = (text); \
+      mPRINT_ERROR("Assertion Failed: " #expression "\n"); \
+      mPRINT_ERROR(__text__); \
+      mPRINT_ERROR("\n\nIn File '" __M_FILE__ "' : Line '" mSTRINGIFY_VALUE(__LINE__) "' (Function '" __FUNCTION__ "')\n"); \
+      mAssert_Internal(#expression, __text__, __FUNCTION__, __M_FILE__, __LINE__); \
     } \
   } while (0)
 
-#define mFAIL(text, ...) \
+#define mFAIL(text) \
   do \
-  { char ___buffer___[1024 * 8]; \
-    sprintf_s(___buffer___, text, __VA_ARGS__); \
-    ___buffer___[mARRAYSIZE(___buffer___) - 1] = '\0'; \
-    mPRINT_ERROR("Assertion Failed: '%s'\n\nIn File '%s' : Line '%" PRIi32 "' (Function '%s')\n", ___buffer___, __M_FILE__, __LINE__, __FUNCTION__); \
-    mFail_Internal(___buffer___, __FUNCTION__, __M_FILE__, __LINE__); \
+  { const char *__text__ = (text); \
+    mPRINT_ERROR("Assertion Failed:\n"); \
+    mPRINT_ERROR(__text__); \
+    mPRINT_ERROR("\n\nIn File '" __M_FILE__ "' : Line '" mSTRINGIFY_VALUE(__LINE__) "' (Function '" __FUNCTION__ "')\n"); \
+    mFail_Internal(__text__, __FUNCTION__, __M_FILE__, __LINE__); \
   } while (0)
 
 #else
 
-#define mASSERT(expression, text, ...) \
+#define mASSERT(expression, text) \
   do \
   { if(!(expression)) \
-    { char ___buffer___[1024 * 8]; \
-      sprintf_s(___buffer___, text, __VA_ARGS__); \
-      ___buffer___[mARRAYSIZE(___buffer___) - 1] = '\0'; \
-      mPRINT_ERROR("Assertion Failed. '%s'\n\nIn File '%s' : Line '%" PRIi32 "'\n", ___buffer___, __M_FILE__, __LINE__); \
-      mAssert_Internal("<EXPRESSION_NOT_AVAILABLE>", ___buffer___, "<FUNCTION_NAME_NOT_AVAILABLE>", __M_FILE__, __LINE__); \
+    { const char *__text__ = (text); \
+      mPRINT_ERROR("Assertion Failed.\n"); \
+      mPRINT_ERROR(__text__); \
+      mPRINT_ERROR("\n\nIn File '" __M_FILE__ "' : Line '" mSTRINGIFY_VALUE(__LINE__) "'\n"); \
+      mAssert_Internal("<EXPRESSION_NOT_AVAILABLE>", __text__, "<FUNCTION_NAME_NOT_AVAILABLE>", __M_FILE__, __LINE__); \
     } \
   } while (0)
 
 #define mFAIL(text, ...) \
   do \
-  { char ___buffer___[1024 * 8]; \
-    sprintf_s(___buffer___, text, __VA_ARGS__); \
-    ___buffer___[mARRAYSIZE(___buffer___) - 1] = '\0'; \
-      mPRINT_ERROR("Assertion Failed. '%s'\n\nIn File '%s' : Line '%" PRIi32 "'\n", ___buffer___, __M_FILE__, __LINE__); \
-    mFail_Internal(___buffer___, "<FUNCTION_NAME_NOT_AVAILABLE>", __M_FILE__, __LINE__); \
+  { const char *__text__ = (text); \
+    mPRINT_ERROR("Assertion Failed. '"); \
+    mPRINT_ERROR(__text__); \
+    mPRINT_ERROR("'\n\nIn File '" __M_FILE__ "' : Line '" mSTRINGIFY_VALUE(__LINE__) "'\n"); \
+    mFail_Internal(__text__, "<FUNCTION_NAME_NOT_AVAILABLE>", __M_FILE__, __LINE__); \
   } while (0)
 
 #endif
 
-#define mPRINT(text, ...) mPrintPrepare(mPrintCallback, text, __VA_ARGS__)
-#define mLOG(text, ...) mPrintPrepare(mPrintLogCallback, text, __VA_ARGS__)
-#define mPRINT_ERROR(text, ...) mPrintPrepare(mPrintErrorCallback, text, __VA_ARGS__)
+#define mPRINT(text, ...) mPrintToFunction(mPrintCallback, text, __VA_ARGS__)
+#define mLOG(text, ...) mPrintToFunction(mPrintLogCallback, text, __VA_ARGS__)
+#define mPRINT_ERROR(text, ...) mPrintToFunction(mPrintErrorCallback, text, __VA_ARGS__)
 
 //#define mTRACE_ENABLED
 
 #if defined (_DEBUG)
-#if !defined(mTRACE_ENABLED)
-#define mTRACE_ENABLED
-#endif
+ #if !defined(mTRACE_ENABLED)
+  #define mTRACE_ENABLED
+ #endif
 
-#define mPRINT_DEBUG(text, ...) mPrintPrepare(mPrintDebugCallback, text, __VA_ARGS__)
+ #define mPRINT_DEBUG(text, ...) mPrintToFunction(mPrintDebugCallback, text, __VA_ARGS__)
 #else
-#define mPRINT_DEBUG(text, ...) mUnused(text, __VA_ARGS__)
+ #define mPRINT_DEBUG(text, ...) mUnused(text, __VA_ARGS__)
 #endif
 
 #if defined (mTRACE_ENABLED)
-#define mTRACE(text, ...) mPrintPrepare(mPrintTraceCallback, text, __VA_ARGS__)
+ #define mTRACE(text, ...) mPrintToFunction(mPrintTraceCallback, text, __VA_ARGS__)
 #else
-#define mTRACE(text, ...) mUnused(text, __VA_ARGS__)
+ #define mTRACE(text, ...) mUnused(text, __VA_ARGS__)
 #endif
 
 #define mSTATIC_ASSERT(expression, text) static_assert(expression, __FUNCSIG__ " : " text)
 
 template <typename T>
-void mUnused(T unused)
+void mUnused(const T &unused)
 {
   (void)unused;
 }
 
 template <typename T, typename ...Args>
-void mUnused(T unused, Args && ...args)
+void mUnused(const T &unused, Args && ...args)
 {
   (void)unused;
   mUnused(args...);
@@ -195,37 +226,66 @@ void mSilencablePrintError(const char *text);
 void mSilencablePrintLog(const char *text);
 void mSilencablePrintDebug(const char *text);
 void mSilencablePrintTrace(const char *text);
-void mPrintPrepare(mPrintCallbackFunc *pFunc, const char *format, ...);
 
-#ifdef _DEBUG
-#define mASSERT_DEBUG(expr, text, ...) mASSERT(expr, text, __VA_ARGS__)
-#define mFAIL_DEBUG(text, ...) mFAIL(text, __VA_ARGS__)
-#else // !_DEBUG
-#define mASSERT_DEBUG(expr, text, ...)
-#define mFAIL_DEBUG(text, ...)
-#endif
+inline void mPrintToFunction(mPrintCallbackFunc *pFunc, const char *text)
+{
+  if (pFunc != nullptr)
+    (*pFunc)(text);
+}
 
-#define mCONCAT_LITERALS_INTERNAL(x, y) x ## y
-#define mCONCAT_LITERALS(x, y) mCONCAT_LITERALS_INTERNAL(x, y)
-#define mSTRINGIFY(x) #x
-#define mSTRINGIFY_VALUE(x) mSTRINGIFY(x)
+template <typename ...Args>
+inline void mPrintToFunction(mPrintCallbackFunc *pFunc, Args && ... args)
+{
+  if (pFunc != nullptr)
+    (*pFunc)(mFormat(args...));
+}
 
 #ifdef mPLATFORM_WINDOWS
-#define mDLL_FUNC_PREFIX __dll__
+void mPrintToOutputWithLength(const char *text, const size_t length);
+#endif
+void mPrintToOutput(const char *text);
 
-#define mLOAD_FROM_DLL(symbol, module) \
-  do \
-  { mCONCAT_LITERALS(mDLL_FUNC_PREFIX, symbol) = (decltype(symbol) *)GetProcAddress(module, #symbol); \
-    if (mCONCAT_LITERALS(mDLL_FUNC_PREFIX, symbol) == nullptr) \
-    { const DWORD errorCode = GetLastError(); \
-      mPRINT_ERROR("Symbol '" #symbol "' could not be loaded from dynamic library. (error code: 0x%" PRIx64 ")\n", (uint64_t)errorCode); \
-      mRETURN_RESULT(mR_ResourceNotFound); \
-    } \
-  } while (0)
+template <size_t Tcount>
+inline void mPrintToOutputArray(const char(&text)[Tcount])
+{
+  if (text == nullptr)
+    return;
 
-#define mDLL_NAME(symbol) mCONCAT_LITERALS(mDLL_FUNC_PREFIX, symbol)
-#define mDLL_DEFINE_SYMBOL(symbol) decltype(symbol) *mDLL_NAME(symbol) = nullptr
-#define mDLL_CALL(symbol, ...) ((*mDLL_NAME(symbol))(__VA_ARGS__))
+#ifdef mPLATFORM_WINDOWS
+  mPrintToOutputWithLength(text, strnlen(text, Tcount));
+#else
+  mPrintToOutput(text);
+#endif
+}
+
+enum mResult mSetOutputFilePath(const struct mString &path, const bool append = true);
+void mResetOutputFile();
+void mFlushOutput();
+
+#ifdef _DEBUG
+ #define mASSERT_DEBUG(expr, text) mASSERT(expr, text)
+ #define mFAIL_DEBUG(text) mFAIL(text)
+#else // !_DEBUG
+ #define mASSERT_DEBUG(expr, text, ...)
+ #define mFAIL_DEBUG(text, ...)
+#endif
+
+#ifdef mPLATFORM_WINDOWS
+ #define mDLL_FUNC_PREFIX __dll__
+
+ #define mLOAD_FROM_DLL(symbol, module) \
+   do \
+   { mCONCAT_LITERALS(mDLL_FUNC_PREFIX, symbol) = (decltype(symbol) *)GetProcAddress(module, #symbol); \
+     if (mCONCAT_LITERALS(mDLL_FUNC_PREFIX, symbol) == nullptr) \
+     { const DWORD errorCode = GetLastError(); \
+       mPRINT_ERROR("Symbol '" #symbol "' could not be loaded from dynamic library. (Error Code: 0x", mFUInt<mFHex>(errorCode), ")\n"); \
+       mRETURN_RESULT(mR_ResourceNotFound); \
+     } \
+   } while (0)
+
+ #define mDLL_NAME(symbol) mCONCAT_LITERALS(mDLL_FUNC_PREFIX, symbol)
+ #define mDLL_DEFINE_SYMBOL(symbol) decltype(symbol) *mDLL_NAME(symbol) = nullptr
+ #define mDLL_CALL(symbol, ...) ((*mDLL_NAME(symbol))(__VA_ARGS__))
 
 #endif // !mPLATFORM_WINDOWS
 
@@ -243,7 +303,7 @@ void mPrintPrepare(mPrintCallbackFunc *pFunc, const char *format, ...);
 #include "mSharedPointer.h"
 #include "mMath.h"
 #include "mFastMath.h"
-#include "mString.h"
+#include "mString.h" // will include "mFormat.h"
 
 mFUNCTION(mSleep, const size_t milliseconds = 0);
 void mAssert_Internal(const char *expression, const char *text, const char *function, const char *file, const int32_t line);

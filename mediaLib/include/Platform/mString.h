@@ -10,6 +10,8 @@
   #define __M_FILE__ "QlpJjQ2xYC58nDw/X1yN1LmXU7vVReW19HfIAzxlYE3W9rPtHEpUDwMzx/M56FJO0AebK0DN8U2w+8YG"
 #endif
 
+constexpr size_t mString_MaxUtf16CharInUtf8Chars = 3;
+
 typedef int32_t mchar_t;
 
 template <size_t TCount>
@@ -137,7 +139,10 @@ mFUNCTION(mString_Create, OUT mString *pString, const wchar_t *text, const size_
 mFUNCTION(mString_Create, OUT mString *pString, const mString &from, IN OPTIONAL mAllocator *pAllocator = nullptr);
 
 template <typename ...Args>
-mFUNCTION(mString_CreateFormat, OUT mString *pString, IN OPTIONAL mAllocator *pAllocator, IN const char *formatString, Args&&... args);
+__declspec(deprecated) mFUNCTION(mString_CreateFormat, OUT mString *pString, IN OPTIONAL mAllocator *pAllocator, IN const char *formatString, Args&&... args);
+
+template <typename ...Args>
+mFUNCTION(mString_Format, OUT mString *pString, IN OPTIONAL mAllocator *pAllocator, Args&&... args);
 
 mFUNCTION(mString_Destroy, IN_OUT mString *pString);
 
@@ -158,7 +163,7 @@ mFUNCTION(mString_Append, mString &text, const char *appendedText);
 mFUNCTION(mString_Append, mString &text, const char *appendedText, const size_t size);
 
 template <typename ...Args>
-mFUNCTION(mString_AppendFormat, mString &text, const char *format, Args&&... args);
+mFUNCTION(mString_AppendFormat, mString &text, Args&&... args);
 
 mFUNCTION(mString_AppendUnsignedInteger, mString &text, const uint64_t value);
 mFUNCTION(mString_AppendInteger, mString &text, const int64_t value);
@@ -195,6 +200,17 @@ struct mIsTriviallyMemoryMovable<mString>
 {
   static constexpr bool value = true;
 };
+
+//////////////////////////////////////////////////////////////////////////
+
+#include "mFormat.h"
+
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "QlpJjQ2xYC58nDw/X1yN1LmXU7vVReW19HfIAzxlYE3W9rPtHEpUDwMzx/M56FJO0AebK0DN8U2w+8YG"
+#endif
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -237,15 +253,46 @@ inline mFUNCTION(mString_CreateFormat, OUT mString *pString, IN OPTIONAL mAlloca
   mRETURN_SUCCESS();
 }
 
-template <typename ...Args>
-mFUNCTION(mString_AppendFormat, mString &text, const char *format, Args&&... args)
+template<typename ...Args>
+inline mFUNCTION(mString_Format, OUT mString *pString, IN OPTIONAL mAllocator *pAllocator, Args && ...args)
 {
   mFUNCTION_SETUP();
 
-  char appendedText[1024 * 8];
-  mERROR_IF(0 > sprintf_s(appendedText, format, std::forward<Args>(args)...), mR_InternalError);
+  const size_t maxCapacity = mFormat_GetMaxRequiredBytes(args...);
 
-  mERROR_CHECK(mString_Append(text, appendedText, mARRAYSIZE(appendedText)));
+  mERROR_CHECK(mString_Create(pString, "", 1, pAllocator));
+  mDEFER_ON_ERROR(mString_Destroy(pString));
+
+  mERROR_CHECK(mString_Reserve(*pString, maxCapacity));
+  mERROR_CHECK(mFormatTo(pString->text, maxCapacity, args...));
+
+  size_t count, bytes;
+  mERROR_CHECK(mInplaceString_GetCount_Internal(pString->text, maxCapacity, &count, &bytes));
+
+  pString->count = count;
+  pString->bytes = bytes;
+
+  mRETURN_SUCCESS();
+}
+
+template <typename ...Args>
+mFUNCTION(mString_AppendFormat, mString &text, Args && ... args)
+{
+  mFUNCTION_SETUP();
+
+  const size_t maxAdditionalCapacity = mFormat_GetMaxRequiredBytes(args...);
+  const size_t bytesWithoutNullTerminator = mMin(text.bytes, text.bytes - 1);
+
+  mERROR_CHECK(mString_Reserve(text, bytesWithoutNullTerminator + maxAdditionalCapacity));
+
+  mDEFER_ON_ERROR(text.text[bytesWithoutNullTerminator] = '\0');
+  mERROR_CHECK(mFormatTo(text.text + bytesWithoutNullTerminator, maxAdditionalCapacity, args...));
+
+  size_t count, bytes;
+  mERROR_CHECK(mInplaceString_GetCount_Internal(text.text + bytesWithoutNullTerminator, maxAdditionalCapacity, &count, &bytes));
+
+  text.count = mMin(text.count, text.count - 1) + count;
+  text.bytes = bytesWithoutNullTerminator + bytes;
 
   mRETURN_SUCCESS();
 }

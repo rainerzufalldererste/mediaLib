@@ -52,7 +52,7 @@ mFUNCTION(mTcpServer_Create, OUT mPtr<mTcpServer> *pTcpServer, IN mAllocator *pA
   hints.ai_flags = AI_PASSIVE;
 
   char portString[sizeof("65535")];
-  mERROR_CHECK(mSprintf(portString, mARRAYSIZE(portString), "%" PRIu16, port));
+  mERROR_CHECK(mFormatTo(portString, mARRAYSIZE(portString), port));
 
   int32_t error = getaddrinfo(nullptr, portString, &hints, &pResult);
   mERROR_IF(error != 0, mR_ResourceAlreadyExists);
@@ -356,7 +356,7 @@ static mFUNCTION(mTcpClient_Create_Internal, OUT mPtr<mTcpClient> *pClient, IN m
   hints.ai_protocol = IPPROTO_TCP;
 
   char portString[sizeof("65535")];
-  mERROR_CHECK(mSprintf(portString, mARRAYSIZE(portString), "%" PRIu16, port));
+  mERROR_CHECK(mFormatTo(portString, mARRAYSIZE(portString), port));
 
   int32_t error = getaddrinfo(address, portString, &hints, &pResult);
   mERROR_IF(error != 0, mR_ResourceInvalid);

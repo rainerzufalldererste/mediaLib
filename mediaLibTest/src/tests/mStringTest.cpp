@@ -995,12 +995,36 @@ mTEST(mString, TestSetToWCharT)
   mString string;
   mTEST_ASSERT_SUCCESS(mString_Create(&string, "this is a very long testString to allocate a sufficient amount of memory for the wchar_t string", pAllocator));
 
-  mTEST_ASSERT_SUCCESS(mString_Create(&string, L"horrible WCharT String"));
+  mTEST_ASSERT_SUCCESS(mString_Create(&string, L"horrible WCharT String", pAllocator));
 
   const char compString[] = "horrible WCharT String";
 
   mTEST_ASSERT_EQUAL(string, mString(compString));
   mTEST_ASSERT_EQUAL(strlen(string.c_str()), strlen(compString));
+
+  mTEST_ASSERT_SUCCESS(mString_Create(&string, L"horrible WCharT String"));
+
+  mTEST_ASSERT_EQUAL(string, mString(compString));
+  mTEST_ASSERT_EQUAL(strlen(string.c_str()), strlen(compString));
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}
+
+mTEST(mString, TestSetToWCharTLong)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  mString string;
+  mTEST_ASSERT_SUCCESS(mString_Create(&string, "", pAllocator));
+
+  mTEST_ASSERT_SUCCESS(mString_Create(&string, L"\x2026\x2026\x2026\x2026\x2026\x2026\x2026\x2026\x2026\x2026\x2026\x2026\x2026\x2026\x2026\x2026\x2026\x2026\x2026\x2026\x2026\x2026\x2026\x2026\x2026\x2026\x2026", pAllocator));
+
+  const char compString[] = "\xE2\x80\xA6\xE2\x80\xA6\xE2\x80\xA6\xE2\x80\xA6\xE2\x80\xA6\xE2\x80\xA6\xE2\x80\xA6\xE2\x80\xA6\xE2\x80\xA6\xE2\x80\xA6\xE2\x80\xA6\xE2\x80\xA6\xE2\x80\xA6\xE2\x80\xA6\xE2\x80\xA6\xE2\x80\xA6\xE2\x80\xA6\xE2\x80\xA6\xE2\x80\xA6\xE2\x80\xA6\xE2\x80\xA6\xE2\x80\xA6\xE2\x80\xA6\xE2\x80\xA6\xE2\x80\xA6\xE2\x80\xA6\xE2\x80\xA6";
+
+  mTEST_ASSERT_EQUAL(string, mString(compString));
+  mTEST_ASSERT_EQUAL(strlen(string.c_str()), strlen(compString));
+  mTEST_ASSERT_EQUAL(28, string.count);
+  mTEST_ASSERT_EQUAL(27 * 3 + 1, string.bytes);
 
   mTEST_ALLOCATOR_ZERO_CHECK();
 }
@@ -1614,6 +1638,52 @@ mTEST(mString, TestReplaceString)
   mTEST_ASSERT_SUCCESS(mString_Create(&replace, "\xE1\x80\xA9\xF0\x94\x93\x98\x76\xF0\x90\x8C\x86\x6c\xE1\x80\xA9\x64"));
   mTEST_ASSERT_SUCCESS(mString_Replace(string, replace, with, &result));
   mTEST_ASSERT_EQUAL(string, result);
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}
+
+mTEST(mString, TestFormatInteraction)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  mFormatState_ResetCulture();
+
+  mFormatState &fs = mFormat_GetState();
+
+  mDEFER(mAllocator_FreePtr(fs.pAllocator, &fs.textStart); fs.textCapacity = 0; fs.pAllocator = nullptr;);
+  mAllocator_FreePtr(fs.pAllocator, &fs.textStart);
+  fs.pAllocator = pAllocator;
+  fs.textCapacity = 0;
+
+  mString result, cmp;
+
+  mTEST_ASSERT_SUCCESS(mString_Format(&result, pAllocator, 123, " and ", 234.567, " and ", true, "🌵🦎🎅testמⴲ"));
+  mTEST_ASSERT_SUCCESS(mString_Create(&cmp, "123 and 234.567 and true🌵🦎🎅testמⴲ", pAllocator));
+  mTEST_ASSERT_EQUAL(cmp, result);
+
+  mTEST_ASSERT_SUCCESS(mString_Format(&result, pAllocator, 0));
+  mTEST_ASSERT_SUCCESS(mString_Create(&cmp, "0", pAllocator));
+  mTEST_ASSERT_EQUAL(cmp, result);
+
+  mTEST_ASSERT_SUCCESS(mString_Format(&result, pAllocator, -1234567));
+  mTEST_ASSERT_SUCCESS(mString_Create(&cmp, "-1234567", pAllocator));
+  mTEST_ASSERT_EQUAL(cmp, result);
+
+  mTEST_ASSERT_SUCCESS(mString_Format(&result, pAllocator, 123));
+  mTEST_ASSERT_SUCCESS(mString_AppendFormat(result, " and ", 234.567, " and ", true, "🌵🦎🎅testמⴲ"));
+  mTEST_ASSERT_SUCCESS(mString_Create(&cmp, "123 and 234.567 and true🌵🦎🎅testמⴲ", pAllocator));
+  mTEST_ASSERT_EQUAL(cmp, result);
+
+  mTEST_ASSERT_SUCCESS(mString_Format(&result, pAllocator, 3.141));
+  mTEST_ASSERT_SUCCESS(mString_Create(&cmp, "3.141", pAllocator));
+  mTEST_ASSERT_EQUAL(cmp, result);
+
+  mTEST_ASSERT_SUCCESS(mString_Format(&result, pAllocator, 123));
+  mTEST_ASSERT_SUCCESS(mString_AppendFormat(result, " and "));
+  mTEST_ASSERT_SUCCESS(mString_AppendFormat(result, 234.567, " and "));
+  mTEST_ASSERT_SUCCESS(mString_AppendFormat(result, true, "🌵🦎🎅testמⴲ"));
+  mTEST_ASSERT_SUCCESS(mString_Create(&cmp, "123 and 234.567 and true🌵🦎🎅testמⴲ", pAllocator));
+  mTEST_ASSERT_EQUAL(cmp, result);
 
   mTEST_ALLOCATOR_ZERO_CHECK();
 }

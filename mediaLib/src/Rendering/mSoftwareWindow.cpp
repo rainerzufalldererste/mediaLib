@@ -344,6 +344,7 @@ mFUNCTION(mSoftwareWindow_ClearEventHandlers, mPtr<mSoftwareWindow> &window)
   mERROR_CHECK(mQueue_Clear(window->onEventCallbacks));
   mERROR_CHECK(mQueue_Clear(window->onExitCallbacks));
   mERROR_CHECK(mQueue_Clear(window->onResizeCallbacks));
+  mERROR_CHECK(mQueue_Clear(window->onDarkModeChanged));
 
   mRETURN_SUCCESS();
 }

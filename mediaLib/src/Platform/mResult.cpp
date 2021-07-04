@@ -19,24 +19,13 @@ thread_local bool g_mResult_breakOnError = g_mResult_breakOnError_default;
 bool g_mResult_silent_default = false;
 thread_local bool g_mResult_silent = g_mResult_silent_default;
 
-void mDebugOut(const char *format, ...)
+void mDebugOut(const char *text)
 {
 #if !defined(GIT_BUILD)
-  char buffer[1024 * 16];
-
-  mMemset(buffer, mARRAYSIZE(buffer), 0);
-
-  va_list args;
-  va_start(args, format);
-  vsprintf_s(buffer, format, args);
-  va_end(args);
-
-  buffer[mARRAYSIZE(buffer) - 1] = 0;
-
-  if (buffer[0] != '\0')
-    OutputDebugStringA(buffer);
+  if (text != nullptr && text[0] != '\0')
+    OutputDebugStringA(text);
 #else
-  mUnused(format);
+  mUnused(text);
 #endif
 }
 
@@ -47,14 +36,14 @@ void mPrintError(char *function, char *file, const int32_t line, const mResult e
 
 #ifdef GIT_BUILD
   mUnused(function, expression);
-  mPRINT_ERROR("Error 0x%" PRIx32 " in File '%s' Line % " PRIi32 ".\n", error, file, line);
+  mPRINT_ERROR("Error 0x", mFUInt<mFHex>(error), " in File '", file, "' Line ", line, ".\n");
 #else
   const char *expr = "";
 
   if (expression)
     expr = expression;
 
-  mPRINT_ERROR("Error %s in '%s' (File '%s'; Line % " PRIi32 ") [0x%" PRIx32 "].\nExpression: '%s'.\n\n", mResult_ToString(error), function, file, line, error, expr);
+  mPRINT_ERROR("Error ", mResult_ToString(error), " in '", function, "' (File '", file, "'; Line ", line, ") [0x", mFUInt<mFHex>(error), "].\nExpression: '", expr, "'.\n\n");
 #endif
 }
 

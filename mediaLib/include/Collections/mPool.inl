@@ -46,7 +46,7 @@ mFUNCTION(mPool_Add, mPtr<mPool<T>> &pool, IN T *pItem, OUT size_t *pIndex)
   mERROR_IF(pool == nullptr || pItem == nullptr || pIndex == nullptr, mR_ArgumentNull);
 
   // Grow if necessary
-  if (pool->count == pool->size * mBYTES_OF(*pool->pIndexes))
+  if (pool->count == pool->size * mBITS_OF(*pool->pIndexes))
   {
     if (pool->allocatedSize == pool->size)
     {
@@ -66,11 +66,11 @@ mFUNCTION(mPool_Add, mPtr<mPool<T>> &pool, IN T *pItem, OUT size_t *pIndex)
     if (flags == (size_t)-1)
       continue;
 
-    for (size_t indexOffset = 0; indexOffset < mBYTES_OF(flags); ++indexOffset)
+    for (size_t indexOffset = 0; indexOffset < mBITS_OF(flags); ++indexOffset)
     {
       if ((flags & 1) == 0)
       {
-        *pIndex = indexOffset + i * mBYTES_OF(flags);
+        *pIndex = indexOffset + i * mBITS_OF(flags);
         size_t dataCount = 0;
         mERROR_CHECK(mChunkedArray_GetCount(pool->data, &dataCount));
 
@@ -109,7 +109,7 @@ mFUNCTION(mPool_Add, mPtr<mPool<T>> &pool, IN T &&item, OUT size_t *pIndex)
   mERROR_IF(pool == nullptr || pIndex == nullptr, mR_ArgumentNull);
 
   // Grow if necessary
-  if (pool->count == pool->size * mBYTES_OF(*pool->pIndexes))
+  if (pool->count == pool->size * mBITS_OF(*pool->pIndexes))
   {
     if (pool->allocatedSize == pool->size)
     {
@@ -129,11 +129,11 @@ mFUNCTION(mPool_Add, mPtr<mPool<T>> &pool, IN T &&item, OUT size_t *pIndex)
     if (flags == (size_t)-1)
       continue;
 
-    for (size_t indexOffset = 0; indexOffset < mBYTES_OF(flags); ++indexOffset)
+    for (size_t indexOffset = 0; indexOffset < mBITS_OF(flags); ++indexOffset)
     {
       if ((flags & 1) == 0)
       {
-        *pIndex = indexOffset + i * mBYTES_OF(flags);
+        *pIndex = indexOffset + i * mBITS_OF(flags);
         size_t dataCount = 0;
         mERROR_CHECK(mChunkedArray_GetCount(pool->data, &dataCount));
 
@@ -170,10 +170,10 @@ mFUNCTION(mPool_RemoveAt, mPtr<mPool<T>> &pool, const size_t index, OUT T *pItem
   mFUNCTION_SETUP();
 
   mERROR_IF(pool == nullptr || pItem == nullptr, mR_ArgumentNull);
-  mERROR_IF(index >= pool->size * mBYTES_OF(pool->pIndexes[0]), mR_IndexOutOfBounds);
+  mERROR_IF(index >= pool->size * mBITS_OF(pool->pIndexes[0]), mR_IndexOutOfBounds);
 
-  const size_t lutIndex = index / mBYTES_OF(pool->pIndexes[0]);
-  const size_t lutSubIndex = index - lutIndex * mBYTES_OF(pool->pIndexes[0]);
+  const size_t lutIndex = index / mBITS_OF(pool->pIndexes[0]);
+  const size_t lutSubIndex = index - lutIndex * mBITS_OF(pool->pIndexes[0]);
 
   mERROR_IF((pool->pIndexes[lutIndex] & ((size_t)1 << lutSubIndex)) == 0, mR_IndexOutOfBounds);
 
@@ -232,10 +232,10 @@ mFUNCTION(mPool_PointerAt, mPtr<mPool<T>> &pool, const size_t index, OUT T **ppI
   mFUNCTION_SETUP();
 
   mERROR_IF(pool == nullptr || ppItem == nullptr, mR_ArgumentNull);
-  mERROR_IF(index >= pool->size * mBYTES_OF(pool->pIndexes[0]), mR_IndexOutOfBounds);
+  mERROR_IF(index >= pool->size * mBITS_OF(pool->pIndexes[0]), mR_IndexOutOfBounds);
 
-  const size_t lutIndex = index / mBYTES_OF(pool->pIndexes[0]);
-  const size_t lutSubIndex = index - lutIndex * mBYTES_OF(pool->pIndexes[0]);
+  const size_t lutIndex = index / mBITS_OF(pool->pIndexes[0]);
+  const size_t lutSubIndex = index - lutIndex * mBITS_OF(pool->pIndexes[0]);
 
   mERROR_IF((pool->pIndexes[lutIndex] & ((size_t)1 << lutSubIndex)) == 0, mR_IndexOutOfBounds);
 
@@ -257,7 +257,7 @@ inline mFUNCTION(mPool_ForEach, mPtr<mPool<T>> &pool, const std::function<mResul
   {
     size_t flag = 1;
 
-    for (size_t j = 0; j < mBYTES_OF(pool->pIndexes[0]); ++j)
+    for (size_t j = 0; j < mBITS_OF(pool->pIndexes[0]); ++j)
     {
       if (pool->pIndexes[i] & flag)
       {
@@ -289,14 +289,14 @@ mFUNCTION(mPool_ContainsIndex, mPtr<mPool<T>> &pool, const size_t index, OUT boo
 
   mERROR_IF(pool == nullptr || pContained == nullptr, mR_ArgumentNull);
   
-  if (index >= pool->size * mBYTES_OF(pool->pIndexes[0]))
+  if (index >= pool->size * mBITS_OF(pool->pIndexes[0]))
   {
     *pContained = false;
     mRETURN_SUCCESS(); 
   }
 
-  const size_t lutIndex = index / mBYTES_OF(pool->pIndexes[0]);
-  const size_t lutSubIndex = index - lutIndex * mBYTES_OF(pool->pIndexes[0]);
+  const size_t lutIndex = index / mBITS_OF(pool->pIndexes[0]);
+  const size_t lutSubIndex = index - lutIndex * mBITS_OF(pool->pIndexes[0]);
 
   if ((pool->pIndexes[lutIndex] & ((size_t)1 << lutSubIndex)) == 0)
   {
@@ -496,7 +496,7 @@ inline bool mPoolIterator<T>::operator != (const typename mPoolIterator<T> &)
 {
   for (blockIndex; blockIndex < pPool->size; ++blockIndex)
   {
-    for (; index < mBYTES_OF(pPool->pIndexes[0]); ++index)
+    for (; index < mBITS_OF(pPool->pIndexes[0]); ++index)
     {
       if (pPool->pIndexes[blockIndex] & flag)
       {
@@ -504,7 +504,7 @@ inline bool mPoolIterator<T>::operator != (const typename mPoolIterator<T> &)
 
         if (mFAILED(result))
         {
-          mFAIL_DEBUG("mChunkedArray_PointerAt failed in mPoolIterator::operator != with errorcode %" PRIu64 ".", (uint64_t)result);
+          mFAIL_DEBUG(mFormat("mChunkedArray_PointerAt failed in mPoolIterator::operator != with errorcode 0x", mFUInt<mFHex>(result), "."));
           return false;
         }
 
@@ -573,7 +573,7 @@ inline bool mConstPoolIterator<T>::operator != (const typename mConstPoolIterato
 {
   for (blockIndex; blockIndex < pPool->size; ++blockIndex)
   {
-    for (; index < mBYTES_OF(pPool->pIndexes[0]); ++index)
+    for (; index < mBITS_OF(pPool->pIndexes[0]); ++index)
     {
       if (pPool->pIndexes[blockIndex] & flag)
       {
@@ -581,7 +581,7 @@ inline bool mConstPoolIterator<T>::operator != (const typename mConstPoolIterato
 
         if (mFAILED(result))
         {
-          mFAIL_DEBUG("mChunkedArray_ConstPointerAt failed in mConstPoolIterator::operator != with errorcode %" PRIu64 ".", (uint64_t)result);
+          mFAIL_DEBUG(mFormat("mChunkedArray_ConstPointerAt failed in mConstPoolIterator::operator != with errorcode 0x", mFUInt<mFHex>(result), "."));
           return false;
         }
 

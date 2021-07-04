@@ -195,7 +195,7 @@ static void SDLCALL mAudioEngine_AudioCallback_Internal(IN void *pUserData, OUT 
 #endif
 
 epilogue:
-  mASSERT_DEBUG(mSUCCEEDED(mSTDRESULT), "Audio Engine Callback failed with error code %" PRIx64 ".", (uint64_t)mSTDRESULT);
+  mASSERT_DEBUG(mSUCCEEDED(mSTDRESULT), mFormat("Audio Engine Callback failed with error code ", mFUInt<mFHex>(mSTDRESULT), "."));
 }
 
 static mFUNCTION(mAudioEngine_PrepareNextAudioBuffer_Internal, IN mAudioEngine *pAudioEngine)
@@ -218,7 +218,7 @@ static mFUNCTION(mAudioEngine_PrepareNextAudioBuffer_Internal, IN mAudioEngine *
       {
         const mResult result = mAudioEngine_ManagedAudioCallback_Internal(pAudioEngine, reinterpret_cast<float_t *>(pAudioEngine->buffer), pAudioEngine->bufferSize * pAudioEngine->channelCount);
 
-        mASSERT_DEBUG(mSUCCEEDED(result), "Audio Engine Prepare Next Audio Buffer failed with error code %" PRIx64 ".", (uint64_t)result);
+        mASSERT_DEBUG(mSUCCEEDED(result), mFormat("Audio Engine Prepare Next Audio Buffer failed with error code ", mFUInt<mFHex>(result), "."));
 
         pAudioEngine->bufferReady = true;
         continue;
@@ -236,7 +236,7 @@ static mFUNCTION(mAudioEngine_PrepareNextAudioBuffer_Internal, IN mAudioEngine *
         {
           const mResult result = (*_item)->pBroadcastDelayFunc((*_item), mAudioEngine_BufferSize);
 
-          mASSERT_DEBUG(mSUCCEEDED(result), "Failed to broadcast audio delay to audio source with error code %" PRIx64 ".", (uint64_t)result);
+          mASSERT_DEBUG(mSUCCEEDED(result), mFormat("Failed to broadcast audio delay to audio source with error code ", mFUInt<mFHex>(result), "."));
         }
       }
     }
@@ -281,7 +281,7 @@ static mFUNCTION(mAudioEngine_ManagedAudioCallback_Internal, IN mAudioEngine *pA
       if (mFAILED(result))
       {
         if (result != mR_EndOfStream)
-          mPRINT_ERROR("Audio Source failed with error code 0x%" PRIx64 " in pGetBufferFunc. (%s: %" PRIu64 ")\n", (uint64_t)result, g_mResult_lastErrorFile, g_mResult_lastErrorLine);
+          mPRINT_ERROR("Audio Source failed with error code 0x", mFUInt<mFHex>(result) ," in pGetBufferFunc. (", g_mResult_lastErrorFile, ": ", g_mResult_lastErrorLine, ")\n");
 
         (*_item)->hasBeenConsumed = true;
         mERROR_CHECK(mQueue_PushBack(pAudioEngine->unusedAudioSources, _item.index));
@@ -300,7 +300,7 @@ static mFUNCTION(mAudioEngine_ManagedAudioCallback_Internal, IN mAudioEngine *pA
       if (mFAILED(result))
       {
         if (result != mR_EndOfStream)
-          mPRINT_ERROR("Audio Source failed with error code 0x%" PRIx64 " in pMoveToNextBufferFunc. (%s: %" PRIu64 ")\n", (uint64_t)result, g_mResult_lastErrorFile, g_mResult_lastErrorLine);
+          mPRINT_ERROR("Audio Source failed with error code 0x", mFUInt<mFHex>(result), " in pMoveToNextBufferFunc. (", g_mResult_lastErrorFile, ": ", g_mResult_lastErrorLine, ")\n");
 
         (*_item)->hasBeenConsumed = true;
         mERROR_CHECK(mQueue_PushBack(pAudioEngine->unusedAudioSources, _item.index));

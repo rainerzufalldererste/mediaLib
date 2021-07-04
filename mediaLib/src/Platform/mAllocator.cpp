@@ -66,7 +66,7 @@ void mAllocatorDebugging_PrintRemainingMemoryAllocations(IN mAllocator *pAllocat
   auto allocatedMemory = item->second;
 
   for (const auto &allocation : allocatedMemory)
-    mLOG("[Memory Allocation at 0x%" PRIx64 "]: %s\n", (uint64_t)allocation.first, allocation.second.c_str());
+    mLOG("[Memory Allocation at 0x", mFUInt<mFHex>(allocation.first), "]: ", allocation.second.c_str(), "\n");
 
   mAllocatorDebugging_GetDebugMemoryAllocationMutex().unlock();
 }
@@ -79,7 +79,7 @@ void mAllocatorDebugging_PrintAllRemainingMemoryAllocations()
   {
     if (allocator.second.size() > 0)
     {
-      mPRINT("Allocator 0x%" PRIx64 ":\n");
+      mPRINT("Allocator 0x", mFUInt<mFHex>(reinterpret_cast<size_t>(allocator.first)), ":\n");
 
       mAllocatorDebugging_PrintRemainingMemoryAllocations(allocator.first);
 
@@ -114,7 +114,7 @@ void mAllocatorDebugging_PrintMemoryAllocationInfo(IN mAllocator *pAllocator, IN
     return;
   }
 
-  mLOG("[Memory Allocation at 0x%" PRIx64 "]: %s\n", (uint64_t)(*allocation).first, (*allocation).second.c_str());
+  mLOG("[Memory Allocation at 0x", mFUInt<mFHex>((*allocation).first), "]: ", (*allocation).second.c_str(), "\n");
 
   mAllocatorDebugging_GetDebugMemoryAllocationMutex().unlock();
 }

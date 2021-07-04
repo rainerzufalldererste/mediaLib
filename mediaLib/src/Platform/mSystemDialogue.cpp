@@ -192,7 +192,7 @@ static mFUNCTION(mSystemDialogue_OpenFile_Internal, HWND window, const mString &
 
   dialogueOptions.lStructSize = sizeof(dialogueOptions);
   dialogueOptions.hwndOwner = window;
-  dialogueOptions.nMaxFile = mARRAYSIZE(fileName);
+  dialogueOptions.nMaxFile = (DWORD)mARRAYSIZE(fileName);
   dialogueOptions.lpstrFile = fileName;
   dialogueOptions.lpstrInitialDir = initialDirectory.bytes <= 1 ? nullptr : initialDirectoryW;
   dialogueOptions.nFileExtension = 0;
@@ -293,7 +293,7 @@ static mFUNCTION(mSystemDialogue_SaveFile_Internal, HWND window, const mString &
 
   dialogueOptions.lStructSize = sizeof(dialogueOptions);
   dialogueOptions.hwndOwner = window;
-  dialogueOptions.nMaxFile = mARRAYSIZE(fileName);
+  dialogueOptions.nMaxFile = (DWORD)mARRAYSIZE(fileName);
   dialogueOptions.lpstrFile = fileName;
   dialogueOptions.lpstrInitialDir = initialDirectory.bytes <= 1 ? nullptr : initialDirectoryW;
   dialogueOptions.nFileExtension = 0;

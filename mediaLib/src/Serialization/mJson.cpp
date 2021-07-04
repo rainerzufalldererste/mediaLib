@@ -1307,7 +1307,7 @@ static mFUNCTION(mJson_CheckError_Internal, IN cJSON *pJson)
     const char *error = cJSON_GetErrorPtr();
 
     if (error != nullptr)
-      mPRINT_ERROR("mJsonReader Error: %s\n", error);
+      mPRINT_ERROR("mJsonReader Error: ", error, "\n");
 
     mRETURN_RESULT(mR_ResourceNotFound);
   }

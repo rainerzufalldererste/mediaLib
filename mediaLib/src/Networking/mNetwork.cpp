@@ -36,7 +36,7 @@ mFUNCTION(mNetwork_Init)
 
   if (result != 0)
   {
-    mPRINT_ERROR("Failed to initialize WinSock with error code 0x%" PRIx32 ".\n", result);
+    mPRINT_ERROR("Failed to initialize WinSock with error code 0x", mFUInt<mFHex>(result), ".\n");
     mRETURN_RESULT(mR_OperationNotSupported);
   }
 

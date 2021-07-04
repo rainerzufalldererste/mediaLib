@@ -6,7 +6,6 @@
 
 #include "mediaLib.h"
 
-#ifdef mPLATFORM_WINDOWS
 #ifdef GIT_BUILD // Define __M_FILE__
   #ifdef __M_FILE__
     #undef __M_FILE__
@@ -14,7 +13,9 @@
   #define __M_FILE__ "hJxXtXZLn5mrTXicBqpRmqzOi/HGriWHIaPhBoYJdH/uA6vV5/aWehfGSsFZG41NQnPfqNvSkmhJriq2"
 #endif
 
+#ifdef mPLATFORM_WINDOWS
 HANDLE mStdOutHandle = nullptr;
+HANDLE mFileOutHandle = nullptr;
 #endif
 
 void mResetConsoleColour()
@@ -49,53 +50,91 @@ void mSetConsoleColour(const mConsoleColour foregroundColour, const mConsoleColo
 #endif
 }
 
+#ifdef mPLATFORM_WINDOWS
+void mPrintToOutputWithLength(const char *text, const size_t length)
+{
+  if (mStdOutHandle == nullptr)
+    mStdOutHandle = GetStdHandle(STD_OUTPUT_HANDLE);
+
+  if (mStdOutHandle != nullptr && mStdOutHandle != INVALID_HANDLE_VALUE)
+    WriteConsoleA(mStdOutHandle, text, (DWORD)length, nullptr, nullptr);
+
+  if (mFileOutHandle != nullptr && mFileOutHandle != INVALID_HANDLE_VALUE)
+    WriteFile(mFileOutHandle, text, (DWORD)length, nullptr, nullptr);
+}
+#endif
+
+void mPrintToOutput(const char *text)
+{
+  if (text == nullptr)
+    return;
+
+#ifdef mPLATFORM_WINDOWS
+  mPrintToOutputWithLength(text, strlen(text));
+#else
+  fputs(text, stdout);
+#endif
+}
+
 void mDefaultPrint(const char *text)
 {
-  fputs(text, stdout);
+  mPrintToOutput(text);
 }
 
 void mDebugPrint(const char *text)
 {
   mSetConsoleColour(mCC_White, mCC_Black);
-  fputs("[Debug] ", stdout);
+  mPrintToOutputArray("[Debug] ");
   mSetConsoleColour(mCC_DarkGray, mCC_Black);
-  fputs(text, stdout);
+  mPrintToOutput(text);
   mResetConsoleColour();
 
-  mDebugOut("[Debug] %s", text);
+#ifndef GIT_BUILD
+  mDebugOut("[Debug] ");
+  mDebugOut(text);
+#endif
 }
 
 void mLogPrint(const char *text)
 {
   mSetConsoleColour(mCC_White, mCC_Black);
-  fputs("[Log]   ", stdout);
+  mPrintToOutputArray("[Log]   ");
   mSetConsoleColour(mCC_DarkCyan, mCC_Black);
-  fputs(text, stdout);
+  mPrintToOutput(text);
   mResetConsoleColour();
 
-  mDebugOut("[Log]   %s", text);
+#ifndef GIT_BUILD
+  mDebugOut("[Log]   ");
+  mDebugOut(text);
+#endif
 }
 
 void mErrorPrint(const char *text)
 {
   mSetConsoleColour(mCC_BrightRed, mCC_Black);
-  fputs("[Error] ", stdout);
+  mPrintToOutputArray("[Error] ");
   mSetConsoleColour(mCC_BrightYellow, mCC_DarkRed);
-  fputs(text, stdout);
+  mPrintToOutput(text);
   mResetConsoleColour();
 
-  mDebugOut("[Error] %s", text);
+#ifndef GIT_BUILD
+  mDebugOut("[Error] ");
+  mDebugOut(text);
+#endif
 }
 
 void mTracePrint(const char *text)
 {
   mSetConsoleColour(mCC_White, mCC_Black);
-  fputs("[Trace] ", stdout);
+  mPrintToOutputArray("[Trace] ");
   mSetConsoleColour(mCC_BrightGray, mCC_DarkGray);
-  fputs(text, stdout);
+  mPrintToOutput(text);
   mResetConsoleColour();
 
-  mDebugOut("[Trace] %s", text);
+#ifndef GIT_BUILD
+  mDebugOut("[Trace] ");
+  mDebugOut(text);
+#endif
 }
 
 void mSilencablePrint(const char *text)
@@ -128,28 +167,50 @@ void mSilencablePrintTrace(const char *text)
     mPrintTraceCallback(text);
 }
 
+mResult mSetOutputFilePath(const mString &path, const bool append /* = true */)
+{
+  mFUNCTION_SETUP();
+
+  wchar_t wpath[MAX_PATH];
+  mERROR_CHECK(mString_ToWideString(path, wpath, mARRAYSIZE(wpath)));
+
+  HANDLE file = CreateFileW(wpath, GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+  mERROR_IF(file == NULL || file == INVALID_HANDLE_VALUE, mR_IOFailure);
+  mDEFER_CALL_ON_ERROR(file, CloseHandle);
+
+  if (GetLastError() == ERROR_ALREADY_EXISTS && append)
+    SetFilePointer(file, 0, NULL, FILE_END);
+
+  mResetOutputFile();
+
+  mFileOutHandle = file;
+
+  mRETURN_SUCCESS();
+}
+
+void mResetOutputFile()
+{
+  if (mFileOutHandle == NULL)
+    return;
+
+  HANDLE file = mFileOutHandle;
+  mFileOutHandle = NULL;
+
+  FlushFileBuffers(file);
+  CloseHandle(file);
+}
+
+void mFlushOutput()
+{
+  if (mFileOutHandle != NULL)
+    FlushFileBuffers(mFileOutHandle);
+}
+
 mPrintCallbackFunc *mPrintCallback = &mDefaultPrint;
 mPrintCallbackFunc *mPrintErrorCallback = &mErrorPrint;
 mPrintCallbackFunc *mPrintLogCallback = &mLogPrint;
 mPrintCallbackFunc *mPrintDebugCallback = &mDebugPrint;
 mPrintCallbackFunc *mPrintTraceCallback = &mTracePrint;
-
-void mPrintPrepare(mPrintCallbackFunc *pFunc, const char *format, ...)
-{
-  if (pFunc != nullptr)
-  {
-    char buffer[1024 * 16];
-
-    va_list args;
-    va_start(args, format);
-    vsprintf_s(buffer, format, args);
-    va_end(args);
-
-    buffer[mARRAYSIZE(buffer) - 1] = '\0';
-    
-    (*pFunc)(buffer);
-  }
-}
 
 mFUNCTION(mSleep, const size_t milliseconds)
 {
@@ -411,7 +472,7 @@ double_t mParseFloat(IN const char *start, OPTIONAL OUT const char **pEnd /* = n
 
     const double_t fracMult[] = { 0.0, 1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7, 1e-8, 1e-9, 1e-10, 1e-11, 1e-12, 1e-13 };
 
-    if (_end - start < mARRAYSIZE(fracMult))
+    if (_end - start < (ptrdiff_t)mARRAYSIZE(fracMult))
       ret = (ret + right * fracMult[_end - start]);
     else
       ret = (ret + right * mPow(10, _end - start));

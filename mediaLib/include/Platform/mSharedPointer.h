@@ -161,7 +161,7 @@ public:
     mSharedPointer<T>::m_pParams = &m_pointerParams;
     mSharedPointer<T>::m_pData = move.m_pData;
 
-    mASSERT_DEBUG(m_pointerParams.referenceCount == 1, "Not all references of the mReferencePack<%s> have been returned.", typeid(T).name());
+    mASSERT_DEBUG(m_pointerParams.referenceCount == 1, mFormat("Not all references of the mReferencePack<", typeid(T).name(), "> have been returned."));
 
     move.m_pData = nullptr;
     move.m_pParams = nullptr;
@@ -169,8 +169,8 @@ public:
 
   mReferencePack<T> & operator=(mReferencePack<T> &&move)
   {
-    mASSERT_DEBUG(m_pointerParams.referenceCount == 1, "Not all references of the mReferencePack<%s> have been returned.", typeid(T).name());
-    mASSERT_DEBUG(move.m_pointerParams.referenceCount == 1, "Not all references of the mReferencePack<%s> have been returned.", typeid(T).name());
+    mASSERT_DEBUG(m_pointerParams.referenceCount == 1, mFormat("Not all references of the mReferencePack<", typeid(T).name(), "> have been returned."));
+    mASSERT_DEBUG(move.m_pointerParams.referenceCount == 1, mFormat("Not all references of the mReferencePack<", typeid(T).name(), "> have been returned."));
 
     // Cleanup
     {
@@ -211,12 +211,12 @@ public:
 
   ~mReferencePack<T>()
   {
-    mASSERT_DEBUG(m_pointerParams.referenceCount == 1, "Not all references of the mReferencePack<%s> have been returned.", typeid(T).name());
+    mASSERT_DEBUG(m_pointerParams.referenceCount == 1, mFormat("Not all references of the mReferencePack<", typeid(T).name(), "> have been returned."));
 
     if (mSharedPointer<T>::m_pData != nullptr && m_pointerParams.cleanupFunction && m_pointerParams.referenceCount == 1)
     {
 #ifdef mSHARED_POINTER_DEBUG_OUTPUT
-      mLOG("Destroying mReferencePack<%s>. (0x%" PRIx64 ")\n", typeid(T).name(), (uint64_t)m_pData);
+      mLOG("Destroying mReferencePack<", typeid(T).name(), ">. (0x", mFUInt<mFHex>(m_pData), ")\n");
 #endif
       m_pointerParams.cleanupFunction(mSharedPointer<T>::m_pData);
     }
@@ -240,7 +240,7 @@ private:
       mSharedPointer<T>::m_pParams = &m_pointerParams;
       mSharedPointer<T>::m_pData = reinterpret_cast<T *>(m_value);
 
-      mASSERT_DEBUG(m_pointerParams.referenceCount <= 1, "Not all references of the mUniqueContainer<%s> have been returned.", typeid(T).name());
+      mASSERT_DEBUG(m_pointerParams.referenceCount <= 1, mFormat("Not all references of the mUniqueContainer<", typeid(T).name(), "> have been returned."));
 
       mMemmove(reinterpret_cast<T *>(m_value), reinterpret_cast<T *>(pMove->m_value), 1);
       pMove->m_pData = nullptr;
@@ -259,7 +259,7 @@ private:
       new (reinterpret_cast<T *>(m_value)) T(std::move(*reinterpret_cast<T *>(pMove->m_value)));
       mSharedPointer<T>::m_pData = reinterpret_cast<T *>(m_value);
 
-      mASSERT_DEBUG(m_pointerParams.referenceCount <= 1, "Not all references of the mUniqueContainer<%s> have been returned.", typeid(T).name());
+      mASSERT_DEBUG(m_pointerParams.referenceCount <= 1, mFormat("Not all references of the mUniqueContainer<", typeid(T).name(), "> have been returned."));
 
       pMove->m_pData = nullptr;
       pMove->m_pParams = nullptr;
@@ -270,8 +270,8 @@ private:
   typename std::enable_if<(std::is_move_assignable<T>::value || std::is_arithmetic<T>::value) && mIsTriviallyMemoryMovable<T>::value>::type
     MoveAssignFunc(IN mUniqueContainer<T> *pMove)
   {
-    mASSERT_DEBUG(m_pointerParams.referenceCount <= 1, "Not all references of the mUniqueContainer<%s> have been returned.", typeid(T).name());
-    mASSERT_DEBUG(pMove->m_pointerParams.referenceCount == 1, "Not all references of the mUniqueContainer<%s> have been returned.", typeid(T).name());
+    mASSERT_DEBUG(m_pointerParams.referenceCount <= 1, mFormat("Not all references of the mUniqueContainer<", typeid(T).name(), "> have been returned."));
+    mASSERT_DEBUG(pMove->m_pointerParams.referenceCount == 1, mFormat("Not all references of the mUniqueContainer<", typeid(T).name(), "> have been returned."));
 
     // Cleanup
     {
@@ -300,8 +300,8 @@ private:
   typename std::enable_if<(std::is_move_assignable<T>::value || std::is_arithmetic<T>::value) && !mIsTriviallyMemoryMovable<T>::value>::type
     MoveAssignFunc(IN mUniqueContainer<T> *pMove)
   {
-    mASSERT_DEBUG(m_pointerParams.referenceCount <= 1, "Not all references of the mUniqueContainer<%s> have been returned.", typeid(T).name());
-    mASSERT_DEBUG(pMove->m_pointerParams.referenceCount == 1, "Not all references of the mUniqueContainer<%s> have been returned.", typeid(T).name());
+    mASSERT_DEBUG(m_pointerParams.referenceCount <= 1, mFormat("Not all references of the mUniqueContainer<", typeid(T).name(), "> have been returned."));
+    mASSERT_DEBUG(pMove->m_pointerParams.referenceCount == 1, mFormat("Not all references of the mUniqueContainer<", typeid(T).name(), "> have been returned."));
 
     // Cleanup
     {
@@ -432,12 +432,12 @@ public:
 
   ~mUniqueContainer<T>()
   {
-    mASSERT_DEBUG(m_pointerParams.referenceCount <= 1, "Not all references of the mUniqueContainer<%s> have been returned.", typeid(T).name());
+    mASSERT_DEBUG(m_pointerParams.referenceCount <= 1, mFormat("Not all references of the mUniqueContainer<", typeid(T).name(), "> have been returned."));
 
     if (mSharedPointer<T>::m_pData != nullptr && m_pointerParams.cleanupFunction)
     {
 #ifdef mSHARED_POINTER_DEBUG_OUTPUT
-      mLOG("Destroying mUniqueContainer<%s>. (0x%" PRIx64 ")\n", typeid(T).name(), (uint64_t)m_pData);
+      mLOG("Destroying mUniqueContainer<", typeid(T).name(), ">. (0x", mFUInt<mFHex>(m_pData), ")\n");
 #endif
       m_pointerParams.cleanupFunction(reinterpret_cast<T *>(m_value));
     }
@@ -475,10 +475,22 @@ inline mFUNCTION(mSharedPointer_Create, OUT mSharedPointer<T> *pOutSharedPointer
   pOutSharedPointer->m_pParams->pUserData = nullptr;
 
 #ifdef mSHARED_POINTER_DEBUG_OUTPUT
-  mLOG("Created mSharedPointer<%s>. (0x%" PRIx64 ")\n", typeid(T).name(), (uint64_t)pData);
+  mLOG("Created mSharedPointer<", typeid(T).name(), ">. (0x", mFUInt<mFHex>(m_pData), ")\n");
 #endif
 
   mRETURN_SUCCESS();
+}
+
+template <typename T>
+inline mFUNCTION(mSharedPointer_Create, OUT mReferencePack<T> *, IN T *, std::function<void(T *pData)>, IN mAllocator *)
+{
+  static_assert(false, "This function is not compatible with mReferencePack.");
+}
+
+template <typename T>
+inline mFUNCTION(mSharedPointer_Create, OUT mUniqueContainer<T> *, IN T *, std::function<void(T *pData)>, IN mAllocator *)
+{
+  static_assert(false, "This function is not compatible with mUniqueContainer.");
 }
 
 template <typename T>
@@ -489,6 +501,18 @@ inline mFUNCTION(mSharedPointer_Create, OUT mSharedPointer<T> *pOutSharedPointer
   mERROR_CHECK(mSharedPointer_Create(pOutSharedPointer, pData, std::function<void(T *pData)>(nullptr), pAllocator));
 
   mRETURN_SUCCESS();
+}
+
+template <typename T>
+inline mFUNCTION(mSharedPointer_Create, OUT mReferencePack<T> *, IN T *, IN mAllocator *)
+{
+  static_assert(false, "This function is not compatible with mReferencePack.");
+}
+
+template <typename T>
+inline mFUNCTION(mSharedPointer_Create, OUT mUniqueContainer<T> *, IN T *, IN mAllocator *)
+{
+  static_assert(false, "This function is not compatible with mUniqueContainer.");
 }
 
 template <typename T>
@@ -511,6 +535,18 @@ inline mFUNCTION(mSharedPointer_Allocate, OUT mSharedPointer<T> *pOutSharedPoint
 }
 
 template <typename T>
+inline mFUNCTION(mSharedPointer_Allocate, OUT mReferencePack<T> *, IN mAllocator *, const size_t count = 1)
+{
+  static_assert(false, "This function is not compatible with mReferencePack.");
+}
+
+template <typename T>
+inline mFUNCTION(mSharedPointer_Allocate, OUT mUniqueContainer<T> *, IN mAllocator *, const size_t count = 1)
+{
+  static_assert(false, "This function is not compatible with mUniqueContainer.");
+}
+
+template <typename T>
 inline mFUNCTION(mSharedPointer_Allocate, OUT mSharedPointer<T> *pOutSharedPointer, IN mAllocator *pAllocator, const std::function<void(T *)> &function, const size_t count)
 {
   mFUNCTION_SETUP();
@@ -529,6 +565,18 @@ inline mFUNCTION(mSharedPointer_Allocate, OUT mSharedPointer<T> *pOutSharedPoint
   mRETURN_SUCCESS();
 }
 
+template <typename T>
+inline mFUNCTION(mSharedPointer_Allocate, OUT mReferencePack<T> *, IN mAllocator *, const std::function<void(T *)> &, const size_t )
+{
+  static_assert(false, "This function is not compatible with mReferencePack.");
+}
+
+template <typename T>
+inline mFUNCTION(mSharedPointer_Allocate, OUT mUniqueContainer<T> *, IN mAllocator *, const std::function<void(T *)> &, const size_t )
+{
+  static_assert(false, "This function is not compatible with mUniqueContainer.");
+}
+
 template <typename T, typename TFlexArrayType>
 inline mFUNCTION(mSharedPointer_AllocateWithFlexArray, OUT mSharedPointer<T> *pOutSharedPointer, IN mAllocator *pAllocator, const size_t flexArrayCount, const std::function<void(T *)> &function)
 {
@@ -545,6 +593,18 @@ inline mFUNCTION(mSharedPointer_AllocateWithFlexArray, OUT mSharedPointer<T> *pO
   pData = nullptr; // to not get released on destruction.
 
   mRETURN_SUCCESS();
+}
+
+template <typename T, typename TFlexArrayType>
+inline mFUNCTION(mSharedPointer_AllocateWithFlexArray, OUT mReferencePack<T> *, IN mAllocator *, const size_t , const std::function<void(T *)> &)
+{
+  static_assert(false, "This function is not compatible with mReferencePack.");
+}
+
+template <typename T, typename TFlexArrayType>
+inline mFUNCTION(mSharedPointer_AllocateWithFlexArray, OUT mUniqueContainer<T> *, IN mAllocator *, const size_t , const std::function<void(T *)> &)
+{
+  static_assert(false, "This function is not compatible with mUniqueContainer.");
 }
 
 template <typename T, typename TInherited, typename std::enable_if<std::is_base_of<T, TInherited>::value>* = nullptr>
@@ -570,10 +630,22 @@ inline mFUNCTION(mSharedPointer_AllocateInherited, OUT mSharedPointer<T> *pOutSh
   pData = nullptr; // to not get released on destruction.
 
 #ifdef mSHARED_POINTER_DEBUG_OUTPUT
-  mLOG(" [was inherited from %s]\n", typeid(TInherited).name());
+  mLOG(" [was inherited from ", typeid(TInherited).name(), "]\n");
 #endif
 
   mRETURN_SUCCESS();
+}
+
+template <typename T, typename TInherited, typename std::enable_if<std::is_base_of<T, TInherited>::value>* = nullptr>
+inline mFUNCTION(mSharedPointer_AllocateInherited, OUT mReferencePack<T> *, IN mAllocator *, const std::function<void(TInherited *)> &, OUT OPTIONAL TInherited **)
+{
+  static_assert(false, "This function is not compatible with mReferencePack.");
+}
+
+template <typename T, typename TInherited, typename std::enable_if<std::is_base_of<T, TInherited>::value>* = nullptr>
+inline mFUNCTION(mSharedPointer_AllocateInherited, OUT mUniqueContainer<T> *, IN mAllocator *, const std::function<void(TInherited *)> &, OUT OPTIONAL TInherited **)
+{
+  static_assert(false, "This function is not compatible with mUniqueContainer.");
 }
 
 template <typename T, typename TInherited, typename TFlexArrayType, typename std::enable_if<std::is_base_of<T, TInherited>::value>* = nullptr>
@@ -598,10 +670,22 @@ inline mFUNCTION(mSharedPointer_AllocateInheritedWithFlexArray, OUT mSharedPoint
   pData = nullptr; // to not get released on destruction.
 
 #ifdef mSHARED_POINTER_DEBUG_OUTPUT
-  mLOG(" [was inherited from %s]\n", typeid(TInherited).name());
+  mLOG(" [was inherited from ", typeid(TInherited).name(), "]\n");
 #endif
 
   mRETURN_SUCCESS();
+}
+
+template <typename T, typename TInherited, typename TFlexArrayType, typename std::enable_if<std::is_base_of<T, TInherited>::value>* = nullptr>
+inline mFUNCTION(mSharedPointer_AllocateInheritedWithFlexArray, OUT mReferencePack<T> *, IN mAllocator *, const size_t , const std::function<void(TInherited *)> &, OUT OPTIONAL TInherited **)
+{
+  static_assert(false, "This function is not compatible with mReferencePack.");
+}
+
+template <typename T, typename TInherited, typename TFlexArrayType, typename std::enable_if<std::is_base_of<T, TInherited>::value>* = nullptr>
+inline mFUNCTION(mSharedPointer_AllocateInheritedWithFlexArray, OUT mUniqueContainer<T> *, IN mAllocator *, const size_t , const std::function<void(TInherited *)> &, OUT OPTIONAL TInherited **)
+{
+  static_assert(false, "This function is not compatible with mUniqueContainer.");
 }
 
 template <typename T>
@@ -620,6 +704,18 @@ inline mFUNCTION(mSharedPointer_AllocateWithSize, OUT mSharedPointer<T> *pOutSha
   pData = nullptr; // to not get released on destruction.
 
   mRETURN_SUCCESS();
+}
+
+template <typename T>
+inline mFUNCTION(mSharedPointer_AllocateWithSize, OUT mReferencePack<T> *, IN mAllocator *, const size_t , const std::function<void(T *)> &function = nullptr)
+{
+  static_assert(false, "This function is not compatible with mReferencePack.");
+}
+
+template <typename T>
+inline mFUNCTION(mSharedPointer_AllocateWithSize, OUT mUniqueContainer<T> *, IN mAllocator *, const size_t , const std::function<void(T *)> &function = nullptr)
+{
+  static_assert(false, "This function is not compatible with mUniqueContainer.");
 }
 
 template <typename T>
@@ -645,10 +741,22 @@ inline mFUNCTION(mSharedPointer_CreateInplace, IN_OUT mSharedPointer<T> *pOutSha
   pOutSharedPointer->m_pData = pData;
 
 #ifdef mSHARED_POINTER_DEBUG_OUTPUT
-  mLOG("Created mSharedPointer<%s> in place. (0x%" PRIx64 ")\n", typeid(T).name(), (uint64_t)pData);
+  mLOG("Created mSharedPointer<", typeid(T).name(), "> in place. (0x", mFUInt<mFHex>(m_pData), ")\n");
 #endif
 
   mRETURN_SUCCESS();
+}
+
+template <typename T>
+inline mFUNCTION(mSharedPointer_CreateInplace, IN_OUT mReferencePack<T> *, IN typename mSharedPointer<T>::PointerParams *, IN T *pData, IN mAllocator *, const std::function<void(T *)> &)
+{
+  static_assert(false, "This function is not compatible with mReferencePack.");
+}
+
+template <typename T>
+inline mFUNCTION(mSharedPointer_CreateInplace, IN_OUT mUniqueContainer<T> *, IN typename mSharedPointer<T>::PointerParams *, IN T *pData, IN mAllocator *, const std::function<void(T *)> &)
+{
+  static_assert(false, "This function is not compatible with mUniqueContainer.");
 }
 
 template <typename T>
@@ -660,6 +768,12 @@ inline mFUNCTION(mSharedPointer_Destroy, IN_OUT mSharedPointer<T> *pPointer)
   *pPointer = nullptr;
 
   mRETURN_SUCCESS();
+}
+
+template <typename T>
+inline mFUNCTION(mSharedPointer_Destroy, IN_OUT mReferencePack<T> *)
+{
+  static_assert(false, "This function is not compatible with mReferencePack.");
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -750,7 +864,7 @@ inline mSharedPointer<T>::~mSharedPointer()
   if (referenceCount == 0)
   {
 #ifdef mSHARED_POINTER_DEBUG_OUTPUT
-    mLOG("Destroying mSharedPointer<%s>. (0x%" PRIx64 ")\n", typeid(T).name(), (uint64_t)m_pData);
+    mLOG("Destroying mSharedPointer<", typeid(T).name(), ">. (0x", mFUInt<mFHex>(m_pData), ")\n");
 #endif
 
     if (m_pParams->cleanupFunction)

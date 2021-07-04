@@ -635,7 +635,7 @@ mFUNCTION(mRenderParams_PrintRenderState, const bool onlyNewValues /* = false */
   if (!onlyUpdateValues)
     mPRINT_FUNC("GL STATE:\n================================================\n");
 
-#define mGL_PRINT_PARAM(func, param, paramString, var, format) \
+#define mGL_PRINT_PARAM(func, param, paramString, var) \
   do { static var mCONCAT_LITERALS(_var_, param)[4]; \
   var mCONCAT_LITERALS(_local_var_, param)[4]; \
   func(param, &mCONCAT_LITERALS(_local_var_, param)[0]); \
@@ -643,16 +643,16 @@ mFUNCTION(mRenderParams_PrintRenderState, const bool onlyNewValues /* = false */
   { const bool valueIsNew = mCONCAT_LITERALS(_var_, param)[0] != mCONCAT_LITERALS(_local_var_, param)[0]; \
     if (onlyNewValues) \
     { if (valueIsNew) \
-      { mPRINT_FUNC(paramString " = " format " [was " format "]\n", mCONCAT_LITERALS(_local_var_, param)[0], mCONCAT_LITERALS(_var_, param)[0]); \
+      { mPRINT_FUNC(paramString " = ", mCONCAT_LITERALS(_local_var_, param)[0], " [was ", mCONCAT_LITERALS(_var_, param)[0], "]\n"); \
       } \
     } \
     else \
-    { mPRINT_FUNC("%s" paramString " = " format "\n", valueIsNew ? " * " : "   ", mCONCAT_LITERALS(_local_var_, param)[0]); \
+    { mPRINT_FUNC((valueIsNew ? " * " : "   "), paramString " = ", mCONCAT_LITERALS(_local_var_, param)[0], "\n"); \
     } \
   } \
   mCONCAT_LITERALS(_var_, param)[0] = mCONCAT_LITERALS(_local_var_, param)[0]; } while (0)
 
-#define mGL_PRINT_VEC2_PARAM(func, param, paramString, var, format) \
+#define mGL_PRINT_VEC2_PARAM(func, param, paramString, var) \
   do { static var mCONCAT_LITERALS(_var_, param)[4]; \
   var mCONCAT_LITERALS(_local_var_, param)[4]; \
   func(param, &mCONCAT_LITERALS(_local_var_, param)[0]); \
@@ -660,17 +660,17 @@ mFUNCTION(mRenderParams_PrintRenderState, const bool onlyNewValues /* = false */
   { const bool valueIsNew = mCONCAT_LITERALS(_var_, param)[0] != mCONCAT_LITERALS(_local_var_, param)[0] || mCONCAT_LITERALS(_var_, param)[1] != mCONCAT_LITERALS(_local_var_, param)[1]; \
     if (onlyNewValues) \
     { if (valueIsNew) \
-      { mPRINT_FUNC(paramString " = (" format ", " format ") [was (" format ", " format ")]\n", mCONCAT_LITERALS(_local_var_, param)[0], mCONCAT_LITERALS(_local_var_, param)[1], mCONCAT_LITERALS(_var_, param)[0], mCONCAT_LITERALS(_var_, param)[1]); \
+      { mPRINT_FUNC(paramString " = (", mCONCAT_LITERALS(_local_var_, param)[0], ", ", mCONCAT_LITERALS(_local_var_, param)[1], ") [was (", mCONCAT_LITERALS(_var_, param)[0], ", ", mCONCAT_LITERALS(_var_, param)[1], ")]\n"); \
       } \
     } \
     else \
-    { mPRINT_FUNC("%s" paramString " = (" format ", " format ")\n", valueIsNew ? " * " : "   ", mCONCAT_LITERALS(_local_var_, param)[0], mCONCAT_LITERALS(_local_var_, param)[1]); \
+    { mPRINT_FUNC((valueIsNew ? " * " : "   "), paramString " = (", mCONCAT_LITERALS(_local_var_, param)[0], ", ", mCONCAT_LITERALS(_local_var_, param)[1], ")\n"); \
     } \
   } \
   mCONCAT_LITERALS(_var_, param)[0] = mCONCAT_LITERALS(_local_var_, param)[0]; \
   mCONCAT_LITERALS(_var_, param)[1] = mCONCAT_LITERALS(_local_var_, param)[1]; } while (0)
 
-#define mGL_PRINT_VEC3_PARAM(func, param, paramString, var, format) \
+#define mGL_PRINT_VEC3_PARAM(func, param, paramString, var) \
   do { static var mCONCAT_LITERALS(_var_, param)[4]; \
   var mCONCAT_LITERALS(_local_var_, param)[4]; \
   func(param, &mCONCAT_LITERALS(_local_var_, param)[0]); \
@@ -678,18 +678,18 @@ mFUNCTION(mRenderParams_PrintRenderState, const bool onlyNewValues /* = false */
   { const bool valueIsNew = mCONCAT_LITERALS(_var_, param)[0] != mCONCAT_LITERALS(_local_var_, param)[0] || mCONCAT_LITERALS(_var_, param)[1] != mCONCAT_LITERALS(_local_var_, param)[1] || mCONCAT_LITERALS(_var_, param)[2] != mCONCAT_LITERALS(_local_var_, param)[2]; \
     if (onlyNewValues) \
     { if (valueIsNew) \
-      { mPRINT_FUNC(paramString " = (" format ", " format ", " format ") [was (" format ", " format ", " format ")]\n", mCONCAT_LITERALS(_local_var_, param)[0], mCONCAT_LITERALS(_local_var_, param)[1], mCONCAT_LITERALS(_local_var_, param)[2], mCONCAT_LITERALS(_var_, param)[0], mCONCAT_LITERALS(_var_, param)[1], mCONCAT_LITERALS(_var_, param)[2]); \
+      { mPRINT_FUNC(paramString " = (", mCONCAT_LITERALS(_local_var_, param)[0], ", ", mCONCAT_LITERALS(_local_var_, param)[1], ", ", mCONCAT_LITERALS(_local_var_, param)[2], ") [was (", mCONCAT_LITERALS(_var_, param)[0], ", ", mCONCAT_LITERALS(_var_, param)[1], ", ", mCONCAT_LITERALS(_var_, param)[2], ")]\n"); \
       } \
     } \
     else \
-    {  mPRINT_FUNC("%s" paramString " = (" format ", " format ", " format ")\n", valueIsNew ? " * " : "   ", mCONCAT_LITERALS(_local_var_, param)[0], mCONCAT_LITERALS(_local_var_, param)[1], mCONCAT_LITERALS(_local_var_, param)[2]); \
+    {  mPRINT_FUNC((valueIsNew ? " * " : "   "), paramString " = (", mCONCAT_LITERALS(_local_var_, param)[0], ", ", mCONCAT_LITERALS(_local_var_, param)[1], ", ", mCONCAT_LITERALS(_local_var_, param)[2], ")\n"); \
     } \
   } \
   mCONCAT_LITERALS(_var_, param)[0] = mCONCAT_LITERALS(_local_var_, param)[0]; \
   mCONCAT_LITERALS(_var_, param)[1] = mCONCAT_LITERALS(_local_var_, param)[1]; \
   mCONCAT_LITERALS(_var_, param)[2] = mCONCAT_LITERALS(_local_var_, param)[2]; } while (0)
 
-#define mGL_PRINT_VEC4_PARAM(func, param, paramString, var, format) \
+#define mGL_PRINT_VEC4_PARAM(func, param, paramString, var) \
   do { static var mCONCAT_LITERALS(_var_, param)[4]; \
   var mCONCAT_LITERALS(_local_var_, param)[4]; \
   func(param, &mCONCAT_LITERALS(_local_var_, param)[0]); \
@@ -697,11 +697,11 @@ mFUNCTION(mRenderParams_PrintRenderState, const bool onlyNewValues /* = false */
   { const bool valueIsNew = mCONCAT_LITERALS(_var_, param)[0] != mCONCAT_LITERALS(_local_var_, param)[0] || mCONCAT_LITERALS(_var_, param)[1] != mCONCAT_LITERALS(_local_var_, param)[1] || mCONCAT_LITERALS(_var_, param)[2] != mCONCAT_LITERALS(_local_var_, param)[2] || mCONCAT_LITERALS(_var_, param)[3] != mCONCAT_LITERALS(_local_var_, param)[3]; \
     if (onlyNewValues) \
     { if (valueIsNew) \
-      { mPRINT_FUNC(paramString " = (" format ", " format ", " format ", " format ") [was (" format ", " format ", " format ", " format ")]\n", mCONCAT_LITERALS(_local_var_, param)[0], mCONCAT_LITERALS(_local_var_, param)[1], mCONCAT_LITERALS(_local_var_, param)[2], mCONCAT_LITERALS(_local_var_, param)[3], mCONCAT_LITERALS(_var_, param)[0], mCONCAT_LITERALS(_var_, param)[1], mCONCAT_LITERALS(_var_, param)[2], mCONCAT_LITERALS(_var_, param)[3]); \
+      { mPRINT_FUNC(paramString " = (", mCONCAT_LITERALS(_local_var_, param)[0], ", ", mCONCAT_LITERALS(_local_var_, param)[1], ", ", mCONCAT_LITERALS(_local_var_, param)[2], ", ", mCONCAT_LITERALS(_local_var_, param)[3], ") [was (", mCONCAT_LITERALS(_var_, param)[0], ", ", mCONCAT_LITERALS(_var_, param)[1], ", ", mCONCAT_LITERALS(_var_, param)[2], ", ", mCONCAT_LITERALS(_var_, param)[3], ")]\n"); \
       } \
     } \
     else \
-    {  mPRINT_FUNC("%s" paramString " = (" format ", " format ", " format ", " format ")\n", valueIsNew ? " * " : "   ", mCONCAT_LITERALS(_local_var_, param)[0], mCONCAT_LITERALS(_local_var_, param)[1], mCONCAT_LITERALS(_local_var_, param)[2], mCONCAT_LITERALS(_local_var_, param)[3]); \
+    {  mPRINT_FUNC((valueIsNew ? " * " : "   "), paramString " = (", mCONCAT_LITERALS(_local_var_, param)[0], ", ", mCONCAT_LITERALS(_local_var_, param)[1], ", ", mCONCAT_LITERALS(_local_var_, param)[2], ", ", mCONCAT_LITERALS(_local_var_, param)[3], ")\n"); \
     } \
   } \
   mCONCAT_LITERALS(_var_, param)[0] = mCONCAT_LITERALS(_local_var_, param)[0]; \
@@ -718,50 +718,50 @@ mFUNCTION(mRenderParams_PrintRenderState, const bool onlyNewValues /* = false */
     { const bool valueIsNew = __local_var != __var__; \
       if (onlyNewValues) \
       { if (valueIsNew) \
-        { mPRINT_FUNC(#target ": " #attachment " (" #param ") = %" PRIi32 " [was %" PRIi32 "]\n", __local_var, __var__); \
+        { mPRINT_FUNC(#target ": " #attachment " (" #param ") = ", __local_var, " [was ", __var__, "]\n"); \
         } \
       } \
       else \
-      { mPRINT_FUNC("%s" #target ": " #attachment " (" #param ")" " = %" PRIi32 "\n", valueIsNew ? " * " : "   ", __local_var, __var__); \
+      { mPRINT_FUNC((valueIsNew ? " * " : "   "), #target ": " #attachment " (" #param ")" " = ", __local_var, "\n"); \
       } \
     } \
     __var__ = __local_var; \
   } while (0)
 
 #define mGL_PRINT_DOUBLE_PARAM(param) \
-  mGL_PRINT_PARAM(glGetDoublev, param, #param, double_t, "%f"); \
+  mGL_PRINT_PARAM(glGetDoublev, param, #param, double_t); \
   while (glGetError() != GL_NO_ERROR) {}
 
 #define mGL_PRINT_DOUBLE_VEC2_PARAM(param) \
-  mGL_PRINT_VEC2_PARAM(glGetDoublev, param, #param, double_t, "%f"); \
+  mGL_PRINT_VEC2_PARAM(glGetDoublev, param, #param, double_t); \
   while (glGetError() != GL_NO_ERROR) {}
 
 #define mGL_PRINT_DOUBLE_VEC3_PARAM(param) \
-  mGL_PRINT_VEC3_PARAM(glGetDoublev, param, #param, double_t, "%f"); \
+  mGL_PRINT_VEC3_PARAM(glGetDoublev, param, #param, double_t); \
   while (glGetError() != GL_NO_ERROR) {}
 
 #define mGL_PRINT_DOUBLE_VEC4_PARAM(param) \
-  mGL_PRINT_VEC4_PARAM(glGetDoublev, param, #param, double_t, "%f"); \
+  mGL_PRINT_VEC4_PARAM(glGetDoublev, param, #param, double_t); \
   while (glGetError() != GL_NO_ERROR) {}
 
 #define mGL_PRINT_INTEGER_PARAM(param) \
-  mGL_PRINT_PARAM(glGetIntegerv, param, #param, int32_t, "%" PRIi32); \
+  mGL_PRINT_PARAM(glGetIntegerv, param, #param, int32_t); \
   while (glGetError() != GL_NO_ERROR) {}
 
 #define mGL_PRINT_INTEGER_VEC2_PARAM(param) \
-  mGL_PRINT_VEC2_PARAM(glGetIntegerv, param, #param, int32_t, "%" PRIi32); \
+  mGL_PRINT_VEC2_PARAM(glGetIntegerv, param, #param, int32_t); \
   while (glGetError() != GL_NO_ERROR) {}
 
 #define mGL_PRINT_INTEGER_VEC4_PARAM(param) \
-  mGL_PRINT_VEC4_PARAM(glGetIntegerv, param, #param, int32_t, "%" PRIi32); \
+  mGL_PRINT_VEC4_PARAM(glGetIntegerv, param, #param, int32_t); \
   while (glGetError() != GL_NO_ERROR) {}
 
 #define mGL_PRINT_BOOL_PARAM(param) \
-  mGL_PRINT_PARAM(glGetBooleanv, param, #param, GLboolean, "%" PRIu8); \
+  mGL_PRINT_PARAM(glGetBooleanv, param, #param, GLboolean); \
   while (glGetError() != GL_NO_ERROR) {}
 
 #define mGL_PRINT_BOOL_VEC4_PARAM(param) \
-  mGL_PRINT_VEC4_PARAM(glGetBooleanv, param, #param, GLboolean, "%" PRIu8); \
+  mGL_PRINT_VEC4_PARAM(glGetBooleanv, param, #param, GLboolean); \
   while (glGetError() != GL_NO_ERROR) {}
 
   mGL_PRINT_INTEGER_PARAM(GL_ACCUM_ALPHA_BITS);
@@ -1057,7 +1057,7 @@ mFUNCTION(mRenderParams_PrintRenderState, const bool onlyNewValues /* = false */
     ;
 
   if (!onlyUpdateValues)
-    mPRINT_DEBUG("================================================\nEND OF GL STATE\n");
+    mPRINT_FUNC("================================================\nEND OF GL STATE\n");
 
 #endif
 

@@ -442,6 +442,7 @@ mFUNCTION(mTexture_Download, mTexture &texture, OUT mPtr<mImageBuffer> *pImageBu
   {
   case mPF_B8G8R8:
   case mPF_R8G8B8:
+  case mPF_R16G16B16:
   case mPF_Rf16Gf16Bf16:
   case mPF_Rf32Gf32Bf32:
     glPixelFormat = GL_RGB;
@@ -450,6 +451,7 @@ mFUNCTION(mTexture_Download, mTexture &texture, OUT mPtr<mImageBuffer> *pImageBu
 
   case mPF_B8G8R8A8:
   case mPF_R8G8B8A8:
+  case mPF_R16G16B16A16:
   case mPF_Rf16Gf16Bf16Af16:
   case mPF_Rf32Gf32Bf32Af32:
     glPixelFormat = GL_RGBA;
@@ -458,12 +460,17 @@ mFUNCTION(mTexture_Download, mTexture &texture, OUT mPtr<mImageBuffer> *pImageBu
 
   case mPF_Monochrome8:
   case mPF_Monochrome16:
+  case mPF_Monochromef16:
+  case mPF_Monochromef32:
     glPixelFormat = GL_RED;
     internalPixelFormat = pixelFormat;
     break;
 
+  case mPF_YUV444:
+  case mPF_YUV440:
   case mPF_YUV422:
   case mPF_YUV420:
+  case mPF_YUV411:
   default:
     mRETURN_RESULT(mR_InvalidParameter);
     break;

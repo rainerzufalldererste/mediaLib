@@ -35,15 +35,15 @@ struct mIPAddress_v4
 
   inline mFUNCTION(ToString, OUT char *string, const size_t maxLength) const
   {
-    return mSprintf(string, maxLength, "%" PRIu8 ".%" PRIu8 ".%" PRIu8 ".%" PRIu8, _0, _1, _2, _3);
+    return mFormatTo(string, maxLength, _0, '.', _1, '.', _2, '.', _3);
   }
 
-  inline bool operator == (const mIPAddress_v4 &other)
+  inline bool operator == (const mIPAddress_v4 &other) const
   {
     return memcmp(bytes, other.bytes, sizeof(bytes)) == 0;
   }
 
-  inline bool operator != (const mIPAddress_v4 &other)
+  inline bool operator != (const mIPAddress_v4 &other) const
   {
     return !(*this == other);
   }
@@ -62,14 +62,14 @@ struct mIPAddress_v6
   {
     struct
     {
-      uint16_t _0, _1, _2, _3, _4, _5, _6, _7;
+      uint8_t _0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15;
     };
 
     uint8_t bytes[16];
   };
 #pragma warning(pop)
 
-  inline mIPAddress_v6(const uint16_t _0, const uint16_t _1, const uint16_t _2, const uint16_t _3, const uint16_t _4, const uint16_t _5, const uint16_t _6, const uint16_t _7) :
+  inline mIPAddress_v6(const uint8_t _0, const uint8_t _1, const uint8_t _2, const uint8_t _3, const uint8_t _4, const uint8_t _5, const uint8_t _6, const uint8_t _7, const uint8_t _8, const uint8_t _9, const uint8_t _10, const uint8_t _11, const uint8_t _12, const uint8_t _13, const uint8_t _14, const uint8_t _15) :
     _0(_0),
     _1(_1),
     _2(_2),
@@ -77,20 +77,38 @@ struct mIPAddress_v6
     _4(_4),
     _5(_5),
     _6(_6),
-    _7(_7)
+    _7(_7),
+    _8(_8),
+    _9(_9),
+    _10(_10),
+    _11(_11),
+    _12(_12),
+    _13(_13),
+    _14(_14),
+    _15(_15)
   { }
 
   inline mFUNCTION(ToString, OUT char *string, const size_t maxLength) const
   {
-    return mSprintf(string, maxLength, "%02" PRIx8 "%02" PRIx8 ":%02" PRIx8 "%02" PRIx8 ":%02" PRIx8 "%02" PRIx8 ":%02" PRIx8 "%02" PRIx8 ":%02" PRIx8 "%02" PRIx8 ":%02" PRIx8 "%02" PRIx8 ":%02" PRIx8 "%02" PRIx8 ":%02" PRIx8 "%02" PRIx8, bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7], bytes[8], bytes[9], bytes[10], bytes[11], bytes[12], bytes[13], bytes[14], bytes[15]);
+    mFormatState &fs = mFormat_GetState();
+    mFormatState copy(fs);
+    mDEFER(fs.SetTo(copy));
+
+    fs.minChars = 2;
+    fs.integerBaseOption = mFBO_Hexadecimal;
+    fs.hexadecimalUpperCase = false;
+    fs.fillCharacterIsZero = true;
+    fs.fillCharacter = '0';
+
+    return mFormatTo(string, maxLength, _0, _1, ':', _2, _3, ':', _4, _5, ':', _6, _7, ':', _8, _9, ':', _10, _11, ':', _12, _13, ':', _14, _15);
   }
 
-  inline bool operator == (const mIPAddress_v6 &other)
+  inline bool operator == (const mIPAddress_v6 &other) const
   {
     return memcmp(bytes, other.bytes, sizeof(bytes)) == 0;
   }
 
-  inline bool operator != (const mIPAddress_v6 &other)
+  inline bool operator != (const mIPAddress_v6 &other) const
   {
     return !(*this == other);
   }
@@ -117,12 +135,26 @@ struct mIPAddress
   inline mFUNCTION(ToString, OUT char *string, const size_t maxLength) const
   {
     if (isIPv6)
-      return mSprintf(string, maxLength, "%02" PRIx8 "%02" PRIx8 ":%02" PRIx8 "%02" PRIx8 ":%02" PRIx8 "%02" PRIx8 ":%02" PRIx8 "%02" PRIx8 ":%02" PRIx8 "%02" PRIx8 ":%02" PRIx8 "%02" PRIx8 ":%02" PRIx8 "%02" PRIx8 ":%02" PRIx8 "%02" PRIx8, ipv6[0], ipv6[1], ipv6[2], ipv6[3], ipv6[4], ipv6[5], ipv6[6], ipv6[7], ipv6[8], ipv6[9], ipv6[10], ipv6[11], ipv6[12], ipv6[13], ipv6[14], ipv6[15]);
+    {
+      mFormatState &fs = mFormat_GetState();
+      mFormatState copy(fs);
+      mDEFER(fs.SetTo(copy));
+
+      fs.minChars = 2;
+      fs.integerBaseOption = mFBO_Hexadecimal;
+      fs.hexadecimalUpperCase = false;
+      fs.fillCharacterIsZero = true;
+      fs.fillCharacter = '0';
+
+      return mFormatTo(string, maxLength, ipv6[0], ipv6[1], ':', ipv6[2], ipv6[3], ':', ipv6[4], ipv6[5], ':', ipv6[6], ipv6[7], ':', ipv6[8], ipv6[9], ':', ipv6[10], ipv6[11], ':', ipv6[12], ipv6[13], ':', ipv6[14], ipv6[15]);
+    }
     else
-      return mSprintf(string, maxLength, "%" PRIu8 ".%" PRIu8 ".%" PRIu8 ".%" PRIu8, ipv4[0], ipv4[1], ipv4[2], ipv4[3]);
+    {
+      return mFormatTo(string, maxLength, ipv4[0], '.', ipv4[1], '.', ipv4[2], '.', ipv4[3]);
+    }
   }
 
-  inline bool operator == (const mIPAddress &other)
+  inline bool operator == (const mIPAddress &other) const
   {
     if (other.isIPv6 != isIPv6)
       return false;
@@ -130,7 +162,7 @@ struct mIPAddress
     return memcmp(other.ipv6, ipv6, isIPv6 ? sizeof(ipv6) : sizeof(ipv4)) == 0;
   }
 
-  inline bool operator != (const mIPAddress &other)
+  inline bool operator != (const mIPAddress &other) const
   {
     return !(*this == other);
   }

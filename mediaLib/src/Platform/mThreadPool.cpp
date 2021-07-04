@@ -72,6 +72,8 @@ mFUNCTION(mTask_Destroy, IN_OUT mTask **ppTask)
       mERROR_CHECK(mAllocator_FreePtr(pAllocator, ppTask));
   }
 
+  *ppTask = nullptr;
+
   mRETURN_SUCCESS();
 }
 
@@ -641,9 +643,9 @@ void mTasklessThreadPool_ThreadFunc_Internal(mTasklessThreadPool *pThreadPool, c
 {
 #ifdef _WIN32
   if ((DWORD)-1 == SetThreadIdealProcessor(GetCurrentThread(), (DWORD)threadIndex))
-    mPRINT_ERROR("Failed to set thread affinity mask for thread %" PRIu64 " with error code 0x%" PRIX64 ".", threadIndex, (uint64_t)GetLastError());
+    mPRINT_ERROR("Failed to set thread affinity mask for thread ", threadIndex," with error code 0x", mFUInt<mFHex>(GetLastError()), ".\n");
 #else
-  htcUnused(threadIndex);
+  mUnused(threadIndex);
 #endif
 
   while (pThreadPool->isRunning)

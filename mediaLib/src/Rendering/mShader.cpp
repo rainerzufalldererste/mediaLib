@@ -119,12 +119,13 @@ mFUNCTION(mShader_Create, OUT mShader *pShader, const mString &vertexShader, con
   {
     mPRINT_ERROR("Error compiling fragment shader.\n");
 #ifndef GIT_BUILD
-    mPRINT_ERROR("%s", fragmentSource);
+    mPRINT_ERROR(fragmentSource);
 #endif
     mPRINT_ERROR("The following error occured:\n");
     char buffer[1024];
     glGetShaderInfoLog(fragmentShaderHandle, sizeof(buffer), nullptr, buffer);
-    mPRINT_ERROR("%s", buffer);
+    buffer[mARRAYSIZE(buffer) - 1] = '\0';
+    mPRINT_ERROR(buffer);
     mRETURN_RESULT(mR_ResourceInvalid);
   }
 

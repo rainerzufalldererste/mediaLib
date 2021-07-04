@@ -433,7 +433,7 @@ static mFUNCTION(mAudioScene_ReadBuffers_Internal, mAudioScene *pAudioScene, con
       if (mSILENCE_ERROR(mFAILED(result = audioSource->monoAudioSource->pGetBufferFunc(audioSource->monoAudioSource, audioSource->pSamples + audioSource->sampleCount, requiredSampleCount, audioSource->channelIndex, &samplesRetrieved))))
       {
         if (result != mR_EndOfStream)
-          mPRINT_ERROR("Audio Source failed in Audio Scene in pGetBufferFunc with error code 0x%" PRIx64 ". (%s: %" PRIu64 ")\n", (uint64_t)result, g_mResult_lastErrorFile, g_mResult_lastErrorLine);
+          mPRINT_ERROR("Audio Source failed in Audio Scene in pGetBufferFunc with error code 0x", mFUInt<mFHex>(result), ". (", g_mResult_lastErrorFile, ": ", g_mResult_lastErrorLine, ")\n");
 
         bool contained = true;
         mERROR_CHECK(mQueue_Contains(pAudioScene->deadAudioSourceIndices, index, &contained));
@@ -502,7 +502,7 @@ static mFUNCTION(mAudioScene_ReadBuffers_Internal, mAudioScene *pAudioScene, con
     if (askForNewBuffer && audioSource->monoAudioSource->pMoveToNextBufferFunc != nullptr && mSILENCE_ERROR(mFAILED(result = audioSource->monoAudioSource->pMoveToNextBufferFunc(audioSource->monoAudioSource, requiredSampleCount))))
     {
       if (result != mR_EndOfStream)
-        mPRINT_ERROR("Audio Source failed in Audio Scene in pMoveToNextBufferFunc with error code 0x%" PRIx64 ". (%s: %" PRIu64 ")\n", (uint64_t)result, g_mResult_lastErrorFile, g_mResult_lastErrorLine);
+        mPRINT_ERROR("Audio Source failed in Audio Scene in pMoveToNextBufferFunc with error code 0x", mFUInt<mFHex>(result), ". (", g_mResult_lastErrorFile, ": ", g_mResult_lastErrorLine, ")\n");
 
       mERROR_CHECK(mQueue_PushBack(pAudioScene->deadAudioSourceIndices, index));
       continue;

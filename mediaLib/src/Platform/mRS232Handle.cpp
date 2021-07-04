@@ -234,14 +234,15 @@ mFUNCTION(mRS232Handle_GetPortsFromName, const char *name, OUT mPtr<mQueue<uint3
       if (SetupDiGetDeviceRegistryPropertyA(devSet, &devInfo, SPDRP_FRIENDLYNAME, NULL, friendly_name, friendly_size, NULL))
       {
         int32_t port = -1;
-        mERROR_CHECK(mSprintf(buffer, mARRAYSIZE(buffer), "%s (COM%%d)", name));
+        mERROR_CHECK(mFormatTo(buffer, mARRAYSIZE(buffer), name, " (COM%d)"));
         
+        // TODO: This is absolutely disgusting. This should definetely transition to using `mParseUInt`!!!
         if (0 >= sscanf_s((char *)friendly_name, buffer, &port))
           continue;
 
         if (port != -1)
         {
-          mPRINT_DEBUG("Port %" PRIi32 ", %s\n", port, friendly_name);
+          mPRINT_DEBUG("Port ", port, ", ", reinterpret_cast<const char *>(friendly_name), "\n");
           mERROR_CHECK(mQueue_PushBack(*pPorts, (uint32_t)port));
         }
       }

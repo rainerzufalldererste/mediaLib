@@ -316,7 +316,7 @@ mFUNCTION(mMemcpy, T *pDst, const T *pSrc, const size_t count)
 }
 
 template <size_t TCount>
-mFUNCTION(mStringLength, const char text[TCount], OUT size_t *pCount)
+mFUNCTION(mStringLength, const char (&text)[TCount], OUT size_t *pCount)
 {
   mFUNCTION_SETUP();
 
@@ -328,14 +328,19 @@ mFUNCTION(mStringLength, const char text[TCount], OUT size_t *pCount)
 }
 
 mFUNCTION(mStringLength, const char *text, const size_t maxCount, OUT size_t *pCount);
-mFUNCTION(mSprintf, OUT char *buffer, const size_t bufferCount, const char *formatString, ...);
-mFUNCTION(mSprintfWithCount, OUT char *buffer, const size_t bufferCount, const char *formatString, OUT size_t *pCount, ...);
+__declspec(deprecated) mFUNCTION(mSprintf, OUT char *buffer, const size_t bufferCount, const char *formatString, ...);
+__declspec(deprecated) mFUNCTION(mSprintfWithCount, OUT char *buffer, const size_t bufferCount, const char *formatString, OUT size_t *pCount, ...);
 mFUNCTION(mStringCopy, OUT char *buffer, const size_t bufferCount, const char *source, const size_t sourceCount);
 mFUNCTION(mStringConcat, OUT char *buffer, const size_t bufferCount, const char *source, const size_t sourceCount);
 
 mFUNCTION(mStringLength, const wchar_t *text, const size_t maxCount, OUT size_t *pCount);
+
+// DO NOT USE THIS IF POSSIBLE. Use `mFormat` instead if wchar_t isn't required. Thanks.
 mFUNCTION(mSprintf, OUT wchar_t *buffer, const size_t bufferCount, const wchar_t *formatString, ...);
+
+// DO NOT USE THIS IF POSSIBLE. Use `mFormat` instead if wchar_t isn't required. Thanks.
 mFUNCTION(mSprintfWithCount, OUT wchar_t *buffer, const size_t bufferCount, const wchar_t *formatString, OUT size_t *pCount, ...);
+
 mFUNCTION(mStringCopy, OUT wchar_t *buffer, const size_t bufferCount, const wchar_t *source, const size_t sourceCount);
 mFUNCTION(mStringConcat, OUT wchar_t *buffer, const size_t bufferCount, const wchar_t *source, const size_t sourceCount);
 

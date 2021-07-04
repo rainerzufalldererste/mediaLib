@@ -62,7 +62,7 @@ mFUNCTION(mHardwareWindow_Create, OUT mPtr<mHardwareWindow> *pWindow, IN mAlloca
 
   mERROR_CHECK(mHardwareWindow_SetAsActiveRenderTarget(*pWindow));
 
-  mPRINT("GPU: %s %s\nDriver Version: %s\nGLSL Version: %s\n", glGetString(GL_VENDOR), glGetString(GL_RENDERER), glGetString(GL_VERSION), glGetString(GL_SHADING_LANGUAGE_VERSION));
+  mPRINT("GPU: ", reinterpret_cast<const char *>(glGetString(GL_VENDOR)), " ", reinterpret_cast<const char *>(glGetString(GL_RENDERER)),"\nDriver Version: ", reinterpret_cast<const char *>(glGetString(GL_VERSION)), "\nGLSL Version: ", reinterpret_cast<const char *>(glGetString(GL_SHADING_LANGUAGE_VERSION)), "\n");
 
   mGL_ERROR_CHECK();
 
@@ -432,6 +432,7 @@ mFUNCTION(mHardwareWindow_ClearEventHandlers, mPtr<mHardwareWindow> &window)
   mERROR_CHECK(mQueue_Clear(window->onEventCallbacks));
   mERROR_CHECK(mQueue_Clear(window->onExitCallbacks));
   mERROR_CHECK(mQueue_Clear(window->onResizeCallbacks));
+  mERROR_CHECK(mQueue_Clear(window->onDarkModeChanged));
 
   mRETURN_SUCCESS();
 }

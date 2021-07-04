@@ -63,7 +63,7 @@ mFUNCTION(mProcess_GetRunningProcesses, OUT mPtr<mQueue<mProcessInfo>> *pProcess
 
     wchar_t filename[MAX_PATH];
 
-    if (0 != K32GetModuleFileNameExW(processHandle, nullptr, filename, mARRAYSIZE(filename)))
+    if (0 != K32GetModuleFileNameExW(processHandle, nullptr, filename, (int32_t)mARRAYSIZE(filename)))
     {
       mProcessInfo processInfo = { };
       processInfo.processId = processID;
