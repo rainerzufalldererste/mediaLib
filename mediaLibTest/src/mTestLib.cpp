@@ -70,6 +70,7 @@ mFUNCTION(mTestLib_RunAllTests, int *pArgc, char **pArgv)
     mResetConsoleColour();
     printf("  %s : %s\n", std::get<0>(test).c_str(), std::get<1>(test).c_str());
     printf("\r(Test %" PRIu64 " / %" PRIu64 ")", testCount, mTest_TestContainer().size());
+    fflush(stdout);
 
     const auto &start = std::chrono::high_resolution_clock::now();
 
@@ -91,6 +92,7 @@ mFUNCTION(mTestLib_RunAllTests, int *pArgc, char **pArgv)
 
     mResetConsoleColour();
     printf("  %s : %s (in %" PRIu64 " ms)\n\n", std::get<0>(test).c_str(), std::get<1>(test).c_str(), milliseconds);
+    fflush(stdout);
   }
 
   const size_t afterTestsMilliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - beforeTests).count();

@@ -4,13 +4,7 @@
 #include "mediaLib.h"
 #include "gtest/gtest.h"
 
-#ifndef GIT_BUILD
 #define mDEBUG_TESTS
-#endif
-
-#if defined(mDEBUG_TESTS) && defined(GIT_BUILD)
-static_assert(false, "mDEBUG_TESTS has to be turned off for Buildserver builds.");
-#endif
 
 void mTest_PrintTestFailure(const char *text);
 #define mTEST_PRINT_FAILURE(...) mPrintToFunction(&mTest_PrintTestFailure, __VA_ARGS__)
