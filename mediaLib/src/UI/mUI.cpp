@@ -113,7 +113,7 @@ mFUNCTION(mUI_Initilialize, mPtr<mHardwareWindow> &hardwareWindow, const bool ad
   pColors[ImGuiCol_ResizeGripActive] = ImVec4(0.37f, 0.37f, 0.37f, 0.95f);
   pColors[ImGuiCol_PlotLines] = ImVec4(0.39f, 0.39f, 0.39f, 1.00f);
   pColors[ImGuiCol_PlotLinesHovered] = ImVec4(1.00f, 0.43f, 0.35f, 1.00f);
-  pColors[ImGuiCol_PlotHistogram] = ImVec4(0.864f, 0.464f, 0.156f, 1.000f);
+  pColors[ImGuiCol_PlotHistogram] = ImVec4(1.00f, 0.52f, 0.28f, 1.00f);
   pColors[ImGuiCol_PlotHistogramHovered] = ImVec4(1.00f, 0.45f, 0.00f, 1.00f);
   pColors[ImGuiCol_TextSelectedBg] = ImVec4(0.61f, 0.61f, 0.61f, 0.35f);
   pColors[ImGuiCol_DragDropTarget] = ImVec4(0.33f, 0.33f, 0.33f, 0.95f);
@@ -408,6 +408,7 @@ mFUNCTION(mUI_SetLightColourScheme)
   pColors[ImGuiCol_ResizeGrip] = ImVec4(0.80f, 0.80f, 0.80f, 0.56f);
   pColors[ImGuiCol_ResizeGripHovered] = ImVec4(0.59f, 0.59f, 0.59f, 0.67f);
   pColors[ImGuiCol_ResizeGripActive] = ImVec4(0.37f, 0.37f, 0.37f, 0.95f);
+  pColors[ImGuiCol_PlotHistogram] = ImVec4(1.00f, 0.52f, 0.28f, 1.00f);
 
   return mR_Success;
 }
@@ -446,6 +447,7 @@ mFUNCTION(mUI_SetDarkColourScheme)
   pColors[ImGuiCol_ResizeGrip] = ImVec4(0.43f, 0.43f, 0.43f, 0.56f);
   pColors[ImGuiCol_ResizeGripHovered] = ImVec4(0.61f, 0.61f, 0.61f, 0.67f);
   pColors[ImGuiCol_ResizeGripActive] = ImVec4(0.53f, 0.53f, 0.53f, 0.95f);
+  pColors[ImGuiCol_PlotHistogram] = ImVec4(0.86f, 0.42f, 0.25f, 1.00f);
 
   return mR_Success;
 }
@@ -685,5 +687,46 @@ namespace ImGui
 
     if (color.w > 0.0f)
       pWindow->DrawList->AddRectFilled(position, position + size, GetColorU32(color));
+  }
+
+  void ProgressBarRounded(float_t fraction, const ImVec2 &size_arg /* = ImVec2(-FLT_MIN, 0) */, const char *overlay /* = nullptr */)
+  {
+    ImGuiWindow *window = GetCurrentWindow();
+    if (window->SkipItems)
+      return;
+
+    ImGuiContext &g = *GImGui;
+    const ImGuiStyle &style = g.Style;
+
+    ImVec2 pos = window->DC.CursorPos;
+    ImVec2 size;
+    
+    if (overlay != nullptr)
+      size = CalcItemSize(size_arg, CalcItemWidth(), g.FontSize + style.FramePadding.y * 2.0f);
+    else
+      size = CalcItemSize(size_arg, CalcItemWidth(), mMax(g.FontSize * 0.25f, style.FramePadding.y * 2.0f));
+
+    ImRect bb(pos, pos + size);
+    ItemSize(size, style.FramePadding.y);
+    if (!ItemAdd(bb, 0))
+      return;
+
+    const float_t rounding = bb.GetHeight() * 0.5f;
+
+    // Render
+    fraction = ImSaturate(fraction);
+    RenderFrame(bb.Min, bb.Max, GetColorU32(ImGuiCol_FrameBg), true, rounding);
+    bb.Expand(ImVec2(-style.FrameBorderSize, -style.FrameBorderSize));
+    const ImVec2 fill_br = ImVec2(ImLerp(bb.Min.x, bb.Max.x, fraction), bb.Max.y);
+    const float_t minX = mClamp(bb.Min.x + rounding * 2.f, bb.Min.x, bb.Max.x);
+    RenderFrame(ImVec2(bb.Min.x, bb.Min.y), ImVec2(mLerp(minX, bb.Max.x, fraction), bb.Max.y), GetColorU32(ImGuiCol_PlotHistogram), false, rounding);
+
+    if (overlay != nullptr)
+    {
+      ImVec2 overlay_size = CalcTextSize(overlay, nullptr);
+
+      if (overlay_size.x > 0.0f)
+        RenderTextClipped(bb.Min, bb.Max, overlay, nullptr, &overlay_size, ImVec2(0.5f, 0.5f), &bb);
+    }
   }
 }
