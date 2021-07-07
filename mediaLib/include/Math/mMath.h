@@ -239,13 +239,13 @@ constexpr inline T mClamp(const T value, const T min, const T max)
 };
 
 template <typename T>
-T mMod(T value, T modulus);
+T mMod(const T value, const T modulus);
 
 template <typename T>
 #if !defined(_MSC_VER) || _MSC_VER >= 1920
 constexpr
 #endif
-inline T mClampWrap(T val, T min, T max)
+inline T mClampWrap(T val, const T min, const T max)
 {
   const T dist = max - min;
 
@@ -1406,61 +1406,61 @@ constexpr double_t mSmallest<double_t>()
 };
 
 template <>
-uint64_t constexpr mMod<uint64_t>(uint64_t value, uint64_t modulus)
+uint64_t constexpr mMod<uint64_t>(const uint64_t value, const uint64_t modulus)
 {
   return value % modulus;
 }
 
 template <>
-int64_t constexpr mMod<int64_t>(int64_t value, int64_t modulus)
+int64_t constexpr mMod<int64_t>(const int64_t value, const int64_t modulus)
 {
   return value % modulus;
 }
 
 template <>
-uint32_t constexpr mMod<uint32_t>(uint32_t value, uint32_t modulus)
+uint32_t constexpr mMod<uint32_t>(const uint32_t value, const uint32_t modulus)
 {
   return value % modulus;
 }
 
 template <>
-int32_t constexpr mMod<int32_t>(int32_t value, int32_t modulus)
+int32_t constexpr mMod<int32_t>(const int32_t value, const int32_t modulus)
 {
   return value % modulus;
 }
 
 template <>
-uint16_t constexpr mMod<uint16_t>(uint16_t value, uint16_t modulus)
+uint16_t constexpr mMod<uint16_t>(const uint16_t value, const uint16_t modulus)
 {
   return value % modulus;
 }
 
 template <>
-int16_t constexpr mMod<int16_t>(int16_t value, int16_t modulus)
+int16_t constexpr mMod<int16_t>(const int16_t value, const int16_t modulus)
 {
   return value % modulus;
 }
 
 template <>
-uint8_t constexpr mMod<uint8_t>(uint8_t value, uint8_t modulus)
+uint8_t constexpr mMod<uint8_t>(const uint8_t value, const uint8_t modulus)
 {
   return value % modulus;
 }
 
 template <>
-int8_t constexpr mMod<int8_t>(int8_t value, int8_t modulus)
+int8_t constexpr mMod<int8_t>(const int8_t value, const int8_t modulus)
 {
   return value % modulus;
 }
 
 template <>
-inline float_t mMod<float_t>(float_t value, float_t modulus)
+inline float_t mMod<float_t>(const float_t value, const float_t modulus)
 {
   return fmodf(value, modulus);
 }
 
 template <>
-inline double_t mMod<double_t>(double_t value, double_t modulus)
+inline double_t mMod<double_t>(const double_t value, const double_t modulus)
 {
   return fmod(value, modulus);
 }
