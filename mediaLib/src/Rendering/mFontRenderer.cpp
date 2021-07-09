@@ -996,9 +996,9 @@ mFUNCTION(mFontRenderer_DrawWithLayout, mPtr<mFontRenderer> &fontRenderer, const
           justWrapped = true;
 
           if (layout.alignment == mTL_A_Centered)
-            fontRenderer->position.x = fontRenderer->resetPosition.x - (size + spaceGlyphInfo.advanceX) * .5f;
+            fontRenderer->position.x = fontRenderer->resetPosition.x - (size / fontDescription.scale + spaceGlyphInfo.advanceX) * .5f;
           else if (layout.alignment == mTL_A_Right)
-            fontRenderer->position.x = fontRenderer->resetPosition.x - size + spaceGlyphInfo.advanceX;
+            fontRenderer->position.x = fontRenderer->resetPosition.x - (size / fontDescription.scale + spaceGlyphInfo.advanceX);
 
           bool first = firstPhrase;
           firstPhrase = false;
@@ -1109,9 +1109,9 @@ mFUNCTION(mFontRenderer_DrawWithLayout, mPtr<mFontRenderer> &fontRenderer, const
             size = 0;
 
             if (layout.alignment == mTL_A_Centered)
-              fontRenderer->position.x = fontRenderer->resetPosition.x - (phraseSize.x + spaceGlyphInfo.advanceX) * .5f;
+              fontRenderer->position.x = fontRenderer->resetPosition.x - (phraseSize.x / fontDescription.scale + spaceGlyphInfo.advanceX) * .5f;
             else if (layout.alignment == mTL_A_Right)
-              fontRenderer->position.x = fontRenderer->resetPosition.x - (phraseSize.x + spaceGlyphInfo.advanceX);
+              fontRenderer->position.x = fontRenderer->resetPosition.x - (phraseSize.x / fontDescription.scale + spaceGlyphInfo.advanceX);
 
             // Render.
             for (const auto &_item : fontRenderer->phraseRenderInfo->Iterate())
