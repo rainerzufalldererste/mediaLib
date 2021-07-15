@@ -79,6 +79,10 @@ void mPrintToOutput(const char *text)
 void mDefaultPrint(const char *text)
 {
   mPrintToOutput(text);
+
+#ifndef GIT_BUILD
+  mDebugOut(text);
+#endif
 }
 
 void mDebugPrint(const char *text)
