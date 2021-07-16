@@ -241,6 +241,9 @@ template <typename T, typename comparison = std::equal_to<T>>
 mFUNCTION(mQueue_RemoveDuplicates, const mPtr<mQueue<T>> &source, OUT mPtr<mQueue<T>> *pTarget, IN mAllocator *pAllocator);
 
 template <typename T>
+mFUNCTION(mQueue_Reverse, mPtr<mQueue<T>> &queue);
+
+template <typename T>
 mFUNCTION(mQueue_Any, const mPtr<mQueue<T>> &queue, OUT bool *pAny);
 
 template <typename T, typename equals_func = mEquals<T>, typename element_valid_func = mTrue>
@@ -1269,6 +1272,21 @@ inline mFUNCTION(mQueue_RemoveDuplicates, const mPtr<mQueue<T>> &source, OUT mPt
     if (!mQueue_ContainsValue<T, T, comparison>(*pTarget, _item))
       mERROR_CHECK(mQueue_PushBack(*pTarget, _item));
   }
+
+  mRETURN_SUCCESS();
+}
+
+template<typename T>
+inline mFUNCTION(mQueue_Reverse, mPtr<mQueue<T>> &queue)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(queue == nullptr, mR_ArgumentNull);
+
+  const size_t last = queue->count - 1;
+
+  for (size_t i = 0; i < queue->count / 2; i++)
+    std::swap((*queue)[i], (*queue)[last - i]);
 
   mRETURN_SUCCESS();
 }
