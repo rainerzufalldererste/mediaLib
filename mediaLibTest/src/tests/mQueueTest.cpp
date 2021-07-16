@@ -1776,3 +1776,60 @@ mTEST(mQueue, TestEquals)
 
   mTEST_ALLOCATOR_ZERO_CHECK();
 }
+
+mTEST(mQueue, TestReverse)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  {
+    mPtr<mQueue<int64_t>> numberQueue = nullptr;
+    mDEFER_CALL(&numberQueue, mQueue_Destroy);
+    mTEST_ASSERT_SUCCESS(mQueue_Create(&numberQueue, pAllocator));
+
+    mTEST_ASSERT_SUCCESS(mQueue_PushBack(numberQueue, (int64_t)0));
+    mTEST_ASSERT_SUCCESS(mQueue_PushBack(numberQueue, (int64_t)1));
+    mTEST_ASSERT_SUCCESS(mQueue_PushBack(numberQueue, (int64_t)3));
+    mTEST_ASSERT_SUCCESS(mQueue_PushBack(numberQueue, (int64_t)6));
+    mTEST_ASSERT_SUCCESS(mQueue_PushBack(numberQueue, (int64_t)9));
+    mTEST_ASSERT_SUCCESS(mQueue_PushBack(numberQueue, (int64_t)10));
+    mTEST_ASSERT_SUCCESS(mQueue_PushBack(numberQueue, (int64_t)2));
+
+    mTEST_ASSERT_SUCCESS(mQueue_Reverse(numberQueue));
+
+    mTEST_ASSERT_EQUAL((*numberQueue)[0], 2);
+    mTEST_ASSERT_EQUAL((*numberQueue)[1], 10);
+    mTEST_ASSERT_EQUAL((*numberQueue)[2], 9);
+    mTEST_ASSERT_EQUAL((*numberQueue)[3], 6);
+    mTEST_ASSERT_EQUAL((*numberQueue)[4], 3);
+    mTEST_ASSERT_EQUAL((*numberQueue)[5], 1);
+    mTEST_ASSERT_EQUAL((*numberQueue)[6], 0);
+  }
+
+  {
+    mPtr<mQueue<int64_t>> numberQueue = nullptr;
+    mDEFER_CALL(&numberQueue, mQueue_Destroy);
+    mTEST_ASSERT_SUCCESS(mQueue_Create(&numberQueue, pAllocator));
+
+    mTEST_ASSERT_SUCCESS(mQueue_PushBack(numberQueue, (int64_t)13));
+    mTEST_ASSERT_SUCCESS(mQueue_PushBack(numberQueue, (int64_t)24));
+    mTEST_ASSERT_SUCCESS(mQueue_PushBack(numberQueue, (int64_t)35));
+    mTEST_ASSERT_SUCCESS(mQueue_PushBack(numberQueue, (int64_t)46));
+    mTEST_ASSERT_SUCCESS(mQueue_PushBack(numberQueue, (int64_t)57));
+    mTEST_ASSERT_SUCCESS(mQueue_PushBack(numberQueue, (int64_t)68));
+    mTEST_ASSERT_SUCCESS(mQueue_PushBack(numberQueue, (int64_t)79));
+    mTEST_ASSERT_SUCCESS(mQueue_PushBack(numberQueue, (int64_t)80));
+
+    mTEST_ASSERT_SUCCESS(mQueue_Reverse(numberQueue));
+
+    mTEST_ASSERT_EQUAL((*numberQueue)[7], 13);
+    mTEST_ASSERT_EQUAL((*numberQueue)[6], 24);
+    mTEST_ASSERT_EQUAL((*numberQueue)[5], 35);
+    mTEST_ASSERT_EQUAL((*numberQueue)[4], 46);
+    mTEST_ASSERT_EQUAL((*numberQueue)[3], 57);
+    mTEST_ASSERT_EQUAL((*numberQueue)[2], 68);
+    mTEST_ASSERT_EQUAL((*numberQueue)[1], 79);
+    mTEST_ASSERT_EQUAL((*numberQueue)[0], 80);
+  }
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}
