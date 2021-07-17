@@ -3,6 +3,8 @@
 #include <intsafe.h>
 #include <cstdio>
 #include <chrono>
+#include <fcntl.h>
+#include <corecrt_io.h>
 
 #include "mediaLib.h"
 
@@ -16,16 +18,89 @@
 #ifdef mPLATFORM_WINDOWS
 HANDLE mStdOutHandle = nullptr;
 HANDLE mFileOutHandle = nullptr;
+constexpr bool mStdOutVTCodeColours = false; // Disabled by default. Code Path works but is probably slower and adds more clutter.
+bool mStdOutForceStdIO = false;
+FILE *pStdOut = nullptr;
+#endif
+
+inline void mInitConsole()
+{
+#ifdef mPLATFORM_WINDOWS
+  if (mStdOutHandle == nullptr)
+  {
+    mStdOutHandle = GetStdHandle(STD_OUTPUT_HANDLE);
+
+    if (mStdOutHandle == INVALID_HANDLE_VALUE)
+      mStdOutHandle = nullptr;
+
+    if (mStdOutHandle != nullptr)
+    {
+      DWORD consoleMode = 0;
+      mStdOutForceStdIO = !GetConsoleMode(mStdOutHandle, &consoleMode);
+
+      if (mStdOutForceStdIO)
+      {
+        const int32_t handle = _open_osfhandle(reinterpret_cast<intptr_t>(mStdOutHandle), _O_TEXT);
+        
+        if (handle != -1)
+          pStdOut = _fdopen(handle, "w");
+      }
+
+      // I presume VT Colour Codes are in fact slower than `SetConsoleTextAttribute`, since the terminal has to parse those sequences out.
+      // Also they're only supported since Windows 10 and would add another code path, therefore they're currently `constexpr` to be `false`.
+      //mStdOutVTCodeColours = (!mStdOutForceStdIO && SetConsoleMode(mStdOutHandle, consoleMode | ENABLE_VIRTUAL_TERMINAL_PROCESSING));
+
+      constexpr DWORD codepage_UTF8 = 65001;
+      SetConsoleOutputCP(codepage_UTF8);
+    }
+  }
+#endif
+}
+
+#ifdef mPLATFORM_WINDOWS
+inline WORD mGetWindowsConsoleColourFromConsoleColour(const mConsoleColour colour)
+{
+  switch (colour & 0xF)
+  {
+  default:
+  case mCC_Black: return 0;
+  case mCC_DarkBlue: return 1;
+  case mCC_DarkGreen: return 2;
+  case mCC_DarkCyan: return 3;
+  case mCC_DarkRed: return 4;
+  case mCC_DarkMagenta: return 5;
+  case mCC_DarkYellow: return 6;
+  case mCC_BrightGray: return 7;
+  case mCC_DarkGray: return 8;
+  case mCC_BrightBlue: return 9;
+  case mCC_BrightGreen: return 10;
+  case mCC_BrightCyan: return 11;
+  case mCC_BrightRed: return 12;
+  case mCC_BrightMagenta: return 13;
+  case mCC_BrightYellow: return 14;
+  case mCC_White: return 15;
+  }
+}
 #endif
 
 void mResetConsoleColour()
 {
-#ifdef mPLATFORM_WINDOWS
-  if (mStdOutHandle == nullptr)
-    mStdOutHandle = GetStdHandle(STD_OUTPUT_HANDLE);
+  mInitConsole();
 
-  if (mStdOutHandle != nullptr && mStdOutHandle != INVALID_HANDLE_VALUE)
-    SetConsoleTextAttribute(mStdOutHandle, mCC_BrightGray | (mCC_Black << 8));
+#ifdef mPLATFORM_WINDOWS
+  if (mStdOutHandle != nullptr)
+  {
+    if (mStdOutVTCodeColours)
+    {
+      const char sequence[] = "\x1b[0m";
+
+      WriteConsoleA(mStdOutHandle, sequence, (DWORD)(mARRAYSIZE(sequence) - 1), nullptr, nullptr);
+    }
+    else if (!mStdOutForceStdIO)
+    {
+      SetConsoleTextAttribute(mStdOutHandle, mGetWindowsConsoleColourFromConsoleColour(mCC_BrightGray) | (mGetWindowsConsoleColourFromConsoleColour(mCC_Black) << 8));
+    }
+  }
 #else
   fputs("\x1b[0m", stdout);
 #endif
@@ -33,33 +108,53 @@ void mResetConsoleColour()
 
 void mSetConsoleColour(const mConsoleColour foregroundColour, const mConsoleColour backgroundColour)
 {
+  mInitConsole();
+
 #ifdef mPLATFORM_WINDOWS
-  if (mStdOutHandle == nullptr)
-    mStdOutHandle = GetStdHandle(STD_OUTPUT_HANDLE);
+  if (mStdOutHandle != nullptr)
+  {
+    if (mStdOutVTCodeColours)
+    {
+      const uint8_t fgColour = (foregroundColour & 0xF);
+      const uint8_t bgColour = (backgroundColour & 0xF);
 
-  const WORD fgColour = (foregroundColour & 0xF);
-  const WORD bgColour = (backgroundColour & 0xF);
+      char sequence[64]; // make sure all VT Colour Codes _ALWAYS_ fit inside this buffer.
+      mASSERT_DEBUG(mFormat_GetMaxRequiredBytes("\x1b[", (uint8_t)(fgColour < 0x8 ? (30 + fgColour) : (90 - 8 + fgColour)), ";", (uint8_t)(bgColour < 0x8 ? (40 + bgColour) : (100 - 8 + bgColour)), "m") <= mARRAYSIZE(sequence), "Insufficient VT Code Sequence Buffer. This may cause printing errors. Don't do whatever you're doing.");
+      const mResult result = mFormatTo(sequence, mARRAYSIZE(sequence), "\x1b[", (uint8_t)(fgColour < 0x8 ? (30 + fgColour) : (90 - 8 + fgColour)), ";", (uint8_t)(bgColour < 0x8 ? (40 + bgColour) : (100 - 8 + bgColour)), "m");
+      mASSERT_DEBUG(mSUCCEEDED(result), "Failed to mFormatTo the VT Code Sequence.");
 
-  if (mStdOutHandle != nullptr && mStdOutHandle != INVALID_HANDLE_VALUE)
-    SetConsoleTextAttribute(mStdOutHandle, fgColour | (bgColour << 4));
+      WriteConsoleA(mStdOutHandle, sequence, (DWORD)strnlen(sequence, mARRAYSIZE(sequence)), nullptr, nullptr);
+    }
+    else if (!mStdOutForceStdIO)
+    {
+      const WORD fgColour = mGetWindowsConsoleColourFromConsoleColour(foregroundColour);
+      const WORD bgColour = mGetWindowsConsoleColourFromConsoleColour(backgroundColour);
+      
+      SetConsoleTextAttribute(mStdOutHandle, fgColour | (bgColour << 4));
+    }
+  }
 #else
   const size_t fgColour = (foregroundColour & 0xF);
   const size_t bgColour = (backgroundColour & 0xF);
 
-  printf("\x1b[%" PRIu64 ";%" PRIu64 "m", fgColour < 0x8 ? (30 + fgColour) : (90 - 8 + fgColour), bgColour < 0x8 ? (30 + bgColour) : (90 - 8 + bgColour));
+  printf("\x1b[%" PRIu64 ";%" PRIu64 "m", fgColour < 0x8 ? (30 + fgColour) : (90 - 8 + fgColour), bgColour < 0x8 ? (40 + bgColour) : (100 - 8 + bgColour));
 #endif
 }
 
 #ifdef mPLATFORM_WINDOWS
 void mPrintToOutputWithLength(const char *text, const size_t length)
 {
-  if (mStdOutHandle == nullptr)
-    mStdOutHandle = GetStdHandle(STD_OUTPUT_HANDLE);
+  mInitConsole();
 
-  if (mStdOutHandle != nullptr && mStdOutHandle != INVALID_HANDLE_VALUE)
-    WriteConsoleA(mStdOutHandle, text, (DWORD)length, nullptr, nullptr);
+  if (mStdOutHandle != nullptr)
+  {
+    if (!mStdOutForceStdIO)
+      WriteConsoleA(mStdOutHandle, text, (DWORD)length, nullptr, nullptr);
+    else if (pStdOut != nullptr)
+      fputs(text, pStdOut);
+  }
 
-  if (mFileOutHandle != nullptr && mFileOutHandle != INVALID_HANDLE_VALUE)
+  if (mFileOutHandle != nullptr)
     WriteFile(mFileOutHandle, text, (DWORD)length, nullptr, nullptr);
 }
 #endif
@@ -92,10 +187,12 @@ void mDebugPrint(const char *text)
   mSetConsoleColour(mCC_DarkGray, mCC_Black);
   mPrintToOutput(text);
   mResetConsoleColour();
+  mPrintToOutputArray("\n");
 
 #ifndef GIT_BUILD
   mDebugOut("[Debug] ");
   mDebugOut(text);
+  mDebugOut("\n");
 #endif
 }
 
@@ -106,10 +203,12 @@ void mLogPrint(const char *text)
   mSetConsoleColour(mCC_DarkCyan, mCC_Black);
   mPrintToOutput(text);
   mResetConsoleColour();
+  mPrintToOutputArray("\n");
 
 #ifndef GIT_BUILD
   mDebugOut("[Log]   ");
   mDebugOut(text);
+  mDebugOut("\n");
 #endif
 }
 
@@ -120,10 +219,12 @@ void mErrorPrint(const char *text)
   mSetConsoleColour(mCC_BrightYellow, mCC_DarkRed);
   mPrintToOutput(text);
   mResetConsoleColour();
+  mPrintToOutputArray("\n");
 
 #ifndef GIT_BUILD
   mDebugOut("[Error] ");
   mDebugOut(text);
+  mDebugOut("\n");
 #endif
 }
 
@@ -134,10 +235,12 @@ void mTracePrint(const char *text)
   mSetConsoleColour(mCC_BrightGray, mCC_DarkGray);
   mPrintToOutput(text);
   mResetConsoleColour();
+  mPrintToOutputArray("\n");
 
 #ifndef GIT_BUILD
   mDebugOut("[Trace] ");
   mDebugOut(text);
+  mDebugOut("\n");
 #endif
 }
 

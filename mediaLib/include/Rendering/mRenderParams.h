@@ -44,7 +44,7 @@ extern GLenum mRenderParams_GLError;
     if (mRenderParams_InitializedRenderContextCount > 0) { \
       mRenderParams_GLError = glGetError(); \
       if (mRenderParams_GLError != GL_NO_ERROR) { \
-        mPRINT_ERROR("Rendering Error in '" mRESULT_PRINT_FUNCTION_TITLE "': GLError Code ", mRenderParams_GLError, " (", reinterpret_cast<const char *>(gluErrorString(mRenderParams_GLError)), ") (File '" __M_FILE__ "'; Line " mSTRINGIFY_VALUE(__LINE__) ")\n"); \
+        mPRINT_ERROR("Rendering Error in '" mRESULT_PRINT_FUNCTION_TITLE "': GLError Code ", mRenderParams_GLError, " (", reinterpret_cast<const char *>(gluErrorString(mRenderParams_GLError)), ") (File '" __M_FILE__ "'; Line " mSTRINGIFY_VALUE(__LINE__) ")"); \
         mRenderParams_PrintRenderState(false); \
         mERROR_IF(mRenderParams_GLError != GL_NO_ERROR, mR_RenderingError); \
       } \

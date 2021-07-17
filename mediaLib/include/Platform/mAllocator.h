@@ -135,7 +135,7 @@ mFUNCTION(mAllocator_Allocate, IN OPTIONAL mAllocator *pAllocator, OUT T **ppDat
   mDEFER_CALL_ON_ERROR(ppData, mSetToNullptr);
 
 #ifdef mDEBUG_MEMORY_ALLOCATIONS_PRINT_ALLOCATIONS
-  mLOG("Allocating ", sizeof(T) * count, " bytes for ", count, " elements of type ", typeid(T).name(), " (to zero).\n");
+  mLOG("Allocating ", sizeof(T) * count, " bytes for ", count, " elements of type ", typeid(T).name(), " (to zero).");
 #endif
 
   if (pAllocator == nullptr)
@@ -169,7 +169,7 @@ mFUNCTION(mAllocator_AllocateZero, IN OPTIONAL mAllocator *pAllocator, OUT T **p
   mDEFER_CALL_ON_ERROR(ppData, mSetToNullptr);
 
 #ifdef mDEBUG_MEMORY_ALLOCATIONS_PRINT_ALLOCATIONS
-  mLOG("Allocating ", sizeof(T) * count, " bytes for ", count, " elements of type ", typeid(T).name(), ".\n");
+  mLOG("Allocating ", sizeof(T) * count, " bytes for ", count, " elements of type ", typeid(T).name(), ".");
 #endif
 
   if (pAllocator == nullptr)
@@ -212,7 +212,7 @@ inline mFUNCTION(mAllocator_Reallocate, IN OPTIONAL mAllocator *pAllocator, OUT 
 #endif
 
 #ifdef mDEBUG_MEMORY_ALLOCATIONS_PRINT_ALLOCATIONS
-  mLOG("Reallocating ", sizeof(T) * count, " bytes for ", count, " elements of type ", typeid(T).name(), ".\n");
+  mLOG("Reallocating ", sizeof(T) * count, " bytes for ", count, " elements of type ", typeid(T).name(), ".");
 #endif
 
   mSTATIC_ASSERT(mIsTriviallyMemoryMovable<T>::value, "This type is not trivially memory movable.");
@@ -249,7 +249,7 @@ inline mFUNCTION(mAllocator_FreePtr, IN OPTIONAL mAllocator *pAllocator, IN_OUT 
   mDEFER_CALL(ppData, mSetToNullptr);
 
 #ifdef mDEBUG_MEMORY_ALLOCATIONS_PRINT_ALLOCATIONS
-  mLOG("Freeing element(s) of type ", typeid(T).name(), ".\n");
+  mLOG("Freeing element(s) of type ", typeid(T).name(), ".");
 #endif
 
   if (*ppData == nullptr)
@@ -284,7 +284,7 @@ inline mFUNCTION(mAllocator_Free, IN OPTIONAL mAllocator *pAllocator, IN T *pDat
 #endif
 
 #ifdef mDEBUG_MEMORY_ALLOCATIONS_PRINT_ALLOCATIONS
-  mLOG("Freeing element(s) of type ", typeid(T).name(), ".\n");
+  mLOG("Freeing element(s) of type ", typeid(T).name(), ".");
 #endif
 
   mERROR_IF(pAllocator != nullptr && (!pAllocator->initialized || pAllocator->pFree == nullptr), mR_ResourceInvalid);

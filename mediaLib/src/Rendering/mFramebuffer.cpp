@@ -458,7 +458,7 @@ static mFUNCTION(mFramebuffer_Create_Internal, mFramebuffer *pFramebuffer, const
 #endif
 
 #ifdef DEBUG_FRAMBUFFER_CREATION
-  mPRINT_DEBUG("Created Framebuffer ", (uint64_t)pFramebuffer->frameBufferHandle, " with texture ", (uint64_t)pFramebuffer->textureId, ".\n");
+  mPRINT_DEBUG("Created Framebuffer ", (uint64_t)pFramebuffer->frameBufferHandle, " with texture ", (uint64_t)pFramebuffer->textureId, ".");
 #endif
 
   mGL_ERROR_CHECK();

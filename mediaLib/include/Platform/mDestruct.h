@@ -23,7 +23,7 @@ inline mFUNCTION(mDestruct, IN T *pData)
   mFUNCTION_SETUP();
 
 #ifdef mDESTRUCT_LOG_DESTRUCTIONS
-  mLOG("Destructing resource of type %s with generic destruction function.\n", typeid(T *).name());
+  mLOG("Destructing resource of type ", typeid(T *).name(), " with generic destruction function.");
 #endif
 
   if (pData != nullptr && std::is_destructible<T>::value)

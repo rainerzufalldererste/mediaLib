@@ -106,7 +106,7 @@ mFUNCTION(mXmlReader_CreateFromString, OUT mPtr<mXmlReader> *pXmlReader, IN mAll
 
   if (XML_STATUS_ERROR == XML_Parse(parser, string, (int32_t)(length - 1), XML_TRUE))
   {
-    mPRINT_ERROR("mXmlReader Error: ", reinterpret_cast<const char *>(XML_ErrorString(XML_GetErrorCode(parser))), " (", (uint64_t)XML_GetErrorLineNumber(parser), ":", (uint64_t)XML_GetErrorColumnNumber(parser), ")\n");
+    mPRINT_ERROR("mXmlReader Error: ", reinterpret_cast<const char *>(XML_ErrorString(XML_GetErrorCode(parser))), " (", (uint64_t)XML_GetErrorLineNumber(parser), ":", (uint64_t)XML_GetErrorColumnNumber(parser), ")");
     mRETURN_RESULT(mR_ResourceInvalid);
   }
 

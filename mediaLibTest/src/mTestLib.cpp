@@ -61,6 +61,8 @@ mFUNCTION(mTestLib_RunAllTests, int *pArgc, char **pArgv)
   const auto &beforeTests = std::chrono::high_resolution_clock::now();
   size_t testCount = 0;
 
+  char buffer[1024];
+
   for (const auto &test : mTest_TestContainer())
   {
     ++testCount;
@@ -68,9 +70,12 @@ mFUNCTION(mTestLib_RunAllTests, int *pArgc, char **pArgv)
     mSetConsoleColour(mCC_BrightGreen, mCC_Black);
     mPrintToOutputArray("[RUNNING TEST]");
     mResetConsoleColour();
-    printf("  %s : %s\n", std::get<0>(test).c_str(), std::get<1>(test).c_str());
-    printf("\r(Test %" PRIu64 " / %" PRIu64 ")", testCount, mTest_TestContainer().size());
-    fflush(stdout);
+
+    snprintf(buffer, sizeof(buffer), "  %s : %s\n", std::get<0>(test).c_str(), std::get<1>(test).c_str());
+    mPrintToOutputArray(buffer);
+
+    snprintf(buffer, sizeof(buffer), "\r(Test %" PRIu64 " / %" PRIu64 ")", testCount, mTest_TestContainer().size());
+    mPrintToOutputArray(buffer);
 
     const auto &start = std::chrono::high_resolution_clock::now();
 
@@ -91,8 +96,8 @@ mFUNCTION(mTestLib_RunAllTests, int *pArgc, char **pArgv)
     }
 
     mResetConsoleColour();
-    printf("  %s : %s (in %" PRIu64 " ms)\n\n", std::get<0>(test).c_str(), std::get<1>(test).c_str(), milliseconds);
-    fflush(stdout);
+    snprintf(buffer, sizeof(buffer), "  %s : %s (in %" PRIu64 " ms)\n\n", std::get<0>(test).c_str(), std::get<1>(test).c_str(), milliseconds);
+    mPrintToOutputArray(buffer);
   }
 
   const size_t afterTestsMilliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - beforeTests).count();
@@ -104,7 +109,8 @@ mFUNCTION(mTestLib_RunAllTests, int *pArgc, char **pArgv)
   if (failedTests.size() == 0)
   {
     mSetConsoleColour(mCC_BrightGreen, mCC_Black);
-    printf("\nALL %" PRIu64 " TESTS SUCCEEDED. (in %" PRIu64 " ms)\n", mTest_TestContainer().size(), afterTestsMilliseconds);
+    snprintf(buffer, sizeof(buffer), "\nALL %" PRIu64 " TESTS SUCCEEDED. (in %" PRIu64 " ms)\n", mTest_TestContainer().size(), afterTestsMilliseconds);
+    mPrintToOutputArray(buffer);
     mResetConsoleColour();
 
     return mR_Success;
@@ -112,7 +118,8 @@ mFUNCTION(mTestLib_RunAllTests, int *pArgc, char **pArgv)
   else
   {
     mSetConsoleColour(mCC_BrightRed, mCC_Black);
-    printf("\n%" PRIu64 " / %" PRIu64 " TESTS FAILED: (in %" PRIu64 " ms)\n\n", failedTests.size(), mTest_TestContainer().size(), afterTestsMilliseconds);
+    snprintf(buffer, sizeof(buffer), "\n%" PRIu64 " / %" PRIu64 " TESTS FAILED: (in %" PRIu64 " ms)\n\n", failedTests.size(), mTest_TestContainer().size(), afterTestsMilliseconds);
+    mPrintToOutputArray(buffer);
     mResetConsoleColour();
 
     for (const auto &failedTest : failedTests)
@@ -121,7 +128,8 @@ mFUNCTION(mTestLib_RunAllTests, int *pArgc, char **pArgv)
       mPrintToOutputArray(" ## ");
       mResetConsoleColour();
 
-      printf("%s : %s with %s (0x%" PRIx64 ")\n", std::get<0>(failedTest).c_str(), std::get<1>(failedTest).c_str(), mResult_ToString(std::get<2>(failedTest)), (uint64_t)std::get<2>(failedTest));
+      snprintf(buffer, sizeof(buffer), "%s : %s with %s (0x%" PRIx64 ")\n", std::get<0>(failedTest).c_str(), std::get<1>(failedTest).c_str(), mResult_ToString(std::get<2>(failedTest)), (uint64_t)std::get<2>(failedTest));
+      mPrintToOutputArray(buffer);
     }
 
     return mR_Failure;

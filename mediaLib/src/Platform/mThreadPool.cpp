@@ -643,7 +643,7 @@ void mTasklessThreadPool_ThreadFunc_Internal(mTasklessThreadPool *pThreadPool, c
 {
 #ifdef _WIN32
   if ((DWORD)-1 == SetThreadIdealProcessor(GetCurrentThread(), (DWORD)threadIndex))
-    mPRINT_ERROR("Failed to set thread affinity mask for thread ", threadIndex," with error code 0x", mFUInt<mFHex>(GetLastError()), ".\n");
+    mPRINT_ERROR("Failed to set thread affinity mask for thread ", threadIndex," with error code 0x", mFUInt<mFHex>(GetLastError()), ".");
 #else
   mUnused(threadIndex);
 #endif

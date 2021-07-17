@@ -136,9 +136,9 @@ inline constexpr size_t mARRAYSIZE(const T(&)[TCount]) { return TCount; }
   do \
   { if(!(expression)) \
     { const char *__text__ = (text); \
-      mPRINT_ERROR("Assertion Failed: " #expression "\n"); \
+      mPRINT_ERROR("Assertion Failed: " #expression ""); \
       mPRINT_ERROR(__text__); \
-      mPRINT_ERROR("\n\nIn File '" __M_FILE__ "' : Line '" mSTRINGIFY_VALUE(__LINE__) "' (Function '" __FUNCTION__ "')\n"); \
+      mPRINT_ERROR("In File '" __M_FILE__ "' : Line '" mSTRINGIFY_VALUE(__LINE__) "' (Function '" __FUNCTION__ "')"); \
       mAssert_Internal(#expression, __text__, __FUNCTION__, __M_FILE__, __LINE__); \
     } \
   } while (0)
@@ -146,9 +146,9 @@ inline constexpr size_t mARRAYSIZE(const T(&)[TCount]) { return TCount; }
 #define mFAIL(text) \
   do \
   { const char *__text__ = (text); \
-    mPRINT_ERROR("Assertion Failed:\n"); \
+    mPRINT_ERROR("Assertion Failed:"); \
     mPRINT_ERROR(__text__); \
-    mPRINT_ERROR("\n\nIn File '" __M_FILE__ "' : Line '" mSTRINGIFY_VALUE(__LINE__) "' (Function '" __FUNCTION__ "')\n"); \
+    mPRINT_ERROR("In File '" __M_FILE__ "' : Line '" mSTRINGIFY_VALUE(__LINE__) "' (Function '" __FUNCTION__ "')"); \
     mFail_Internal(__text__, __FUNCTION__, __M_FILE__, __LINE__); \
   } while (0)
 
@@ -158,9 +158,9 @@ inline constexpr size_t mARRAYSIZE(const T(&)[TCount]) { return TCount; }
   do \
   { if(!(expression)) \
     { const char *__text__ = (text); \
-      mPRINT_ERROR("Assertion Failed.\n"); \
+      mPRINT_ERROR("Assertion Failed."); \
       mPRINT_ERROR(__text__); \
-      mPRINT_ERROR("\n\nIn File '" __M_FILE__ "' : Line '" mSTRINGIFY_VALUE(__LINE__) "'\n"); \
+      mPRINT_ERROR("In File '" __M_FILE__ "' : Line '" mSTRINGIFY_VALUE(__LINE__) "'"); \
       mAssert_Internal("<EXPRESSION_NOT_AVAILABLE>", __text__, "<FUNCTION_NAME_NOT_AVAILABLE>", __M_FILE__, __LINE__); \
     } \
   } while (0)
@@ -168,9 +168,9 @@ inline constexpr size_t mARRAYSIZE(const T(&)[TCount]) { return TCount; }
 #define mFAIL(text, ...) \
   do \
   { const char *__text__ = (text); \
-    mPRINT_ERROR("Assertion Failed. '"); \
+    mPRINT_ERROR("Assertion Failed."); \
     mPRINT_ERROR(__text__); \
-    mPRINT_ERROR("'\n\nIn File '" __M_FILE__ "' : Line '" mSTRINGIFY_VALUE(__LINE__) "'\n"); \
+    mPRINT_ERROR("In File '" __M_FILE__ "' : Line '" mSTRINGIFY_VALUE(__LINE__) "'"); \
     mFail_Internal(__text__, "<FUNCTION_NAME_NOT_AVAILABLE>", __M_FILE__, __LINE__); \
   } while (0)
 
@@ -278,7 +278,7 @@ void mFlushOutput();
    { mCONCAT_LITERALS(mDLL_FUNC_PREFIX, symbol) = (decltype(symbol) *)GetProcAddress(module, #symbol); \
      if (mCONCAT_LITERALS(mDLL_FUNC_PREFIX, symbol) == nullptr) \
      { const DWORD errorCode = GetLastError(); \
-       mPRINT_ERROR("Symbol '" #symbol "' could not be loaded from dynamic library. (Error Code: 0x", mFUInt<mFHex>(errorCode), ")\n"); \
+       mPRINT_ERROR("Symbol '" #symbol "' could not be loaded from dynamic library. (Error Code: 0x", mFUInt<mFHex>(errorCode), ")"); \
        mRETURN_RESULT(mR_ResourceNotFound); \
      } \
    } while (0)
@@ -313,24 +313,6 @@ int64_t mGetCurrentTimeNs();
 
 enum mConsoleColour
 {
-#ifdef mPLATFORM_WINDOWS
-  mCC_Black,
-  mCC_DarkBlue,
-  mCC_DarkGreen,
-  mCC_DarkCyan,
-  mCC_DarkRed,
-  mCC_DarkMagenta,
-  mCC_DarkYellow,
-  mCC_BrightGray,
-  mCC_DarkGray,
-  mCC_BrightBlue,
-  mCC_BrightGreen,
-  mCC_BrightCyan,
-  mCC_BrightRed,
-  mCC_BrightMagenta,
-  mCC_BrightYellow,
-  mCC_White,
-#else
   mCC_Black,
   mCC_DarkRed,
   mCC_DarkGreen,
@@ -346,8 +328,7 @@ enum mConsoleColour
   mCC_BrightBlue,
   mCC_BrightMagenta,
   mCC_BrightCyan,
-  mCC_White,
-#endif
+  mCC_White
 };
 
 void mResetConsoleColour();
