@@ -242,7 +242,7 @@ mFUNCTION(mRS232Handle_GetPortsFromName, const char *name, OUT mPtr<mQueue<uint3
 
         if (port != -1)
         {
-          mPRINT_DEBUG("Port ", port, ", ", reinterpret_cast<const char *>(friendly_name), "\n");
+          mPRINT_DEBUG("Port ", port, ", ", reinterpret_cast<const char *>(friendly_name));
           mERROR_CHECK(mQueue_PushBack(*pPorts, (uint32_t)port));
         }
       }

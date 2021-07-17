@@ -281,7 +281,7 @@ static mFUNCTION(mAudioEngine_ManagedAudioCallback_Internal, IN mAudioEngine *pA
       if (mFAILED(result))
       {
         if (result != mR_EndOfStream)
-          mPRINT_ERROR("Audio Source failed with error code 0x", mFUInt<mFHex>(result) ," in pGetBufferFunc. (", g_mResult_lastErrorFile, ": ", g_mResult_lastErrorLine, ")\n");
+          mPRINT_ERROR("Audio Source failed with error code 0x", mFUInt<mFHex>(result) ," in pGetBufferFunc. (", g_mResult_lastErrorFile, ": ", g_mResult_lastErrorLine, ")");
 
         (*_item)->hasBeenConsumed = true;
         mERROR_CHECK(mQueue_PushBack(pAudioEngine->unusedAudioSources, _item.index));
@@ -300,7 +300,7 @@ static mFUNCTION(mAudioEngine_ManagedAudioCallback_Internal, IN mAudioEngine *pA
       if (mFAILED(result))
       {
         if (result != mR_EndOfStream)
-          mPRINT_ERROR("Audio Source failed with error code 0x", mFUInt<mFHex>(result), " in pMoveToNextBufferFunc. (", g_mResult_lastErrorFile, ": ", g_mResult_lastErrorLine, ")\n");
+          mPRINT_ERROR("Audio Source failed with error code 0x", mFUInt<mFHex>(result), " in pMoveToNextBufferFunc. (", g_mResult_lastErrorFile, ": ", g_mResult_lastErrorLine, ")");
 
         (*_item)->hasBeenConsumed = true;
         mERROR_CHECK(mQueue_PushBack(pAudioEngine->unusedAudioSources, _item.index));

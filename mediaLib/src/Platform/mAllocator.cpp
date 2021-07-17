@@ -66,7 +66,7 @@ void mAllocatorDebugging_PrintRemainingMemoryAllocations(IN mAllocator *pAllocat
   auto allocatedMemory = item->second;
 
   for (const auto &allocation : allocatedMemory)
-    mLOG("[Memory Allocation at 0x", mFUInt<mFHex>(allocation.first), "]: ", allocation.second.c_str(), "\n");
+    mLOG("[Memory Allocation at 0x", mFUInt<mFHex>(allocation.first), "]: ", allocation.second.c_str());
 
   mAllocatorDebugging_GetDebugMemoryAllocationMutex().unlock();
 }
@@ -98,7 +98,7 @@ void mAllocatorDebugging_PrintMemoryAllocationInfo(IN mAllocator *pAllocator, IN
 
   if (item == mAllocatorDebugging_GetDebugMemoryAllocationMap().end())
   {
-    mLOG("ERROR: Allocator not found.\n");
+    mLOG("ERROR: Allocator not found.");
     mAllocatorDebugging_GetDebugMemoryAllocationMutex().unlock();
     return;
   }
@@ -109,12 +109,12 @@ void mAllocatorDebugging_PrintMemoryAllocationInfo(IN mAllocator *pAllocator, IN
 
   if (allocation == allocatedMemory.end())
   {
-    mLOG("ERROR: Allocation not found in this allocator.\n");
+    mLOG("ERROR: Allocation not found in this allocator.");
     mAllocatorDebugging_GetDebugMemoryAllocationMutex().unlock();
     return;
   }
 
-  mLOG("[Memory Allocation at 0x", mFUInt<mFHex>((*allocation).first), "]: ", (*allocation).second.c_str(), "\n");
+  mLOG("[Memory Allocation at 0x", mFUInt<mFHex>((*allocation).first), "]: ", (*allocation).second.c_str());
 
   mAllocatorDebugging_GetDebugMemoryAllocationMutex().unlock();
 }

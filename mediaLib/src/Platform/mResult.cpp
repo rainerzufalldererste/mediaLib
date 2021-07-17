@@ -36,14 +36,14 @@ void mPrintError(char *function, char *file, const int32_t line, const mResult e
 
 #ifdef GIT_BUILD
   mUnused(function, expression);
-  mPRINT_ERROR("Error 0x", mFUInt<mFHex>(error), " in File '", file, "' Line ", line, ".\n");
+  mPRINT_ERROR("Error 0x", mFUInt<mFHex>(error), " in File '", file, "' Line ", line, ".");
 #else
   const char *expr = "";
 
   if (expression)
     expr = expression;
 
-  mPRINT_ERROR("Error ", mResult_ToString(error), " in '", function, "' (File '", file, "'; Line ", line, ") [0x", mFUInt<mFHex>(error), "].\nExpression: '", expr, "'.\n\n");
+  mPRINT_ERROR("Error ", mResult_ToString(error), " in '", function, "' (File '", file, "'; Line ", line, ") [0x", mFUInt<mFHex>(error), "].\nExpression: '", expr, "'.");
 #endif
 }
 

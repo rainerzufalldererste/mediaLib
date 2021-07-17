@@ -216,7 +216,7 @@ public:
     if (mSharedPointer<T>::m_pData != nullptr && m_pointerParams.cleanupFunction && m_pointerParams.referenceCount == 1)
     {
 #ifdef mSHARED_POINTER_DEBUG_OUTPUT
-      mLOG("Destroying mReferencePack<", typeid(T).name(), ">. (0x", mFUInt<mFHex>(m_pData), ")\n");
+      mLOG("Destroying mReferencePack<", typeid(T).name(), ">. (0x", mFUInt<mFHex>(m_pData), ")");
 #endif
       m_pointerParams.cleanupFunction(mSharedPointer<T>::m_pData);
     }
@@ -437,7 +437,7 @@ public:
     if (mSharedPointer<T>::m_pData != nullptr && m_pointerParams.cleanupFunction)
     {
 #ifdef mSHARED_POINTER_DEBUG_OUTPUT
-      mLOG("Destroying mUniqueContainer<", typeid(T).name(), ">. (0x", mFUInt<mFHex>(m_pData), ")\n");
+      mLOG("Destroying mUniqueContainer<", typeid(T).name(), ">. (0x", mFUInt<mFHex>(m_pData), ")");
 #endif
       m_pointerParams.cleanupFunction(reinterpret_cast<T *>(m_value));
     }
@@ -475,7 +475,7 @@ inline mFUNCTION(mSharedPointer_Create, OUT mSharedPointer<T> *pOutSharedPointer
   pOutSharedPointer->m_pParams->pUserData = nullptr;
 
 #ifdef mSHARED_POINTER_DEBUG_OUTPUT
-  mLOG("Created mSharedPointer<", typeid(T).name(), ">. (0x", mFUInt<mFHex>(m_pData), ")\n");
+  mLOG("Created mSharedPointer<", typeid(T).name(), ">. (0x", mFUInt<mFHex>(m_pData), ")");
 #endif
 
   mRETURN_SUCCESS();
@@ -630,7 +630,7 @@ inline mFUNCTION(mSharedPointer_AllocateInherited, OUT mSharedPointer<T> *pOutSh
   pData = nullptr; // to not get released on destruction.
 
 #ifdef mSHARED_POINTER_DEBUG_OUTPUT
-  mLOG(" [was inherited from ", typeid(TInherited).name(), "]\n");
+  mLOG(" [was inherited from ", typeid(TInherited).name(), "]");
 #endif
 
   mRETURN_SUCCESS();
@@ -670,7 +670,7 @@ inline mFUNCTION(mSharedPointer_AllocateInheritedWithFlexArray, OUT mSharedPoint
   pData = nullptr; // to not get released on destruction.
 
 #ifdef mSHARED_POINTER_DEBUG_OUTPUT
-  mLOG(" [was inherited from ", typeid(TInherited).name(), "]\n");
+  mLOG(" [was inherited from ", typeid(TInherited).name(), "]");
 #endif
 
   mRETURN_SUCCESS();
@@ -741,7 +741,7 @@ inline mFUNCTION(mSharedPointer_CreateInplace, IN_OUT mSharedPointer<T> *pOutSha
   pOutSharedPointer->m_pData = pData;
 
 #ifdef mSHARED_POINTER_DEBUG_OUTPUT
-  mLOG("Created mSharedPointer<", typeid(T).name(), "> in place. (0x", mFUInt<mFHex>(m_pData), ")\n");
+  mLOG("Created mSharedPointer<", typeid(T).name(), "> in place. (0x", mFUInt<mFHex>(m_pData), ")");
 #endif
 
   mRETURN_SUCCESS();
@@ -864,7 +864,7 @@ inline mSharedPointer<T>::~mSharedPointer()
   if (referenceCount == 0)
   {
 #ifdef mSHARED_POINTER_DEBUG_OUTPUT
-    mLOG("Destroying mSharedPointer<", typeid(T).name(), ">. (0x", mFUInt<mFHex>(m_pData), ")\n");
+    mLOG("Destroying mSharedPointer<", typeid(T).name(), ">. (0x", mFUInt<mFHex>(m_pData), ")");
 #endif
 
     if (m_pParams->cleanupFunction)
