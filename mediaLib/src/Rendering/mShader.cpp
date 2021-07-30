@@ -139,7 +139,22 @@ mFUNCTION(mShader_Create, OUT mShader *pShader, const mString &vertexShader, con
   glLinkProgram(pShader->shaderProgram);
 
   glGetProgramiv(pShader->shaderProgram, GL_LINK_STATUS, &status);
-  mERROR_IF(status != GL_TRUE, mR_ResourceInvalid);
+  
+  if (status != GL_TRUE)
+  {
+    mPRINT_ERROR("Error linking shader.");
+#ifndef GIT_BUILD
+    mPRINT_ERROR("Vertex Shader:");
+    mPRINT_ERROR(vertexSource);
+    mPRINT_ERROR("Fragment Shader:");
+    mPRINT_ERROR(fragmentSource);
+#endif
+    mPRINT_ERROR("The following error occured:");
+    char buffer[1024];
+    glGetProgramInfoLog(pShader->shaderProgram, sizeof(buffer), nullptr, buffer);
+    mPRINT_ERROR(buffer);
+    mRETURN_RESULT(mR_ResourceInvalid);
+  }
 
   pShader->initialized = true;
 
