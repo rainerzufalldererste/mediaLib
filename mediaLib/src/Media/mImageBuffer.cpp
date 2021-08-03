@@ -469,6 +469,20 @@ mFUNCTION(mImageBuffer_SaveAsTga, mPtr<mImageBuffer> &imageBuffer, const mString
   mRETURN_SUCCESS();
 }
 
+mFUNCTION(mImageBuffer_SaveAsRaw, mPtr<mImageBuffer> &imageBuffer, const mString &filename)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(imageBuffer == nullptr || imageBuffer->pPixels == nullptr, mR_NotInitialized);
+
+  size_t bytes = 0;
+  mERROR_CHECK(mPixelFormat_GetSize(imageBuffer->pixelFormat, imageBuffer->currentSize, &bytes));
+
+  mERROR_CHECK(mFile_WriteRaw(filename, imageBuffer->pPixels, bytes));
+
+  mRETURN_SUCCESS();
+}
+
 mFUNCTION(mImageBuffer_SetToFile, mPtr<mImageBuffer> &imageBuffer, const mString &filename, const mPixelFormat pixelFormat /* = mPF_B8G8R8A8 */)
 {
   mFUNCTION_SETUP();
