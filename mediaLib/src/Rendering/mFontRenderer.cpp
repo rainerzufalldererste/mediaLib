@@ -77,35 +77,37 @@ void main()
 const char *mFontRenderer_FragmentShaderSDF = R"__SHADER__(#version 150 core
 
 uniform sampler2D texture;
-uniform float subPixel;
+uniform vec2 subPixel;
 
 out vec4 colour;
 
 in vec2 _texCoord;
 in vec4 _colour;
 
-const float cutoff = 0.495;
+const float cutoff = 0.475;
+const float icutoff = 1 / cutoff;
 const float inv3 = 1.0 / 3.0;
+const float upDownFac = 0.85;
 
 float getAlphaAtOffset(vec2 offset)
 {
-  float dist = cutoff - texture2D(texture, _texCoord + offset).r;
-  vec2 ddist = vec2(dFdx(dist), dFdy(dist));
-  float alpha = clamp(0.5 - (dist / length(ddist)), 0, 1);
+  float dist = max(0, cutoff - texture2D(texture, _texCoord + offset).r);
+  float alpha = dist * icutoff;
+  alpha = 1 - alpha * alpha;
 
   return alpha;
 }
 
 void main()
 {
-  float alphaR = (getAlphaAtOffset(vec2(-subPixel)) + getAlphaAtOffset(vec2(-subPixel, 0)) + getAlphaAtOffset(vec2(-subPixel, subPixel))) * inv3;
-  float alphaG = (getAlphaAtOffset(vec2(0, -subPixel)) + getAlphaAtOffset(vec2(0)) + getAlphaAtOffset(vec2(0, subPixel))) * inv3;
-  float alphaB = (getAlphaAtOffset(vec2(subPixel, -subPixel)) + getAlphaAtOffset(vec2(subPixel, 0)) + getAlphaAtOffset(vec2(subPixel))) * inv3;
+  float alphaR = max(max(getAlphaAtOffset(vec2(-subPixel)) * upDownFac, getAlphaAtOffset(vec2(-subPixel.x, 0))), getAlphaAtOffset(vec2(-subPixel.x, subPixel.y)) * upDownFac);
+  float alphaG = max(max(getAlphaAtOffset(vec2(0, -subPixel.y)) * upDownFac, getAlphaAtOffset(vec2(0))), getAlphaAtOffset(vec2(0, subPixel.y)) * upDownFac);
+  float alphaB = max(max(getAlphaAtOffset(vec2(subPixel.x, -subPixel.y)) * upDownFac, getAlphaAtOffset(vec2(subPixel.x, 0))), getAlphaAtOffset(vec2(subPixel)) * upDownFac);
 
   colour.a = _colour.a * (alphaR + alphaG + alphaB) / 3.0;
-  colour.r = _colour.r * alphaR / colour.a;
-  colour.g = _colour.g * alphaG / colour.a;
-  colour.b = _colour.b * alphaB / colour.a;
+  colour.r = mix(1 - _colour.r, _colour.r, alphaR);
+  colour.g = mix(1 - _colour.g, _colour.g, alphaG);
+  colour.b = mix(1 - _colour.b, _colour.b, alphaB);
 }
 )__SHADER__";
 
@@ -1508,7 +1510,7 @@ static mFUNCTION(mFontRenderer_DrawEnqueuedText_Internal, mPtr<mFontRenderer> &f
   mERROR_CHECK(mShader_SetUniform(fontRenderer->indexDataBuffer.shader, mFontRenderer_TextureUniform, fontRenderer->textureAtlas->texture));
 
   if (fontRenderer->signedDistanceFieldRendering)
-    mERROR_CHECK(mShader_SetUniform(fontRenderer->indexDataBuffer.shader, mFontRenderer_SubPixelUniform, 1.f / (mRenderParams_CurrentRenderResolutionF.x * 3.f)));
+    mERROR_CHECK(mShader_SetUniform(fontRenderer->indexDataBuffer.shader, mFontRenderer_SubPixelUniform, 1.f / (fontRenderer->textureAtlas->texture.resolutionF * 3.f)));
 
   mERROR_CHECK(mIndexedRenderDataBuffer_SetRenderCount(fontRenderer->indexDataBuffer, length));
   mERROR_CHECK(mIndexedRenderDataBuffer_Draw(fontRenderer->indexDataBuffer));
