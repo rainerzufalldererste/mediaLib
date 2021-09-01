@@ -270,7 +270,7 @@ mFUNCTION(mChunkedArray_PointerAt, mPtr<mChunkedArray<T>> &chunkedArray, const s
 }
 
 template <typename T>
-mFUNCTION(mChunkedArray_ConstPointerAt, const mPtr<mChunkedArray<T>> &chunkedArray, const size_t index, OUT const T **ppItem)
+mFUNCTION(mChunkedArray_PointerAt, const mPtr<mChunkedArray<T>> &chunkedArray, const size_t index, OUT const T **ppItem)
 {
   mFUNCTION_SETUP();
 

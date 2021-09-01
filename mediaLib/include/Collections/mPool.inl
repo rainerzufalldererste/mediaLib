@@ -227,7 +227,40 @@ mFUNCTION(mPool_PeekAt, mPtr<mPool<T>> &pool, const size_t index, OUT T *pItem)
 }
 
 template <typename T>
+mFUNCTION(mPool_PeekAt, const mPtr<mPool<T>> &pool, const size_t index, OUT const T *pItem)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pItem == nullptr, mR_ArgumentNull);
+
+  const T *pOutItem = nullptr;
+  mERROR_CHECK(mPool_PointerAt(pool, index, &pOutItem));
+
+  *pItem = *pOutItem;
+
+  mRETURN_SUCCESS();
+}
+
+template <typename T>
 mFUNCTION(mPool_PointerAt, mPtr<mPool<T>> &pool, const size_t index, OUT T **ppItem)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pool == nullptr || ppItem == nullptr, mR_ArgumentNull);
+  mERROR_IF(index >= pool->size * mBITS_OF(pool->pIndexes[0]), mR_IndexOutOfBounds);
+
+  const size_t lutIndex = index / mBITS_OF(pool->pIndexes[0]);
+  const size_t lutSubIndex = index - lutIndex * mBITS_OF(pool->pIndexes[0]);
+
+  mERROR_IF((pool->pIndexes[lutIndex] & ((size_t)1 << lutSubIndex)) == 0, mR_IndexOutOfBounds);
+
+  mERROR_CHECK(mChunkedArray_PointerAt(pool->data, index, ppItem));
+
+  mRETURN_SUCCESS();
+}
+
+template <typename T>
+mFUNCTION(mPool_PointerAt, const mPtr<mPool<T>> &pool, const size_t index, OUT const T **ppItem)
 {
   mFUNCTION_SETUP();
 
@@ -577,7 +610,7 @@ inline bool mConstPoolIterator<T>::operator != (const typename mConstPoolIterato
     {
       if (pPool->pIndexes[blockIndex] & flag)
       {
-        const mResult result = mChunkedArray_ConstPointerAt(pPool->data, globalIndex, &pData);
+        const mResult result = mChunkedArray_PointerAt(pPool->data, globalIndex, &pData);
 
         if (mFAILED(result))
         {

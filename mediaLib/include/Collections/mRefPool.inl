@@ -582,7 +582,7 @@ inline bool mRefPoolConstIterator<T>::operator != (const typename mRefPoolConstI
     {
       if (pPool->pIndexes[blockIndex] & flag)
       {
-        const mResult result = mChunkedArray_ConstPointerAt(pPool->data, globalIndex, &pData);
+        const mResult result = mChunkedArray_PointerAt(pPool->data, globalIndex, &pData);
 
         if (mFAILED(result))
         {

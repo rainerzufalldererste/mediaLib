@@ -115,7 +115,13 @@ template <typename T>
 mFUNCTION(mPool_PeekAt, mPtr<mPool<T>> &pool, const size_t index, OUT T *pItem);
 
 template <typename T>
+mFUNCTION(mPool_PeekAt, const mPtr<mPool<T>> &pool, const size_t index, OUT const T *pItem);
+
+template <typename T>
 mFUNCTION(mPool_PointerAt, mPtr<mPool<T>> &pool, const size_t index, OUT T **ppItem);
+
+template <typename T>
+mFUNCTION(mPool_PointerAt, const mPtr<mPool<T>> &pool, const size_t index, OUT T * const *ppItem);
 
 template <typename T>
 mFUNCTION(mPool_ForEach, mPtr<mPool<T>> &pool, const std::function<mResult (T *, size_t)> &function);
