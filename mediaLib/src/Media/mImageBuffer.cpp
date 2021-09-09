@@ -148,7 +148,7 @@ mFUNCTION(mImageBuffer_AllocateBuffer, mPtr<mImageBuffer> &imageBuffer, const mV
   if (imageBuffer->pPixels == nullptr)
   {
     uint8_t *pPixels = nullptr;
-    mERROR_CHECK(mAllocator_Allocate(imageBuffer->pAllocator, &pPixels, allocatedSize));
+    mERROR_CHECK(mAllocator_AllocateZero(imageBuffer->pAllocator, &pPixels, allocatedSize));
 
     imageBuffer->ownedResource = true;
     imageBuffer->pPixels = pPixels;
@@ -163,7 +163,7 @@ mFUNCTION(mImageBuffer_AllocateBuffer, mPtr<mImageBuffer> &imageBuffer, const mV
     {
       uint8_t *pPixels = nullptr;
       mERROR_CHECK(mAllocator_Reallocate(imageBuffer->pAllocator, &pPixels, allocatedSize));
-
+      
       imageBuffer->allocatedSize = allocatedSize;
       imageBuffer->ownedResource = true;
       imageBuffer->pPixels = pPixels;
