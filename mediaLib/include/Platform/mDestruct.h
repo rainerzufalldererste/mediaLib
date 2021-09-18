@@ -32,4 +32,10 @@ inline mFUNCTION(mDestruct, IN T *pData)
   mRETURN_SUCCESS();
 }
 
+template <typename T>
+inline void mDestructVoid(IN T *pData)
+{
+  mDestruct<T>(pData);
+}
+
 #endif // mDestruct_h__
