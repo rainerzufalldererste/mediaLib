@@ -227,7 +227,7 @@ inline mFUNCTION(mAllocator_Reallocate, IN OPTIONAL mAllocator *pAllocator, OUT 
   stacktrace[0] = '\0';
   mDebugSymbolInfo_GetStackTrace(stacktrace, mARRAYSIZE(stacktrace));
   char text[1024 * 16];
-  sprintf_s(text, "[#%" PRIu64 "] Type: %s, %" PRIu64 " x %" PRIu64 " Bytes = %" PRIu64 " Bytes.\n@ STACK TRACE:\n%s\n\n", mAllocatorDebugging_GetDebugMemoryAllocationCount()++, typeid(T).name(), count, count * sizeof(T), stacktrace);
+  sprintf_s(text, "[#%" PRIu64 "] Type: %s, %" PRIu64 " x %" PRIu64 " Bytes = %" PRIu64 " Bytes.\n@ STACK TRACE:\n%s\n\n", mAllocatorDebugging_GetDebugMemoryAllocationCount()++, typeid(T).name(), count, sizeof(T), count * sizeof(T), stacktrace);
 
   mAllocatorDebugging_StoreReallocateCall(pAllocator, originalPointer, *ppData, text);
 #endif
