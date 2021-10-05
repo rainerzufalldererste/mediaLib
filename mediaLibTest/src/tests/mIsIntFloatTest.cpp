@@ -48,6 +48,53 @@ mTEST(mIsInt, Test)
   mTEST_ALLOCATOR_ZERO_CHECK();
 }
 
+#define TEST_SINT(f) mTEST_ASSERT_TRUE(mStartsWithInt(#f)); mTEST_ASSERT_EQUAL(f##i64, mParseInt(#f));
+
+mTEST(mStartsWithInt, Test)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  mTEST_ASSERT_FALSE(mStartsWithInt(nullptr));
+  mTEST_ASSERT_FALSE(mStartsWithInt(nullptr, 100));
+  mTEST_ASSERT_FALSE(mStartsWithInt(""));
+  mTEST_ASSERT_FALSE(mStartsWithInt("", 1000));
+  mTEST_ASSERT_FALSE(mStartsWithInt("/"));
+  mTEST_ASSERT_FALSE(mStartsWithInt(":"));
+  mTEST_ASSERT_TRUE(mStartsWithInt("0:"));
+  mTEST_ASSERT_TRUE(mStartsWithInt("0/"));
+  mTEST_ASSERT_TRUE(mStartsWithInt("01234567890/"));
+  mTEST_ASSERT_FALSE(mStartsWithInt("/01234567890"));
+  mTEST_ASSERT_TRUE(mStartsWithInt("1a2"));
+  mTEST_ASSERT_TRUE(mStartsWithInt("1a2", 2));
+  mTEST_ASSERT_TRUE(mStartsWithInt("-1a2", 3));
+  mTEST_ASSERT_FALSE(mStartsWithInt("--"));
+  mTEST_ASSERT_FALSE(mStartsWithInt("-"));
+  mTEST_ASSERT_TRUE(mStartsWithInt("1-23456"));
+  mTEST_ASSERT_FALSE(mStartsWithInt("-1", 1));
+  mTEST_ASSERT_TRUE(mStartsWithInt("00000000000000000a"));
+  mTEST_ASSERT_TRUE(mStartsWithInt("00000000000000000aa"));
+  mTEST_ASSERT_TRUE(mStartsWithInt("-00000000000000000a"));
+
+  mTEST_ASSERT_TRUE(mStartsWithInt("0123456789"));
+  mTEST_ASSERT_TRUE(mStartsWithInt("-0123456789"));
+  mTEST_ASSERT_TRUE(mStartsWithInt("0123456789", 1));
+  mTEST_ASSERT_TRUE(mStartsWithInt("0123456789", 1));
+  mTEST_ASSERT_TRUE(mStartsWithInt("0123456789", 100));
+  mTEST_ASSERT_TRUE(mStartsWithInt("1a2", 1));
+  mTEST_ASSERT_TRUE(mStartsWithInt("-1a2", 2));
+
+  TEST_SINT(0);
+  TEST_SINT(1234);
+  TEST_SINT(2);
+  TEST_SINT(-1240);
+  TEST_SINT(9999);
+  TEST_SINT(1234567890);
+  TEST_SINT(-9223372036854775808);
+  TEST_SINT(9223372036854775807);
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}
+
 #define TEST_UINT(f) mTEST_ASSERT_TRUE(mIsUInt(#f)); mTEST_ASSERT_EQUAL(f##ull, mParseUInt(#f));
 
 mTEST(mIsUInt, Test)
@@ -89,6 +136,51 @@ mTEST(mIsUInt, Test)
   TEST_UINT(9999);
   TEST_UINT(1234567890);
   TEST_UINT(18446744073709551615);
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}
+
+#define TEST_SUINT(f) mTEST_ASSERT_TRUE(mStartsWithUInt(#f)); mTEST_ASSERT_EQUAL(f##ull, mParseUInt(#f));
+
+mTEST(mStartsWithUInt, Test)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  mTEST_ASSERT_FALSE(mStartsWithUInt(nullptr));
+  mTEST_ASSERT_FALSE(mStartsWithUInt(nullptr, 100));
+  mTEST_ASSERT_FALSE(mStartsWithUInt(""));
+  mTEST_ASSERT_FALSE(mStartsWithUInt("", 1000));
+  mTEST_ASSERT_FALSE(mStartsWithUInt("/"));
+  mTEST_ASSERT_FALSE(mStartsWithUInt(":"));
+  mTEST_ASSERT_TRUE(mStartsWithUInt("0:"));
+  mTEST_ASSERT_TRUE(mStartsWithUInt("0/"));
+  mTEST_ASSERT_TRUE(mStartsWithUInt("01234567890/"));
+  mTEST_ASSERT_FALSE(mStartsWithUInt("/01234567890"));
+  mTEST_ASSERT_TRUE(mStartsWithUInt("1a2"));
+  mTEST_ASSERT_TRUE(mStartsWithUInt("1a2", 2));
+  mTEST_ASSERT_FALSE(mStartsWithUInt("-1a2", 3));
+  mTEST_ASSERT_FALSE(mStartsWithUInt("--"));
+  mTEST_ASSERT_FALSE(mStartsWithUInt("-"));
+  mTEST_ASSERT_TRUE(mStartsWithUInt("1-23456"));
+  mTEST_ASSERT_FALSE(mStartsWithUInt("-1", 1));
+  mTEST_ASSERT_TRUE(mStartsWithUInt("00000000000000000a"));
+  mTEST_ASSERT_TRUE(mStartsWithUInt("00000000000000000aa"));
+  mTEST_ASSERT_FALSE(mStartsWithUInt("-00000000000000000a"));
+  mTEST_ASSERT_FALSE(mStartsWithUInt("-0123456789"));
+  mTEST_ASSERT_FALSE(mStartsWithUInt("-1a2", 2));
+
+  mTEST_ASSERT_TRUE(mStartsWithUInt("0123456789"));
+  mTEST_ASSERT_TRUE(mStartsWithUInt("0123456789", 1));
+  mTEST_ASSERT_TRUE(mStartsWithUInt("0123456789", 1));
+  mTEST_ASSERT_TRUE(mStartsWithUInt("0123456789", 100));
+  mTEST_ASSERT_TRUE(mStartsWithUInt("1a2", 1));
+
+  TEST_SUINT(0);
+  TEST_SUINT(1234);
+  TEST_SUINT(2);
+  TEST_SUINT(9999);
+  TEST_SUINT(1234567890);
+  TEST_SUINT(18446744073709551615);
 
   mTEST_ALLOCATOR_ZERO_CHECK();
 }
