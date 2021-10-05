@@ -269,6 +269,17 @@ mFUNCTION(mProcess_WaitForExit, mPtr<mProcess> &process, const uint32_t timeoutM
   mRETURN_SUCCESS();
 }
 
+mFUNCTION(mProcess_GetHandle, mPtr<mProcess> &process, OUT void **ppHandle)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(ppHandle == nullptr || process == nullptr, mR_ArgumentNull);
+
+  *ppHandle = reinterpret_cast<HANDLE *>(process->processHandle);
+
+  mRETURN_SUCCESS();
+}
+
 mFUNCTION(mProcess_Run, const mString &executable, const mString &workingDirectory, const mString &params, const mProcess_CreationFlags flags /* = mP_CF_None */)
 {
   mFUNCTION_SETUP();

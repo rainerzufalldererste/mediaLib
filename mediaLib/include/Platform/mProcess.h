@@ -43,6 +43,7 @@ mFUNCTION(mProcess_IsRunning, mPtr<mProcess> &process, OUT bool *pIsRunning);
 mFUNCTION(mProcess_GetExitCode, mPtr<mProcess> &process, OUT uint32_t *pExitCode);
 mFUNCTION(mProcess_Terminate, mPtr<mProcess> &process, const uint32_t exitCode = (uint32_t)-1);
 mFUNCTION(mProcess_WaitForExit, mPtr<mProcess> &process, const uint32_t timeoutMs = (uint32_t)-1);
+mFUNCTION(mProcess_GetHandle, mPtr<mProcess> &process, OUT void **ppHandle);
 
 mFUNCTION(mProcess_Run, const mString &executable, const mString &workingDirectory, const mString &params, const mProcess_CreationFlags flags = mP_CF_None);
 mFUNCTION(mProcess_Run, const mString &executable, const mString &workingDirectory, const mString &params, OPTIONAL mPtr<mPipe> stdinPipe, OPTIONAL mPtr<mPipe> stdoutPipe, OPTIONAL mPtr<mPipe> stderrPipe, const mProcess_CreationFlags flags = mP_CF_None);

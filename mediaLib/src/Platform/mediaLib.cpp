@@ -794,3 +794,52 @@ exponent:
 
   return hasPostExponentDigits && (hasPostPeriodDigits || hasDigits);
 }
+
+//////////////////////////////////////////////////////////////////////////
+
+bool mStartsWithInt(IN const char *text)
+{
+  if (text == nullptr)
+    return false;
+
+  return mStartsWithInt(text, strlen(text));
+}
+
+bool mStartsWithInt(IN const char *text, const size_t length)
+{
+  if (text == nullptr)
+    return false;
+
+  const bool sign = (text[0] == '-');
+  size_t i = (size_t)sign;
+
+  for (; i < length; i++)
+    if (text[i] < '0' || text[i] > '9')
+      return (i > (size_t)sign);
+
+  return i > (size_t)sign;
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+bool mStartsWithUInt(IN const char *text)
+{
+  if (text == nullptr)
+    return false;
+
+  return mStartsWithUInt(text, strlen(text));
+}
+
+bool mStartsWithUInt(IN const char *text, const size_t length)
+{
+  if (text == nullptr)
+    return false;
+
+  size_t i = 0;
+
+  for (; i < length; i++)
+    if (text[i] < '0' || text[i] > '9')
+      return i > 0;
+
+  return i > 0;
+}

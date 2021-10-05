@@ -375,4 +375,9 @@ bool mIsUInt(IN const char *text, const size_t length);
 bool mIsFloat(IN const char *text);
 bool mIsFloat(IN const char *text, const size_t length);
 
+bool mStartsWithInt(IN const char *text);
+bool mStartsWithInt(IN const char *text, const size_t length);
+bool mStartsWithUInt(IN const char *text);
+bool mStartsWithUInt(IN const char *text, const size_t length);
+
 #endif // mediaLib_h__
