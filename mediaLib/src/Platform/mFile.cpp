@@ -807,6 +807,9 @@ mFUNCTION(mFile_Delete, const mString &filename)
   case ERROR_LOCK_VIOLATION:
     mRETURN_RESULT(mR_ResourceBusy);
 
+  case ERROR_ACCESS_DENIED: // This can also occur, when the 'file' in question is actually a directory (maybe only if it has contents).
+    mRETURN_RESULT(mR_InsufficientPrivileges);
+
   default:
     mRETURN_RESULT(mR_IOFailure);
   }

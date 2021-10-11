@@ -33,7 +33,7 @@
  * Enums that are closely related to an object start with the name of the object followed by an underscore and the purpose of the `enum` in PascalCase (like `mSystemError_MessageBoxButton`; if there is no related object: `mResult`) Elements in an `enum` start with the prefix, followed by the initials of the related object, underscore, the initials of the `enum`, underscore, purpose of the element in PascalCase (like `mSE_MBB_OK`; if there is no related object: `mR_Success`).
  * `#define` constant literals in UPPERCASE with underscores (like `MAX_INT64`).
  * Function names are always in PascalCase and follow the `prefixObject_FunctionName` naming scheme (like `mPixelFormat_TransformBuffer`).
- * Internal functions should be postfixed with `_Internal`.
+ * Internal functions should be postfixed with `_Internal` and declared as `static`.
  
 ## Variables
 Global variables:
@@ -83,6 +83,45 @@ inline mFUNCTION(mQueue_PopBack, mPtr<mQueue<T>> &queue, OUT T *pItem)
 
   while (hasInput)
     DecodeInput(&hasInput);
+}
+```
+
+ * In combination with such blocks, prefer `do`-`while`(0) over doing lots of nested `if`-`else` statements for error-handling:
+ 
+```c++
+// Good:
+do
+{
+  if (SomeErrorOccurs())
+    break;
+  
+  if (SomeOtherErrorOccurs())
+    break;
+
+  // ...
+
+  Success();
+} while (0)
+
+// Bad:
+{
+  if (SomeErrorOccurs())
+  {
+    break;
+  }
+  else
+  {
+    if (SomeOtherErrorOccurs())
+    {
+      break;
+    }
+    else
+    {
+      // ...
+
+      Success();
+    }
+  }
 }
 ```
 
