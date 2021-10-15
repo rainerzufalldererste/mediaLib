@@ -28,6 +28,7 @@ mFUNCTION(mTexture_Create, OUT mTexture *pTexture, mPtr<mImageBuffer> &imageBuff
 
   glActiveTexture(GL_TEXTURE0 + (GLuint)pTexture->textureUnit);
   glGenTextures(1, &pTexture->textureId);
+  mDEFER_ON_ERROR(glDeleteTextures(1, &pTexture->textureId));
 
   glBindTexture(pTexture->sampleCount > 0 ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, pTexture->textureId);
   mERROR_CHECK(mTexture2DParams_ApplyToBoundTexture(textureParams, pTexture->sampleCount > 0));
@@ -85,6 +86,7 @@ mFUNCTION(mTexture_Create, OUT mTexture *pTexture, const uint8_t *pData, const m
 
     glActiveTexture(GL_TEXTURE0 + (GLuint)pTexture->textureUnit);
     glGenTextures(1, &pTexture->textureId);
+    mDEFER_ON_ERROR(glDeleteTextures(1, &pTexture->textureId));
 
     glBindTexture(pTexture->sampleCount > 0 ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, pTexture->textureId);
     mERROR_CHECK(mTexture2DParams_ApplyToBoundTexture(textureParams, pTexture->sampleCount > 0));
@@ -166,6 +168,8 @@ mFUNCTION(mTexture_Allocate, OUT mTexture *pTexture, const mVec2s size, const mP
 
   glActiveTexture(GL_TEXTURE0 + (GLuint)pTexture->textureUnit);
   glGenTextures(1, &pTexture->textureId);
+  mDEFER_ON_ERROR(glDeleteTextures(1, &pTexture->textureId));
+
   glBindTexture(pTexture->sampleCount > 0 ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, pTexture->textureId);
 
   GLenum glPixelFormat = GL_RGBA;
@@ -541,6 +545,8 @@ mFUNCTION(mTexture3D_Create, OUT mTexture3D *pTexture, const uint8_t *pData, con
   pTexture->textureUnit = (GLuint)textureUnit;
 
   glGenTextures(1, &pTexture->textureId);
+  mDEFER_ON_ERROR(glDeleteTextures(1, &pTexture->textureId));
+
   glBindTexture(GL_TEXTURE_3D, pTexture->textureId);
 
   mGL_DEBUG_ERROR_CHECK();
@@ -573,6 +579,8 @@ mFUNCTION(mTexture3D_Allocate, OUT mTexture3D *pTexture, const mVec3s &size, con
   pTexture->textureUnit = (GLuint)textureUnit;
 
   glGenTextures(1, &pTexture->textureId);
+  mDEFER_ON_ERROR(glDeleteTextures(1, &pTexture->textureId));
+
   glBindTexture(GL_TEXTURE_3D, pTexture->textureId);
 
   mGL_DEBUG_ERROR_CHECK();
