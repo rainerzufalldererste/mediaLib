@@ -26,6 +26,8 @@ bool mSystemInfo_IsWindows8Point1OrGreater();
 // Build Number is the actual Build Number, *NOT* the Version.
 // This will require the application to contain a manifest stating it's compatible with Windows 10.
 bool mSystemInfo_IsWindows10OrGreater(const uint32_t buildNumber = 0);
+
+inline bool mSystemInfo_IsWindows11OrGreater() { return mSystemInfo_IsWindows10OrGreater(21996); }
 #endif
 
 bool mSystemInfo_IsDarkMode();
