@@ -360,6 +360,7 @@ namespace mCpuExtensions
   extern bool avx512BITALGSupported;
   extern bool avx5124VNNIWSupported;
   extern bool avx5124FMAPSSupported;
+  extern bool aesNiSupported;
 
   void Detect();
 };
@@ -379,5 +380,7 @@ bool mStartsWithInt(IN const char *text);
 bool mStartsWithInt(IN const char *text, const size_t length);
 bool mStartsWithUInt(IN const char *text);
 bool mStartsWithUInt(IN const char *text, const size_t length);
+
+uint64_t mRnd();
 
 #endif // mediaLib_h__

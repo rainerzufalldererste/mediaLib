@@ -429,11 +429,12 @@ namespace mCpuExtensions
   bool avx512BITALGSupported = false;
   bool avx5124VNNIWSupported = false;
   bool avx5124FMAPSSupported = false;
+  bool aesNiSupported = false;
+
+  static bool simdFeaturesDetected = false;
 
   void Detect()
   {
-    static bool simdFeaturesDetected = false;
-
     if (simdFeaturesDetected)
       return;
 
@@ -463,6 +464,7 @@ namespace mCpuExtensions
       sse41Supported = (cpuInfo[2] & (1 << 19)) != 0;
       sse42Supported = (cpuInfo[2] & (1 << 20)) != 0;
       fma3Supported = (cpuInfo[2] & (1 << 12)) != 0;
+      aesNiSupported = (cpuInfo[2] & (1 << 25)) != 0;
     }
 
     if (idCount >= 0x7)
@@ -842,4 +844,50 @@ bool mStartsWithUInt(IN const char *text, const size_t length)
       return i > 0;
 
   return i > 0;
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+uint64_t mRnd()
+{
+  mALIGN(16) static uint64_t last[2] = { (uint64_t)mGetCurrentTimeNs(), __rdtsc() };
+
+  if (!mCpuExtensions::simdFeaturesDetected) // let's hope that's faster than the function call...
+    mCpuExtensions::Detect();
+  
+  if (mCpuExtensions::aesNiSupported)
+  {
+    // If we can use AES-NI, use aes decryption.
+  
+    mALIGN(16) static uint64_t last2[2] = { ~__rdtsc(), ~(uint64_t)mGetCurrentTimeMs() };
+    
+    const __m128i a = _mm_load_si128(reinterpret_cast<__m128i *>(last));
+    const __m128i b = _mm_load_si128(reinterpret_cast<__m128i *>(last2));
+    
+    const __m128i r = _mm_aesdec_si128(a, b);
+    
+    _mm_store_si128(reinterpret_cast<__m128i *>(last), b);
+    _mm_store_si128(reinterpret_cast<__m128i *>(last2), r);
+  
+    return last[1] ^ last[0];
+  }
+  else
+  {
+    // This is simply PCG, which is about 25% slower, (we're talking ~5 ns/call, so it's certainly not slow) but works on all CPUs as a fallback option.
+
+    const uint64_t oldstate_hi = last[0];
+    const uint64_t oldstate_lo = oldstate_hi * 6364136223846793005ULL + (last[1] | 1);
+    last[0] = oldstate_hi * 6364136223846793005ULL + (last[1] | 1);
+    
+    const uint32_t xorshifted_hi = (uint32_t)(((oldstate_hi >> 18) ^ oldstate_hi) >> 27);
+    const uint32_t rot_hi = (uint32_t)(oldstate_hi >> 59);
+    
+    const uint32_t xorshifted_lo = (uint32_t)(((oldstate_lo >> 18) ^ oldstate_lo) >> 27);
+    const uint32_t rot_lo = (uint32_t)(oldstate_lo >> 59);
+    
+    const uint32_t hi = (xorshifted_hi >> rot_hi) | (xorshifted_hi << (uint32_t)((-(int32_t)rot_hi) & 31));
+    const uint32_t lo = (xorshifted_lo >> rot_lo) | (xorshifted_lo << (uint32_t)((-(int32_t)rot_lo) & 31));
+  
+    return ((uint64_t)hi << 32) | lo;
+  }
 }
