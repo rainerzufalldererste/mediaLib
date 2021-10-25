@@ -1109,7 +1109,7 @@ mFUNCTION(mBlobReader_ReadValue, mPtr<mBlobReader> &reader, OUT const char **pTe
     mRETURN_RESULT(mR_ResourceInvalid);
   }
 
-  const size_t afterContainerPosition = pParent->containerSizeBytes - parentOffset;
+  const size_t afterContainerPosition = pParent->containerSizeBytes + parentOffset;
 
   mERROR_IF(reader->position >= afterContainerPosition, mR_IndexOutOfBounds);
 
@@ -1150,7 +1150,7 @@ mFUNCTION(mBlobReader_ReadValue, mPtr<mBlobReader> &reader, OUT const uint8_t **
     mRETURN_RESULT(mR_ResourceInvalid);
   }
 
-  const size_t afterContainerPosition = pParent->containerSizeBytes - parentOffset;
+  const size_t afterContainerPosition = pParent->containerSizeBytes + parentOffset;
 
   mERROR_IF(reader->position >= afterContainerPosition, mR_IndexOutOfBounds);
 
