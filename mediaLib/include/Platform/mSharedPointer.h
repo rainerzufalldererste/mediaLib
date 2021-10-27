@@ -271,7 +271,7 @@ private:
     MoveAssignFunc(IN mUniqueContainer<T> *pMove)
   {
     mASSERT_DEBUG(m_pointerParams.referenceCount <= 1, mFormat("Not all references of the mUniqueContainer<", typeid(T).name(), "> have been returned."));
-    mASSERT_DEBUG(pMove->m_pointerParams.referenceCount == 1, mFormat("Not all references of the mUniqueContainer<", typeid(T).name(), "> have been returned."));
+    mASSERT_DEBUG(pMove->m_pointerParams.referenceCount <= 1, mFormat("Not all references of the mUniqueContainer<", typeid(T).name(), "> have been returned."));
 
     // Cleanup
     {
@@ -301,7 +301,7 @@ private:
     MoveAssignFunc(IN mUniqueContainer<T> *pMove)
   {
     mASSERT_DEBUG(m_pointerParams.referenceCount <= 1, mFormat("Not all references of the mUniqueContainer<", typeid(T).name(), "> have been returned."));
-    mASSERT_DEBUG(pMove->m_pointerParams.referenceCount == 1, mFormat("Not all references of the mUniqueContainer<", typeid(T).name(), "> have been returned."));
+    mASSERT_DEBUG(pMove->m_pointerParams.referenceCount <= 1, mFormat("Not all references of the mUniqueContainer<", typeid(T).name(), "> have been returned."));
 
     // Cleanup
     {
