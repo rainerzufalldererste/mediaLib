@@ -263,7 +263,7 @@ mFUNCTION(mTexture_Upload, mTexture &texture)
   {
     mPtr<mImageBuffer> imageBuffer;
     mDEFER_CALL(&imageBuffer, mImageBuffer_Destroy);
-    mERROR_CHECK(mImageBuffer_Create(&imageBuffer, nullptr, texture.imageBuffer->currentSize, mPF_R8G8B8A8));
+    mERROR_CHECK(mImageBuffer_Create(&imageBuffer, &mDefaultTempAllocator, texture.imageBuffer->currentSize, mPF_R8G8B8A8));
     mERROR_CHECK(mPixelFormat_TransformBuffer(texture.imageBuffer, imageBuffer));
 
     glTexImage2D(texture.sampleCount > 0 ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)imageBuffer->currentSize.x, (GLsizei)imageBuffer->currentSize.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, imageBuffer->pPixels);
@@ -361,7 +361,7 @@ mFUNCTION(mTexture_SetTo, mTexture &texture, const uint8_t *pData, const mVec2s 
   {
     mPtr<mImageBuffer> imageBuffer;
     mDEFER_CALL(&imageBuffer, mImageBuffer_Destroy);
-    mERROR_CHECK(mImageBuffer_Create(&imageBuffer, &mDefaultTempAllocator, reinterpret_cast<const uint8_t *>(pData), size, pixelFormat));
+    mERROR_CHECK(mImageBuffer_Create(&imageBuffer, &mDefaultAllocator, reinterpret_cast<const uint8_t *>(pData), size, pixelFormat));
 
     mERROR_CHECK(mTexture_SetTo(texture, imageBuffer, upload));
   }
