@@ -139,11 +139,20 @@ mFUNCTION(mAllocator_Allocate, IN OPTIONAL mAllocator *pAllocator, OUT T **ppDat
 #endif
 
   if (pAllocator == nullptr)
-    mERROR_CHECK(mDefaultAllocator_Alloc(reinterpret_cast<uint8_t **>(ppData), sizeof(T), count));
+  {
+    if (mDefaultAllocator.pAllocate == nullptr)
+      mERROR_CHECK(mDefaultAllocator_Alloc(reinterpret_cast<uint8_t **>(ppData), sizeof(T), count)); // This is only here for the CPU to pre-cache the function.
+    else  
+      mERROR_CHECK(mDefaultAllocator.pAllocate(reinterpret_cast<uint8_t **>(ppData), sizeof(T), count, mDefaultAllocator.pUserData));
+  }
   else if (pAllocator->pAllocate != nullptr)
+  {
     mERROR_CHECK(pAllocator->pAllocate(reinterpret_cast<uint8_t **>(ppData), sizeof(T), count, pAllocator->pUserData));
+  }
   else
+  {
     mERROR_CHECK(pAllocator->pAllocateZero(reinterpret_cast<uint8_t **>(ppData), sizeof(T), count, pAllocator->pUserData));
+  }
 
 #ifdef mDEBUG_MEMORY_ALLOCATIONS
   char stacktrace[1024 * 15];
@@ -174,7 +183,19 @@ mFUNCTION(mAllocator_AllocateZero, IN OPTIONAL mAllocator *pAllocator, OUT T **p
 
   if (pAllocator == nullptr)
   {
-    mERROR_CHECK(mDefaultAllocator_AllocZero(reinterpret_cast<uint8_t **>(ppData), sizeof(T), count));
+    if (mDefaultAllocator.pAllocateZero == nullptr && mDefaultAllocator.pAllocate == nullptr)
+    {
+      mERROR_CHECK(mDefaultAllocator_AllocZero(reinterpret_cast<uint8_t **>(ppData), sizeof(T), count)); // This is only here for the CPU to pre-cache the function.
+    }
+    else if (mDefaultAllocator.pAllocateZero != nullptr)
+    {
+      mERROR_CHECK(mDefaultAllocator.pAllocateZero(reinterpret_cast<uint8_t **>(ppData), sizeof(T), count, mDefaultAllocator.pUserData));
+    }
+    else
+    {
+      mERROR_CHECK(mDefaultAllocator.pAllocate(reinterpret_cast<uint8_t **>(ppData), sizeof(T), count, mDefaultAllocator.pUserData));
+      mERROR_CHECK(mMemset(*ppData, count, 0));
+    }
   }
   else if (pAllocator->pAllocateZero != nullptr)
   {
@@ -218,9 +239,16 @@ inline mFUNCTION(mAllocator_Reallocate, IN OPTIONAL mAllocator *pAllocator, OUT 
   mSTATIC_ASSERT(mIsTriviallyMemoryMovable<T>::value, "This type is not trivially memory movable.");
 
   if (pAllocator == nullptr)
-    mERROR_CHECK(mDefaultAllocator_Realloc(reinterpret_cast<uint8_t **>(ppData), sizeof(T), count));
+  {
+    if (mDefaultAllocator.pReallocate == nullptr)
+      mERROR_CHECK(mDefaultAllocator_Realloc(reinterpret_cast<uint8_t **>(ppData), sizeof(T), count)); // This is only here for the CPU to pre-cache the function.
+    else  
+      mERROR_CHECK(mDefaultAllocator.pReallocate(reinterpret_cast<uint8_t **>(ppData), sizeof(T), count, mDefaultAllocator.pUserData));
+  }
   else
+  {
     mERROR_CHECK(pAllocator->pReallocate(reinterpret_cast<uint8_t **>(ppData), sizeof(T), count, pAllocator->pUserData));
+  }
 
 #ifdef mDEBUG_MEMORY_ALLOCATIONS
   char stacktrace[1024 * 15];
@@ -258,9 +286,16 @@ inline mFUNCTION(mAllocator_FreePtr, IN OPTIONAL mAllocator *pAllocator, IN_OUT 
   mERROR_IF(pAllocator != nullptr && (!pAllocator->initialized || pAllocator->pFree == nullptr), mR_ResourceInvalid);
 
   if (pAllocator == nullptr)
-    mERROR_CHECK(mDefaultAllocator_Free(reinterpret_cast<uint8_t *>(*ppData)));
+  {
+    if (mDefaultAllocator.pFree == nullptr)
+      mERROR_CHECK(mDefaultAllocator_Free(reinterpret_cast<uint8_t *>(*ppData))); // This is only here for the CPU to pre-cache the function.
+    else
+      mERROR_CHECK(mDefaultAllocator.pFree(reinterpret_cast<uint8_t *>(*ppData), mDefaultAllocator.pUserData));
+  }
   else
+  {
     mERROR_CHECK(pAllocator->pFree(reinterpret_cast<uint8_t *>(*ppData), pAllocator->pUserData));
+  }
 
 #ifdef mDEBUG_MEMORY_ALLOCATIONS
   mAllocatorDebugging_StoreFreeCall(pAllocator, originalPointer);
@@ -290,15 +325,34 @@ inline mFUNCTION(mAllocator_Free, IN OPTIONAL mAllocator *pAllocator, IN T *pDat
   mERROR_IF(pAllocator != nullptr && (!pAllocator->initialized || pAllocator->pFree == nullptr), mR_ResourceInvalid);
 
   if (pAllocator == nullptr)
-    mERROR_CHECK(mDefaultAllocator_Free(reinterpret_cast<uint8_t *>(pData)));
+  {
+    if (mDefaultAllocator.pFree == nullptr)
+      mERROR_CHECK(mDefaultAllocator_Free(reinterpret_cast<uint8_t *>(pData))); // This is only here for the CPU to pre-cache the function.
+    else
+      mERROR_CHECK(mDefaultAllocator.pFree(reinterpret_cast<uint8_t *>(pData), mDefaultAllocator.pUserData));
+  }
   else
+  {
     mERROR_CHECK(pAllocator->pFree(reinterpret_cast<uint8_t *>(pData), pAllocator->pUserData));
+  }
 
 #ifdef mDEBUG_MEMORY_ALLOCATIONS
   mAllocatorDebugging_StoreFreeCall(pAllocator, originalPointer);
 #endif
 
   mRETURN_SUCCESS();
+}
+
+template <typename T>
+inline mFUNCTION(mAllocator_AllocateWithSize, IN OPTIONAL mAllocator *pAllocator, OUT T **ppData, const size_t size)
+{
+  return mAllocator_Allocate(pAllocator, reinterpret_cast<uint8_t **>(ppData), size);
+}
+
+template <typename T>
+inline mFUNCTION(mAllocator_AllocateZeroWithSize, IN OPTIONAL mAllocator *pAllocator, OUT T **ppData, const size_t size)
+{
+  return mAllocator_AllocateZero(pAllocator, reinterpret_cast<uint8_t **>(ppData), size);
 }
 
 #endif // mAllocator_h__

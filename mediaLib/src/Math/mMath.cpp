@@ -123,16 +123,3 @@ mFraction mToFraction(const double_t value, const int64_t precision /* = 1000000
 
   return { (int64_t)round(integralPart), fracPrec / gcd, precision / gcd };
 }
-
-int64_t mGreatestCommonDivisor(const int64_t a, const int64_t b)
-{
-  if (a == 0)
-    return b;
-  if (b == 0)
-    return a;
-
-  if (a < b)
-    return mGreatestCommonDivisor(a, b % a);
-
-  return mGreatestCommonDivisor(b, a % b);
-}

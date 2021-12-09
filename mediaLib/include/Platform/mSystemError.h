@@ -24,11 +24,11 @@ enum mSystemError_Type
 
 enum mSystemError_MessageBoxButton
 {
-  mSE_MBB_OK,
+  mSE_MBB_Ok,
   mSE_MBB_Abort_Retry_Ignore,
   mSE_MBB_Cancel_Try_Continue,
   mSE_MBB_Help,
-  mSE_MBB_OK_Cancel,
+  mSE_MBB_Ok_Cancel,
   mSE_MBB_Retry_Cancel,
   mSE_MBB_Yes_No,
   mSE_MBB_Yes_No_Cancel,
@@ -60,9 +60,9 @@ enum mSystemError_MessageBoxResponse
 
 mFUNCTION(mSystemError_PlaySound, const mSystemError_Type type);
 
-mFUNCTION(mSystemError_ShowMessageBox, const mSystemError_Type type, const mString &title, const mString &text, const mSystemError_MessageBoxButton buttons = mSE_MBB_OK, OUT OPTIONAL mSystemError_MessageBoxResponse *pResponse = nullptr, const size_t defaultButtonIndex = 0, const mSystemError_Authority authority = mSE_A_Task);
-mFUNCTION(mSystemError_ShowMessageBox, mPtr<mHardwareWindow> &window, const mSystemError_Type type, const mString &title, const mString &text, const mSystemError_MessageBoxButton buttons = mSE_MBB_OK, OUT OPTIONAL mSystemError_MessageBoxResponse *pResponse = nullptr, const size_t defaultButtonIndex = 0, const mSystemError_Authority authority = mSE_A_Window);
-mFUNCTION(mSystemError_ShowMessageBox, mPtr<mSoftwareWindow> &window, const mSystemError_Type type, const mString &title, const mString &text, const mSystemError_MessageBoxButton buttons = mSE_MBB_OK, OUT OPTIONAL mSystemError_MessageBoxResponse *pResponse = nullptr, const size_t defaultButtonIndex = 0, const mSystemError_Authority authority = mSE_A_Window);
+mFUNCTION(mSystemError_ShowMessageBox, const mSystemError_Type type, const mString &title, const mString &text, const mSystemError_MessageBoxButton buttons = mSE_MBB_Ok, OUT OPTIONAL mSystemError_MessageBoxResponse *pResponse = nullptr, const size_t defaultButtonIndex = 0, const mSystemError_Authority authority = mSE_A_Task);
+mFUNCTION(mSystemError_ShowMessageBox, mPtr<mHardwareWindow> &window, const mSystemError_Type type, const mString &title, const mString &text, const mSystemError_MessageBoxButton buttons = mSE_MBB_Ok, OUT OPTIONAL mSystemError_MessageBoxResponse *pResponse = nullptr, const size_t defaultButtonIndex = 0, const mSystemError_Authority authority = mSE_A_Window);
+mFUNCTION(mSystemError_ShowMessageBox, mPtr<mSoftwareWindow> &window, const mSystemError_Type type, const mString &title, const mString &text, const mSystemError_MessageBoxButton buttons = mSE_MBB_Ok, OUT OPTIONAL mSystemError_MessageBoxResponse *pResponse = nullptr, const size_t defaultButtonIndex = 0, const mSystemError_Authority authority = mSE_A_Window);
 
 mFUNCTION(mSystemError_WriteMiniDump, const mString &filename, IN OPTIONAL struct _EXCEPTION_POINTERS *pExceptionInfo, const bool includeHeap = false);
 

@@ -289,6 +289,45 @@ mFUNCTION(mPixelFormat_GetUnitSize, const mPixelFormat pixelFormat, OUT size_t *
   mRETURN_SUCCESS();
 }
 
+mFUNCTION(mPixelFormat_IsComponentIntegral, const mPixelFormat pixelFormat, OUT bool *pIsIntegral)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pIsIntegral == nullptr, mR_ArgumentNull);
+
+  switch (pixelFormat)
+  {
+  case mPF_Monochrome8:
+  case mPF_Monochrome16:
+  case mPF_R8G8:
+  case mPF_R8G8B8:
+  case mPF_R8G8B8A8:
+  case mPF_B8G8R8:
+  case mPF_B8G8R8A8:
+  case mPF_R16G16:
+  case mPF_R16G16B16:
+  case mPF_R16G16B16A16:
+    *pIsIntegral = true;
+    break;
+
+  case mPF_Monochromef16:
+  case mPF_Monochromef32:
+  case mPF_Rf16Gf16:
+  case mPF_Rf32Gf32:
+  case mPF_Rf16Gf16Bf16:
+  case mPF_Rf32Gf32Bf32:
+  case mPF_Rf16Gf16Bf16Af16:
+  case mPF_Rf32Gf32Bf32Af32:
+    *pIsIntegral = false;
+    break;
+
+  default:
+    mRETURN_RESULT(mR_InvalidParameter);
+  }
+
+  mRETURN_SUCCESS();
+}
+
 mFUNCTION(mPixelFormat_GetSubBufferCount, const mPixelFormat pixelFormat, OUT size_t *pBufferCount)
 {
   mFUNCTION_SETUP();

@@ -53,6 +53,7 @@ mFUNCTION(mPixelFormat_GetSize, const mPixelFormat pixelFormat, const mVec2s &si
 mFUNCTION(mPixelFormat_GetUnitSize, const mPixelFormat pixelFormat, OUT size_t *pBytes);
 mFUNCTION(mPixelFormat_GetComponentCount, const mPixelFormat pixelFormat, OUT size_t *pCount);
 mFUNCTION(mPixelFormat_GetComponentSize, const mPixelFormat pixelFormat, OUT size_t *pBytes);
+mFUNCTION(mPixelFormat_IsComponentIntegral, const mPixelFormat pixelFormat, OUT bool *pIsIntegral);
 mFUNCTION(mPixelFormat_GetSubBufferCount, const mPixelFormat pixelFormat, OUT size_t *pBufferCount);
 mFUNCTION(mPixelFormat_GetSubBufferOffset, const mPixelFormat pixelFormat, const size_t bufferIndex, const mVec2s &size, OUT size_t *pOffset);
 mFUNCTION(mPixelFormat_GetSubBufferSize, const mPixelFormat pixelFormat, const size_t bufferIndex, const mVec2s &size, OUT mVec2s *pSubBufferSize);

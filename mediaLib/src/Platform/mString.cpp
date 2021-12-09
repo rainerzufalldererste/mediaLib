@@ -84,7 +84,7 @@ mString::mString(const wchar_t *text, IN OPTIONAL mAllocator *pAllocator /* = nu
 
 mString::~mString()
 {
-  if (text != nullptr)
+  if (text != nullptr && pAllocator != mSHARED_POINTER_FOREIGN_RESOURCE)
     mAllocator_FreePtr(pAllocator, &text);
 
   text = nullptr;
@@ -111,7 +111,7 @@ mString::mString(const mString &copy) :
 
   mResult result = mR_Success;
 
-  pAllocator = copy.pAllocator;
+  pAllocator = copy.pAllocator != mSHARED_POINTER_FOREIGN_RESOURCE ? copy.pAllocator : nullptr;
 
   mERROR_CHECK_GOTO(mAllocator_AllocateZero(pAllocator, &text, copy.bytes), result, epilogue);
   capacity = bytes = copy.bytes;
