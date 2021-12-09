@@ -6,12 +6,22 @@ mTEST(mMath, TestIsPrime)
   const bool isPrime[] = { 0, 0, 1, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, };
 
   for (size_t i = 0; i < mARRAYSIZE(isPrime); i++)
-    if (isPrime[i] != mIsPrime(i))
-      __debugbreak();
+    mTEST_ASSERT_FALSE(isPrime[i] != mIsPrime(i));
 
   mTEST_ASSERT_TRUE(mIsPrime(0x10001));
   mTEST_ASSERT_FALSE(mIsPrime(0x10000));
   mTEST_ASSERT_FALSE(mIsPrime(0xFFFF));
+
+  mTEST_RETURN_SUCCESS();
+}
+
+mTEST(mMath, TestGCD)
+{
+  mTEST_ASSERT_EQUAL(3 * 2 * 5 * 7 * 7, mGreatestCommonDivisor(3 * 2 * 5 * 7 * 7, 3 * 2 * 5 * 7 * 7));
+  mTEST_ASSERT_EQUAL(3 * 2 * 5 * 7, mGreatestCommonDivisor(3 * 2 * 5 * 7 * 7, 3 * 2 * 5 * 7 * 2));
+  mTEST_ASSERT_EQUAL(1, mGreatestCommonDivisor(3 * 2, 5 * 7));
+  mTEST_ASSERT_EQUAL(1, mGreatestCommonDivisor(0x10001, 29));
+  mTEST_ASSERT_EQUAL(0x10001, mGreatestCommonDivisor(0x10001 * 5 * 7 * 3 * 3, 0x10001 * 29));
 
   mTEST_RETURN_SUCCESS();
 }

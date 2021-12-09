@@ -335,6 +335,8 @@ struct mInplaceString
 
   mUtf8StringIterator begin() const;
   mUtf8StringIterator end() const;
+
+  operator const mString () const;
 };
 
 template <size_t TCount>
@@ -462,6 +464,20 @@ template<size_t TCount>
 bool mInplaceString<TCount>::operator != (const mString &other) const
 {
   return !(*this == other);
+}
+
+template<size_t TCount>
+inline mInplaceString<TCount>::operator const mString() const
+{
+  mString constString;
+
+  constString.bytes = bytes;
+  constString.count = count;
+  constString.text = const_cast<char *>(text);
+  constString.capacity = TCount;
+  constString.pAllocator = mSHARED_POINTER_FOREIGN_RESOURCE;
+
+  return constString;
 }
 
 template<size_t TCount>

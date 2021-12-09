@@ -279,6 +279,7 @@ struct mFormatState
 };
 
 mFormatState & mFormat_GetState();
+mFormatState & mFormat_GetGlobalState();
 void mFormatState_ResetCulture();
 
 #pragma warning (push)

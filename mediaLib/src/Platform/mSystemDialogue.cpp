@@ -11,10 +11,25 @@
   #define __M_FILE__ "Srul7+y1tk8dPuWZzF1XvAaBj8K4NZ110IMfJ4pxT7t9KdF/dmntj/cfzRFBwX6AkbIexFEadzJ+mF4z"
 #endif
 
-mFUNCTION(mSystemDialogue_GetWStringFromFileExtensionPairs, OUT wchar_t **ppString, IN mAllocator *pAllocator, mPtr<mQueue<mKeyValuePair<mString, mString>>> &fileTypeExtensionPairs);
+static mFUNCTION(mSystemDialogue_GetWStringFromFileExtensionPairs, OUT wchar_t **ppString, IN mAllocator *pAllocator, mPtr<mQueue<mKeyValuePair<mString, mString>>> &fileTypeExtensionPairs);
 static mFUNCTION(mSystemDialogue_OpenFile_Internal, HWND window, const mString &headlineString, mPtr<mQueue<mKeyValuePair<mString, mString>>> &fileTypeExtensionPairs, OUT bool *pCanceled, OUT mString *pFilename, const mString &initialDirectory);
 static mFUNCTION(mSystemDialogue_SelectDirectory_Internal, HWND window, const mString &headlineString, OUT OPTIONAL bool *pCanceled, OUT mString *pSelectedDirectory);
 static mFUNCTION(mSystemDialogue_SaveFile_Internal, HWND window, const mString &headlineString, mPtr<mQueue<mKeyValuePair<mString, mString>>> &fileTypeExtensionPairs, OUT mString *pFilename, OUT OPTIONAL bool *pCanceled, const mString &initialDirectory);
+static mFUNCTION(mSystemDialogue_SetWindowProgressState_Internal, HWND window, const mSystemDialogue_WindowProgressState state);
+static mFUNCTION(mSystemDialogue_SetWindowProgressState_Internal, HWND window, const TBPFLAG type);
+static mFUNCTION(mSystemDialogue_SetWindowProgress_Internal, HWND window, const float_t progress);
+
+//////////////////////////////////////////////////////////////////////////
+
+template <typename T>
+static mINLINE void _ReleaseReference(T **pData)
+{
+  if (pData && *pData)
+  {
+    (*pData)->Release();
+    *pData = nullptr;
+  }
+}
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -121,9 +136,65 @@ mFUNCTION(mSystemDialogue_SaveFile, mPtr<mHardwareWindow> &window, const mString
   mRETURN_SUCCESS();
 }
 
+mFUNCTION(mSystemDialogue_SetWindowProgressState, mPtr<mSoftwareWindow> &window, const mSystemDialogue_WindowProgressState state)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(window == nullptr, mR_ArgumentNull);
+
+  HWND hwnd;
+  mERROR_CHECK(mSoftwareWindow_GetWindowHandle(window, &hwnd));
+
+  mERROR_CHECK(mSystemDialogue_SetWindowProgressState_Internal(hwnd, state));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mSystemDialogue_SetWindowProgressState, mPtr<mHardwareWindow> &window, const mSystemDialogue_WindowProgressState state)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(window == nullptr, mR_ArgumentNull);
+
+  HWND hwnd;
+  mERROR_CHECK(mHardwareWindow_GetWindowHandle(window, &hwnd));
+
+  mERROR_CHECK(mSystemDialogue_SetWindowProgressState_Internal(hwnd, state));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mSystemDialogue_SetWindowProgress, mPtr<mSoftwareWindow> &window, const float_t progress)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(window == nullptr, mR_ArgumentNull);
+
+  HWND hwnd;
+  mERROR_CHECK(mSoftwareWindow_GetWindowHandle(window, &hwnd));
+
+  mERROR_CHECK(mSystemDialogue_SetWindowProgress_Internal(hwnd, progress));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mSystemDialogue_SetWindowProgress, mPtr<mHardwareWindow> &window, const float_t progress)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(window == nullptr, mR_ArgumentNull);
+
+  HWND hwnd;
+  mERROR_CHECK(mHardwareWindow_GetWindowHandle(window, &hwnd));
+
+  mERROR_CHECK(mSystemDialogue_SetWindowProgress_Internal(hwnd, progress));
+
+  mRETURN_SUCCESS();
+}
+
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mSystemDialogue_GetWStringFromFileExtensionPairs, OUT wchar_t **ppString, IN mAllocator *pAllocator, mPtr<mQueue<mKeyValuePair<mString, mString>>> &fileTypeExtensionPairs)
+static mFUNCTION(mSystemDialogue_GetWStringFromFileExtensionPairs, OUT wchar_t **ppString, IN mAllocator *pAllocator, mPtr<mQueue<mKeyValuePair<mString, mString>>> &fileTypeExtensionPairs)
 {
   mFUNCTION_SETUP();
 
@@ -311,6 +382,75 @@ static mFUNCTION(mSystemDialogue_SaveFile_Internal, HWND window, const mString &
 
   if (result != 0)
     mERROR_CHECK(mString_Create(pFilename, fileName, mARRAYSIZE(fileName)));
+
+  mRETURN_SUCCESS();
+}
+
+static mFUNCTION(mSystemDialogue_SetWindowProgressState_Internal, HWND window, const mSystemDialogue_WindowProgressState type)
+{
+  mFUNCTION_SETUP();
+
+  TBPFLAG flag;
+
+  switch (type)
+  {
+  default:
+    mRETURN_RESULT(mR_InvalidParameter);
+
+  case mSD_WPS_None:
+    flag = TBPF_NOPROGRESS;
+    break;
+
+  case mSD_WPS_Error:
+    flag = TBPF_ERROR;
+    break;
+
+  case mSD_WPS_Paused:
+    flag = TBPF_PAUSED;
+    break;
+
+  case mSD_WPS_Indeterminate:
+    flag = TBPF_INDETERMINATE;
+    break;
+  }
+
+  mERROR_CHECK(mSystemDialogue_SetWindowProgressState_Internal(window, flag));
+
+  mRETURN_SUCCESS();
+}
+
+
+static mFUNCTION(mSystemDialogue_SetWindowProgressState_Internal, HWND window, const TBPFLAG type)
+{
+  mFUNCTION_SETUP();
+
+  ITaskbarList3 *pTaskbarList = nullptr;
+  HRESULT hr;
+
+  mDEFER_CALL(&pTaskbarList, _ReleaseReference);
+  mERROR_IF(FAILED(hr = CoCreateInstance(CLSID_TaskbarList, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pTaskbarList))), mR_InternalError);
+  mERROR_IF(FAILED(hr = pTaskbarList->HrInit()), mR_InternalError);
+  mERROR_IF(FAILED(hr = pTaskbarList->SetProgressState(window, type)), mR_InternalError);
+
+  mRETURN_SUCCESS();
+}
+
+static mFUNCTION(mSystemDialogue_SetWindowProgress_Internal, HWND window, const float_t progress)
+{
+  mFUNCTION_SETUP();
+
+  ITaskbarList3 *pTaskbarList = nullptr;
+  HRESULT hr;
+
+  constexpr uint64_t MaxValue = 1ULL << 30;
+
+  mDEFER_CALL(&pTaskbarList, _ReleaseReference);
+  mERROR_IF(FAILED(hr = CoCreateInstance(CLSID_TaskbarList, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pTaskbarList))), mR_InternalError);
+  mERROR_IF(FAILED(hr = pTaskbarList->HrInit()), mR_InternalError);
+  mERROR_IF(FAILED(hr = pTaskbarList->SetProgressState(window, TBPF_NORMAL)), mR_InternalError);
+  
+  mDEFER_ON_ERROR(pTaskbarList->SetProgressState(window, TBPF_NOPROGRESS)); // to not display an invalid progress value.
+  mERROR_IF(FAILED(hr = pTaskbarList->SetProgressValue(window, (uint64_t)mClamp((int64_t)(progress * MaxValue), 0LL, (int64_t)MaxValue), MaxValue)), mR_InternalError);
 
   mRETURN_SUCCESS();
 }

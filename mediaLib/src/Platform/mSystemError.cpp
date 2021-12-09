@@ -49,7 +49,7 @@ mFUNCTION(mSystemError_PlaySound, const mSystemError_Type type)
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mSystemError_ShowMessageBox, const mSystemError_Type type, const mString &title, const mString &text, const mSystemError_MessageBoxButton buttons /* = mSE_MBB_OK */, OUT OPTIONAL mSystemError_MessageBoxResponse *pResponse /* = nullptr */, const size_t defaultButtonIndex /* = 0 */, const mSystemError_Authority authority /* = mSE_A_Task */)
+mFUNCTION(mSystemError_ShowMessageBox, const mSystemError_Type type, const mString &title, const mString &text, const mSystemError_MessageBoxButton buttons /* = mSE_MBB_Ok */, OUT OPTIONAL mSystemError_MessageBoxResponse *pResponse /* = nullptr */, const size_t defaultButtonIndex /* = 0 */, const mSystemError_Authority authority /* = mSE_A_Task */)
 {
   mFUNCTION_SETUP();
 
@@ -58,7 +58,7 @@ mFUNCTION(mSystemError_ShowMessageBox, const mSystemError_Type type, const mStri
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mSystemError_ShowMessageBox, mPtr<mHardwareWindow> &window, const mSystemError_Type type, const mString &title, const mString &text, const mSystemError_MessageBoxButton buttons /* = mSE_MBB_OK */, OUT OPTIONAL mSystemError_MessageBoxResponse *pResponse /* = nullptr */, const size_t defaultButtonIndex /* = 0 */, const mSystemError_Authority authority /* = mSE_A_Window */)
+mFUNCTION(mSystemError_ShowMessageBox, mPtr<mHardwareWindow> &window, const mSystemError_Type type, const mString &title, const mString &text, const mSystemError_MessageBoxButton buttons /* = mSE_MBB_Ok */, OUT OPTIONAL mSystemError_MessageBoxResponse *pResponse /* = nullptr */, const size_t defaultButtonIndex /* = 0 */, const mSystemError_Authority authority /* = mSE_A_Window */)
 {
   mFUNCTION_SETUP();
 
@@ -72,7 +72,7 @@ mFUNCTION(mSystemError_ShowMessageBox, mPtr<mHardwareWindow> &window, const mSys
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mSystemError_ShowMessageBox, mPtr<mSoftwareWindow> &window, const mSystemError_Type type, const mString &title, const mString &text, const mSystemError_MessageBoxButton buttons /* = mSE_MBB_OK */, OUT OPTIONAL mSystemError_MessageBoxResponse *pResponse /* = nullptr */, const size_t defaultButtonIndex /* = 0 */, const mSystemError_Authority authority /* = mSE_A_Window */)
+mFUNCTION(mSystemError_ShowMessageBox, mPtr<mSoftwareWindow> &window, const mSystemError_Type type, const mString &title, const mString &text, const mSystemError_MessageBoxButton buttons /* = mSE_MBB_Ok */, OUT OPTIONAL mSystemError_MessageBoxResponse *pResponse /* = nullptr */, const size_t defaultButtonIndex /* = 0 */, const mSystemError_Authority authority /* = mSE_A_Window */)
 {
   mFUNCTION_SETUP();
 
@@ -182,7 +182,7 @@ static mFUNCTION(mSystemError_ShowMessageBox_Internal, const mSystemError_Type t
     mbmode |= MB_HELP;
     break;
 
-  case mSE_MBB_OK_Cancel:
+  case mSE_MBB_Ok_Cancel:
     mbmode |= MB_OKCANCEL;
     break;
 
@@ -198,7 +198,7 @@ static mFUNCTION(mSystemError_ShowMessageBox_Internal, const mSystemError_Type t
     mbmode |= MB_YESNOCANCEL;
     break;
 
-  case mSE_MBB_OK:
+  case mSE_MBB_Ok:
   default:
     mbmode |= MB_OK;
     break;

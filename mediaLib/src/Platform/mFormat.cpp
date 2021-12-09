@@ -19,6 +19,11 @@ mFormatState & mFormat_GetState()
   return mFormat_LocalState;
 }
 
+mFormatState & mFormat_GetGlobalState()
+{
+  return mFormat_GlobalState;
+}
+
 void mFormatState_ResetCulture()
 {
   mFormat_GlobalState.decimalSeparatorLength = mFormat_LocalState.decimalSeparatorLength = 1;

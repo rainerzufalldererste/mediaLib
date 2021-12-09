@@ -347,7 +347,7 @@ mFUNCTION(mImageBuffer_SaveAsPng, mPtr<mImageBuffer> &imageBuffer, const mString
   WriteFuncData fileWriteData;
   mERROR_CHECK(mFileWriter_Create(&fileWriteData.file, filename));
 
-  const int result = stbi_write_png_to_func(WriteFuncData::Write, &fileWriteData, (int)imageBuffer->currentSize.x, (int)imageBuffer->currentSize.y, components, imageBuffer->pPixels, (int)(imageBuffer->lineStride * sizeof(uint8_t)) * components);
+  const int result = stbi_write_png_to_func(WriteFuncData::Write, &fileWriteData, (int32_t)imageBuffer->currentSize.x, (int32_t)imageBuffer->currentSize.y, components, imageBuffer->pPixels, (int32_t)(imageBuffer->lineStride * sizeof(uint8_t)) * components);
 
   mERROR_IF(mFAILED(fileWriteData.result), fileWriteData.result);
   mERROR_IF(result == 0, mR_InternalError);
@@ -385,7 +385,7 @@ mFUNCTION(mImageBuffer_SaveAsJpeg, mPtr<mImageBuffer> &imageBuffer, const mStrin
   WriteFuncData fileWriteData;
   mERROR_CHECK(mFileWriter_Create(&fileWriteData.file, filename));
 
-  const int result = stbi_write_jpg_to_func(WriteFuncData::Write, &fileWriteData, (int)imageBuffer->currentSize.x, (int)imageBuffer->currentSize.y, components, imageBuffer->pPixels, 85);
+  const int result = stbi_write_jpg_to_func(WriteFuncData::Write, &fileWriteData, (int32_t)imageBuffer->currentSize.x, (int32_t)imageBuffer->currentSize.y, components, imageBuffer->pPixels, 85);
 
   mERROR_IF(mFAILED(fileWriteData.result), fileWriteData.result);
   mERROR_IF(result == 0, mR_InternalError);
@@ -423,7 +423,7 @@ mFUNCTION(mImageBuffer_SaveAsBmp, mPtr<mImageBuffer> &imageBuffer, const mString
   WriteFuncData fileWriteData;
   mERROR_CHECK(mFileWriter_Create(&fileWriteData.file, filename));
 
-  const int result = stbi_write_bmp_to_func(WriteFuncData::Write, &fileWriteData, (int)imageBuffer->currentSize.x, (int)imageBuffer->currentSize.y, components, imageBuffer->pPixels);
+  const int result = stbi_write_bmp_to_func(WriteFuncData::Write, &fileWriteData, (int32_t)imageBuffer->currentSize.x, (int32_t)imageBuffer->currentSize.y, components, imageBuffer->pPixels);
 
   mERROR_IF(mFAILED(fileWriteData.result), fileWriteData.result);
   mERROR_IF(result == 0, mR_InternalError);
@@ -461,7 +461,7 @@ mFUNCTION(mImageBuffer_SaveAsTga, mPtr<mImageBuffer> &imageBuffer, const mString
   WriteFuncData fileWriteData;
   mERROR_CHECK(mFileWriter_Create(&fileWriteData.file, filename));
 
-  const int result = stbi_write_tga_to_func(WriteFuncData::Write, &fileWriteData, (int)imageBuffer->currentSize.x, (int)imageBuffer->currentSize.y, components, imageBuffer->pPixels);
+  const int result = stbi_write_tga_to_func(WriteFuncData::Write, &fileWriteData, (int32_t)imageBuffer->currentSize.x, (int32_t)imageBuffer->currentSize.y, components, imageBuffer->pPixels);
 
   mERROR_IF(mFAILED(fileWriteData.result), fileWriteData.result);
   mERROR_IF(result == 0, mR_InternalError);
@@ -643,7 +643,7 @@ mFUNCTION(mImageBuffer_SetToData, mPtr<mImageBuffer> &imageBuffer, IN const uint
         if (mFAILED(mImageBuffer_AllocateBuffer(imageBuffer, mVec2s((size_t)width, (size_t)height), pixelFormat)) || mFAILED(mPixelFormat_GetUnitSize(pixelFormat, &pixelSize)))
           goto jpeg_decoder_failed;
 
-        if (0 != tjDecompress2(decoder, pData, (uint32_t)size, imageBuffer->pPixels, width, (int)(width * pixelSize), height, tjPixelFormat, TJFLAG_FASTDCT))
+        if (0 != tjDecompress2(decoder, pData, (uint32_t)size, imageBuffer->pPixels, width, (int32_t)(width * pixelSize), height, tjPixelFormat, TJFLAG_FASTDCT))
           goto jpeg_decoder_failed;
       }
     }
@@ -688,7 +688,7 @@ jpeg_decoder_failed:
   }
 
   int32_t x, y, originalChannelCount;
-  stbi_uc *pResult = stbi_load_from_memory(pData, (int)size, &x, &y, &originalChannelCount, components);
+  stbi_uc *pResult = stbi_load_from_memory(pData, (int32_t)size, &x, &y, &originalChannelCount, components);
 
   if (pResult == nullptr)
     mRETURN_RESULT(mR_InternalError);

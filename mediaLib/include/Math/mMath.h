@@ -1269,7 +1269,51 @@ struct mFraction
 };
 
 mFraction mToFraction(const double_t value, const int64_t precision = 1000000000);
-int64_t mGreatestCommonDivisor(const int64_t a, const int64_t b);
+
+template <typename T>
+inline T mGreatestCommonDivisor(const T a, const T b)
+{
+  if (a == 0)
+    return b;
+  if (b == 0)
+    return a;
+
+  T _a = a;
+  T _b = b;
+
+  if (a > b)
+    std::swap(_a, _b);
+
+  while (_b != 0)
+  {
+    const T h = _a % _b;
+    _a = _b;
+    _b = h;
+  }
+
+  return _a;
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+template <typename T>
+inline T mSinc(const T x)
+{
+  return mSin((T)mPI * x) / ((T)mPI * x);
+}
+
+template <typename T, size_t TWidth>
+inline T mLanczos(const T x)
+{
+  static_assert(TWidth != 0, "Invalid Parameter for TWidth.");
+
+  if (-(T)TWidth < x && (T)TWidth > x)
+    return mSinc(x) * mSinc(x / (T)TWidth);
+  else if (x == 0)
+    return 1;
+  else
+    return 0;
+}
 
 //////////////////////////////////////////////////////////////////////////
 
