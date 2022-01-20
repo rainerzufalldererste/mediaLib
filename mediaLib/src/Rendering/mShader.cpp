@@ -1,5 +1,7 @@
 #include "mShader.h"
+
 #include "mFile.h"
+#include "mProfiler.h"
 
 #if defined (mRENDERER_OPENGL)
 #ifdef GIT_BUILD // Define __M_FILE__
@@ -28,6 +30,8 @@ mFUNCTION(mShader_Create, OUT mShader *pShader, const mString &vertexShader, con
   mFUNCTION_SETUP();
 
   mERROR_IF(pShader == nullptr, mR_ArgumentNull);
+
+  mPROFILE_SCOPED("mShader_Create");
 
   mERROR_CHECK(mZeroMemory(pShader));
 
@@ -254,6 +258,8 @@ mFUNCTION(mShader_SetTo, mPtr<mShader> &shader, const mString &vertexShader, con
   mERROR_IF(shader == nullptr, mR_ArgumentNull);
   mERROR_IF(!shader->initialized, mR_NotInitialized);
 
+  mPROFILE_SCOPED("mShader_SetTo");
+
 #if defined(mRENDERER_OPENGL)
 
   GLuint subShaders[3];
@@ -446,6 +452,8 @@ mFUNCTION(mShader_Bind, mShader &shader)
     mRETURN_SUCCESS();
   }
 
+  mPROFILE_SCOPED("mShader_Bind");
+
   mShader_CurrentlyBoundShader = shader.shaderProgram;
 
   glUseProgram(shader.shaderProgram);
@@ -492,6 +500,9 @@ bool mShader_IsActive(const mShader &shader)
 mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex_t index, const int32_t v)
 {
   mFUNCTION_SETUP();
+
+  mPROFILE_SCOPED("mShader_SetUniformAtIndex (int32_t)");
+
   mERROR_CHECK(mShader_Bind(shader));
 
 #if defined (mRENDERER_OPENGL)
@@ -505,6 +516,9 @@ mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex
 mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex_t index, const uint32_t v)
 {
   mFUNCTION_SETUP();
+
+  mPROFILE_SCOPED("mShader_SetUniformAtIndex (uint32_t)");
+
   mERROR_CHECK(mShader_Bind(shader));
 
 #if defined (mRENDERER_OPENGL)
@@ -518,6 +532,9 @@ mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex
 mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex_t index, const float_t v)
 {
   mFUNCTION_SETUP();
+
+  mPROFILE_SCOPED("mShader_SetUniformAtIndex (float_t)");
+
   mERROR_CHECK(mShader_Bind(shader));
 
 #if defined (mRENDERER_OPENGL)
@@ -531,6 +548,9 @@ mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex
 mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex_t index, const mVec2f &v)
 {
   mFUNCTION_SETUP();
+
+  mPROFILE_SCOPED("mShader_SetUniformAtIndex (mVec2f)");
+
   mERROR_CHECK(mShader_Bind(shader));
 
 #if defined (mRENDERER_OPENGL)
@@ -545,6 +565,9 @@ mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex
 mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex_t index, const mVec3f &v)
 {
   mFUNCTION_SETUP();
+
+  mPROFILE_SCOPED("mShader_SetUniformAtIndex (mVec3f)");
+
   mERROR_CHECK(mShader_Bind(shader));
 
 #if defined (mRENDERER_OPENGL)
@@ -559,6 +582,9 @@ mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex
 mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex_t index, const mVec4f &v)
 {
   mFUNCTION_SETUP();
+
+  mPROFILE_SCOPED("mShader_SetUniformAtIndex (mVec4f)");
+
   mERROR_CHECK(mShader_Bind(shader));
 
 #if defined (mRENDERER_OPENGL)
@@ -573,6 +599,9 @@ mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex
 mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex_t index, const mVector &v)
 {
   mFUNCTION_SETUP();
+
+  mPROFILE_SCOPED("mShader_SetUniformAtIndex (mVector)");
+
   mERROR_CHECK(mShader_Bind(shader));
 
 #if defined (mRENDERER_OPENGL)
@@ -587,6 +616,9 @@ mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex
 mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex_t index, const mMatrix &v)
 {
   mFUNCTION_SETUP();
+
+  mPROFILE_SCOPED("mShader_SetUniformAtIndex (mMatrix)");
+
   mERROR_CHECK(mShader_Bind(shader));
 
 #if defined (mRENDERER_OPENGL)
@@ -601,6 +633,9 @@ mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex
 mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex_t index, mTexture &v)
 {
   mFUNCTION_SETUP();
+
+  mPROFILE_SCOPED("mShader_SetUniformAtIndex (mTexture)");
+
   mERROR_CHECK(mShader_Bind(shader));
 
 #if defined (mRENDERER_OPENGL)
@@ -615,6 +650,9 @@ mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex
 mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex_t index, mPtr<mTexture> &v)
 {
   mFUNCTION_SETUP();
+
+  mPROFILE_SCOPED("mShader_SetUniformAtIndex (mTexture)");
+
   mERROR_CHECK(mShader_Bind(shader));
 
 #if defined (mRENDERER_OPENGL)
@@ -629,6 +667,9 @@ mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex
 mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex_t index, mTexture3D &v)
 {
   mFUNCTION_SETUP();
+
+  mPROFILE_SCOPED("mShader_SetUniformAtIndex (mTexture3D)");
+
   mERROR_CHECK(mShader_Bind(shader));
 
 #if defined (mRENDERER_OPENGL)
@@ -643,6 +684,9 @@ mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex
 mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex_t index, mPtr<mTexture3D> &v)
 {
   mFUNCTION_SETUP();
+
+  mPROFILE_SCOPED("mShader_SetUniformAtIndex (mTexture3D)");
+
   mERROR_CHECK(mShader_Bind(shader));
 
 #if defined (mRENDERER_OPENGL)
@@ -657,6 +701,9 @@ mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex
 mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex_t index, mPtr<mFramebuffer> &v)
 {
   mFUNCTION_SETUP();
+
+  mPROFILE_SCOPED("mShader_SetUniformAtIndex (mFramebuffer)");
+
   mERROR_CHECK(mShader_Bind(shader));
 
 #if defined (mRENDERER_OPENGL)
@@ -671,6 +718,9 @@ mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex
 mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex_t index, const int32_t *pV, const size_t count)
 {
   mFUNCTION_SETUP();
+
+  mPROFILE_SCOPED("mShader_SetUniformAtIndex (int32_t[])");
+
   mERROR_CHECK(mShader_Bind(shader));
 
 #if defined (mRENDERER_OPENGL)
@@ -685,6 +735,9 @@ mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex
 mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex_t index, const uint32_t *pV, const size_t count)
 {
   mFUNCTION_SETUP();
+
+  mPROFILE_SCOPED("mShader_SetUniformAtIndex (uint32_t[])");
+
   mERROR_CHECK(mShader_Bind(shader));
 
 #if defined (mRENDERER_OPENGL)
@@ -699,6 +752,9 @@ mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex
 mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex_t index, const float_t *pV, const size_t count)
 {
   mFUNCTION_SETUP();
+
+  mPROFILE_SCOPED("mShader_SetUniformAtIndex (float_t[])");
+
   mERROR_CHECK(mShader_Bind(shader));
 
 #if defined (mRENDERER_OPENGL)
@@ -713,6 +769,9 @@ mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex
 mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex_t index, const mVec2f *pV, const size_t count)
 {
   mFUNCTION_SETUP();
+
+  mPROFILE_SCOPED("mShader_SetUniformAtIndex (mVec2f[])");
+
   mERROR_CHECK(mShader_Bind(shader));
 
 #if defined (mRENDERER_OPENGL)
@@ -727,6 +786,9 @@ mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex
 mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex_t index, const mVec3f *pV, const size_t count)
 {
   mFUNCTION_SETUP();
+
+  mPROFILE_SCOPED("mShader_SetUniformAtIndex (mVec3f[])");
+
   mERROR_CHECK(mShader_Bind(shader));
 
 #if defined (mRENDERER_OPENGL)
@@ -741,6 +803,9 @@ mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex
 mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex_t index, const mVec4f *pV, const size_t count)
 {
   mFUNCTION_SETUP();
+
+  mPROFILE_SCOPED("mShader_SetUniformAtIndex (mVec4f[])");
+
   mERROR_CHECK(mShader_Bind(shader));
 
 #if defined (mRENDERER_OPENGL)
@@ -755,6 +820,9 @@ mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex
 mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex_t index, const mVector *pV, const size_t count)
 {
   mFUNCTION_SETUP();
+
+  mPROFILE_SCOPED("mShader_SetUniformAtIndex (mVector[])");
+
   mERROR_CHECK(mShader_Bind(shader));
 
 #if defined (mRENDERER_OPENGL)
@@ -769,6 +837,9 @@ mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex
 mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex_t index, const mTexture *pV, const size_t count)
 {
   mFUNCTION_SETUP();
+
+  mPROFILE_SCOPED("mShader_SetUniformAtIndex (mTexture[])");
+
   mERROR_CHECK(mShader_Bind(shader));
 
 #if defined (mRENDERER_OPENGL)
@@ -790,6 +861,9 @@ mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex
 mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex_t index, const mPtr<mTexture> *pV, const size_t count)
 {
   mFUNCTION_SETUP();
+
+  mPROFILE_SCOPED("mShader_SetUniformAtIndex (mTexture[])");
+
   mERROR_CHECK(mShader_Bind(shader));
 
 #if defined (mRENDERER_OPENGL)
@@ -811,6 +885,9 @@ mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex
 mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex_t index, const mTexture3D *pV, const size_t count)
 {
   mFUNCTION_SETUP();
+
+  mPROFILE_SCOPED("mShader_SetUniformAtIndex (mTexture3D[])");
+
   mERROR_CHECK(mShader_Bind(shader));
 
 #if defined (mRENDERER_OPENGL)
@@ -832,6 +909,9 @@ mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex
 mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex_t index, const mPtr<mTexture3D> *pV, const size_t count)
 {
   mFUNCTION_SETUP();
+
+  mPROFILE_SCOPED("mShader_SetUniformAtIndex (mTexture3D[])");
+
   mERROR_CHECK(mShader_Bind(shader));
 
 #if defined (mRENDERER_OPENGL)
@@ -853,6 +933,9 @@ mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex
 mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex_t index, const mPtr<mFramebuffer> *pV, const size_t count)
 {
   mFUNCTION_SETUP();
+
+  mPROFILE_SCOPED("mShader_SetUniformAtIndex (mFramebuffer[])");
+
   mERROR_CHECK(mShader_Bind(shader));
 
 #if defined (mRENDERER_OPENGL)
