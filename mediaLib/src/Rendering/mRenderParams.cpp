@@ -1,5 +1,7 @@
 #include "mRenderParams.h"
+
 #include "mHardwareWindow.h"
+#include "mProfiler.h"
 
 #ifdef GIT_BUILD // Define __M_FILE__
   #ifdef __M_FILE__
@@ -288,6 +290,9 @@ mFUNCTION(mRenderParams_SetStereo3dBuffer, const mRenderParams_StereoRenderBuffe
 mFUNCTION(mRenderParams_ClearTargetColour, const mVector &colour)
 {
   mFUNCTION_SETUP();
+
+  mPROFILE_SCOPED("mRenderParams_ClearTargetColour");
+
 #if defined(mRENDERER_OPENGL)
   glClearColor(colour.x, colour.y, colour.z, colour.w);
   glClear(GL_COLOR_BUFFER_BIT);
@@ -300,18 +305,25 @@ mFUNCTION(mRenderParams_ClearTargetColour, const mVector &colour)
 mFUNCTION(mRenderParams_ClearDepth)
 {
   mFUNCTION_SETUP();
+
+  mPROFILE_SCOPED("mRenderParams_ClearDepth");
+
 #if defined(mRENDERER_OPENGL)
   glDepthMask(GL_TRUE);
   glClear(GL_DEPTH_BUFFER_BIT);
 #else
   mRETURN_RESULT(mR_NotImplemented);
 #endif
+
   mRETURN_SUCCESS();
 }
 
 mFUNCTION(mRenderParams_ClearTargetDepthAndColour, const mVector &colour)
 {
   mFUNCTION_SETUP();
+
+  mPROFILE_SCOPED("mRenderParams_ClearTargetDepthAndColour");
+
 #if defined(mRENDERER_OPENGL)
   glDepthMask(GL_TRUE);
   glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
@@ -320,6 +332,7 @@ mFUNCTION(mRenderParams_ClearTargetDepthAndColour, const mVector &colour)
 #else
   mRETURN_RESULT(mR_NotImplemented);
 #endif
+
   mRETURN_SUCCESS();
 }
 

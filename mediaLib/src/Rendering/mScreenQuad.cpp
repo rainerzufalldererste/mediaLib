@@ -1,5 +1,7 @@
 #include "mScreenQuad.h"
+
 #include "mFile.h"
+#include "mProfiler.h"
 
 #ifdef GIT_BUILD // Define __M_FILE__
   #ifdef __M_FILE__
@@ -112,6 +114,8 @@ mFUNCTION(mScreenQuad_Destroy, IN_OUT mPtr<mScreenQuad> *pScreenQuad)
 mFUNCTION(mScreenQuad_Render, mPtr<mScreenQuad> &screenQuad)
 {
   mFUNCTION_SETUP();
+
+  mPROFILE_SCOPED("mScreenQuad_Render");
 
   mERROR_CHECK(mShader_Bind(*screenQuad->shader));
 

@@ -1,5 +1,7 @@
 #include "mRenderParams.h"
+
 #include "mTexture.h"
+#include "mProfiler.h"
 
 #ifdef GIT_BUILD // Define __M_FILE__
   #ifdef __M_FILE__
@@ -248,6 +250,8 @@ mFUNCTION(mTexture_Upload, mTexture &texture)
 
   mERROR_IF(texture.imageBuffer == nullptr, mR_NotInitialized);
 
+  mPROFILE_SCOPED("mTexture_Upload");
+
   mGL_DEBUG_ERROR_CHECK();
 
   texture.uploadState = mRP_US_Uploading;
@@ -304,6 +308,8 @@ mFUNCTION(mTexture_Bind, mTexture &texture, const size_t textureUnit /* = 0 */)
 {
   mFUNCTION_SETUP();
 
+  mPROFILE_SCOPED("mTexture_Bind");
+
   if (texture.uploadState != mRP_US_Ready)
     mERROR_CHECK(mTexture_Upload(texture));
 
@@ -350,6 +356,8 @@ mFUNCTION(mTexture_SetTo, mTexture &texture, const uint8_t *pData, const mVec2s 
   mFUNCTION_SETUP();
 
   mERROR_IF(pData == nullptr, mR_ArgumentNull);
+
+  mPROFILE_SCOPED("mTexture_SetTo");
 
   if (texture.textureId == 0)
   {
@@ -420,6 +428,8 @@ mFUNCTION(mTexture_Download, mTexture &texture, OUT mPtr<mImageBuffer> *pImageBu
   mFUNCTION_SETUP();
 
   mERROR_IF(pImageBuffer == nullptr, mR_ArgumentNull);
+
+  mPROFILE_SCOPED("mTexture_Download");
 
 #if defined(mRENDERER_OPENGL)
   mERROR_IF(texture.sampleCount > 0, mR_NotSupported);
@@ -629,6 +639,8 @@ mFUNCTION(mTexture3D_SetTo, mTexture3D &texture, const uint8_t *pData, const mVe
   mERROR_IF(pData == nullptr, mR_ArgumentNull);
   mERROR_IF(texture.uploadState == mRP_US_NotInitialized, mR_ResourceStateInvalid);
 
+  mPROFILE_SCOPED("mTexture3D_SetTo");
+
   glBindTexture(GL_TEXTURE_3D, texture.textureId);
 
   GLenum glPixelFormat = GL_RGBA;
@@ -651,6 +663,8 @@ mFUNCTION(mTexture3D_Bind, mTexture3D &texture, const size_t textureUnit /* = 0 
   mFUNCTION_SETUP();
 
   mERROR_IF(texture.uploadState != mRP_US_Ready, mR_ResourceStateInvalid);
+
+  mPROFILE_SCOPED("mTexture3D_Bind");
 
   texture.textureUnit = (GLuint)textureUnit;
 

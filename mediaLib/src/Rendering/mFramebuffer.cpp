@@ -1,6 +1,8 @@
 #include "mFramebuffer.h"
+
 #include "mScreenQuad.h"
 #include "mHardwareWindow.h"
+#include "mProfiler.h"
 
 //#define DEBUG_FRAMBUFFER_CREATION
 
@@ -75,6 +77,8 @@ mFUNCTION(mFramebuffer_Bind, mPtr<mFramebuffer> &framebuffer)
 
   mERROR_IF(framebuffer == nullptr, mR_ArgumentNull);
 
+  mPROFILE_SCOPED("mFramebuffer_Bind");
+
 #if defined(mRENDERER_OPENGL)
   mGL_DEBUG_ERROR_CHECK();
 
@@ -93,6 +97,8 @@ mFUNCTION(mFramebuffer_Bind, mPtr<mFramebuffer> &framebuffer)
 mFUNCTION(mFramebuffer_Unbind)
 {
   mFUNCTION_SETUP();
+
+  mPROFILE_SCOPED("mFramebuffer_Unbind");
 
   if (mFramebuffer_Queue != nullptr)
     mERROR_CHECK(mQueue_Clear(mFramebuffer_Queue));
@@ -175,6 +181,8 @@ mFUNCTION(mFramebuffer_SetResolution, mPtr<mFramebuffer> &framebuffer, const mVe
   mERROR_IF(mFrameBuffer_ActiveFrameBufferHandle == framebuffer->frameBufferHandle, mR_ResourceStateInvalid);
   mERROR_IF(framebuffer->size == size, mR_Success);
 
+  mPROFILE_SCOPED("mFramebuffer_SetResolution");
+
   GLenum glPixelFormat = GL_RGBA;
   mERROR_CHECK(mRenderParams_PixelFormatToGLenumChannels(framebuffer->pixelFormat, &glPixelFormat));
 
@@ -201,6 +209,8 @@ mFUNCTION(mFramebuffer_Download, mPtr<mFramebuffer> &framebuffer, OUT mPtr<mImag
   mFUNCTION_SETUP();
 
   mERROR_IF(framebuffer == nullptr || pImageBuffer == nullptr, mR_ArgumentNull);
+
+  mPROFILE_SCOPED("mFramebuffer_Download");
 
 #if defined(mRENDERER_OPENGL)
 
@@ -292,6 +302,8 @@ mFUNCTION(mFramebuffer_BlitToScreen, mPtr<mHardwareWindow> &window, mPtr<mFrameb
 
   mERROR_IF(window == nullptr || framebuffer == nullptr, mR_ArgumentNull);
 
+  mPROFILE_SCOPED("mFramebuffer_BlitToScreen");
+
   mERROR_CHECK(mHardwareWindow_SetAsActiveRenderTarget(window));
   mGL_DEBUG_ERROR_CHECK();
 
@@ -317,6 +329,8 @@ mFUNCTION(mFramebuffer_BlitToFramebuffer, mPtr<mFramebuffer> &target, mPtr<mFram
   mFUNCTION_SETUP();
 
   mERROR_IF(target == nullptr || source == nullptr, mR_ArgumentNull);
+
+  mPROFILE_SCOPED("mFramebuffer_BlitToFramebuffer");
 
 #if defined(mRENDERER_OPENGL)
   {
@@ -346,6 +360,8 @@ mFUNCTION(mTexture_Bind, mPtr<mFramebuffer> &framebuffer, const size_t textureUn
 
   mERROR_IF(framebuffer == nullptr, mR_ArgumentNull);
 
+  mPROFILE_SCOPED("mTexture_Bind (mFramebuffer)");
+
   framebuffer->textureUnit = textureUnit;
 
 #if defined(mRENDERER_OPENGL)
@@ -367,6 +383,8 @@ mFUNCTION(mTexture_Copy, mTexture &destination, mPtr<mFramebuffer> &source)
   mFUNCTION_SETUP();
 
   mERROR_IF(destination.uploadState != mRP_US_Ready, mR_ResourceStateInvalid);
+
+  mPROFILE_SCOPED("mTexture_Copy (mFramebuffer)");
 
 #if defined(mRENDERER_OPENGL)
   {
@@ -411,6 +429,8 @@ static mFUNCTION(mFramebuffer_Create_Internal, mFramebuffer *pFramebuffer, const
 
   mERROR_IF(pFramebuffer == nullptr, mR_ArgumentNull);
   mERROR_IF(size.x > UINT32_MAX || size.y > UINT32_MAX, mR_ArgumentOutOfBounds);
+
+  mPROFILE_SCOPED("mFramebuffer_Create_Internal");
 
   pFramebuffer->allocatedSize = pFramebuffer->size = size;
   pFramebuffer->textureUnit = (size_t)-1;

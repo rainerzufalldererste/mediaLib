@@ -40,4 +40,7 @@ mFUNCTION(mSystemDialogue_SetWindowProgressState, mPtr<mHardwareWindow> &window,
 mFUNCTION(mSystemDialogue_SetWindowProgress, mPtr<mSoftwareWindow> &window, const float_t progress);
 mFUNCTION(mSystemDialogue_SetWindowProgress, mPtr<mHardwareWindow> &window, const float_t progress);
 
+mFUNCTION(mSystemDialogue_AddToRecentlyOpenedFiles, const mString &filename);
+mFUNCTION(mSystemDialogue_ClearRecentlyOpenedFiles);
+
 #endif // mSystemDialogue_h__

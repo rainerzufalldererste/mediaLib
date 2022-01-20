@@ -192,6 +192,26 @@ mFUNCTION(mSystemDialogue_SetWindowProgress, mPtr<mHardwareWindow> &window, cons
   mRETURN_SUCCESS();
 }
 
+mFUNCTION(mSystemDialogue_AddToRecentlyOpenedFiles, const mString &filename)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(filename.bytes < 1, mR_InvalidParameter);
+
+  SHAddToRecentDocs(SHARD_PATHA, filename.c_str());
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mSystemDialogue_ClearRecentlyOpenedFiles)
+{
+  mFUNCTION_SETUP();
+
+  SHAddToRecentDocs(SHARD_PATHA, NULL);
+
+  mRETURN_SUCCESS();
+}
+
 //////////////////////////////////////////////////////////////////////////
 
 static mFUNCTION(mSystemDialogue_GetWStringFromFileExtensionPairs, OUT wchar_t **ppString, IN mAllocator *pAllocator, mPtr<mQueue<mKeyValuePair<mString, mString>>> &fileTypeExtensionPairs)
