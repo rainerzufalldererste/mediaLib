@@ -40,15 +40,11 @@ bool mUI_FirstFrameStarted = false;
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mUI_Initilialize, mPtr<mHardwareWindow> &hardwareWindow, const bool addUpdateCallback /* = true */)
+mFUNCTION(mUI_InitializeActiveContext, mPtr<mHardwareWindow> &hardwareWindow, const bool addUpdateCallback)
 {
   mFUNCTION_SETUP();
 
-  mERROR_IF(hardwareWindow == nullptr, mR_ArgumentNull);
-
-  const char glsl_version[] = "#version 150"; IMGUI_CHECKVERSION();
-  ImGui::CreateContext();
-  mUI_pImguiIO = &ImGui::GetIO();
+  const char glsl_version[] = "#version 150";
 
   SDL_Window *pWindow = nullptr;
   mERROR_CHECK(mHardwareWindow_GetSdlWindowPtr(hardwareWindow, &pWindow));
@@ -58,6 +54,26 @@ mFUNCTION(mUI_Initilialize, mPtr<mHardwareWindow> &hardwareWindow, const bool ad
 
   ImGui_ImplSDL2_InitForOpenGL(pWindow, glContext);
   ImGui_ImplOpenGL3_Init(glsl_version);
+
+  if (addUpdateCallback)
+    mERROR_CHECK(mHardwareWindow_AddOnAnyEvent(hardwareWindow, mUI_ProcessEvent));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mUI_Initilialize, mPtr<mHardwareWindow> &hardwareWindow, const bool addUpdateCallback /* = true */)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(hardwareWindow == nullptr, mR_ArgumentNull);
+
+  IMGUI_CHECKVERSION();
+
+  ImGui::CreateContext();
+
+  mERROR_CHECK(mUI_InitializeActiveContext(hardwareWindow, addUpdateCallback));
+
+  mUI_pImguiIO = &ImGui::GetIO();
 
   ImGui::StyleColorsLight();
 
@@ -71,56 +87,9 @@ mFUNCTION(mUI_Initilialize, mPtr<mHardwareWindow> &hardwareWindow, const bool ad
   pSubHeadline = mUI_pImguiIO->Fonts->AddFontFromFileTTF("C:/Windows/Fonts/seguisb.ttf", 28.0f, nullptr, mUI_pImguiIO->Fonts->GetGlyphRangesDefault());
   pBold = mUI_pImguiIO->Fonts->AddFontFromFileTTF("C:/Windows/Fonts/seguisb.ttf", 18.0f, nullptr, mUI_pImguiIO->Fonts->GetGlyphRangesDefault());
 
-  if (addUpdateCallback)
-    mERROR_CHECK(mHardwareWindow_AddOnAnyEvent(hardwareWindow, mUI_ProcessEvent));
-
   ImGui::GetStyle().WindowRounding = 10.f;
 
-  ImVec4 *pColors = ImGui::GetStyle().Colors;
-
-  pColors[ImGuiCol_Text] = ImVec4(0.12f, 0.12f, 0.12f, 1.00f);
-  pColors[ImGuiCol_TextDisabled] = ImVec4(0.60f, 0.60f, 0.60f, 1.00f);
-  pColors[ImGuiCol_WindowBg] = ImVec4(0.94f, 0.94f, 0.94f, 1.00f);
-  pColors[ImGuiCol_ChildBg] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
-  pColors[ImGuiCol_PopupBg] = ImVec4(1.00f, 1.00f, 1.00f, 0.98f);
-  pColors[ImGuiCol_Border] = ImVec4(0.00f, 0.00f, 0.00f, 0.30f);
-  pColors[ImGuiCol_BorderShadow] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
-  pColors[ImGuiCol_FrameBg] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
-  pColors[ImGuiCol_FrameBgHovered] = ImVec4(0.83f, 0.83f, 0.83f, 0.40f);
-  pColors[ImGuiCol_FrameBgActive] = ImVec4(0.90f, 0.90f, 0.90f, 0.67f);
-  pColors[ImGuiCol_TitleBg] = ImVec4(0.96f, 0.96f, 0.96f, 1.00f);
-  pColors[ImGuiCol_TitleBgActive] = ImVec4(0.82f, 0.82f, 0.82f, 1.00f);
-  pColors[ImGuiCol_TitleBgCollapsed] = ImVec4(1.00f, 1.00f, 1.00f, 0.51f);
-  pColors[ImGuiCol_MenuBarBg] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
-  pColors[ImGuiCol_ScrollbarBg] = ImVec4(0.98f, 0.98f, 0.98f, 0.00f);
-  pColors[ImGuiCol_ScrollbarGrab] = ImVec4(0.80f, 0.80f, 0.80f, 0.80f);
-  pColors[ImGuiCol_ScrollbarGrabHovered] = ImVec4(0.75f, 0.75f, 0.75f, 0.80f);
-  pColors[ImGuiCol_ScrollbarGrabActive] = ImVec4(0.58f, 0.58f, 0.58f, 1.00f);
-  pColors[ImGuiCol_CheckMark] = ImVec4(0.16f, 0.16f, 0.16f, 1.00f);
-  pColors[ImGuiCol_SliderGrab] = ImVec4(0.25f, 0.25f, 0.25f, 1.00f);
-  pColors[ImGuiCol_SliderGrabActive] = ImVec4(0.47f, 0.47f, 0.47f, 1.00f);
-  pColors[ImGuiCol_Button] = ImVec4(0.28f, 0.28f, 0.28f, 0.11f);
-  pColors[ImGuiCol_ButtonHovered] = ImVec4(0.24f, 0.24f, 0.24f, 0.15f);
-  pColors[ImGuiCol_ButtonActive] = ImVec4(0.16f, 0.16f, 0.16f, 0.22f);
-  pColors[ImGuiCol_Header] = ImVec4(0.46f, 0.46f, 0.46f, 0.31f);
-  pColors[ImGuiCol_HeaderHovered] = ImVec4(0.63f, 0.63f, 0.63f, 0.80f);
-  pColors[ImGuiCol_HeaderActive] = ImVec4(0.82f, 0.82f, 0.82f, 1.00f);
-  pColors[ImGuiCol_Separator] = ImVec4(0.70f, 0.70f, 0.70f, 1.00f);
-  pColors[ImGuiCol_SeparatorHovered] = ImVec4(0.70f, 0.70f, 0.70f, 1.00f);
-  pColors[ImGuiCol_SeparatorActive] = ImVec4(0.70f, 0.70f, 0.70f, 1.00f);
-  pColors[ImGuiCol_ResizeGrip] = ImVec4(0.80f, 0.80f, 0.80f, 0.56f);
-  pColors[ImGuiCol_ResizeGripHovered] = ImVec4(0.59f, 0.59f, 0.59f, 0.67f);
-  pColors[ImGuiCol_ResizeGripActive] = ImVec4(0.37f, 0.37f, 0.37f, 0.95f);
-  pColors[ImGuiCol_PlotLines] = ImVec4(0.39f, 0.39f, 0.39f, 1.00f);
-  pColors[ImGuiCol_PlotLinesHovered] = ImVec4(1.00f, 0.43f, 0.35f, 1.00f);
-  pColors[ImGuiCol_PlotHistogram] = ImVec4(1.00f, 0.52f, 0.28f, 1.00f);
-  pColors[ImGuiCol_PlotHistogramHovered] = ImVec4(1.00f, 0.45f, 0.00f, 1.00f);
-  pColors[ImGuiCol_TextSelectedBg] = ImVec4(0.61f, 0.61f, 0.61f, 0.35f);
-  pColors[ImGuiCol_DragDropTarget] = ImVec4(0.33f, 0.33f, 0.33f, 0.95f);
-  pColors[ImGuiCol_NavHighlight] = ImVec4(0.81f, 0.81f, 0.81f, 0.80f);
-  pColors[ImGuiCol_NavWindowingHighlight] = ImVec4(0.70f, 0.70f, 0.70f, 0.70f);
-  pColors[ImGuiCol_NavWindowingDimBg] = ImVec4(0.20f, 0.20f, 0.20f, 0.20f);
-  pColors[ImGuiCol_ModalWindowDimBg] = ImVec4(0.20f, 0.20f, 0.20f, 0.35f);
+  mERROR_CHECK(mUI_SetLightColourScheme());
 
   mRETURN_SUCCESS();
 }
@@ -380,8 +349,10 @@ mFUNCTION(mUI_SetLightColourScheme)
   pColors[ImGuiCol_Text] = ImVec4(0.12f, 0.12f, 0.12f, 1.00f);
   pColors[ImGuiCol_TextDisabled] = ImVec4(0.60f, 0.60f, 0.60f, 1.00f);
   pColors[ImGuiCol_WindowBg] = ImVec4(0.94f, 0.94f, 0.94f, 1.00f);
+  pColors[ImGuiCol_ChildBg] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
   pColors[ImGuiCol_PopupBg] = ImVec4(0.98f, 0.98f, 0.98f, 1);
   pColors[ImGuiCol_Border] = ImVec4(0.00f, 0.00f, 0.00f, 0.30f);
+  pColors[ImGuiCol_BorderShadow] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
   pColors[ImGuiCol_FrameBg] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
   pColors[ImGuiCol_FrameBgHovered] = ImVec4(0.830f, 0.830f, 0.830f, 0.400f);
   pColors[ImGuiCol_FrameBgActive] = ImVec4(0.900f, 0.900f, 0.900f, 0.670f);
@@ -408,7 +379,16 @@ mFUNCTION(mUI_SetLightColourScheme)
   pColors[ImGuiCol_ResizeGrip] = ImVec4(0.80f, 0.80f, 0.80f, 0.56f);
   pColors[ImGuiCol_ResizeGripHovered] = ImVec4(0.59f, 0.59f, 0.59f, 0.67f);
   pColors[ImGuiCol_ResizeGripActive] = ImVec4(0.37f, 0.37f, 0.37f, 0.95f);
+  pColors[ImGuiCol_PlotLines] = ImVec4(0.39f, 0.39f, 0.39f, 1.00f);
+  pColors[ImGuiCol_PlotLinesHovered] = ImVec4(1.00f, 0.43f, 0.35f, 1.00f);
   pColors[ImGuiCol_PlotHistogram] = ImVec4(1.00f, 0.52f, 0.28f, 1.00f);
+  pColors[ImGuiCol_PlotHistogramHovered] = ImVec4(1.00f, 0.45f, 0.00f, 1.00f);
+  pColors[ImGuiCol_TextSelectedBg] = ImVec4(0.61f, 0.61f, 0.61f, 0.35f);
+  pColors[ImGuiCol_DragDropTarget] = ImVec4(0.33f, 0.33f, 0.33f, 0.95f);
+  pColors[ImGuiCol_NavHighlight] = ImVec4(0.81f, 0.81f, 0.81f, 0.80f);
+  pColors[ImGuiCol_NavWindowingHighlight] = ImVec4(0.70f, 0.70f, 0.70f, 0.70f);
+  pColors[ImGuiCol_NavWindowingDimBg] = ImVec4(0.20f, 0.20f, 0.20f, 0.20f);
+  pColors[ImGuiCol_ModalWindowDimBg] = ImVec4(0.20f, 0.20f, 0.20f, 0.35f);
 
   return mR_Success;
 }
@@ -420,8 +400,10 @@ mFUNCTION(mUI_SetDarkColourScheme)
   pColors[ImGuiCol_Text] = ImVec4(0.88f, 0.88f, 0.88f, 1.00f);
   pColors[ImGuiCol_TextDisabled] = ImVec4(0.42f, 0.42f, 0.42f, 1.00f);
   pColors[ImGuiCol_WindowBg] = ImVec4(0.14f, 0.14f, 0.14f, 1.00f);
+  pColors[ImGuiCol_ChildBg] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
   pColors[ImGuiCol_PopupBg] = ImVec4(0.22f, 0.22f, 0.22f, 1);
   pColors[ImGuiCol_Border] = ImVec4(0.403f, 0.403f, 0.403f, 0.276f);
+  pColors[ImGuiCol_BorderShadow] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
   pColors[ImGuiCol_FrameBg] = ImVec4(0.22f, 0.22f, 0.22f, 1.00f);
   pColors[ImGuiCol_FrameBgHovered] = ImVec4(0.407f, 0.407f, 0.407f, 0.400f);
   pColors[ImGuiCol_FrameBgActive] = ImVec4(0.389f, 0.389f, 0.389f, 0.670f);
@@ -429,6 +411,7 @@ mFUNCTION(mUI_SetDarkColourScheme)
   pColors[ImGuiCol_TitleBgActive] = ImVec4(0.11f, 0.11f, 0.11f, 1.00f);
   pColors[ImGuiCol_TitleBgCollapsed] = ImVec4(0.18f, 0.18f, 0.18f, 1.00f);
   pColors[ImGuiCol_MenuBarBg] = ImVec4(0.11f, 0.11f, 0.11f, 1.00f);
+  pColors[ImGuiCol_ScrollbarBg] = ImVec4(0.98f, 0.98f, 0.98f, 0.00f);
   pColors[ImGuiCol_ScrollbarGrab] = ImVec4(0.33f, 0.33f, 0.33f, 0.80f);
   pColors[ImGuiCol_ScrollbarGrabHovered] = ImVec4(0.43f, 0.43f, 0.43f, 0.80f);
   pColors[ImGuiCol_ScrollbarGrabActive] = ImVec4(0.53f, 0.53f, 0.53f, 1.00f);
@@ -447,7 +430,16 @@ mFUNCTION(mUI_SetDarkColourScheme)
   pColors[ImGuiCol_ResizeGrip] = ImVec4(0.43f, 0.43f, 0.43f, 0.56f);
   pColors[ImGuiCol_ResizeGripHovered] = ImVec4(0.61f, 0.61f, 0.61f, 0.67f);
   pColors[ImGuiCol_ResizeGripActive] = ImVec4(0.53f, 0.53f, 0.53f, 0.95f);
+  pColors[ImGuiCol_PlotLines] = ImVec4(0.39f, 0.39f, 0.39f, 1.00f);
+  pColors[ImGuiCol_PlotLinesHovered] = ImVec4(1.00f, 0.43f, 0.35f, 1.00f);
   pColors[ImGuiCol_PlotHistogram] = ImVec4(0.86f, 0.42f, 0.25f, 1.00f);
+  pColors[ImGuiCol_PlotHistogramHovered] = ImVec4(1.00f, 0.45f, 0.00f, 1.00f);
+  pColors[ImGuiCol_TextSelectedBg] = ImVec4(0.61f, 0.61f, 0.61f, 0.35f);
+  pColors[ImGuiCol_DragDropTarget] = ImVec4(0.33f, 0.33f, 0.33f, 0.95f);
+  pColors[ImGuiCol_NavHighlight] = ImVec4(0.81f, 0.81f, 0.81f, 0.80f);
+  pColors[ImGuiCol_NavWindowingHighlight] = ImVec4(0.70f, 0.70f, 0.70f, 0.70f);
+  pColors[ImGuiCol_NavWindowingDimBg] = ImVec4(0.20f, 0.20f, 0.20f, 0.20f);
+  pColors[ImGuiCol_ModalWindowDimBg] = ImVec4(0.20f, 0.20f, 0.20f, 0.35f);
 
   return mR_Success;
 }
