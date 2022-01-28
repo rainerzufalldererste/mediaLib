@@ -1467,9 +1467,9 @@ struct mFFractionalDigitsFixed
 #define _mFORMAT_SHORT_AllFrac mFFractionalDigitsFixed
 #define _mFORMAT_SHORT_Exp mFExponent
 #define _mFORMAT_SHORT_SBoth mFSignBoth
-#define _mFORMAT_SHORT_Center mFAlignCenter
-#define _mFORMAT_SHORT_Left mFAlignLeft
-#define _mFORMAT_SHORT_Right mFAlignRight
+#define _mFORMAT_SHORT_Center mFAlignNumCenter
+#define _mFORMAT_SHORT_Left mFAlignNumLeft
+#define _mFORMAT_SHORT_Right mFAlignNumRight
 #define _mFORMAT_SHORT_Group mFGroupDigits
 
 #define _mFORMAT_TO_SHORT_FORMAT(x) mCONCAT_LITERALS(_mFORMAT_SHORT_, x)

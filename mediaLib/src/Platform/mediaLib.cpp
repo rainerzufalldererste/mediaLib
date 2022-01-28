@@ -8,6 +8,8 @@
 
 #include "mediaLib.h"
 
+#include "mProfiler.h"
+
 #ifdef GIT_BUILD // Define __M_FILE__
   #ifdef __M_FILE__
     #undef __M_FILE__
@@ -324,6 +326,8 @@ mFUNCTION(mSleep, const size_t milliseconds)
   mFUNCTION_SETUP();
 
   mERROR_IF(milliseconds > DWORD_MAX, mR_ArgumentOutOfBounds);
+
+  mPROFILE_SCOPED("mSleep");
 
   Sleep((DWORD)milliseconds);
 

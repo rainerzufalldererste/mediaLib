@@ -596,6 +596,57 @@ mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex
   mRETURN_SUCCESS();
 }
 
+mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex_t index, const mVec2i32 &v)
+{
+  mFUNCTION_SETUP();
+
+  mPROFILE_SCOPED("mShader_SetUniformAtIndex (mVec2i32)");
+
+  mERROR_CHECK(mShader_Bind(shader));
+
+#if defined (mRENDERER_OPENGL)
+  glUniform2i(index, v.x, v.y);
+#else 
+  mRETURN_RESULT(mR_NotImplemented);
+#endif
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex_t index, const mVec3i32 &v)
+{
+  mFUNCTION_SETUP();
+
+  mPROFILE_SCOPED("mShader_SetUniformAtIndex (mVec3i32)");
+
+  mERROR_CHECK(mShader_Bind(shader));
+
+#if defined (mRENDERER_OPENGL)
+  glUniform3i(index, v.x, v.y, v.z);
+#else 
+  mRETURN_RESULT(mR_NotImplemented);
+#endif
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex_t index, const mVec4i32 &v)
+{
+  mFUNCTION_SETUP();
+
+  mPROFILE_SCOPED("mShader_SetUniformAtIndex (mVec4i32)");
+
+  mERROR_CHECK(mShader_Bind(shader));
+
+#if defined (mRENDERER_OPENGL)
+  glUniform4i(index, v.x, v.y, v.z, v.w);
+#else 
+  mRETURN_RESULT(mR_NotImplemented);
+#endif
+
+  mRETURN_SUCCESS();
+}
+
 mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex_t index, const mVector &v)
 {
   mFUNCTION_SETUP();
