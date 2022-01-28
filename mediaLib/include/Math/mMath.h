@@ -451,6 +451,8 @@ template <typename T> mVec2t<T> mRound(const mVec2t<T> &a) { return mVec2t<T>(mR
 typedef mVec2t<size_t> mVec2s;
 typedef mVec2t<int64_t> mVec2i;
 typedef mVec2t<uint64_t> mVec2u;
+typedef mVec2t<int32_t> mVec2i32;
+typedef mVec2t<uint32_t> mVec2u32;
 typedef mVec2t<float_t> mVec2f;
 typedef mVec2t<double_t> mVec2d;
 
@@ -592,6 +594,8 @@ template <typename T> mVec3t<T> mRound(const mVec3t<T> &a) { return mVec3t<T>(mR
 typedef mVec3t<size_t> mVec3s;
 typedef mVec3t<int64_t> mVec3i;
 typedef mVec3t<uint64_t> mVec3u;
+typedef mVec3t<int32_t> mVec3i32;
+typedef mVec3t<uint32_t> mVec3u32;
 typedef mVec3t<float_t> mVec3f;
 typedef mVec3t<double_t> mVec3d;
 
@@ -735,6 +739,8 @@ template <typename T> mVec4t<T> mRound(const mVec4t<T> &a) { return mVec4t<T>(mR
 typedef mVec4t<size_t> mVec4s;
 typedef mVec4t<int64_t> mVec4i;
 typedef mVec4t<uint64_t> mVec4u;
+typedef mVec4t<int32_t> mVec4i32;
+typedef mVec4t<uint32_t> mVec4u32;
 typedef mVec4t<float_t> mVec4f;
 typedef mVec4t<double_t> mVec4d;
 

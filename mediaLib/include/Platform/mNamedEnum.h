@@ -240,15 +240,15 @@ inline T mNamedEnumWrapper_GetIndex(const mString &value)
   mNamedEnumWrapper<T> &wrapper = mNamedEnumWrapper_GetNamedEnumWrapper<T>();
 
   if (wrapper.m_count == 0)
-    return 0;
+    return (T)0;
 
   T index;
-  mResult result = mHashMap_Get(wrapper.m_byName, value, &index);
+  const mResult result = mHashMap_Get(wrapper.m_byName, value, &index);
 
   if (mSUCCEEDED(result))
     return index;
 
-  return 0;
+  return (T)0;
 }
 
 template<typename T>

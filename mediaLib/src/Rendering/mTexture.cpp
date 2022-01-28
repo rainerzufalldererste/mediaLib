@@ -252,6 +252,14 @@ mFUNCTION(mTexture_Upload, mTexture &texture)
 
   mPROFILE_SCOPED("mTexture_Upload");
 
+#if defined (mRENDERER_OPENGL)
+#ifndef GIT_BUILD
+  size_t bytes = 0;
+  mERROR_CHECK(mPixelFormat_GetSize(texture.imageBuffer->pixelFormat, texture.imageBuffer->currentSize, &bytes));
+  mASSERT((bytes & 3) == 0, "OpenGL expects this texture to be 4 byte aligned. mTexture currently doesn't do this.");
+#endif
+#endif
+
   mGL_DEBUG_ERROR_CHECK();
 
   texture.uploadState = mRP_US_Uploading;
@@ -329,6 +337,14 @@ mFUNCTION(mTexture_SetTo, mTexture &texture, mPtr<mImageBuffer> &imageBuffer, co
 
   mERROR_IF(imageBuffer == nullptr, mR_ArgumentNull);
 
+#if defined (mRENDERER_OPENGL)
+#ifndef GIT_BUILD
+  size_t bytes = 0;
+  mERROR_CHECK(mPixelFormat_GetSize(imageBuffer->pixelFormat, imageBuffer->currentSize, &bytes));
+  mASSERT((bytes & 3) == 0, "OpenGL expects this texture to be 4 byte aligned. mTexture currently doesn't do this.");
+#endif
+#endif
+
   texture.uploadState = mRP_US_NotInitialized;
   texture.resolution = imageBuffer->currentSize;
   texture.resolutionF = (mVec2f)texture.resolution;
@@ -358,6 +374,14 @@ mFUNCTION(mTexture_SetTo, mTexture &texture, const uint8_t *pData, const mVec2s 
   mERROR_IF(pData == nullptr, mR_ArgumentNull);
 
   mPROFILE_SCOPED("mTexture_SetTo");
+
+#if defined (mRENDERER_OPENGL)
+#ifndef GIT_BUILD
+  size_t bytes = 0;
+  mERROR_CHECK(mPixelFormat_GetSize(pixelFormat, size, &bytes));
+  mASSERT((bytes & 3) == 0, "OpenGL expects this texture to be 4 byte aligned. mTexture currently doesn't do this.");
+#endif
+#endif
 
   if (texture.textureId == 0)
   {
