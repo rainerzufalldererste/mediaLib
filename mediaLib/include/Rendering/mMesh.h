@@ -612,7 +612,7 @@ inline mFUNCTION(mMeshFactory_CreateMesh, mPtr<mMeshFactory<Args...>> &factory, 
 
     ++attributeInformationCount;
 
-    const GLint index = glGetAttribLocation(shader->shaderProgram, pItem->name);
+    const mShaderAttributeIndex_t index = mShader_GetAttributeIndex(shader, pItem->name);
     mERROR_IF(index < 0, mR_InternalError);
 
     mERROR_CHECK(mQueue_PushBack((*pMesh)->information, mMeshAttribute(index, pItem->size, pItem->individualSubTypeSize, 0, pItem->offset, pItem->dataType)));

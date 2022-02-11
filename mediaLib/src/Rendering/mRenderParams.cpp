@@ -249,7 +249,7 @@ mFUNCTION(mRenderParams_SetStereo3d, const bool enabled)
   mERROR_IF(!supportsStereo && enabled, mR_OperationNotSupported);
   mERROR_IF(0 > SDL_GL_SetAttribute(SDL_GL_STEREO, 1), mR_InternalError);
 
-  mRenderParams_IsStereo = true;
+  mRenderParams_IsStereo = enabled;
 
   mRETURN_SUCCESS();
 }
@@ -283,6 +283,8 @@ mFUNCTION(mRenderParams_SetStereo3dBuffer, const mRenderParams_StereoRenderBuffe
     mRETURN_RESULT(mR_OperationNotSupported);
     break;
   }
+
+  mGL_ERROR_CHECK();
 
   mRETURN_SUCCESS();
 }

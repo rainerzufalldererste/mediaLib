@@ -83,7 +83,7 @@ mFUNCTION(mMesh_Create, OUT mPtr<mMesh> *pMesh, IN mAllocator *pAllocator, mPtr<
     else
       mERROR_IF(count != meshAttrib->attributeCount, mR_InvalidParameter);
 
-    const GLint location = glGetAttribLocation(shader->shaderProgram, meshAttrib->attributeName);
+    const mShaderAttributeIndex_t location = mShader_GetAttributeIndex(shader, meshAttrib->attributeName);
 
     mERROR_CHECK(mQueue_PushBack(info, mMeshAttribute(location, meshAttrib->size, meshAttrib->subComponentSize, meshAttrib->attributeCount, offset, meshAttrib->dataType)));
 

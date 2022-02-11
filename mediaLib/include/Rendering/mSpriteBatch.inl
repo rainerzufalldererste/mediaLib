@@ -758,9 +758,9 @@ inline mFUNCTION(mSpriteBatch_Internal_BindMesh, mPtr<mSpriteBatch<Args...>> &sp
 
   glBindBuffer(GL_ARRAY_BUFFER, spriteBatch->vbo);
 
-  const GLuint vertexPositiondAttributeIndex = glGetAttribLocation(shader->shaderProgram, "position0");
+  const mShaderAttributeIndex_t vertexPositiondAttributeIndex = mShader_GetAttributeIndex(shader, "position0");
   mGL_DEBUG_ERROR_CHECK();
-  const GLuint textureCoordAttributeIndex = glGetAttribLocation(shader->shaderProgram, "texCoord0");
+  const mShaderAttributeIndex_t textureCoordAttributeIndex = mShader_GetAttributeIndex(shader, "texCoord0");
   mGL_DEBUG_ERROR_CHECK();
 
   glEnableVertexAttribArray(vertexPositiondAttributeIndex);
