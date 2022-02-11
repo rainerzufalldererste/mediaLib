@@ -26,7 +26,7 @@ struct mHardwareWindow
   mPtr<mQueue<std::function<mResult(const mVec2s &)>>> onResizeCallbacks;
   mPtr<mQueue<std::function<mResult(const bool)>>> onDarkModeChanged;
   mUniqueContainer<mFramebuffer> fakeFramebuffer;
-  bool respectDarkMode, isDarkMode;
+  bool respectDarkMode, isDarkMode, processMessageQueueExplicit;
 };
 
 static mFUNCTION(mHardwareWindow_Create_Internal, IN_OUT mHardwareWindow *pWindow, IN mAllocator *pAllocator, const mString &title, const mVec2i &position, const mVec2s &size, const mHardwareWindow_DisplayMode displaymode, const bool stereo3dIfAvailable);
@@ -103,17 +103,22 @@ mFUNCTION(mHardwareWindow_GetSize, mPtr<mHardwareWindow> &window, OUT mVec2s *pS
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mHardwareWindow_Swap, mPtr<mHardwareWindow> &window)
+mFUNCTION(mHardwareWindow_SetProcessMessageQueueOnSwap, mPtr<mHardwareWindow> &window, const bool processMessageQueueOnSwap)
 {
   mFUNCTION_SETUP();
 
   mERROR_IF(window == nullptr, mR_ArgumentNull);
 
-#if defined(mRENDERER_OPENGL)
-  SDL_GL_SwapWindow(window->pWindow);
-#else
-  mRETURN_RESULT(mR_NotImplemented);
-#endif
+  window->processMessageQueueExplicit = !processMessageQueueOnSwap;
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mHardwareWindow_ProcessMessageQueue, mPtr<mHardwareWindow> &window)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(window == nullptr, mR_ArgumentNull);
 
   SDL_Event _event;
   while (SDL_PollEvent(&_event))
@@ -227,14 +232,33 @@ mFUNCTION(mHardwareWindow_Swap, mPtr<mHardwareWindow> &window)
               }
             }
           }
-          
-        break;
+
+          break;
         }
         }
       }
 #endif
     }
   }
+
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mHardwareWindow_Swap, mPtr<mHardwareWindow> &window)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(window == nullptr, mR_ArgumentNull);
+
+#if defined(mRENDERER_OPENGL)
+  SDL_GL_SwapWindow(window->pWindow);
+#else
+  mRETURN_RESULT(mR_NotImplemented);
+#endif
+
+  if (!window->processMessageQueueExplicit)
+    mERROR_CHECK(mHardwareWindow_ProcessMessageQueue(window));
 
   mRETURN_SUCCESS();
 }

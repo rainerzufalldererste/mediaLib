@@ -28,9 +28,13 @@ mFUNCTION(mTexture_Create, OUT mTexture *pTexture, mPtr<mImageBuffer> &imageBuff
   mERROR_IF(textureUnit >= 32, mR_IndexOutOfBounds);
   pTexture->textureUnit = (GLuint)textureUnit;
 
+  mGL_DEBUG_ERROR_CHECK();
+
   glActiveTexture(GL_TEXTURE0 + (GLuint)pTexture->textureUnit);
   glGenTextures(1, &pTexture->textureId);
   mDEFER_ON_ERROR(glDeleteTextures(1, &pTexture->textureId));
+
+  mGL_DEBUG_ERROR_CHECK();
 
   glBindTexture(pTexture->sampleCount > 0 ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, pTexture->textureId);
   mERROR_CHECK(mTexture2DParams_ApplyToBoundTexture(textureParams, pTexture->sampleCount > 0));
@@ -86,9 +90,13 @@ mFUNCTION(mTexture_Create, OUT mTexture *pTexture, const uint8_t *pData, const m
     mERROR_IF(textureUnit >= 32, mR_IndexOutOfBounds);
     pTexture->textureUnit = (GLuint)textureUnit;
 
+    mGL_DEBUG_ERROR_CHECK();
+
     glActiveTexture(GL_TEXTURE0 + (GLuint)pTexture->textureUnit);
     glGenTextures(1, &pTexture->textureId);
     mDEFER_ON_ERROR(glDeleteTextures(1, &pTexture->textureId));
+
+    mGL_DEBUG_ERROR_CHECK();
 
     glBindTexture(pTexture->sampleCount > 0 ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, pTexture->textureId);
     mERROR_CHECK(mTexture2DParams_ApplyToBoundTexture(textureParams, pTexture->sampleCount > 0));
@@ -134,10 +142,14 @@ mFUNCTION(mTexture_CreateFromUnownedIndex, OUT mTexture *pTexture, int textureIn
   
   mVec2t<GLint> resolution;
 
+  mGL_DEBUG_ERROR_CHECK();
+
   glActiveTexture(GL_TEXTURE0 + (GLuint)pTexture->textureUnit);
   glBindTexture(pTexture->sampleCount > 0 ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, pTexture->textureId);
   glGetTexLevelParameteriv(pTexture->sampleCount > 0 ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &resolution.x);
   glGetTexLevelParameteriv(pTexture->sampleCount > 0 ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &resolution.y);
+
+  mGL_DEBUG_ERROR_CHECK();
 
   pTexture->resolution = (mVec2s)resolution;
   pTexture->resolutionF = (mVec2f)resolution;
@@ -168,9 +180,13 @@ mFUNCTION(mTexture_Allocate, OUT mTexture *pTexture, const mVec2s size, const mP
   mERROR_IF(textureUnit >= 32, mR_IndexOutOfBounds);
   pTexture->textureUnit = (GLuint)textureUnit;
 
+  mGL_DEBUG_ERROR_CHECK();
+
   glActiveTexture(GL_TEXTURE0 + (GLuint)pTexture->textureUnit);
   glGenTextures(1, &pTexture->textureId);
   mDEFER_ON_ERROR(glDeleteTextures(1, &pTexture->textureId));
+
+  mGL_DEBUG_ERROR_CHECK();
 
   glBindTexture(pTexture->sampleCount > 0 ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, pTexture->textureId);
 
@@ -294,10 +310,10 @@ mFUNCTION(mTexture_Upload, mTexture &texture)
   texture.resolution = texture.imageBuffer->currentSize;
   texture.resolutionF = (mVec2f)texture.resolution;
 
+  mGL_DEBUG_ERROR_CHECK();
+
   if (texture.isMipMapTexture)
     glGenerateMipmap(texture.sampleCount > 0 ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D);
-
-  mGL_DEBUG_ERROR_CHECK();
 
 #else
   mRETURN_RESULT(mR_NotImplemented)

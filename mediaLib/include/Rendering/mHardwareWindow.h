@@ -63,4 +63,7 @@ mFUNCTION(mHardwareWindow_ClearEventHandlers, mPtr<mHardwareWindow> &window);
 
 mFUNCTION(mHardwareWindow_EnableDragAndDrop);
 
+mFUNCTION(mHardwareWindow_SetProcessMessageQueueOnSwap, mPtr<mHardwareWindow> &window, const bool processMessageQueueOnSwap); // this is enabled by default.
+mFUNCTION(mHardwareWindow_ProcessMessageQueue, mPtr<mHardwareWindow> &window); // only required if `mHardwareWindow_SetProcessMessageQueueOnSwap` has been called with `false`.
+
 #endif // mHardwareWindow_h__
