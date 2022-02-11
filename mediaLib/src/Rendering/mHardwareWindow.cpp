@@ -1,7 +1,9 @@
 #include "mHardwareWindow.h"
+
 #include "mFramebuffer.h"
 #include "mChunkedArray.h"
 #include "mSystemInfo.h"
+#include "mProfiler.h"
 
 #define DECLSPEC
 #include "SDL_syswm.h"
@@ -120,7 +122,10 @@ mFUNCTION(mHardwareWindow_ProcessMessageQueue, mPtr<mHardwareWindow> &window)
 
   mERROR_IF(window == nullptr, mR_ArgumentNull);
 
+  mPROFILE_SCOPED("mHardwareWindow_ProcessMessageQueue");
+
   SDL_Event _event;
+
   while (SDL_PollEvent(&_event))
   {
     size_t onEventCount = 0;
@@ -241,7 +246,6 @@ mFUNCTION(mHardwareWindow_ProcessMessageQueue, mPtr<mHardwareWindow> &window)
     }
   }
 
-
   mRETURN_SUCCESS();
 }
 
@@ -250,6 +254,8 @@ mFUNCTION(mHardwareWindow_Swap, mPtr<mHardwareWindow> &window)
   mFUNCTION_SETUP();
 
   mERROR_IF(window == nullptr, mR_ArgumentNull);
+
+  mPROFILE_SCOPED("mHardwareWindow_Swap (Swap)");
 
 #if defined(mRENDERER_OPENGL)
   SDL_GL_SwapWindow(window->pWindow);

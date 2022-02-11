@@ -55,7 +55,7 @@ struct mRDBAttributeQuery_Internal<T>
     mFUNCTION_SETUP();
      
 #if defined(mRENDERER_OPENGL)
-    const GLuint attributeIndex = glGetAttribLocation(pShader->shaderProgram, T::AttributeName());
+    const mShaderAttributeIndex_t attributeIndex = mShader_GetAttributeIndex(*pShader, T::AttributeName());
     mGL_DEBUG_ERROR_CHECK();
 
     glEnableVertexAttribArray(attributeIndex);
