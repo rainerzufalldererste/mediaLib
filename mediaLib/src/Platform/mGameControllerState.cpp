@@ -229,6 +229,23 @@ mFUNCTION(mGameControllerState_GetApproximateBatteryLevel, mPtr<mGameControllerS
   mRETURN_SUCCESS();
 }
 
+mFUNCTION(mGameControllerState_GetDescription, mPtr<mGameControllerState> &controllerState, OUT mString *pDescription)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(controllerState == nullptr, mR_ArgumentNull);
+  mERROR_IF(pDescription == nullptr, mR_ArgumentNull);
+
+  const char *name = SDL_JoystickName(controllerState->pJoystickHandle);
+
+  if (name == nullptr)
+    mERROR_CHECK(mString_Create(pDescription, "<UNKNOWN>", pDescription->pAllocator));
+  else
+    mERROR_CHECK(mString_Create(pDescription, name, pDescription->pAllocator));
+
+  mRETURN_SUCCESS();
+}
+
 mFUNCTION(mGameControllerState_GetAnalogStick, mPtr<mGameControllerState> &controllerState, const size_t index, OUT mVec2f *pValue)
 {
   mFUNCTION_SETUP();

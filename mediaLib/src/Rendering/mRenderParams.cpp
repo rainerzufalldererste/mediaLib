@@ -651,7 +651,8 @@ mFUNCTION(mRenderParams_PrintRenderState, const bool onlyNewValues /* = false */
     mPRINT_FUNC("GL STATE:\n================================================\n");
 
 #define mGL_PRINT_PARAM(func, param, paramString, var) \
-  do { static var mCONCAT_LITERALS(_var_, param)[4]; \
+  do { if (func != nullptr) \
+  { static var mCONCAT_LITERALS(_var_, param)[4]; \
   var mCONCAT_LITERALS(_local_var_, param)[4]; \
   func(param, &mCONCAT_LITERALS(_local_var_, param)[0]); \
   if (!onlyUpdateValues) \
@@ -665,10 +666,11 @@ mFUNCTION(mRenderParams_PrintRenderState, const bool onlyNewValues /* = false */
     { mPRINT_FUNC((valueIsNew ? " * " : "   "), paramString " = ", mCONCAT_LITERALS(_local_var_, param)[0], "\n"); \
     } \
   } \
-  mCONCAT_LITERALS(_var_, param)[0] = mCONCAT_LITERALS(_local_var_, param)[0]; } while (0)
+  mCONCAT_LITERALS(_var_, param)[0] = mCONCAT_LITERALS(_local_var_, param)[0]; } } while (0)
 
 #define mGL_PRINT_VEC2_PARAM(func, param, paramString, var) \
-  do { static var mCONCAT_LITERALS(_var_, param)[4]; \
+  do { if (func != nullptr) \
+  { static var mCONCAT_LITERALS(_var_, param)[4]; \
   var mCONCAT_LITERALS(_local_var_, param)[4]; \
   func(param, &mCONCAT_LITERALS(_local_var_, param)[0]); \
   if (!onlyUpdateValues) \
@@ -683,10 +685,11 @@ mFUNCTION(mRenderParams_PrintRenderState, const bool onlyNewValues /* = false */
     } \
   } \
   mCONCAT_LITERALS(_var_, param)[0] = mCONCAT_LITERALS(_local_var_, param)[0]; \
-  mCONCAT_LITERALS(_var_, param)[1] = mCONCAT_LITERALS(_local_var_, param)[1]; } while (0)
+  mCONCAT_LITERALS(_var_, param)[1] = mCONCAT_LITERALS(_local_var_, param)[1]; } } while (0)
 
 #define mGL_PRINT_VEC3_PARAM(func, param, paramString, var) \
-  do { static var mCONCAT_LITERALS(_var_, param)[4]; \
+  do { if (func != nullptr) \
+  { static var mCONCAT_LITERALS(_var_, param)[4]; \
   var mCONCAT_LITERALS(_local_var_, param)[4]; \
   func(param, &mCONCAT_LITERALS(_local_var_, param)[0]); \
   if (!onlyUpdateValues) \
@@ -702,10 +705,11 @@ mFUNCTION(mRenderParams_PrintRenderState, const bool onlyNewValues /* = false */
   } \
   mCONCAT_LITERALS(_var_, param)[0] = mCONCAT_LITERALS(_local_var_, param)[0]; \
   mCONCAT_LITERALS(_var_, param)[1] = mCONCAT_LITERALS(_local_var_, param)[1]; \
-  mCONCAT_LITERALS(_var_, param)[2] = mCONCAT_LITERALS(_local_var_, param)[2]; } while (0)
+  mCONCAT_LITERALS(_var_, param)[2] = mCONCAT_LITERALS(_local_var_, param)[2]; } } while (0)
 
 #define mGL_PRINT_VEC4_PARAM(func, param, paramString, var) \
-  do { static var mCONCAT_LITERALS(_var_, param)[4]; \
+  do { if (func != nullptr) \
+  { static var mCONCAT_LITERALS(_var_, param)[4]; \
   var mCONCAT_LITERALS(_local_var_, param)[4]; \
   func(param, &mCONCAT_LITERALS(_local_var_, param)[0]); \
   if (!onlyUpdateValues) \
@@ -722,10 +726,11 @@ mFUNCTION(mRenderParams_PrintRenderState, const bool onlyNewValues /* = false */
   mCONCAT_LITERALS(_var_, param)[0] = mCONCAT_LITERALS(_local_var_, param)[0]; \
   mCONCAT_LITERALS(_var_, param)[1] = mCONCAT_LITERALS(_local_var_, param)[1]; \
   mCONCAT_LITERALS(_var_, param)[2] = mCONCAT_LITERALS(_local_var_, param)[2]; \
-  mCONCAT_LITERALS(_var_, param)[3] = mCONCAT_LITERALS(_local_var_, param)[3]; } while (0)
+  mCONCAT_LITERALS(_var_, param)[3] = mCONCAT_LITERALS(_local_var_, param)[3]; } } while (0)
 
 #define mGL_PRINT_FRAMEBUFFER_ATTACHMENT_PARAM(target, attachment, param) \
   do \
+  { if (glGetFramebufferAttachmentParameteriv != nullptr) \
   { static GLint __var__ = 0; \
     GLint __local_var; \
     glGetFramebufferAttachmentParameteriv(target, attachment, param, &__local_var); \
@@ -741,43 +746,43 @@ mFUNCTION(mRenderParams_PrintRenderState, const bool onlyNewValues /* = false */
       } \
     } \
     __var__ = __local_var; \
-  } while (0)
+  } } while (0)
 
 #define mGL_PRINT_DOUBLE_PARAM(param) \
   mGL_PRINT_PARAM(glGetDoublev, param, #param, double_t); \
-  while (glGetError() != GL_NO_ERROR) {}
+  if (glGetError != nullptr) while (glGetError() != GL_NO_ERROR) {}
 
 #define mGL_PRINT_DOUBLE_VEC2_PARAM(param) \
   mGL_PRINT_VEC2_PARAM(glGetDoublev, param, #param, double_t); \
-  while (glGetError() != GL_NO_ERROR) {}
+  if (glGetError != nullptr) while (glGetError() != GL_NO_ERROR) {}
 
 #define mGL_PRINT_DOUBLE_VEC3_PARAM(param) \
   mGL_PRINT_VEC3_PARAM(glGetDoublev, param, #param, double_t); \
-  while (glGetError() != GL_NO_ERROR) {}
+  if (glGetError != nullptr) while (glGetError() != GL_NO_ERROR) {}
 
 #define mGL_PRINT_DOUBLE_VEC4_PARAM(param) \
   mGL_PRINT_VEC4_PARAM(glGetDoublev, param, #param, double_t); \
-  while (glGetError() != GL_NO_ERROR) {}
+  if (glGetError != nullptr) while (glGetError() != GL_NO_ERROR) {}
 
 #define mGL_PRINT_INTEGER_PARAM(param) \
   mGL_PRINT_PARAM(glGetIntegerv, param, #param, int32_t); \
-  while (glGetError() != GL_NO_ERROR) {}
+  if (glGetError != nullptr) while (glGetError() != GL_NO_ERROR) {}
 
 #define mGL_PRINT_INTEGER_VEC2_PARAM(param) \
   mGL_PRINT_VEC2_PARAM(glGetIntegerv, param, #param, int32_t); \
-  while (glGetError() != GL_NO_ERROR) {}
+  if (glGetError != nullptr) while (glGetError() != GL_NO_ERROR) {}
 
 #define mGL_PRINT_INTEGER_VEC4_PARAM(param) \
   mGL_PRINT_VEC4_PARAM(glGetIntegerv, param, #param, int32_t); \
-  while (glGetError() != GL_NO_ERROR) {}
+  if (glGetError != nullptr) while (glGetError() != GL_NO_ERROR) {}
 
 #define mGL_PRINT_BOOL_PARAM(param) \
   mGL_PRINT_PARAM(glGetBooleanv, param, #param, GLboolean); \
-  while (glGetError() != GL_NO_ERROR) {}
+  if (glGetError != nullptr) while (glGetError() != GL_NO_ERROR) {}
 
 #define mGL_PRINT_BOOL_VEC4_PARAM(param) \
   mGL_PRINT_VEC4_PARAM(glGetBooleanv, param, #param, GLboolean); \
-  while (glGetError() != GL_NO_ERROR) {}
+  if (glGetError != nullptr) while (glGetError() != GL_NO_ERROR) {}
 
   mGL_PRINT_INTEGER_PARAM(GL_ACCUM_ALPHA_BITS);
   mGL_PRINT_INTEGER_PARAM(GL_ACCUM_BLUE_BITS);
@@ -1068,8 +1073,9 @@ mFUNCTION(mRenderParams_PrintRenderState, const bool onlyNewValues /* = false */
   mGL_PRINT_FRAMEBUFFER_ATTACHMENT_PARAM(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_FRAMEBUFFER_ATTACHMENT_ALPHA_SIZE);
 
   // Clear glError.
-  while (glGetError() != GL_NO_ERROR)
-    ;
+  if (glGetError != nullptr)
+    while (glGetError() != GL_NO_ERROR)
+      ;
 
   if (!onlyUpdateValues)
     mPRINT_FUNC("================================================\nEND OF GL STATE\n");

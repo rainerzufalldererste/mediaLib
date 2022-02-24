@@ -17,10 +17,9 @@ struct mLineRenderer_Attribute
   mVec4f colour;
   float_t thickness;
 
-  mLineRenderer_Attribute()
-  { }
+  inline mLineRenderer_Attribute() = default;
 
-  mLineRenderer_Attribute(const mVec4f colour, const float_t thickness) :
+  inline mLineRenderer_Attribute(const mVec4f colour, const float_t thickness) :
     colour(colour),
     thickness(thickness)
   { }
@@ -32,16 +31,15 @@ struct mLineRenderer_Point
   mVec4f colour;
   float_t thickness;
 
-  mLineRenderer_Point()
-  { }
+  inline mLineRenderer_Point() = default;
 
-  mLineRenderer_Point(const mVec2f position, const mVec4f colour, const float_t thickness) :
+  inline mLineRenderer_Point(const mVec2f position, const mVec4f colour, const float_t thickness) :
     position(position),
     colour(colour),
     thickness(thickness)
   { }
 
-  mLineRenderer_Point(const mVec2f position, const mLineRenderer_Attribute attribute) :
+  inline mLineRenderer_Point(const mVec2f position, const mLineRenderer_Attribute attribute) :
     position(position),
     colour(attribute.colour),
     thickness(attribute.thickness)

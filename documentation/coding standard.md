@@ -18,6 +18,7 @@
  * If a function takes pointers as a parameter mark them with `IN`, `OUT`, `IN_OUT` and `OPTIONAL` to clarify the interface.
  * Take error handling very seriously. Internal functions however can be considered pre-error-handled if they can only be called by functions that already checked for this error. If not manually dealing with error codes every function call should be inside a `mERROR_CHECK` (or `mERROR_IF`) macro (or one of its derivatives for `epilogue` based code).
  * If returning from a function use the `mRETURN_RESULT` or `mRETURN_SUCCESS` macro, which ensures that `mDEFER_ON_ERROR` and `mDEFER_ON_ERROR` know about the returned `mResult`.
+ * When printing values to the command line, use `mPRINT`/`mFormat`/etc. over insecure alternatives provided by the standard library.
  
  We follow the following few guidelines when implementing objects:
  * If an objects memory is zero it is valid (as a null-object) and can be destroyed successfully.
@@ -36,10 +37,11 @@
  * Internal functions should be postfixed with `_Internal` and declared as `static`.
  
 ## Variables
+ * The `constexpr` / `const` qualifier should be used wherever possible.
+ 
 Global variables:
  * Try to minimize use of any global variables as their initialization order can cause horrible bugs that come down to order of compilation.
  * Declare global variables in source-files not in headers.
- * The `constexpr` / `const` qualifier should be used wherever possible.
  
 Local variables:
  * Should be declared near first use for better readability.
@@ -139,7 +141,7 @@ Lambda Functions:
   
   // ...
   
-  for (int64_t i = 0; i < count; ++i)
+  for (size_t i = 0; i < count; i++)
   {
     std::function<bool (void)> lambda = [&, i]() // `i` is passed as a copy, all other captured objects are passed by reference.
     {
@@ -192,24 +194,24 @@ mFUNCTION(mCollection_PopBack, mPtr<mCollection<T>> &collection, OUT T *pItem);
 ## Types
  * When interfacing with other libraries use their native types in your implementation files (like `GLint`, `HANDLE`, ...).
  * The default types for unsigned integers is `size_t`.
- * The default type for data is `uint8_t`. (Not `char`!)
+ * The default type for data is `uint8_t`. (Not `char` or `void *`!)
  * The default type for floating point data is `float_t`.
  * The default type for boolean expressions is `bool`.
- * The default type for strings is `mString` (consider using `mInplaceString<Length>`) or `char *`.
+ * The default type for strings is `mString` (consider using `mInplaceString<Length>`) or `const char *`.
  * Otherwise use the unambiguously sized variants of integer types (`int8_t`, `uint8_t`, `int16_t`, `uint16_t`, `int32_t`, `uint32_t`, `int64_t`, `uint64_t`) and `float_t` & `double_t` for floating point numbers.
  * When dealing with SIMD code use the `__m128i`, `__m128` and `__m128d` types e.g. for SSE.
- * When string formatting integer values use the defines from `inttypes.h`. (like `printf("The value is %" PRIu64 ".\n", (uint64_t)value);`)
+ * When string formatting integer values use the defines from `inttypes.h`, although we strongly recommend using `mPRINT`/`mFormat` instead. (like `printf("The value is %" PRIu64 ".\n", (uint64_t)value);`)
  
 Integer types:
  * Always use unsigned types for bit manipulations, packed values & flags.
- * The type `size_t` should not be serialized to binary data.
+ * The types `size_t` and `ptrdiff_t` should not be serialized to binary data or wherever the struct layout is important (simply use `uint64_t` / `int64_t`).
  * Use uppercase hexadecimal letters (like `0xFFFFFFFF`).
 
 Floating-point types:
  * Don't use floating-point numbers if integers would do the job just as well.
 
 Casting:
- * Use c-style casts for integers values. (`(int32_t)value` instead of `int32_t(value)`)
+ * Use c-style casts for integer or floating point values. (`(int32_t)value` instead of `int32_t(value)`)
  * Use `static_cast` when casting to derived types.
  * Use `reinterpret_cast` where applicable, consider using `mMemcpy` instead.
  * Try to not use `const_cast` unless absolutely necessary.
@@ -382,7 +384,7 @@ for (;;)
   if (c != b)
   {
     if (a == (b - c))
-      ++c;
+      c++;
     
     a = c;
     b = a;
@@ -391,23 +393,27 @@ for (;;)
   {
     c = a;
 
-    for (size_t i = 0; i < b; ++i)
+    for (size_t i = 0; i < b; i++)
     {
-      ++a;
-      --c;
+      a++;
+      c--;
     }
   }
   
-  for (size_t i; i < a; ++i)
-    ++b;
+  for (size_t i; i < a; i++)
+    b++;
    
   while (b > a)
   {
     b -= c;
-    ++c;
+    c++;
   }
 }
 ```
+
+## Loops
+ * Prefer using iterators rather than looping over indices when iterating collections.
+ * When removing elements from a collection, iterate backwards unless there's a good reason not to do so.
 
 ## Projects and libraries
  * Only use external libraries if there is a very good reason to. Once added to a project it's usually very hard to get rid of external dependencies, and it might bloat the repository forever.

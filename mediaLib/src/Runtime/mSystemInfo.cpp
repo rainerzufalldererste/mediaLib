@@ -14,6 +14,10 @@
 #include <powerbase.h>
 
 #pragma comment(lib, "PowrProf.lib")
+
+#include <Wbemidl.h>
+
+#pragma comment(lib, "wbemuuid.lib")
 #endif
 
 #ifdef GIT_BUILD // Define __M_FILE__
@@ -93,6 +97,19 @@ bool mSystemInfo_IsWindows8Point1OrGreater()
 bool mSystemInfo_IsWindows10OrGreater(const uint32_t buildNumber /* = 0 */)
 {
   return mSystemInfo_IsOSVersionOrGreater_Raw(HIBYTE(_WIN32_WINNT_WINTHRESHOLD), LOBYTE(_WIN32_WINNT_WINTHRESHOLD), 0, buildNumber);
+}
+
+bool mSystemInfo_IsWindowsServer()
+{
+  OSVERSIONINFOEXW versionInfo;
+  mZeroMemory(&versionInfo, 1);
+
+  versionInfo.dwOSVersionInfoSize = sizeof(versionInfo);
+  versionInfo.wProductType = VER_NT_WORKSTATION;
+
+  const uint64_t conditionMask = VerSetConditionMask(0, VER_PRODUCT_TYPE, VER_EQUAL);
+
+  return !VerifyVersionInfoW(&versionInfo, VER_PRODUCT_TYPE, conditionMask);
 }
 
 #endif
@@ -373,6 +390,176 @@ mFUNCTION(mSystemInfo_IsElevated, OUT bool *pIsElevated)
   mERROR_IF(0 == GetTokenInformation(processToken, TokenElevation, &tokenElevation, sizeof(tokenElevation), &size), mR_InternalError);
   
   *pIsElevated = (tokenElevation.TokenIsElevated == TRUE);
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mSystemInfo_GetDeviceInfo, OUT mString *pManufacturer, OUT mString *pModel)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pManufacturer == nullptr || pModel == nullptr, mR_ArgumentNull);
+
+  mERROR_CHECK(mString_Create(pManufacturer, "", pManufacturer->pAllocator));
+  mERROR_CHECK(mString_Create(pModel, "", pModel->pAllocator));
+
+  IWbemLocator *pLocator = nullptr;
+  mDEFER_CALL(&pLocator, mSafeRelease);
+  HRESULT result = CoCreateInstance(CLSID_WbemLocator, 0, CLSCTX_INPROC_SERVER, IID_IWbemLocator, reinterpret_cast<void **>(&pLocator));
+  mERROR_IF(FAILED(result) || pLocator == nullptr, mR_InternalError);
+
+  IWbemServices *pServices = nullptr;
+  mDEFER_CALL(&pServices, mSafeRelease);
+
+  result = pLocator->ConnectServer(L"ROOT\\CIMV2", nullptr, nullptr, 0, NULL, 0, 0, &pServices);
+  mERROR_IF(FAILED(result) || pServices == nullptr, mR_InternalError);
+
+  // Set the IWbemServices proxy so that impersonation of the user (client) occurs.
+  result = CoSetProxyBlanket(pServices, RPC_C_AUTHN_WINNT, RPC_C_AUTHZ_NONE, nullptr, RPC_C_AUTHN_LEVEL_CALL, RPC_C_IMP_LEVEL_IMPERSONATE, nullptr, EOAC_NONE);
+  mERROR_IF(FAILED(result), mR_InternalError);
+
+  IEnumWbemClassObject *pEnumerator = nullptr;
+  mDEFER_CALL(&pEnumerator, mSafeRelease);
+  result = pServices->ExecQuery(L"WQL", L"SELECT * FROM Win32_ComputerSystem", WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY, nullptr, &pEnumerator);
+  mERROR_IF(FAILED(result) || pEnumerator == nullptr, mR_InternalError);
+
+  IWbemClassObject *pClassObject = nullptr;
+  mDEFER_CALL(&pClassObject, mSafeRelease);
+
+  ULONG uReturn = 0;
+  result = pEnumerator->Next(WBEM_INFINITE, 1, &pClassObject, &uReturn);
+  mERROR_IF(FAILED(result) || pClassObject == nullptr || uReturn == 0, mR_InternalError);
+
+  // Retrieve Manufacturer.
+  {
+    VARIANT propertyValue;
+    mDEFER_CALL(&propertyValue, VariantClear);
+    result = pClassObject->Get(L"Manufacturer", 0, &propertyValue, nullptr, nullptr);
+    
+    if (!(FAILED(result)) && propertyValue.vt == VT_BSTR)
+      mERROR_CHECK(mString_Create(pManufacturer, propertyValue.bstrVal));
+  }
+
+  // Retrieve Model.
+  {
+    VARIANT propertyValue;
+    mDEFER_CALL(&propertyValue, VariantClear);
+    result = pClassObject->Get(L"Model", 0, &propertyValue, nullptr, nullptr);
+    
+    if (!(FAILED(result)) && propertyValue.vt == VT_BSTR)
+      mERROR_CHECK(mString_Create(pModel, propertyValue.bstrVal));
+  }
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mSystemInfo_GetInfo, OUT mSystemInfo *pInfo)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pInfo == nullptr, mR_ArgumentNull);
+
+  int32_t CPUInfo[4];
+  __cpuid(CPUInfo, 0x80000000);
+
+  const uint32_t nExIds = (uint32_t)CPUInfo[0];
+  char cpuName[0x40];
+
+  for (uint32_t i = 0x80000000; i <= nExIds; i++)
+  {
+    __cpuid(CPUInfo, i);
+
+    const int32_t index = (i & 7) - 2;
+
+    if (index >= 0 && index <= 2)
+      mMemcpy(cpuName + sizeof(CPUInfo) * index, reinterpret_cast<const char *>(CPUInfo), sizeof(CPUInfo));
+  }
+
+  mERROR_CHECK(mString_Create(&pInfo->cpuDescription, cpuName, sizeof(cpuName), &mDefaultAllocator));
+
+  SYSTEM_INFO systemInfo;
+  GetSystemInfo(&systemInfo);
+  pInfo->numberOfProcessors = systemInfo.dwNumberOfProcessors;
+  pInfo->pageSize = systemInfo.dwPageSize;
+  
+  MEMORYSTATUSEX memoryStatus;
+  memoryStatus.dwLength = sizeof(memoryStatus);
+  
+  if (GlobalMemoryStatusEx(&memoryStatus))
+  {
+    pInfo->totalPhysicalMemory = memoryStatus.ullTotalPhys;
+    pInfo->physicalMemoryAvailable = memoryStatus.ullAvailPhys;
+    pInfo->totalVirtualMemory = memoryStatus.ullTotalVirtual;
+    pInfo->virtualMemoryAvailable = memoryStatus.ullAvailVirtual;
+    pInfo->totalPagedMemory = memoryStatus.ullAvailPageFile;
+    pInfo->pagedMemoryAvailable = memoryStatus.ullAvailPageFile;
+  }
+  else
+  {
+    pInfo->totalPhysicalMemory = 0;
+    pInfo->physicalMemoryAvailable = 0;
+    pInfo->totalVirtualMemory = 0;
+    pInfo->virtualMemoryAvailable = 0;
+    pInfo->totalPagedMemory = 0;
+    pInfo->pagedMemoryAvailable = 0;
+  }
+  
+  if (mSystemInfo_IsWindows11OrGreater())
+    mERROR_CHECK(mString_Create(&pInfo->operatingSystemDescription, "Windows 11"));
+  else if (mSystemInfo_IsWindows10OrGreater())
+    mERROR_CHECK(mString_Create(&pInfo->operatingSystemDescription, "Windows 10"));
+  else if (mSystemInfo_IsWindows8Point1OrGreater())
+    mERROR_CHECK(mString_Create(&pInfo->operatingSystemDescription, "Windows 8.1"));
+  else if (mSystemInfo_IsWindows8OrGreater())
+    mERROR_CHECK(mString_Create(&pInfo->operatingSystemDescription, "Windows 8"));
+  else if (mSystemInfo_IsWindows7OrGreater(1))
+    mERROR_CHECK(mString_Create(&pInfo->operatingSystemDescription, "Windows 7 Service Pack 1"));
+  else if (mSystemInfo_IsWindows7OrGreater())
+    mERROR_CHECK(mString_Create(&pInfo->operatingSystemDescription, "Windows 7"));
+  else if (mSystemInfo_IsWindowsVistaOrGreater(2))
+    mERROR_CHECK(mString_Create(&pInfo->operatingSystemDescription, "Windows Vista Service Pack 2"));
+  else if (mSystemInfo_IsWindowsVistaOrGreater(1))
+    mERROR_CHECK(mString_Create(&pInfo->operatingSystemDescription, "Windows Vista Service Pack 1"));
+  else if (mSystemInfo_IsWindowsVistaOrGreater())
+    mERROR_CHECK(mString_Create(&pInfo->operatingSystemDescription, "Windows Vista"));
+  else if (mSystemInfo_IsWindowsXPOrGreater(3))
+    mERROR_CHECK(mString_Create(&pInfo->operatingSystemDescription, "Windows XP Service Pack 3"));
+  else if (mSystemInfo_IsWindowsXPOrGreater(2))
+    mERROR_CHECK(mString_Create(&pInfo->operatingSystemDescription, "Windows XP Service Pack 2"));
+  else if (mSystemInfo_IsWindowsXPOrGreater(1))
+    mERROR_CHECK(mString_Create(&pInfo->operatingSystemDescription, "Windows XP Service Pack 1"));
+  else if (mSystemInfo_IsWindowsXPOrGreater())
+    mERROR_CHECK(mString_Create(&pInfo->operatingSystemDescription, "Windows XP"));
+  else
+    mERROR_CHECK(mString_Create(&pInfo->operatingSystemDescription, "<Unknown Windows Version>"));
+
+  if (mSystemInfo_IsWindowsServer())
+    mERROR_CHECK(mString_Append(pInfo->operatingSystemDescription, " (Server)"));
+  
+  mString tmp;
+
+  if (mSystemInfo_IsWindows10OrGreater())
+  {
+    if (mSUCCEEDED(mRegistry_ReadKey("HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\EditionID", &tmp)))
+      mERROR_CHECK(mString_AppendFormat(pInfo->operatingSystemDescription, ' ', tmp));
+
+    if (mSUCCEEDED(mRegistry_ReadKey("HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\DisplayVersion", &tmp)))
+      mERROR_CHECK(mString_AppendFormat(pInfo->operatingSystemDescription, ' ', tmp));
+
+    if (mSUCCEEDED(mRegistry_ReadKey("HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\CurrentBuildNumber", &tmp)))
+      mERROR_CHECK(mString_AppendFormat(pInfo->operatingSystemDescription, " (Build ", tmp, ')'));
+    else if (mSUCCEEDED(mRegistry_ReadKey("HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\CurrentBuild", &tmp)))
+      mERROR_CHECK(mString_AppendFormat(pInfo->operatingSystemDescription, " (Build ", tmp, ')'));
+  }
+
+  ULONG numLanguages = 0;
+  wchar_t languageCodes[1024];
+  ULONG languageCodeLength = (ULONG)mARRAYSIZE(languageCodes);
+
+  if (FALSE == GetSystemPreferredUILanguages(MUI_LANGUAGE_NAME, &numLanguages, languageCodes, &languageCodeLength) || languageCodeLength == 0 || numLanguages == 0 || languageCodes[0] == L'\0')
+    mERROR_CHECK(mString_Create(&pInfo->preferredUILanguages, ""));
+  else
+    mERROR_CHECK(mString_Create(&pInfo->preferredUILanguages, languageCodes, sizeof(languageCodes)));
 
   mRETURN_SUCCESS();
 }
