@@ -45,12 +45,48 @@ void mTestLib_Initialize()
   IsInitialized = true;
 }
 
-mFUNCTION(mTestLib_RunAllTests, int *pArgc, char **pArgv)
+static const char mTestLib_OnlyArgument[] = "--only";
+static const char mTestLib_ExcludeArgument[] = "--exclude";
+
+mFUNCTION(mTestLib_RunAllTests, int32_t *pArgc, const char **pArgv)
 {
   mTestLib_Initialize();
 
+  char buffer[1024];
+
 #ifdef mDEBUG_TESTS
   mUnused(pArgc, pArgv);
+
+  const char *onlyTestNamePattern = nullptr;
+  const char *excludeTestNamePattern = nullptr;
+  
+  if (*pArgc > 1)
+  {
+    size_t remainingArgs = *pArgc - 1;
+    size_t argIndex = 1;
+
+    while (remainingArgs > 0)
+    {
+      if (strcmp(pArgv[argIndex], mTestLib_OnlyArgument) == 0 && remainingArgs >= 2)
+      {
+        onlyTestNamePattern = pArgv[argIndex + 1];
+        argIndex += 2;
+        remainingArgs -= 2;
+      }
+      else if (strcmp(pArgv[argIndex], mTestLib_ExcludeArgument) == 0 && remainingArgs >= 2)
+      {
+        excludeTestNamePattern = pArgv[argIndex + 1];
+        argIndex += 2;
+        remainingArgs -= 2;
+      }
+      else
+      {
+        snprintf(buffer, sizeof(buffer), "Invalid Parameter '%s'. Aborting.\n", pArgv[argIndex]);
+        mPrintToOutputArray(buffer);
+        return mR_InvalidParameter;
+      }
+    }
+  }
 
   std::vector<std::tuple<std::string, std::string, mResult>> failedTests;
 
@@ -61,11 +97,37 @@ mFUNCTION(mTestLib_RunAllTests, int *pArgc, char **pArgv)
   const auto &beforeTests = std::chrono::high_resolution_clock::now();
   size_t testCount = 0;
 
-  char buffer[1024];
-
   for (const auto &test : mTest_TestContainer())
   {
     ++testCount;
+
+    if (onlyTestNamePattern != nullptr)
+    {
+      if (nullptr == strstr(std::get<0>(test).c_str(), onlyTestNamePattern) && nullptr == strstr(std::get<1>(test).c_str(), onlyTestNamePattern))
+      {
+        mSetConsoleColour(mCC_BrightGreen, mCC_Black);
+        mPrintToOutputArray("[SKIPPING    ]");
+        mResetConsoleColour();
+        snprintf(buffer, sizeof(buffer), "  %s : %s\n", std::get<0>(test).c_str(), std::get<1>(test).c_str());
+        mPrintToOutputArray(buffer);
+
+        continue;
+      }
+    }
+
+    if (excludeTestNamePattern != nullptr)
+    {
+      if (nullptr != strstr(std::get<0>(test).c_str(), excludeTestNamePattern) || nullptr != strstr(std::get<1>(test).c_str(), excludeTestNamePattern))
+      {
+        mSetConsoleColour(mCC_BrightGreen, mCC_Black);
+        mPrintToOutputArray("[SKIPPING    ]");
+        mResetConsoleColour();
+        snprintf(buffer, sizeof(buffer), "  %s : %s\n", std::get<0>(test).c_str(), std::get<1>(test).c_str());
+        mPrintToOutputArray(buffer);
+
+        continue;
+      }
+    }
 
     mSetConsoleColour(mCC_BrightGreen, mCC_Black);
     mPrintToOutputArray("[RUNNING TEST]");
@@ -77,11 +139,22 @@ mFUNCTION(mTestLib_RunAllTests, int *pArgc, char **pArgv)
     snprintf(buffer, sizeof(buffer), "\r(Test %" PRIu64 " / %" PRIu64 ")", testCount, mTest_TestContainer().size());
     mPrintToOutputArray(buffer);
 
-    const auto &start = std::chrono::high_resolution_clock::now();
+    mResult result;
+    size_t milliseconds;
 
-    const mResult result = std::get<2>(test)();
+    {
+#ifdef GIT_BUILD
+      mPrintCallbackFunc *pPrintCallbackTmp = mPrintCallback;
+      mPrintCallback = nullptr;
+      mDEFER(pPrintCallbackTmp = pPrintCallbackTmp);
+#endif
 
-    const size_t milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start).count();
+      const auto &start = std::chrono::high_resolution_clock::now();
+
+      result = std::get<2>(test)();
+
+      milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start).count();
+    }
 
     if (mSUCCEEDED(result))
     {
