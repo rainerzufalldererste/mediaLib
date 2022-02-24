@@ -1833,7 +1833,7 @@ mFUNCTION(mFile_GetDriveFromFilePath, OUT mString *pDrivePath, const mString &fi
     mRETURN_RESULT(mR_InternalError);
   }
 
-  mERROR_CHECK(mString_Create(pDrivePath, volumePath, mARRAYSIZE(volumePath), filePath.pAllocator));
+  mERROR_CHECK(mString_Create(pDrivePath, volumePath, mARRAYSIZE(volumePath), pDrivePath->pAllocator));
 
   mRETURN_SUCCESS();
 }
