@@ -140,7 +140,7 @@ extern size_t mTestDestructible_Count;
 #endif
 
 void mTestLib_Initialize();
-mFUNCTION(mTestLib_RunAllTests, int *pArgc, char **pArgv);
+mFUNCTION(mTestLib_RunAllTests, int32_t *pArgc, const char **pArgv);
 
 mFUNCTION(mTestAllocator_Create, mAllocator *pTestAllocator);
 mFUNCTION(mTestAllocator_GetCount, mAllocator *pAllocator, size_t *pCount);

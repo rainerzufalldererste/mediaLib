@@ -365,7 +365,7 @@ public:
     pSGLFA = (tSGLFA)GetProcAddress(m_hDbhHelp, "SymGetLineFromAddr64");
     pSGMB = (tSGMB)GetProcAddress(m_hDbhHelp, "SymGetModuleBase64");
     pSGMI = (tSGMI)GetProcAddress(m_hDbhHelp, "SymGetModuleInfo64");
-    pSGSFA = (tSGSFA)GetProcAddress(m_hDbhHelp, "SymGetSymFromAddr64");
+    pSGSFA = (tSGSFA)GetProcAddress(m_hDbhHelp, "SymFromAddr");
     pUDSN = (tUDSN)GetProcAddress(m_hDbhHelp, "UnDecorateSymbolName");
     pSLM = (tSLM)GetProcAddress(m_hDbhHelp, "SymLoadModule64");
     pSGSP = (tSGSP)GetProcAddress(m_hDbhHelp, "SymGetSearchPath");
@@ -487,11 +487,11 @@ public:
   typedef DWORD(__stdcall* tSGO)(VOID);
   tSGO pSGO;
 
-  // SymGetSymFromAddr64()
+  // SymFromAddr()
   typedef BOOL(__stdcall* tSGSFA)(IN HANDLE hProcess,
                                   IN DWORD64 dwAddr,
                                   OUT PDWORD64 pdwDisplacement,
-                                  OUT PIMAGEHLP_SYMBOL64 Symbol);
+                                  OUT PSYMBOL_INFO Symbol);
   tSGSFA pSGSFA;
 
   // SymInitialize()
@@ -720,8 +720,10 @@ private:
 
   DWORD LoadModule(HANDLE hProcess, LPCSTR img, LPCSTR mod, DWORD64 baseAddr, DWORD size)
   {
-    CHAR* szImg = _strdup(img);
-    CHAR* szMod = _strdup(mod);
+    CHAR szImg[MAX_PATH];
+    strncpy(szImg, img, sizeof(szImg));
+    CHAR szMod[MAX_PATH];
+    strncpy(szMod, mod, sizeof(szMod));
     DWORD result = ERROR_SUCCESS;
     if ((szImg == NULL) || (szMod == NULL))
       result = ERROR_NOT_ENOUGH_MEMORY;
@@ -803,10 +805,6 @@ private:
       this->m_parent->OnLoadModule(img, mod, baseAddr, size, result, szSymType, pdbName,
                                    fileVersion);
     }
-    if (szImg != NULL)
-      free(szImg);
-    if (szMod != NULL)
-      free(szMod);
     return result;
   }
 
@@ -1038,12 +1036,15 @@ BOOL StackWalker::ShowCallstack(HANDLE                    hThread,
 {
   CONTEXT                                   c;
   CallstackEntry                            csEntry;
-  IMAGEHLP_SYMBOL64*                        pSym = NULL;
+  SYMBOL_INFO *                             pSym = NULL;
   StackWalkerInternal::IMAGEHLP_MODULE64_V3 Module;
   IMAGEHLP_LINE64                           Line;
   int                                       frameNum;
   bool                                      bLastEntryCalled = true;
   int                                       curRecursionCount = 0;
+
+  if (this->m_sw == nullptr)
+    return FALSE;
 
   if (m_modulesLoaded == FALSE)
     this->LoadModules(); // ignore the result...
@@ -1125,12 +1126,12 @@ BOOL StackWalker::ShowCallstack(HANDLE                    hThread,
 #error "Platform not supported!"
 #endif
 
-  pSym = (IMAGEHLP_SYMBOL64*)malloc(sizeof(IMAGEHLP_SYMBOL64) + STACKWALK_MAX_NAMELEN);
+  pSym = (SYMBOL_INFO *)malloc(sizeof(SYMBOL_INFO) + STACKWALK_MAX_NAMELEN);
   if (!pSym)
     goto cleanup; // not enough memory...
-  memset(pSym, 0, sizeof(IMAGEHLP_SYMBOL64) + STACKWALK_MAX_NAMELEN);
-  pSym->SizeOfStruct = sizeof(IMAGEHLP_SYMBOL64);
-  pSym->MaxNameLength = STACKWALK_MAX_NAMELEN;
+  memset(pSym, 0, sizeof(SYMBOL_INFO) + STACKWALK_MAX_NAMELEN);
+  pSym->SizeOfStruct = sizeof(SYMBOL_INFO);
+  pSym->MaxNameLen = STACKWALK_MAX_NAMELEN;
 
   memset(&Line, 0, sizeof(Line));
   Line.SizeOfStruct = sizeof(Line);
@@ -1177,18 +1178,18 @@ BOOL StackWalker::ShowCallstack(HANDLE                    hThread,
     if (s.AddrPC.Offset != 0)
     {
       // we seem to have a valid PC
-      // show procedure info (SymGetSymFromAddr64())
+      // show procedure info (SymFromAddr())
       if (this->m_sw->pSGSFA(this->m_hProcess, s.AddrPC.Offset, &(csEntry.offsetFromSmybol),
                              pSym) != FALSE)
       {
         MyStrCpy(csEntry.name, STACKWALK_MAX_NAMELEN, pSym->Name);
-        // UnDecorateSymbolName()
-        this->m_sw->pUDSN(pSym->Name, csEntry.undName, STACKWALK_MAX_NAMELEN, UNDNAME_NAME_ONLY);
-        this->m_sw->pUDSN(pSym->Name, csEntry.undFullName, STACKWALK_MAX_NAMELEN, UNDNAME_COMPLETE);
+        // UnDecorateSymbolName() <- Chris: Seems like this is no longer necessary, since we've switched to `SymFromAddr` under the hood.
+        //this->m_sw->pUDSN(pSym->Name, csEntry.undName, STACKWALK_MAX_NAMELEN, UNDNAME_NAME_ONLY);
+        //this->m_sw->pUDSN(pSym->Name, csEntry.undFullName, STACKWALK_MAX_NAMELEN, UNDNAME_COMPLETE);
       }
       else
       {
-        this->OnDbgHelpErr("SymGetSymFromAddr64", GetLastError(), s.AddrPC.Offset);
+        this->OnDbgHelpErr("SymFromAddr", GetLastError(), s.AddrPC.Offset);
       }
 
       // show line number info, NT5.0-method (SymGetLineFromAddr64())
@@ -1297,21 +1298,21 @@ BOOL StackWalker::ShowObject(LPVOID pObject)
     return FALSE;
   }
 
-  // SymGetSymFromAddr64() is required
+  // SymFromAddr() is required
   if (this->m_sw->pSGSFA == NULL)
     return FALSE;
 
-  // Show object info (SymGetSymFromAddr64())
+  // Show object info (SymFromAddr())
   DWORD64            dwAddress = DWORD64(pObject);
   DWORD64            dwDisplacement = 0;
-  IMAGEHLP_SYMBOL64* pSym =
-      (IMAGEHLP_SYMBOL64*)malloc(sizeof(IMAGEHLP_SYMBOL64) + STACKWALK_MAX_NAMELEN);
-  memset(pSym, 0, sizeof(IMAGEHLP_SYMBOL64) + STACKWALK_MAX_NAMELEN);
-  pSym->SizeOfStruct = sizeof(IMAGEHLP_SYMBOL64);
-  pSym->MaxNameLength = STACKWALK_MAX_NAMELEN;
+  SYMBOL_INFO * pSym =
+      (SYMBOL_INFO *)malloc(sizeof(SYMBOL_INFO) + STACKWALK_MAX_NAMELEN);
+  memset(pSym, 0, sizeof(SYMBOL_INFO) + STACKWALK_MAX_NAMELEN);
+  pSym->SizeOfStruct = sizeof(SYMBOL_INFO);
+  pSym->MaxNameLen = STACKWALK_MAX_NAMELEN;
   if (this->m_sw->pSGSFA(this->m_hProcess, dwAddress, &dwDisplacement, pSym) == FALSE)
   {
-    this->OnDbgHelpErr("SymGetSymFromAddr64", GetLastError(), dwAddress);
+    this->OnDbgHelpErr("SymFromAddr", GetLastError(), dwAddress);
     return FALSE;
   }
   // Object name output

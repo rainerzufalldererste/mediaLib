@@ -8,7 +8,7 @@
 
 #ifdef mDEBUG_MEMORY_ALLOCATIONS
 //#define mDEBUG_MEMORY_ALLOCATIONS_PRINT_ALLOCATIONS
-#define mDEBUG_MEMORY_ALLOCATIONS_PRINT_ALLOCATIONS_ON_EXIT
+//#define mDEBUG_MEMORY_ALLOCATIONS_PRINT_ALLOCATIONS_ON_EXIT
 
 #ifdef mDEBUG_MEMORY_ALLOCATIONS_PRINT_ALLOCATIONS_ON_EXIT
 //#define mDEBUG_MEMORY_ALLOCATIONS_PRINT_ALLOCATIONS_WAIT_ON_EXIT
@@ -42,6 +42,12 @@ void mAllocatorDebugging_PrintMemoryAllocationInfo(IN mAllocator *pAllocator, IN
 void mAllocatorDebugging_StoreAllocateCall(IN mAllocator *pAllocator, IN const void *pData, IN const char *information);
 void mAllocatorDebugging_StoreReallocateCall(IN mAllocator *pAllocator, const size_t originalPointer, IN const void *pData, IN const char *information);
 void mAllocatorDebugging_StoreFreeCall(IN mAllocator *pAllocator, const size_t originalPointer);
+
+void mAllocatorDebugging_ClearAllAllocations();
+void mAllocatorDebugging_ClearAllocations(IN mAllocator *pAllocator);
+
+void mAllocatorDebugging_SetStoreNewAllocations(const bool storeNewAllocations);
+bool mAllocatorDebugging_GetStoreNewAllocations();
 #endif
 
 struct mAllocator;
@@ -155,13 +161,16 @@ mFUNCTION(mAllocator_Allocate, IN OPTIONAL mAllocator *pAllocator, OUT T **ppDat
   }
 
 #ifdef mDEBUG_MEMORY_ALLOCATIONS
-  char stacktrace[1024 * 15];
-  stacktrace[0] = '\0';
-  mDebugSymbolInfo_GetStackTrace(stacktrace, mARRAYSIZE(stacktrace));
-  char text[1024 * 16];
-  sprintf_s(text, "[#%" PRIu64 "] Type: %s, %" PRIu64 " x %" PRIu64 " Bytes = %" PRIu64 " Bytes.\n@ STACK TRACE:\n%s\n\n", mAllocatorDebugging_GetDebugMemoryAllocationCount()++, typeid(T).name(), count, sizeof(T), count * sizeof(T), stacktrace);
+  if (mAllocatorDebugging_GetStoreNewAllocations())
+  {
+    char stacktrace[1024 * 15];
+    stacktrace[0] = '\0';
+    mDebugSymbolInfo_GetStackTrace(stacktrace, mARRAYSIZE(stacktrace));
+    char text[1024 * 16];
+    sprintf_s(text, "[#%" PRIu64 "] Type: %s, %" PRIu64 " x %" PRIu64 " Bytes = %" PRIu64 " Bytes.\n@ STACK TRACE:\n%s\n\n", mAllocatorDebugging_GetDebugMemoryAllocationCount()++, typeid(T).name(), count, sizeof(T), count * sizeof(T), stacktrace);
 
-  mAllocatorDebugging_StoreAllocateCall(pAllocator, *ppData, text);
+    mAllocatorDebugging_StoreAllocateCall(pAllocator, *ppData, text);
+  }
 #endif
 
   mRETURN_SUCCESS();
@@ -208,13 +217,16 @@ mFUNCTION(mAllocator_AllocateZero, IN OPTIONAL mAllocator *pAllocator, OUT T **p
   }
 
 #ifdef mDEBUG_MEMORY_ALLOCATIONS
-  char stacktrace[1024 * 15];
-  stacktrace[0] = '\0';
-  mDebugSymbolInfo_GetStackTrace(stacktrace, mARRAYSIZE(stacktrace));
-  char text[1024 * 16];
-  sprintf_s(text, "[#%" PRIu64 "] Type: %s, %" PRIu64 " x %" PRIu64 " Bytes = %" PRIu64 " Bytes.\n@ STACK TRACE:\n%s\n\n", mAllocatorDebugging_GetDebugMemoryAllocationCount()++, typeid(T).name(), count, sizeof(T), count * sizeof(T), stacktrace);
+  if (mAllocatorDebugging_GetStoreNewAllocations())
+  {
+    char stacktrace[1024 * 15];
+    stacktrace[0] = '\0';
+    mDebugSymbolInfo_GetStackTrace(stacktrace, mARRAYSIZE(stacktrace));
+    char text[1024 * 16];
+    sprintf_s(text, "[#%" PRIu64 "] Type: %s, %" PRIu64 " x %" PRIu64 " Bytes = %" PRIu64 " Bytes.\n@ STACK TRACE:\n%s\n\n", mAllocatorDebugging_GetDebugMemoryAllocationCount()++, typeid(T).name(), count, sizeof(T), count * sizeof(T), stacktrace);
 
-  mAllocatorDebugging_StoreAllocateCall(pAllocator, *ppData, text);
+    mAllocatorDebugging_StoreAllocateCall(pAllocator, *ppData, text);
+  }
 #endif
 
   mRETURN_SUCCESS();
@@ -251,13 +263,16 @@ inline mFUNCTION(mAllocator_Reallocate, IN OPTIONAL mAllocator *pAllocator, OUT 
   }
 
 #ifdef mDEBUG_MEMORY_ALLOCATIONS
-  char stacktrace[1024 * 15];
-  stacktrace[0] = '\0';
-  mDebugSymbolInfo_GetStackTrace(stacktrace, mARRAYSIZE(stacktrace));
-  char text[1024 * 16];
-  sprintf_s(text, "[#%" PRIu64 "] Type: %s, %" PRIu64 " x %" PRIu64 " Bytes = %" PRIu64 " Bytes.\n@ STACK TRACE:\n%s\n\n", mAllocatorDebugging_GetDebugMemoryAllocationCount()++, typeid(T).name(), count, sizeof(T), count * sizeof(T), stacktrace);
+  if (mAllocatorDebugging_GetStoreNewAllocations())
+  {
+    char stacktrace[1024 * 15];
+    stacktrace[0] = '\0';
+    mDebugSymbolInfo_GetStackTrace(stacktrace, mARRAYSIZE(stacktrace));
+    char text[1024 * 16];
+    sprintf_s(text, "[#%" PRIu64 "] Type: %s, %" PRIu64 " x %" PRIu64 " Bytes = %" PRIu64 " Bytes.\n@ STACK TRACE:\n%s\n\n", mAllocatorDebugging_GetDebugMemoryAllocationCount()++, typeid(T).name(), count, sizeof(T), count * sizeof(T), stacktrace);
 
-  mAllocatorDebugging_StoreReallocateCall(pAllocator, originalPointer, *ppData, text);
+    mAllocatorDebugging_StoreReallocateCall(pAllocator, originalPointer, *ppData, text);
+  }
 #endif
 
   mRETURN_SUCCESS();

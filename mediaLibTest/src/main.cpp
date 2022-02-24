@@ -2,7 +2,7 @@
 
 #include "mFile.h"
 
-int main(int argc, char **pArgv)
+int32_t main(int32_t argc, const char **pArgv)
 {
   mPrintErrorCallback = nullptr;
   
@@ -19,6 +19,8 @@ int main(int argc, char **pArgv)
       return -1;
     }
   }
+
+  mPrintLogCallback = mPrintCallback;
 
   mTestLib_Initialize();
 

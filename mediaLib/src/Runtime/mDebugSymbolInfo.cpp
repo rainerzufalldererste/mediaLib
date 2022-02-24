@@ -16,6 +16,8 @@ public:
   char *output = nullptr;
   size_t length = 0;
 
+  inline StackWalkerToString() : StackWalker(GetCurrentProcessId(), GetCurrentProcess()) { }
+
 protected:
   virtual void OnSymInit(LPCSTR /*szSearchPath*/, DWORD /*symOptions*/, LPCSTR /*szUserName*/) {}
   virtual void OnLoadModule(LPCSTR    /*img*/,
@@ -49,9 +51,14 @@ mFUNCTION(mDebugSymbolInfo_GetNameOfSymbol, IN void *pFunctionPtr, OUT char *nam
 
   mERROR_IF(pFunctionPtr == nullptr || name == nullptr, mR_ArgumentNull);
 
-  mDebugSymbolInfo_GetStackWalker().output = name;
-  mDebugSymbolInfo_GetStackWalker().length = length;
-  mDebugSymbolInfo_GetStackWalker().ShowObject(pFunctionPtr);
+  StackWalkerToString &stackWalker = mDebugSymbolInfo_GetStackWalker();
+
+  stackWalker.output = name;
+  stackWalker.length = length;
+  
+  if (FALSE == stackWalker.ShowObject(pFunctionPtr))
+    mStringCopy(name, length, "", 1);
+
   name[length - 1] = '\0';
 
   mRETURN_SUCCESS();
@@ -64,10 +71,15 @@ mFUNCTION(mDebugSymbolInfo_GetStackTrace, OUT char *stackTrace, const size_t len
   mERROR_IF(stackTrace == nullptr, mR_ArgumentNull);
 
   mZeroMemory(stackTrace, length);
+
+  StackWalkerToString &stackWalker = mDebugSymbolInfo_GetStackWalker();
+
+  stackWalker.output = stackTrace;
+  stackWalker.length = length;
   
-  mDebugSymbolInfo_GetStackWalker().output = stackTrace;
-  mDebugSymbolInfo_GetStackWalker().length = length;
-  mDebugSymbolInfo_GetStackWalker().ShowCallstack();
+  if (FALSE == stackWalker.ShowCallstack())
+    mStringCopy(stackTrace, length, "", 1);
+
   stackTrace[length - 1] = '\0';
 
   mRETURN_SUCCESS();
