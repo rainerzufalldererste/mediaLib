@@ -323,6 +323,13 @@ mFUNCTION(mString_Create, OUT mString *pString, IN const char *text, IN OPTIONAL
 
   mERROR_IF(pString == nullptr, mR_ArgumentNull);
 
+#ifndef GIT_BUILD
+  mASSERT(pAllocator != mSHARED_POINTER_FOREIGN_RESOURCE, "Attempting to create a string with FOREIGN RESOURCE allocator.");
+#endif
+
+  if (pAllocator == mSHARED_POINTER_FOREIGN_RESOURCE)
+    pAllocator = &mDefaultAllocator;
+
   if (text == nullptr)
   {
     pString->hasFailed = false;
@@ -357,6 +364,13 @@ mFUNCTION(mString_Create, OUT mString *pString, IN const char *text, size_t size
   mFUNCTION_SETUP();
 
   mERROR_IF(pString == nullptr, mR_ArgumentNull);
+
+#ifndef GIT_BUILD
+  mASSERT(pAllocator != mSHARED_POINTER_FOREIGN_RESOURCE, "Attempting to create a string with FOREIGN RESOURCE allocator.");
+#endif
+
+  if (pAllocator == mSHARED_POINTER_FOREIGN_RESOURCE)
+    pAllocator = &mDefaultAllocator;
 
   if (text == nullptr)
   {
@@ -434,6 +448,13 @@ mFUNCTION(mString_Create, OUT mString *pString, const wchar_t *text, IN OPTIONAL
   mFUNCTION_SETUP();
 
   mERROR_IF(pString == nullptr, mR_ArgumentNull);
+
+#ifndef GIT_BUILD
+  mASSERT(pAllocator != mSHARED_POINTER_FOREIGN_RESOURCE, "Attempting to create a string with FOREIGN RESOURCE allocator.");
+#endif
+
+  if (pAllocator == mSHARED_POINTER_FOREIGN_RESOURCE)
+    pAllocator = &mDefaultAllocator;
 
   if (text == nullptr)
   {
@@ -515,6 +536,13 @@ mFUNCTION(mString_Create, OUT mString *pString, const wchar_t *text, const size_
   mFUNCTION_SETUP();
 
   mERROR_IF(pString == nullptr, mR_ArgumentNull);
+  
+#ifndef GIT_BUILD
+  mASSERT(pAllocator != mSHARED_POINTER_FOREIGN_RESOURCE, "Attempting to create a string with FOREIGN RESOURCE allocator.");
+#endif
+
+  if (pAllocator == mSHARED_POINTER_FOREIGN_RESOURCE)
+    pAllocator = &mDefaultAllocator;
 
   if (text == nullptr)
   {
@@ -599,6 +627,13 @@ mFUNCTION(mString_Create, OUT mString *pString, const mString &from, IN OPTIONAL
   mFUNCTION_SETUP();
 
   mERROR_IF(pString == nullptr, mR_ArgumentNull);
+
+#ifndef GIT_BUILD
+  mASSERT(pAllocator != mSHARED_POINTER_FOREIGN_RESOURCE, "Attempting to create a string with FOREIGN RESOURCE allocator.");
+#endif
+
+  if (pAllocator == mSHARED_POINTER_FOREIGN_RESOURCE)
+    pAllocator = &mDefaultAllocator;
 
   if (from.bytes <= 1)
   {
