@@ -23,6 +23,8 @@ mFUNCTION(mGameControllerState_IsDisconnected, mPtr<mGameControllerState> &contr
 mFUNCTION(mGameControllerState_IsWired, mPtr<mGameControllerState> &controllerState, OUT bool *pIsWired);
 mFUNCTION(mGameControllerState_GetApproximateBatteryLevel, mPtr<mGameControllerState> &controllerState, OUT float_t *pBatteryLevel);
 
+mFUNCTION(mGameControllerState_GetDescription, mPtr<mGameControllerState> &controllerState, OUT mString *pDescription);
+
 mFUNCTION(mGameControllerState_GetAnalogStick, mPtr<mGameControllerState> &controllerState, const size_t index, OUT mVec2f *pValue);
 mFUNCTION(mGameControllerState_GetAnalogTrigger, mPtr<mGameControllerState> &controllerState, const size_t index, OUT float_t *pValue);
 mFUNCTION(mGameControllerState_GetDigitalInput, mPtr<mGameControllerState> &controllerState, const size_t index, OUT mVec2i *pValue);

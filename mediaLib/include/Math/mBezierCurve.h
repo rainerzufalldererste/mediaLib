@@ -16,7 +16,9 @@ struct mCubicBezierCurve
 {
   mVec2t<T> startPoint, endPoint, controlPoint1, controlPoint2;
 
-  mCubicBezierCurve(const mVec2t<T> &startPoint, const mVec2t<T> &endPoint, const mVec2t<T> &controlPoint1, const mVec2t<T> &controlPoint2) :
+  inline mCubicBezierCurve() = default;
+
+  inline mCubicBezierCurve(const mVec2t<T> &startPoint, const mVec2t<T> &endPoint, const mVec2t<T> &controlPoint1, const mVec2t<T> &controlPoint2) :
     startPoint(startPoint),
     endPoint(endPoint),
     controlPoint1(controlPoint1),

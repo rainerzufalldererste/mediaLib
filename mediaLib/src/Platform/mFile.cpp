@@ -1343,7 +1343,7 @@ mFUNCTION(mFile_GetSize, const mString &filename, OUT size_t *pSizeBytes)
   mDEFER_CALL(fileHandle, CloseHandle);
 
   LARGE_INTEGER fileSize;
-  mERROR_IF(0 != GetFileSizeEx(fileHandle, &fileSize), mR_InternalError);
+  mERROR_IF(0 == GetFileSizeEx(fileHandle, &fileSize), mR_InternalError);
 
   *pSizeBytes = (size_t)mMax(fileSize.QuadPart, 0LL); // In case the file size is negative for some reason.
 

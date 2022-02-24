@@ -266,8 +266,8 @@ void mFlushOutput();
  #define mASSERT_DEBUG(expr, text) mASSERT(expr, text)
  #define mFAIL_DEBUG(text) mFAIL(text)
 #else // !_DEBUG
- #define mASSERT_DEBUG(expr, text, ...)
- #define mFAIL_DEBUG(text, ...)
+ #define mASSERT_DEBUG(expr, text)
+ #define mFAIL_DEBUG(text)
 #endif
 
 #ifdef mPLATFORM_WINDOWS

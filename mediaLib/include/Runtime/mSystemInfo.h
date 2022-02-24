@@ -27,8 +27,24 @@ bool mSystemInfo_IsWindows8Point1OrGreater();
 // This will require the application to contain a manifest stating it's compatible with Windows 10.
 bool mSystemInfo_IsWindows10OrGreater(const uint32_t buildNumber = 0);
 
-inline bool mSystemInfo_IsWindows11OrGreater() { return mSystemInfo_IsWindows10OrGreater(21996); }
+constexpr size_t mSystemInfo_Windows11InitialBuild = 21996;
+
+inline bool mSystemInfo_IsWindows11OrGreater() { return mSystemInfo_IsWindows10OrGreater(mSystemInfo_Windows11InitialBuild); }
+
+bool mSystemInfo_IsWindowsServer();
 #endif
+
+struct mSystemInfo
+{
+  mString cpuDescription;
+  size_t numberOfProcessors, pageSize;
+  size_t totalPhysicalMemory, physicalMemoryAvailable, totalVirtualMemory, virtualMemoryAvailable, totalPagedMemory, pagedMemoryAvailable;
+  mString operatingSystemDescription;
+  mString preferredUILanguages;
+};
+
+mFUNCTION(mSystemInfo_GetInfo, OUT mSystemInfo *pInfo);
+mFUNCTION(mSystemInfo_GetDeviceInfo, OUT mString *pManufacturer, OUT mString *pModel);
 
 bool mSystemInfo_IsDarkMode();
 
