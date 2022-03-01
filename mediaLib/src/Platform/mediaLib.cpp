@@ -59,6 +59,41 @@ inline void mInitConsole()
 #endif
 }
 
+void mCreateConsole()
+{
+#ifdef mPLATFORM_WINDOWS
+  if (GetConsoleWindow() == nullptr)
+    if (0 == AllocConsole())
+      return;
+
+  mStdOutHandle = GetStdHandle(STD_OUTPUT_HANDLE);
+
+  if (mStdOutHandle == INVALID_HANDLE_VALUE)
+    mStdOutHandle = nullptr;
+
+  if (mStdOutHandle != nullptr)
+  {
+    DWORD consoleMode = 0;
+    mStdOutForceStdIO = !GetConsoleMode(mStdOutHandle, &consoleMode);
+
+    if (mStdOutForceStdIO)
+    {
+      const int32_t handle = _open_osfhandle(reinterpret_cast<intptr_t>(mStdOutHandle), _O_TEXT);
+
+      if (handle != -1)
+        pStdOut = _fdopen(handle, "w");
+    }
+
+    // I presume VT Colour Codes are in fact slower than `SetConsoleTextAttribute`, since the terminal has to parse those sequences out.
+    // Also they're only supported since Windows 10 and would add another code path, therefore they're currently `constexpr` to be `false`.
+    //mStdOutVTCodeColours = (!mStdOutForceStdIO && SetConsoleMode(mStdOutHandle, consoleMode | ENABLE_VIRTUAL_TERMINAL_PROCESSING));
+
+    constexpr DWORD codepage_UTF8 = 65001;
+    SetConsoleOutputCP(codepage_UTF8);
+  }
+#endif
+}
+
 #ifdef mPLATFORM_WINDOWS
 inline WORD mGetWindowsConsoleColourFromConsoleColour(const mConsoleColour colour)
 {

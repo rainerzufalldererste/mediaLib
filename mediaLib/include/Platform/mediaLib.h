@@ -331,6 +331,7 @@ enum mConsoleColour
   mCC_White
 };
 
+void mCreateConsole();
 void mResetConsoleColour();
 void mSetConsoleColour(const mConsoleColour foregroundColour, const mConsoleColour backgroundColour);
 
