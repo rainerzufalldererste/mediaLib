@@ -54,6 +54,7 @@ namespace ImGui
   bool ImageButtonWithText(ImTextureID texId, const char *label, const ImVec2 &imageSize = ImVec2(0, 0), const ImVec2 &buttonSize = ImVec2(0, 0), const ImVec2 &uv0 = ImVec2(0, 0), const ImVec2 &uv1 = ImVec2(1, 1), const float_t frame_padding = -1, const ImVec4 &bg_col = ImVec4(0, 0, 0, 0), const ImVec4 &tint_col = ImVec4(1, 1, 1, 1));
   void DrawRectangle(const ImVec2 &position, const ImVec2 &size, const ImVec4 &color);
   void ProgressBarRounded(float_t fraction, const ImVec2 &size_arg = ImVec2(-FLT_MIN, 0), const char *overlay = nullptr);
+  void TextUnformattedWrapped(const char *text);
 }
 
 #endif // mUI_h__

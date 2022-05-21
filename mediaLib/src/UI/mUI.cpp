@@ -721,4 +721,18 @@ namespace ImGui
         RenderTextClipped(bb.Min, bb.Max, overlay, nullptr, &overlay_size, ImVec2(0.5f, 0.5f), &bb);
     }
   }
+
+  void TextUnformattedWrapped(const char *text)
+  {
+    ImGuiContext &g = *GImGui;
+    const bool need_backup = (g.CurrentWindow->DC.TextWrapPos < 0.0f);  // Keep existing wrap position if one is already set
+
+    if (need_backup)
+      PushTextWrapPos(0.0f);
+
+    TextEx(text, NULL, ImGuiTextFlags_NoWidthForLargeClippedText); // Skip formatting
+
+    if (need_backup)
+      PopTextWrapPos();
+  }
 }
