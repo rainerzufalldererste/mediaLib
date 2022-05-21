@@ -63,6 +63,13 @@ extern thread_local const char *g_mResult_lastErrorFile;
 extern thread_local size_t g_mResult_lastErrorLine;
 extern thread_local mResult g_mResult_lastErrorResult;
 
+typedef void (OnErrorFunc)(const mResult result);
+extern "C" OnErrorFunc *g_mResult_onError;
+extern "C" OnErrorFunc *g_mResult_onIndirectError;
+
+void mOnError(const mResult error);
+void mOnIndirectError(const mResult error);
+
 #if defined(GIT_BUILD)
 constexpr bool g_mResult_breakOnError = false;
 #else
@@ -82,7 +89,7 @@ extern thread_local bool g_mResult_silent;
 #if mBREAK_ON_FAILURE
   #ifdef mPLATFORM_WINDOWS
     #ifdef GIT_BUILD
-      #define mDEBUG_BREAK()
+      #define mDEBUG_BREAK() do { } while (0)
     #else
       #define mDEBUG_BREAK() \
         do \
@@ -97,7 +104,7 @@ extern thread_local bool g_mResult_silent;
     #define mDEBUG_BREAK() __builtin_trap()
   #endif
 #else
-  #define mDEBUG_BREAK()
+  #define mDEBUG_BREAK() do { } while (0)
 #endif
 
 void mDebugOut(const char *text);
@@ -147,9 +154,7 @@ inline void mDeinit(const std::function<void(void)> &param, Args && ...args)
     if (mFAILED(_internal_result) && _internal_result != mR_Break) \
     { mSET_ERROR_RAW(_internal_result); \
       mPrintError(mRESULT_PRINT_FUNCTION_TITLE, __M_FILE__, __LINE__, _internal_result, mRESULT_PRINT_DEBUG_STRINGIFY_RETURN_RESULT(result)); \
-      if (g_mResult_breakOnError) \
-      { mDEBUG_BREAK(); \
-      } \
+      mOnError(_internal_result); \
     } \
     mRESULT_RETURN_RESULT_RAW(_internal_result); \
   } while (0)
@@ -161,9 +166,7 @@ inline void mDeinit(const std::function<void(void)> &param, Args && ...args)
     { mSET_ERROR_RAW(mSTDRESULT); \
       mPrintError(mRESULT_PRINT_FUNCTION_TITLE, __M_FILE__, __LINE__, mSTDRESULT, mRESULT_PRINT_DEBUG_STRINGIFY(functionCall)); \
       mDeinit(__VA_ARGS__); \
-      if (g_mResult_breakOnError) \
-      { mDEBUG_BREAK(); \
-      } \
+      mOnIndirectError(mSTDRESULT); \
       mRESULT_RETURN_RESULT_RAW(mSTDRESULT); \
     } \
   } while (0)
@@ -176,9 +179,7 @@ inline void mDeinit(const std::function<void(void)> &param, Args && ...args)
       { mSET_ERROR_RAW(mSTDRESULT); \
         mPrintError(mRESULT_PRINT_FUNCTION_TITLE, __M_FILE__, __LINE__, mSTDRESULT, mRESULT_PRINT_DEBUG_STRINGIFY(conditional)); \
         mDeinit(__VA_ARGS__); \
-        if (g_mResult_breakOnError) \
-        { mDEBUG_BREAK(); \
-        } \
+        mOnError(mSTDRESULT); \
       } \
       mRESULT_RETURN_RESULT_RAW(mSTDRESULT); \
     } \
@@ -191,9 +192,7 @@ inline void mDeinit(const std::function<void(void)> &param, Args && ...args)
     { mSET_ERROR_RAW(result); \
       mPrintError(mRESULT_PRINT_FUNCTION_TITLE, __M_FILE__, __LINE__, result, mRESULT_PRINT_DEBUG_STRINGIFY(functionCall)); \
       mDeinit(__VA_ARGS__); \
-      if (g_mResult_breakOnError) \
-      { mDEBUG_BREAK(); \
-      } \
+      mOnIndirectError(result); \
       goto label; \
     } \
   } while (0)
@@ -206,9 +205,7 @@ inline void mDeinit(const std::function<void(void)> &param, Args && ...args)
       { mSET_ERROR_RAW(result); \
         mPrintError(mRESULT_PRINT_FUNCTION_TITLE, __M_FILE__, __LINE__, result, mRESULT_PRINT_DEBUG_STRINGIFY(conditional)); \
         mDeinit(__VA_ARGS__); \
-        if (g_mResult_breakOnError) \
-        { mDEBUG_BREAK(); \
-        } \
+        mOnError(result); \
       } \
       goto label; \
     } \

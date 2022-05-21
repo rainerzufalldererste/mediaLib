@@ -18,6 +18,8 @@
 #include <Wbemidl.h>
 
 #pragma comment(lib, "wbemuuid.lib")
+
+#include <dxgi1_4.h>
 #endif
 
 #ifdef GIT_BUILD // Define __M_FILE__
@@ -200,6 +202,61 @@ inline static void mSafeRelease(T **ppT)
   }
 }
 
+#if defined(mPLATFORM_WINDOWS)
+static mFUNCTION(mSystemInfo_GetVideoCardInfo_DXGI, OUT mSystemInfo_VideoCardInfo *pGpuInfo)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pGpuInfo == nullptr, mR_ArgumentNull);
+
+  HRESULT hr;
+
+  HMODULE dxgi_dll = LoadLibraryW(TEXT("dxgi.dll"));
+  mDEFER_CALL(dxgi_dll, FreeLibrary);
+  mERROR_IF(dxgi_dll == nullptr, mR_NotSupported);
+
+  typedef HRESULT(CreateDXGIFactory1Func)(REFIID riid, void **ppFactory);
+  CreateDXGIFactory1Func *pCreateDXGIFactory1 = reinterpret_cast<CreateDXGIFactory1Func *>(GetProcAddress(dxgi_dll, mSTRINGIFY(CreateDXGIFactory1)));
+  mERROR_IF(pCreateDXGIFactory1 == nullptr, mR_NotSupported);
+
+  IDXGIFactory *pFactory = nullptr;
+  mDEFER_CALL(&pFactory, mSafeRelease);
+  mERROR_IF(FAILED(hr = pCreateDXGIFactory1(IID_IDXGIFactory1, (void **)&pFactory)), mR_NotSupported);
+
+  IDXGIAdapter *pAdapter = nullptr;
+  mDEFER_CALL(&pAdapter, mSafeRelease);
+  mERROR_IF(FAILED(hr = pFactory->EnumAdapters(0, &pAdapter)), mR_NotSupported);
+
+  IDXGIAdapter3 *pAdapter3 = nullptr;
+  mDEFER_CALL(&pAdapter3, mSafeRelease);
+  mERROR_IF(FAILED(hr = pAdapter->QueryInterface(IID_IDXGIAdapter3, (void **)&pAdapter3)), mR_NotSupported);
+
+  DXGI_QUERY_VIDEO_MEMORY_INFO nonLocalVRamInfo = {};
+  mERROR_IF(FAILED(hr = pAdapter3->QueryVideoMemoryInfo(0, DXGI_MEMORY_SEGMENT_GROUP_NON_LOCAL, &nonLocalVRamInfo)), mR_NotSupported);
+
+  DXGI_QUERY_VIDEO_MEMORY_INFO localVRamInfo = {};
+  mERROR_IF(FAILED(hr = pAdapter3->QueryVideoMemoryInfo(0, DXGI_MEMORY_SEGMENT_GROUP_LOCAL, &localVRamInfo)), mR_NotSupported);
+
+  DXGI_ADAPTER_DESC2 adapterDescription = {};
+  mERROR_IF(FAILED(hr = pAdapter3->GetDesc2(&adapterDescription)), mR_NotSupported);
+
+  pGpuInfo->dedicatedVideoMemory = adapterDescription.DedicatedVideoMemory;
+  pGpuInfo->sharedVideoMemory = adapterDescription.SharedSystemMemory;
+  pGpuInfo->totalVideoMemory = adapterDescription.DedicatedSystemMemory + adapterDescription.DedicatedVideoMemory + adapterDescription.SharedSystemMemory;
+  pGpuInfo->freeVideoMemory = nonLocalVRamInfo.AvailableForReservation + localVRamInfo.AvailableForReservation;
+  pGpuInfo->driverVersion = 0;
+  pGpuInfo->vendorId = adapterDescription.VendorId;
+  pGpuInfo->deviceChipsetId = adapterDescription.DeviceId;
+  pGpuInfo->deviceChipsetRevision = adapterDescription.Revision;
+  pGpuInfo->deviceBoardId = adapterDescription.SubSysId;
+
+  mERROR_CHECK(mString_Create(&pGpuInfo->deviceName, adapterDescription.Description, mARRAYSIZE(adapterDescription.Description), pGpuInfo->deviceName.pAllocator));
+  mERROR_CHECK(mString_Create(&pGpuInfo->driverInfo, "", 1, pGpuInfo->driverInfo.pAllocator));
+
+  mRETURN_SUCCESS();
+}
+#endif
+
 mFUNCTION(mSystemInfo_GetVideoCardInfo, OUT mSystemInfo_VideoCardInfo *pGpuInfo)
 {
   mFUNCTION_SETUP();
@@ -207,6 +264,8 @@ mFUNCTION(mSystemInfo_GetVideoCardInfo, OUT mSystemInfo_VideoCardInfo *pGpuInfo)
   mERROR_IF(pGpuInfo == nullptr, mR_ArgumentNull);
 
 #if defined(mPLATFORM_WINDOWS)
+  const bool dxgiSuccess = mSUCCEEDED(mSystemInfo_GetVideoCardInfo_DXGI(pGpuInfo));
+  
   HRESULT hr;
 
   HMODULE ddraw_dll = LoadLibraryW(TEXT("ddraw.dll"));
@@ -233,39 +292,46 @@ mFUNCTION(mSystemInfo_GetVideoCardInfo, OUT mSystemInfo_VideoCardInfo *pGpuInfo)
   mZeroMemory(&caps);
   caps.dwSize = sizeof(caps);
 
-  // Query Combined Video Memory.
-  mERROR_IF(FAILED(hr = pDirectDraw->GetCaps(&caps, NULL)), mR_InternalError);
+  if (!dxgiSuccess)
+  {
+    // Query Combined Video Memory.
+    mERROR_IF(FAILED(hr = pDirectDraw->GetCaps(&caps, NULL)), mR_InternalError);
 
-  DDSCAPS2 surfaceCaps;
-  mZeroMemory(&surfaceCaps);
-  surfaceCaps.dwCaps = DDSCAPS_VIDEOMEMORY | DDSCAPS_LOCALVIDMEM;
+    DDSCAPS2 surfaceCaps;
+    mZeroMemory(&surfaceCaps);
+    surfaceCaps.dwCaps = DDSCAPS_VIDEOMEMORY | DDSCAPS_LOCALVIDMEM;
 
-  DWORD dedicatedVideoMemory = 0;
+    // Query Dedicated Video Memory.
+    DWORD dedicatedVideoMemory = 0;
+    mERROR_IF(FAILED(hr = pDirectDraw7->GetAvailableVidMem(&surfaceCaps, &dedicatedVideoMemory, nullptr)), mR_InternalError);
 
-  // Query Dedicated Video Memory.
-  mERROR_IF(FAILED(hr = pDirectDraw7->GetAvailableVidMem(&surfaceCaps, &dedicatedVideoMemory, nullptr)), mR_InternalError);
+    int64_t sharedVideoMemory = caps.dwVidMemTotal - dedicatedVideoMemory;
 
-  int64_t sharedVideoMemory = caps.dwVidMemTotal - dedicatedVideoMemory;
+    if (sharedVideoMemory < 0)
+      sharedVideoMemory = 0;
 
-  if (sharedVideoMemory < 0)
-    sharedVideoMemory = 0;
+    pGpuInfo->dedicatedVideoMemory = dedicatedVideoMemory;
+    pGpuInfo->sharedVideoMemory = (size_t)sharedVideoMemory;
+  }
 
   DDDEVICEIDENTIFIER2 deviceIdentifier;
   mZeroMemory(&deviceIdentifier);
 
   mERROR_IF(FAILED(hr = pDirectDraw7->GetDeviceIdentifier(&deviceIdentifier, 0)), mR_InternalError);
 
-  pGpuInfo->dedicatedVideoMemory = dedicatedVideoMemory;
-  pGpuInfo->sharedVideoMemory = (size_t)sharedVideoMemory;
-  pGpuInfo->totalVideoMemory = (size_t)caps.dwVidMemTotal;
-  pGpuInfo->freeVideoMemory = (size_t)caps.dwVidMemFree;
-  pGpuInfo->driverVersion = (size_t)deviceIdentifier.liDriverVersion.QuadPart;
-  pGpuInfo->vendorId = deviceIdentifier.dwVendorId;
-  pGpuInfo->deviceChipsetId = deviceIdentifier.dwDeviceId;
-  pGpuInfo->deviceChipsetRevision = deviceIdentifier.dwRevision;
-  pGpuInfo->deviceBoardId = deviceIdentifier.dwSubSysId;
+  if (!dxgiSuccess)
+  {
+    pGpuInfo->totalVideoMemory = (size_t)caps.dwVidMemTotal;
+    pGpuInfo->freeVideoMemory = (size_t)caps.dwVidMemFree;
+    pGpuInfo->vendorId = deviceIdentifier.dwVendorId;
+    pGpuInfo->deviceChipsetId = deviceIdentifier.dwDeviceId;
+    pGpuInfo->deviceChipsetRevision = deviceIdentifier.dwRevision;
+    pGpuInfo->deviceBoardId = deviceIdentifier.dwSubSysId;
 
-  mERROR_CHECK(mString_Create(&pGpuInfo->deviceName, deviceIdentifier.szDescription, mARRAYSIZE(deviceIdentifier.szDescription), pGpuInfo->deviceName.pAllocator));
+    mERROR_CHECK(mString_Create(&pGpuInfo->deviceName, deviceIdentifier.szDescription, mARRAYSIZE(deviceIdentifier.szDescription), pGpuInfo->deviceName.pAllocator));
+  }
+  
+  pGpuInfo->driverVersion = (size_t)deviceIdentifier.liDriverVersion.QuadPart;
   mERROR_CHECK(mString_Create(&pGpuInfo->driverInfo, deviceIdentifier.szDriver, mARRAYSIZE(deviceIdentifier.szDriver), pGpuInfo->driverInfo.pAllocator));
 
   mRETURN_SUCCESS();

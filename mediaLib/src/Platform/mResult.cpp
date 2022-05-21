@@ -19,6 +19,9 @@ thread_local bool g_mResult_breakOnError = g_mResult_breakOnError_default;
 bool g_mResult_silent_default = false;
 thread_local bool g_mResult_silent = g_mResult_silent_default;
 
+extern "C" OnErrorFunc *g_mResult_onError = nullptr;
+extern "C" OnErrorFunc *g_mResult_onIndirectError = nullptr;
+
 void mDebugOut(const char *text)
 {
 #if !defined(GIT_BUILD)
@@ -62,4 +65,26 @@ const char * mResult_ToString(const mResult result)
   else
     return mResultAsString[result];
 #endif
+}
+
+void mOnError(const mResult error)
+{
+#ifndef GIT_BUILD
+  if (g_mResult_breakOnError)
+    mDEBUG_BREAK();
+#endif
+
+  if (g_mResult_onError != nullptr)
+    g_mResult_onError(error);
+}
+
+void mOnIndirectError(const mResult error)
+{
+#ifndef GIT_BUILD
+  if (g_mResult_breakOnError)
+    mDEBUG_BREAK();
+#endif
+
+  if (g_mResult_onIndirectError != nullptr)
+    g_mResult_onIndirectError(error);
 }

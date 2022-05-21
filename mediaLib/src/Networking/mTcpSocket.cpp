@@ -179,9 +179,8 @@ mFUNCTION(mTcpClient_Receive, mPtr<mTcpClient> &tcpClient, OUT void *pData, cons
   mFUNCTION_SETUP();
 
   mERROR_IF(tcpClient == nullptr || pData == nullptr, mR_ArgumentNull);
-  mERROR_IF(maxLength > INT32_MAX, mR_ArgumentOutOfBounds);
 
-  const int32_t bytesReceived = recv(tcpClient->socket, reinterpret_cast<char *>(pData), (int32_t)maxLength, 0);
+  const int32_t bytesReceived = recv(tcpClient->socket, reinterpret_cast<char *>(pData), (int32_t)mMin((size_t)INT32_MAX, maxLength), 0);
 
   if (bytesReceived < 0 || bytesReceived == SOCKET_ERROR)
   {
@@ -189,14 +188,14 @@ mFUNCTION(mTcpClient_Receive, mPtr<mTcpClient> &tcpClient, OUT void *pData, cons
     mUnused(error);
 
     if (pBytesReceived != nullptr)
-      *pBytesReceived = (size_t)bytesReceived;
+      *pBytesReceived = 0;
 
     mRETURN_RESULT(mR_IOFailure);
   }
   else if (bytesReceived == 0)
   {
     if (pBytesReceived != nullptr)
-      *pBytesReceived = (size_t)bytesReceived;
+      *pBytesReceived = 0;
 
     mRETURN_RESULT(mR_EndOfStream);
   }
