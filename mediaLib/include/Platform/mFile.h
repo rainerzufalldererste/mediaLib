@@ -88,6 +88,7 @@ mFUNCTION(mFile_GetCurrentApplicationFilePath, OUT mString *pAppDirectory);
 mFUNCTION(mFile_ExtractDirectoryFromPath, OUT mString *pDirectory, const mString &filePath);
 mFUNCTION(mFile_ExtractFileExtensionFromPath, OUT mString *pExtension, const mString &filePath);
 mFUNCTION(mFile_ExtractFileNameFromPath, OUT mString *pFileName, const mString &filePath, const bool withExtension);
+mFUNCTION(mFile_ToShortPath, OUT mString *pShortPath, const mString &filePath);
 
 struct mFileInfo
 {
