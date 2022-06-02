@@ -1123,6 +1123,30 @@ mFUNCTION(mFile_ExtractFileNameFromPath, OUT mString *pFileName, const mString &
   mRETURN_SUCCESS();
 }
 
+mFUNCTION(mFile_ToShortPath, OUT mString *pShortPath, const mString &filePath)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pShortPath == nullptr, mR_ArgumentNull);
+
+#if mPLATFORM_WINDOWS
+  wchar_t wPath[MAX_PATH];
+  mERROR_CHECK(mString_ToWideString(filePath, wPath, mARRAYSIZE(wPath)));
+
+  wchar_t wShortPath[MAX_PATH];
+
+  const DWORD requiredSize = GetShortPathNameW(wPath, wShortPath, (DWORD)mARRAYSIZE(wShortPath));
+  mERROR_IF(requiredSize > mARRAYSIZE(wShortPath), mR_InternalError);
+  mERROR_IF(requiredSize == 0, mR_InternalError);
+
+  mERROR_CHECK(mString_Create(pShortPath, wShortPath, pShortPath->pAllocator));
+#else
+  mERROR_CHECK(mString_Create(pShortPath, filePath, pShortPath->pAllocator));
+#endif
+
+  mRETURN_SUCCESS();
+}
+
 mFUNCTION(mFile_GetDirectoryContents, const mString &directoryPath, const mString &searchTerm, OUT mPtr<mQueue<mFileInfo>> *pFiles, IN mAllocator *pAllocator)
 {
   mFUNCTION_SETUP();
