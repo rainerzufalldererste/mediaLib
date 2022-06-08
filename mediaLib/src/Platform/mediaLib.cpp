@@ -356,6 +356,48 @@ mPrintCallbackFunc *mPrintLogCallback = &mLogPrint;
 mPrintCallbackFunc *mPrintDebugCallback = &mDebugPrint;
 mPrintCallbackFunc *mPrintTraceCallback = &mTracePrint;
 
+//////////////////////////////////////////////////////////////////////////
+
+extern void mMemory_OnProcessStart();
+extern void mMemory_OnThreadStart();
+extern void mMemory_OnThreadExit();
+extern void mMemory_OnProcessExit();
+
+extern "C" void NTAPI tls_callback(PVOID /* dllHandle */, const DWORD reason, PVOID /* reserved */)
+{
+  switch (reason)
+  {
+  case DLL_PROCESS_ATTACH:
+    mMemory_OnProcessStart();
+    break;
+
+  case DLL_THREAD_ATTACH:
+    mMemory_OnThreadStart();
+    break;
+
+  case DLL_THREAD_DETACH:
+    mMemory_OnThreadExit();
+    break;
+
+  case DLL_PROCESS_DETACH:
+    mMemory_OnProcessExit();
+    break;
+  }
+}
+
+extern "C"
+{
+  extern DWORD _tls_used; // The TLS directory (located in .rdata).
+}
+
+#pragma section(".CRT$XLY", long, read)
+extern "C" __declspec(allocate(".CRT$XLY")) PIMAGE_TLS_CALLBACK _xl_y = tls_callback;
+
+#pragma comment(linker, "/INCLUDE:_tls_used")
+#pragma comment(linker, "/INCLUDE:_xl_y")
+
+//////////////////////////////////////////////////////////////////////////
+
 mFUNCTION(mSleep, const size_t milliseconds)
 {
   mFUNCTION_SETUP();
