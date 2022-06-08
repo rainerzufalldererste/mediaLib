@@ -10,6 +10,16 @@
   #define __M_FILE__ "P3JB0pUzZTg+eb+IdSGZnz8TN8sJqRCC9qLe1Omqih6yco2FCdh8WEwcmVwJmfKqJO8IsWftAeyLPyUe"
 #endif
 
+_Check_return_ _Ret_maybenull_ _Post_writable_byte_size_(size) _CRTALLOCATOR _CRTRESTRICT void *_m_internal_alloc(_In_ const size_t size);
+_Check_return_ _Ret_maybenull_ _Post_writable_byte_size_(size) _CRTALLOCATOR _CRTRESTRICT void *_m_internal_alloc_zero(_In_ const size_t size);
+_Success_(return != 0) _Check_return_ _Ret_maybenull_ _Post_writable_byte_size_(size) _CRTALLOCATOR _CRTRESTRICT void *_m_internal_realloc(_Pre_maybenull_ _Post_invalid_ void *pBlock, _In_ const size_t size);
+void __cdecl _m_internal_free(_Pre_maybenull_ _Post_invalid_ void *pBlock);
+
+_Check_return_ _Ret_maybenull_ _Post_writable_byte_size_(size) _CRTALLOCATOR _CRTRESTRICT void *_m_internal_alloc_aligned(_In_ const size_t size, _In_ const size_t alignment);
+_Check_return_ _Ret_maybenull_ _Post_writable_byte_size_(size) _CRTALLOCATOR _CRTRESTRICT void *_m_internal_alloc_aligned_zero(_In_ const size_t size, _In_ const size_t alignment);
+_Success_(return != 0) _Check_return_ _Ret_maybenull_ _Post_writable_byte_size_(size) _CRTALLOCATOR _CRTRESTRICT void *_m_internal_realloc(_Pre_maybenull_ _Post_invalid_ void *pBlock, _In_ const size_t size, _In_ const size_t oldSize, _In_ const size_t alignment);
+void __cdecl _m_internal_free_aligned(_Pre_maybenull_ _Post_invalid_ void *pBlock);
+
 template <typename T>
 void mSetToNullptr(T **ppData)
 {
@@ -57,10 +67,11 @@ mFUNCTION(mAlloc, OUT T **ppData, const size_t count)
   mERROR_IF(ppData == nullptr, mR_ArgumentNull);
   mDEFER_CALL_ON_ERROR(ppData, mSetToNullptr);
 
-  T *pData = (T *)malloc(sizeof(T) * count);
+  T *pData = reinterpret_cast<T *>(_m_internal_alloc(sizeof(T) * count));
   mERROR_IF(pData == nullptr, mR_MemoryAllocationFailure);
 
   *ppData = pData;
+
   mRETURN_SUCCESS();
 }
 
@@ -78,7 +89,7 @@ mFUNCTION(mRealloc, OUT T **ppData, const size_t count)
   }
   else
   {
-    T *pData = (T *)realloc(*ppData, sizeof(T) * count);
+    T *pData = reinterpret_cast<T *>(_m_internal_realloc(*ppData, sizeof(T) * count));
     mERROR_IF(pData == nullptr, mR_MemoryAllocationFailure);
 
     *ppData = pData;
@@ -93,8 +104,12 @@ mFUNCTION(mAllocZero, OUT T **ppData, const size_t count)
   mFUNCTION_SETUP();
 
   mERROR_IF(ppData == nullptr, mR_ArgumentNull);
-  mERROR_CHECK(mAlloc(ppData, count));
-  mERROR_CHECK(mMemset(*ppData, count));
+  mDEFER_CALL_ON_ERROR(ppData, mSetToNullptr);
+
+  T *pData = reinterpret_cast<T *>(_m_internal_alloc_zero(sizeof(T) * count));
+  mERROR_IF(pData == nullptr, mR_MemoryAllocationFailure);
+
+  *ppData = pData;
 
   mRETURN_SUCCESS();
 }
@@ -107,7 +122,7 @@ mFUNCTION(mAllocStack, OUT T **ppData, const size_t count)
   mERROR_IF(ppData == nullptr, mR_ArgumentNull);
   mDEFER_CALL_ON_ERROR(ppData, mSetToNullptr);
 
-  T *pData = (T *)_malloca(sizeof(T) * count);
+  T *pData = reinterpret_cast<T *>(_malloca(sizeof(T) * count));
   mERROR_IF(pData == nullptr, mR_MemoryAllocationFailure);
 
   *ppData = pData;
@@ -136,7 +151,7 @@ mFUNCTION(mFreePtr, IN_OUT T **ppData)
     mDEFER_CALL(ppData, mSetToNullptr);
 
     if (*ppData != nullptr)
-      free(*ppData);
+      _m_internal_free(*ppData);
   }
 
   mRETURN_SUCCESS();
@@ -148,7 +163,7 @@ mFUNCTION(mFree, IN_OUT T *pData)
   mFUNCTION_SETUP();
 
   if (pData != nullptr)
-    free(pData);
+    _m_internal_free(pData);
 
   mRETURN_SUCCESS();
 }
@@ -181,22 +196,23 @@ mFUNCTION(mFreeStack, IN_OUT T *pData)
 }
 
 template <typename T>
-mFUNCTION(mAllocAlligned, OUT T **ppData, const size_t count, const size_t alignment)
+mFUNCTION(mAllocAligned, OUT T **ppData, const size_t count, const size_t alignment)
 {
   mFUNCTION_SETUP();
 
   mERROR_IF(ppData == nullptr, mR_ArgumentNull);
   mDEFER_CALL_ON_ERROR(ppData, mSetToNullptr);
 
-  T *pData = (T *)_aligned_malloc(sizeof(T) * count);
+  T *pData = reinterpret_cast<T *>(_m_internal_alloc_aligned(sizeof(T) * count, alignment));
   mERROR_IF(pData == nullptr, mR_MemoryAllocationFailure);
 
   *ppData = pData;
+
   mRETURN_SUCCESS();
 }
 
 template <typename T>
-mFUNCTION(mReallocAlligned, OUT T **ppData, const size_t count, const size_t alignment)
+mFUNCTION(mReallocAligned, OUT T **ppData, const size_t count, const size_t alignment, const size_t oldCount)
 {
   mFUNCTION_SETUP();
 
@@ -205,11 +221,11 @@ mFUNCTION(mReallocAlligned, OUT T **ppData, const size_t count, const size_t ali
 
   if (*ppData == nullptr)
   {
-    mERROR_CHECK(mAlloc(ppData, count));
+    mERROR_CHECK(mAllocAligned(ppData, count));
   }
   else
   {
-    T *pData = (T *)_aligned_realloc(*ppData, sizeof(T) * count);
+    T *pData = reinterpret_cast<T *>(_m_internal_realloc_aligned(*ppData, sizeof(T) * count, sizeof(T) * oldCount, alignment));
     mERROR_IF(pData == nullptr, mR_MemoryAllocationFailure);
 
     *ppData = pData;
@@ -219,19 +235,23 @@ mFUNCTION(mReallocAlligned, OUT T **ppData, const size_t count, const size_t ali
 }
 
 template <typename T>
-mFUNCTION(mAllocAllignedZero, OUT T **ppData, const size_t count, const size_t alignment)
+mFUNCTION(mAllocAlignedZero, OUT T **ppData, const size_t count, const size_t alignment)
 {
   mFUNCTION_SETUP();
 
   mERROR_IF(ppData == nullptr, mR_ArgumentNull);
-  mERROR_CHECK(mAllocAlligned(ppData, count, alignment));
-  mERROR_CHECK(mMemset(*ppData, count));
+  mDEFER_CALL_ON_ERROR(ppData, mSetToNullptr);
+
+  T *pData = reinterpret_cast<T *>(_m_internal_alloc_aligned_zero(sizeof(T) * count, alignment));
+  mERROR_IF(pData == nullptr, mR_MemoryAllocationFailure);
+
+  *ppData = pData;
 
   mRETURN_SUCCESS();
 }
 
 template <typename T>
-mFUNCTION(mFreeAllignedPtr, IN_OUT T **ppData)
+mFUNCTION(mFreeAlignedPtr, IN_OUT T **ppData)
 {
   mFUNCTION_SETUP();
 
@@ -240,19 +260,19 @@ mFUNCTION(mFreeAllignedPtr, IN_OUT T **ppData)
     mDEFER_CALL(ppData, mSetToNullptr);
 
     if (*ppData != nullptr)
-      _aligned_free(*ppData);
+      _m_internal_free_aligned(*ppData);
   }
 
   mRETURN_SUCCESS();
 }
 
 template <typename T>
-mFUNCTION(mAllignedFree, IN_OUT T *pData)
+mFUNCTION(mAlignedFree, IN_OUT T *pData)
 {
   mFUNCTION_SETUP();
 
   if (pData != nullptr)
-    _aligned_free(pData);
+    _m_internal_free_aligned(pData);
 
   mRETURN_SUCCESS();
 }
@@ -351,7 +371,7 @@ mFUNCTION(mStringChar, const char text[TCount], const char character, OUT size_t
 
   mERROR_IF(text == nullptr || pCount == nullptr, mR_ArgumentNull);
 
-  *pCount = (size_t)((char *)memchr((void *)text, (int)character, strnlen_s(text, TCount)) - (char *)text);
+  *pCount = (size_t)(reinterpret_cast<char *>(memchr((void *)text, (int)character, strnlen_s(text, TCount))) - reinterpret_cast<char *>(text));
 
   mRETURN_SUCCESS();
 }
