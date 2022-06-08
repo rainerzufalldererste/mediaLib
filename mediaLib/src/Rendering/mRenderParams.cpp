@@ -750,39 +750,39 @@ mFUNCTION(mRenderParams_PrintRenderState, const bool onlyNewValues /* = false */
 
 #define mGL_PRINT_DOUBLE_PARAM(param) \
   mGL_PRINT_PARAM(glGetDoublev, param, #param, double_t); \
-  if (glGetError != nullptr) while (glGetError() != GL_NO_ERROR) {}
+  if (glGetError != nullptr) { size_t i = 0; while (glGetError() != GL_NO_ERROR && i++ < 32) {} }
 
 #define mGL_PRINT_DOUBLE_VEC2_PARAM(param) \
   mGL_PRINT_VEC2_PARAM(glGetDoublev, param, #param, double_t); \
-  if (glGetError != nullptr) while (glGetError() != GL_NO_ERROR) {}
+  if (glGetError != nullptr) { size_t i = 0; while (glGetError() != GL_NO_ERROR && i++ < 32) {} }
 
 #define mGL_PRINT_DOUBLE_VEC3_PARAM(param) \
   mGL_PRINT_VEC3_PARAM(glGetDoublev, param, #param, double_t); \
-  if (glGetError != nullptr) while (glGetError() != GL_NO_ERROR) {}
+  if (glGetError != nullptr) { size_t i = 0; while (glGetError() != GL_NO_ERROR && i++ < 32) {} }
 
 #define mGL_PRINT_DOUBLE_VEC4_PARAM(param) \
   mGL_PRINT_VEC4_PARAM(glGetDoublev, param, #param, double_t); \
-  if (glGetError != nullptr) while (glGetError() != GL_NO_ERROR) {}
+  if (glGetError != nullptr) { size_t i = 0; while (glGetError() != GL_NO_ERROR && i++ < 32) {} }
 
 #define mGL_PRINT_INTEGER_PARAM(param) \
   mGL_PRINT_PARAM(glGetIntegerv, param, #param, int32_t); \
-  if (glGetError != nullptr) while (glGetError() != GL_NO_ERROR) {}
+  if (glGetError != nullptr) { size_t i = 0; while (glGetError() != GL_NO_ERROR && i++ < 32) {} }
 
 #define mGL_PRINT_INTEGER_VEC2_PARAM(param) \
   mGL_PRINT_VEC2_PARAM(glGetIntegerv, param, #param, int32_t); \
-  if (glGetError != nullptr) while (glGetError() != GL_NO_ERROR) {}
+  if (glGetError != nullptr) { size_t i = 0; while (glGetError() != GL_NO_ERROR && i++ < 32) {} }
 
 #define mGL_PRINT_INTEGER_VEC4_PARAM(param) \
   mGL_PRINT_VEC4_PARAM(glGetIntegerv, param, #param, int32_t); \
-  if (glGetError != nullptr) while (glGetError() != GL_NO_ERROR) {}
+  if (glGetError != nullptr) { size_t i = 0; while (glGetError() != GL_NO_ERROR && i++ < 32) {} }
 
 #define mGL_PRINT_BOOL_PARAM(param) \
   mGL_PRINT_PARAM(glGetBooleanv, param, #param, GLboolean); \
-  if (glGetError != nullptr) while (glGetError() != GL_NO_ERROR) {}
+  if (glGetError != nullptr) { size_t i = 0; while (glGetError() != GL_NO_ERROR && i++ < 32) {} }
 
 #define mGL_PRINT_BOOL_VEC4_PARAM(param) \
   mGL_PRINT_VEC4_PARAM(glGetBooleanv, param, #param, GLboolean); \
-  if (glGetError != nullptr) while (glGetError() != GL_NO_ERROR) {}
+  if (glGetError != nullptr) { size_t i = 0; while (glGetError() != GL_NO_ERROR && i++ < 32) {} }
 
   mGL_PRINT_INTEGER_PARAM(GL_ACCUM_ALPHA_BITS);
   mGL_PRINT_INTEGER_PARAM(GL_ACCUM_BLUE_BITS);
@@ -1074,8 +1074,22 @@ mFUNCTION(mRenderParams_PrintRenderState, const bool onlyNewValues /* = false */
 
   // Clear glError.
   if (glGetError != nullptr)
-    while (glGetError() != GL_NO_ERROR)
-      ;
+  {
+    size_t count = 0;
+
+    while (GL_NO_ERROR != glGetError())
+    {
+      if (count++ > 128)
+      {
+        mPRINT_ERROR("glGetError appears to be very sure that something is very very bad. Are we sure this is the OpenGL thread?");
+        mFlushOutput();
+        
+        mFAIL_DEBUG("OH MY GOODNESS, OPENGL! SOMEONE IS PISSED...");
+
+        mRETURN_RESULT(mR_Failure);
+      }
+    }
+  }
 
   if (!onlyUpdateValues)
     mPRINT_FUNC("================================================\nEND OF GL STATE\n");
@@ -1145,11 +1159,12 @@ mFUNCTION(mRenderParams_SetOnErrorDebugCallback, const std::function<mResult(con
   if (glDebugMessageCallbackARB)
     glDebugMessageCallbackARB(_internal::_ErrorMessageCallbackARB, nullptr);
 
-  size_t count = 0;
+  if (glGetError != nullptr)
+  {
+    size_t count = 0;
 
-  while (GL_NO_ERROR != glGetError())
-    if (count++ > 128)
-      break;
+    while (GL_NO_ERROR != glGetError() && count++ < 128) { }
+  }
 
   mRETURN_SUCCESS();
 }
