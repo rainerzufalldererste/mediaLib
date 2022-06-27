@@ -55,6 +55,7 @@ namespace ImGui
   void DrawRectangle(const ImVec2 &position, const ImVec2 &size, const ImVec4 &color);
   void ProgressBarRounded(float_t fraction, const ImVec2 &size_arg = ImVec2(-FLT_MIN, 0), const char *overlay = nullptr);
   void TextUnformattedWrapped(const char *text);
+  void SetTooltipUnformatted(const char *text);
 }
 
 #endif // mUI_h__

@@ -37,11 +37,17 @@
   #define __M_FILE__ "wWI0Zp0/tScpuj08VZchnph9RQsErzPv9NdWnME87LWR+wcviEMJLzT9l2wjxVxyueINRHZOFGVQq0kE"
 #endif
 
-template <typename T> constexpr inline T mAbs(const T value) { return value >= 0 ? value : -value; }
+#if !defined(_MSC_VER) || _MSC_VER >= 1920
+#define _CONSTEXPR_ constexpr
+#else
+#define _CONSTEXPR_
+#endif
+
+template <typename T> _CONSTEXPR_ inline T mAbs(const T value) { return value >= 0 ? value : -value; }
 template <> inline float_t mAbs(const float_t value) { return fabsf(value); }
 template <> inline double_t mAbs(const double_t value) { return abs(value); }
-template <typename T, typename std::enable_if_t<!std::is_unsigned<T>::value, int>* = nullptr> constexpr inline T mSign(const T value) { return value > 0 ? (T)1 : (value < 0 ? (T)-1 : (T)0); }
-template <typename T, typename std::enable_if_t<std::is_unsigned<T>::value, int>* = nullptr> constexpr inline T mSign(const T value) { return value > 0 ? (T)1 : (T)0; }
+template <typename T, typename std::enable_if_t<!std::is_unsigned<T>::value, int>* = nullptr> _CONSTEXPR_ inline T mSign(const T value) { return value > 0 ? (T)1 : (value < 0 ? (T)-1 : (T)0); }
+template <typename T, typename std::enable_if_t<std::is_unsigned<T>::value, int>* = nullptr> _CONSTEXPR_ inline T mSign(const T value) { return value > 0 ? (T)1 : (T)0; }
 
 template <typename T> inline auto mSqrt(const T value) -> typename std::enable_if<!std::is_same<T, float_t>::value, double_t>::type { return sqrt((double_t)value); }
 template <typename T> inline auto mSqrt(const T value) -> typename std::enable_if< std::is_same<T, float_t>::value, float_t >::type { return sqrtf(value); }
@@ -84,10 +90,10 @@ struct mMath_FloatTypeFrom<float_t>
   typedef float_t type;
 };
 
-template <typename T> constexpr inline auto mLog(const T value) -> typename mMath_FloatTypeFrom<T>::type { return (mMath_FloatTypeFrom<T>::type)log((mMath_FloatTypeFrom<T>::type)value); }
-template <typename T> constexpr inline auto mLog10(const T value) -> typename mMath_FloatTypeFrom<T>::type { return (mMath_FloatTypeFrom<T>::type)log10((mMath_FloatTypeFrom<T>::type)value); }
-template <typename T> constexpr inline auto mLog2(const T value) -> typename mMath_FloatTypeFrom<T>::type { return (mMath_FloatTypeFrom<T>::type)log2((mMath_FloatTypeFrom<T>::type)value); }
-template <typename T> constexpr inline auto mLogN(const T logarithm, const T value) -> typename mMath_FloatTypeFrom<T>::type { return mLog(value) / mLog(logarithm); }
+template <typename T> _CONSTEXPR_ inline auto mLog(const T value) -> typename mMath_FloatTypeFrom<T>::type { return (mMath_FloatTypeFrom<T>::type)log((mMath_FloatTypeFrom<T>::type)value); }
+template <typename T> _CONSTEXPR_ inline auto mLog10(const T value) -> typename mMath_FloatTypeFrom<T>::type { return (mMath_FloatTypeFrom<T>::type)log10((mMath_FloatTypeFrom<T>::type)value); }
+template <typename T> _CONSTEXPR_ inline auto mLog2(const T value) -> typename mMath_FloatTypeFrom<T>::type { return (mMath_FloatTypeFrom<T>::type)log2((mMath_FloatTypeFrom<T>::type)value); }
+template <typename T> _CONSTEXPR_ inline auto mLogN(const T logarithm, const T value) -> typename mMath_FloatTypeFrom<T>::type { return mLog(value) / mLog(logarithm); }
 
 inline double_t mFloor(const double_t value) { return floor(value); }
 inline float_t mFloor(const float_t value) { return floorf(value); }
@@ -98,24 +104,21 @@ inline float_t mRound(const float_t value) { return roundf(value); }
 inline double_t mCopySign(const double_t value, const double_t sign) { return copysign(value, sign); }
 inline float_t mCopySign(const float_t value, const float_t sign) { return copysignf(value, sign); }
 
-template <typename T> constexpr inline T mMax(const T a, const T b) { return (a >= b) ? a : b; }
-template <typename T> constexpr inline T mMin(const T a, const T b) { return (a <= b) ? a : b; }
+template <typename T> _CONSTEXPR_ inline T mMax(const T a, const T b) { return (a >= b) ? a : b; }
+template <typename T> _CONSTEXPR_ inline T mMin(const T a, const T b) { return (a <= b) ? a : b; }
 
 template <typename T, typename U>
-constexpr inline auto mLerp(const T a, const T b, const U ratio) -> decltype(a + (b - a) * ratio) { return a + (b - a) * ratio; }
+_CONSTEXPR_ inline auto mLerp(const T a, const T b, const U ratio) -> decltype(a + (b - a) * ratio) { return a + (b - a) * ratio; }
 
 template <typename T, typename U = typename std::conditional_t<std::is_integral<T>::value, float_t, T>>
-constexpr inline U mInverseLerp(const T value, const T min, const T max) { return (U)(value - min) / (U)(max - min); }
+_CONSTEXPR_ inline U mInverseLerp(const T value, const T min, const T max) { return (U)(value - min) / (U)(max - min); }
 
 template <typename T, typename U>
-constexpr inline auto mBiLerp(const T a, const T b, const T c, const T d, const U ratio1, const U ratio2) -> decltype(mLerp(mLerp(a, b, ratio1), mLerp(c, d, ratio1), ratio2)) { return mLerp(mLerp(a, b, ratio1), mLerp(c, d, ratio1), ratio2); }
+_CONSTEXPR_ inline auto mBiLerp(const T a, const T b, const T c, const T d, const U ratio1, const U ratio2) -> decltype(mLerp(mLerp(a, b, ratio1), mLerp(c, d, ratio1), ratio2)) { return mLerp(mLerp(a, b, ratio1), mLerp(c, d, ratio1), ratio2); }
 
 // Indices are: Z, Y, X.
 template <typename T, typename U>
-#if !defined(_MSC_VER) || _MSC_VER >= 1920
-constexpr
-#endif
-inline T mTriLerp(const T v000, const T v001, const T v010, const T v011, const T v100, const T v101, const T v110, const T v111, const U factor_001, const U factor_010, const U factor_100)
+_CONSTEXPR_ inline T mTriLerp(const T v000, const T v001, const T v010, const T v011, const T v100, const T v101, const T v110, const T v111, const U factor_001, const U factor_010, const U factor_100)
 {
   const U inverseFactor_001 = (U)1 - factor_001;
   const U inverseFactor_010 = (U)1 - factor_010;
@@ -133,10 +136,7 @@ inline T mTriLerp(const T v000, const T v001, const T v010, const T v011, const 
 }
 
 template <typename T, typename U = typename std::conditional_t<std::is_integral<T>::value, float_t, T>>
-#if !defined(_MSC_VER) || _MSC_VER >= 1920
-constexpr
-#endif
-inline U mSmoothStep(const T x)
+_CONSTEXPR_ inline U mSmoothStep(const T x)
 {
   const U ux = (U)x;
 
@@ -144,10 +144,7 @@ inline U mSmoothStep(const T x)
 }
 
 template <typename T, typename U = typename std::conditional_t<std::is_integral<T>::value, float_t, T>>
-#if !defined(_MSC_VER) || _MSC_VER >= 1920
-constexpr
-#endif
-inline U mSmoothStepUnclamped(const T x)
+_CONSTEXPR_ inline U mSmoothStepUnclamped(const T x)
 {
   const U ux = (U)x;
 
@@ -155,10 +152,7 @@ inline U mSmoothStepUnclamped(const T x)
 }
 
 template <typename T, typename U = typename std::conditional_t<std::is_integral<T>::value, float_t, T>>
-#if !defined(_MSC_VER) || _MSC_VER >= 1920
-constexpr
-#endif
-inline U mSmootherStep(const T x)
+_CONSTEXPR_ inline U mSmootherStep(const T x)
 {
   const U ux = (U)x;
 
@@ -166,10 +160,7 @@ inline U mSmootherStep(const T x)
 }
 
 template <typename T, typename U = typename std::conditional_t<std::is_integral<T>::value, float_t, T>>
-#if !defined(_MSC_VER) || _MSC_VER >= 1920
-constexpr
-#endif
-inline U mSmootherStepUnclamped(const T x)
+_CONSTEXPR_ inline U mSmootherStepUnclamped(const T x)
 {
   const U ux = (U)x;
 
@@ -182,13 +173,10 @@ inline U mSmootherStepUnclamped(const T x)
 // `y3` is the value at relative 2.
 // `x` is the interpolated position.
 template <typename T, typename U>
-constexpr inline T mInterpolateCubic(const T y0, const T y1, const T y2, const T y3, const U x) { return y1 + ((y2 - y0 + ((U)2 * y0 - (U)5 * y1 + (U)4 * y2 - y3 + ((U)3 * (y1 - y2) + y3 - y0) * x) * x) * x) / (U)2; }
+_CONSTEXPR_ inline T mInterpolateCubic(const T y0, const T y1, const T y2, const T y3, const U x) { return y1 + ((y2 - y0 + ((U)2 * y0 - (U)5 * y1 + (U)4 * y2 - y3 + ((U)3 * (y1 - y2) + y3 - y0) * x) * x) * x) / (U)2; }
 
 template <typename T, typename U>
-#if !defined(_MSC_VER) || _MSC_VER >= 1920
-constexpr
-#endif
-inline T mInterpolateBicubic(const T values[4][4], const U x, const U y)
+_CONSTEXPR_ inline T mInterpolateBicubic(const T values[4][4], const U x, const U y)
 {
   T values[4];
 
@@ -216,10 +204,7 @@ struct mInterpolateBicubic_t
 };
 
 template <typename T, typename U>
-#if !defined(_MSC_VER) || _MSC_VER >= 1920
-constexpr
-#endif
-inline T mInterpolateTricubic(const T values[4][4][4], const U x, const U y, const U z)
+_CONSTEXPR_ inline T mInterpolateTricubic(const T values[4][4][4], const U x, const U y, const U z)
 {
   T values[4];
 
@@ -233,7 +218,7 @@ inline T mInterpolateTricubic(const T values[4][4][4], const U x, const U y, con
 //////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-constexpr inline T mClamp(const T value, const T min, const T max)
+_CONSTEXPR_ inline T mClamp(const T value, const T min, const T max)
 {
   return value <= max ? (value >= min ? value : min) : max;
 };
@@ -242,10 +227,7 @@ template <typename T>
 T mMod(const T value, const T modulus);
 
 template <typename T>
-#if !defined(_MSC_VER) || _MSC_VER >= 1920
-constexpr
-#endif
-inline T mClampWrap(T val, const T min, const T max)
+_CONSTEXPR_ inline T mClampWrap(T val, const T min, const T max)
 {
   const T dist = max - min;
 
@@ -260,10 +242,7 @@ inline T mClampWrap(T val, const T min, const T max)
 
 // Euclidean modulo. (For positive modulus).
 template <typename T>
-#if !defined(_MSC_VER) || _MSC_VER >= 1920
-constexpr
-#endif
-inline T mEuclideanMod(const T value, const T modulus)
+_CONSTEXPR_ inline T mEuclideanMod(const T value, const T modulus)
 {
   const T v = mMod(value, modulus);
   return v < (T)0 ? (v + modulus) : v;
@@ -279,13 +258,13 @@ template <typename T, typename std::enable_if<std::is_floating_point<T>::value>:
 T mSmallest();
 
 template <typename T, typename std::enable_if<std::is_integral<T>::value>::type* = nullptr>
-constexpr inline T mSmallest()
+_CONSTEXPR_ inline T mSmallest()
 {
   return (T)1;
 }
 
 template <typename T, typename std::enable_if<std::is_integral<T>::value>::type* = nullptr>
-constexpr inline T mSmallest(const T)
+_CONSTEXPR_ inline T mSmallest(const T)
 {
   return mSmallest<T>();
 }
@@ -300,7 +279,7 @@ inline T mSmallest(const T scale)
 
 // Returns 1 if equal, 0 if opposite, anything in between is an indicator for *how* similar they are.
 template <typename T>
-inline T mAngleCompare(const T a, const T b)
+inline _CONSTEXPR_ T mAngleCompare(const T a, const T b)
 {
   return mAbs(mEuclideanMod(a - b, (T)mTWOPI) - (T)mPI) / (T)mPIf;
 }
@@ -354,9 +333,9 @@ static_assert(sizeof(half_t) == sizeof(uint16_t), "Invalid Padding.");
 
 //////////////////////////////////////////////////////////////////////////
 
-#define _mVECTOR_SUBSET_2(a, b) __host__ __device__ inline mVec2t<T> a ## b() const { return mVec2t<T>(a, b); }
-#define _mVECTOR_SUBSET_3(a, b, c) __host__ __device__ inline mVec3t<T> a ## b ## c() const { return mVec3t<T>(a, b, c); }
-#define _mVECTOR_SUBSET_4(a, b, c, d) __host__ __device__ inline mVec4t<T> a ## b ## c ## d() const { return mVec4t<T>(a, b, c, d); }
+#define _mVECTOR_SUBSET_2(a, b) __host__ __device__ _CONSTEXPR_ inline mVec2t<T> a ## b() const { return mVec2t<T>(a, b); }
+#define _mVECTOR_SUBSET_3(a, b, c) __host__ __device__ _CONSTEXPR_ inline mVec3t<T> a ## b ## c() const { return mVec3t<T>(a, b, c); }
+#define _mVECTOR_SUBSET_4(a, b, c, d) __host__ __device__ _CONSTEXPR_ inline mVec4t<T> a ## b ## c ## d() const { return mVec4t<T>(a, b, c, d); }
 
 template <typename T>
 struct mVec2t
@@ -374,41 +353,41 @@ struct mVec2t
   };
 #pragma warning(pop)
 
-  __host__ __device__ inline mVec2t() : x(0), y(0) {}
-  __host__ __device__ inline explicit mVec2t(T _v) : x(_v), y(_v) {}
-  __host__ __device__ inline mVec2t(T _x, T _y) : x(_x), y(_y) {}
+  __host__ __device__ _CONSTEXPR_ inline mVec2t() : x(0), y(0) {}
+  __host__ __device__ _CONSTEXPR_ inline explicit mVec2t(T _v) : x(_v), y(_v) {}
+  __host__ __device__ _CONSTEXPR_ inline mVec2t(T _x, T _y) : x(_x), y(_y) {}
 
   template <typename T2> __host__ __device__ inline explicit mVec2t(const mVec2t<T2> &cast) : x((T)cast.x), y((T)cast.y) { }
 
-  __host__ __device__ inline mVec2t<T>  operator +  (const mVec2t<T> &a) const { return mVec2t<T>(x + a.x, y + a.y); };
-  __host__ __device__ inline mVec2t<T>  operator -  (const mVec2t<T> &a) const { return mVec2t<T>(x - a.x, y - a.y); };
-  __host__ __device__ inline mVec2t<T>  operator *  (const mVec2t<T> &a) const { return mVec2t<T>(x * a.x, y * a.y); };
-  __host__ __device__ inline mVec2t<T>  operator /  (const mVec2t<T> &a) const { return mVec2t<T>(x / a.x, y / a.y); };
-  __host__ __device__ inline mVec2t<T>& operator += (const mVec2t<T> &a) { return *this = mVec2t<T>(x + a.x, y + a.y); };
-  __host__ __device__ inline mVec2t<T>& operator -= (const mVec2t<T> &a) { return *this = mVec2t<T>(x - a.x, y - a.y); };
-  __host__ __device__ inline mVec2t<T>& operator *= (const mVec2t<T> &a) { return *this = mVec2t<T>(x * a.x, y * a.y); };
-  __host__ __device__ inline mVec2t<T>& operator /= (const mVec2t<T> &a) { return *this = mVec2t<T>(x / a.x, y / a.y); };
-  __host__ __device__ inline mVec2t<T>  operator *  (const T a) const { return mVec2t<T>(x * a, y * a); };
-  __host__ __device__ inline mVec2t<T>  operator /  (const T a) const { return mVec2t<T>(x / a, y / a); };
-  __host__ __device__ inline mVec2t<T>& operator *= (const T a) { return *this = mVec2t<T>(x * a, y * a); };
-  __host__ __device__ inline mVec2t<T>& operator /= (const T a) { return *this = mVec2t<T>(x / a, y / a); };
-  __host__ __device__ inline mVec2t<T>  operator << (const T a) const { return mVec2t<T>(x << a, y << a); };
-  __host__ __device__ inline mVec2t<T>  operator >> (const T a) const { return mVec2t<T>(x >> a, y >> a); };
-  __host__ __device__ inline mVec2t<T>& operator <<= (const T a) { return *this = mVec2t<T>(x << a, y << a); };
-  __host__ __device__ inline mVec2t<T>& operator >>= (const T a) { return *this = mVec2t<T>(x >> a, y >> a); };
+  __host__ __device__ _CONSTEXPR_ inline mVec2t<T>  operator +  (const mVec2t<T> &a) const { return mVec2t<T>(x + a.x, y + a.y); };
+  __host__ __device__ _CONSTEXPR_ inline mVec2t<T>  operator -  (const mVec2t<T> &a) const { return mVec2t<T>(x - a.x, y - a.y); };
+  __host__ __device__ _CONSTEXPR_ inline mVec2t<T>  operator *  (const mVec2t<T> &a) const { return mVec2t<T>(x * a.x, y * a.y); };
+  __host__ __device__ _CONSTEXPR_ inline mVec2t<T>  operator /  (const mVec2t<T> &a) const { return mVec2t<T>(x / a.x, y / a.y); };
+  __host__ __device__ _CONSTEXPR_ inline mVec2t<T>& operator += (const mVec2t<T> &a) { return *this = mVec2t<T>(x + a.x, y + a.y); };
+  __host__ __device__ _CONSTEXPR_ inline mVec2t<T>& operator -= (const mVec2t<T> &a) { return *this = mVec2t<T>(x - a.x, y - a.y); };
+  __host__ __device__ _CONSTEXPR_ inline mVec2t<T>& operator *= (const mVec2t<T> &a) { return *this = mVec2t<T>(x * a.x, y * a.y); };
+  __host__ __device__ _CONSTEXPR_ inline mVec2t<T>& operator /= (const mVec2t<T> &a) { return *this = mVec2t<T>(x / a.x, y / a.y); };
+  __host__ __device__ _CONSTEXPR_ inline mVec2t<T>  operator *  (const T a) const { return mVec2t<T>(x * a, y * a); };
+  __host__ __device__ _CONSTEXPR_ inline mVec2t<T>  operator /  (const T a) const { return mVec2t<T>(x / a, y / a); };
+  __host__ __device__ _CONSTEXPR_ inline mVec2t<T>& operator *= (const T a) { return *this = mVec2t<T>(x * a, y * a); };
+  __host__ __device__ _CONSTEXPR_ inline mVec2t<T>& operator /= (const T a) { return *this = mVec2t<T>(x / a, y / a); };
+  __host__ __device__ _CONSTEXPR_ inline mVec2t<T>  operator << (const T a) const { return mVec2t<T>(x << a, y << a); };
+  __host__ __device__ _CONSTEXPR_ inline mVec2t<T>  operator >> (const T a) const { return mVec2t<T>(x >> a, y >> a); };
+  __host__ __device__ _CONSTEXPR_ inline mVec2t<T>& operator <<= (const T a) { return *this = mVec2t<T>(x << a, y << a); };
+  __host__ __device__ _CONSTEXPR_ inline mVec2t<T>& operator >>= (const T a) { return *this = mVec2t<T>(x >> a, y >> a); };
 
-  __host__ __device__ inline mVec2t<T>  operator -  () const { return mVec2t<T>(-x, -y); };
+  __host__ __device__ _CONSTEXPR_ inline mVec2t<T>  operator -  () const { return mVec2t<T>(-x, -y); };
 
-  __host__ __device__ inline bool       operator == (const mVec2t<T> &a) const { return x == a.x && y == a.y; };
-  __host__ __device__ inline bool       operator != (const mVec2t<T> &a) const { return x != a.x || y != a.y; };
+  __host__ __device__ _CONSTEXPR_ inline bool       operator == (const mVec2t<T> &a) const { return x == a.x && y == a.y; };
+  __host__ __device__ _CONSTEXPR_ inline bool       operator != (const mVec2t<T> &a) const { return x != a.x || y != a.y; };
 
   __host__ __device__ inline typename mMath_FloatTypeFrom<T>::type Length() const { return mSqrt(x * x + y * y); };
-  __host__ __device__ inline T LengthSquared() const { return x * x + y * y; };
+  __host__ __device__ _CONSTEXPR_ inline T LengthSquared() const { return x * x + y * y; };
   __host__ __device__ inline mVec2t<T> Normalize() const { return *this / (T)Length(); };
 
-  __host__ __device__ inline typename mMath_FloatTypeFrom<T>::type Angle() const { return mATan2(mMath_FloatTypeFrom<T>::type(y), mMath_FloatTypeFrom<T>::type(x)); };
+  __host__ __device__ _CONSTEXPR_ inline typename mMath_FloatTypeFrom<T>::type Angle() const { return mATan2(mMath_FloatTypeFrom<T>::type(y), mMath_FloatTypeFrom<T>::type(x)); };
 
-  __host__ __device__ inline typename mMath_FloatTypeFrom<T>::type AngleTo(const mVec2t<T> &other) const
+  __host__ __device__ _CONSTEXPR_ inline typename mMath_FloatTypeFrom<T>::type AngleTo(const mVec2t<T> &other) const
   {
     mMath_FloatTypeFrom<T>::type ret = other.Angle() - Angle();
 
@@ -420,10 +399,10 @@ struct mVec2t
       return ret;
   };
 
-  __host__ __device__ inline typename mMath_FloatTypeFrom<T>::type AspectRatio() const { return mMath_FloatTypeFrom<T>::type(x) / mMath_FloatTypeFrom<T>::type(y); };
-  __host__ __device__ inline typename mMath_FloatTypeFrom<T>::type InverseAspectRatio() const { return mMath_FloatTypeFrom<T>::type(y) / mMath_FloatTypeFrom<T>::type(x); };
+  __host__ __device__ _CONSTEXPR_ inline typename mMath_FloatTypeFrom<T>::type AspectRatio() const { return mMath_FloatTypeFrom<T>::type(x) / mMath_FloatTypeFrom<T>::type(y); };
+  __host__ __device__ _CONSTEXPR_ inline typename mMath_FloatTypeFrom<T>::type InverseAspectRatio() const { return mMath_FloatTypeFrom<T>::type(y) / mMath_FloatTypeFrom<T>::type(x); };
 
-  __host__ __device__ inline static T Dot(const mVec2t<T> a, const mVec2t<T> b)
+  __host__ __device__ _CONSTEXPR_ inline static T Dot(const mVec2t<T> a, const mVec2t<T> b)
   {
     return a.x * b.x + a.y * b.y;
   };
@@ -432,21 +411,21 @@ struct mVec2t
 };
 
 template <typename T>
-__host__ __device__ inline mVec2t<T>  operator *  (const T a, const mVec2t<T> b) { return mVec2t<T>(a * b.x, a * b.y); };
+__host__ __device__ _CONSTEXPR_ inline mVec2t<T>  operator *  (const T a, const mVec2t<T> b) { return mVec2t<T>(a * b.x, a * b.y); };
 
 template <typename T>
-__host__ __device__ inline mVec2t<T>  operator /  (const T a, const mVec2t<T> b) { return mVec2t<T>(a / b.x, a / b.y); };
+__host__ __device__ _CONSTEXPR_ inline mVec2t<T>  operator /  (const T a, const mVec2t<T> b) { return mVec2t<T>(a / b.x, a / b.y); };
 
-template <typename T> T mMax(const mVec2t<T> &v) { return mMax(v.x, v.y); }
-template <typename T> T mMin(const mVec2t<T> &v) { return mMin(v.x, v.y); }
+template <typename T> _CONSTEXPR_ inline T mMax(const mVec2t<T> &v) { return mMax(v.x, v.y); }
+template <typename T> _CONSTEXPR_ inline T mMin(const mVec2t<T> &v) { return mMin(v.x, v.y); }
 
-template <typename T> mVec2t<T> mMax(const mVec2t<T> &a, const mVec2t<T> &b) { return mVec2t<T>(mMax(a.x, b.x), mMax(a.y, b.y)); }
-template <typename T> mVec2t<T> mMin(const mVec2t<T> &a, const mVec2t<T> &b) { return mVec2t<T>(mMin(a.x, b.x), mMin(a.y, b.y)); }
+template <typename T> _CONSTEXPR_ inline mVec2t<T> mMax(const mVec2t<T> &a, const mVec2t<T> &b) { return mVec2t<T>(mMax(a.x, b.x), mMax(a.y, b.y)); }
+template <typename T> _CONSTEXPR_ inline mVec2t<T> mMin(const mVec2t<T> &a, const mVec2t<T> &b) { return mVec2t<T>(mMin(a.x, b.x), mMin(a.y, b.y)); }
 
-template <typename T> mVec2t<T> mAbs(const mVec2t<T> &a) { return mVec2t<T>(mAbs(a.x), mAbs(a.y)); }
-template <typename T> mVec2t<T> mFloor(const mVec2t<T> &a) { return mVec2t<T>(mFloor(a.x), mFloor(a.y)); }
-template <typename T> mVec2t<T> mCeil(const mVec2t<T> &a) { return mVec2t<T>(mCeil(a.x), mCeil(a.y)); }
-template <typename T> mVec2t<T> mRound(const mVec2t<T> &a) { return mVec2t<T>(mRound(a.x), mRound(a.y)); }
+template <typename T> inline mVec2t<T> mAbs(const mVec2t<T> &a) { return mVec2t<T>(mAbs(a.x), mAbs(a.y)); }
+template <typename T> inline mVec2t<T> mFloor(const mVec2t<T> &a) { return mVec2t<T>(mFloor(a.x), mFloor(a.y)); }
+template <typename T> inline mVec2t<T> mCeil(const mVec2t<T> &a) { return mVec2t<T>(mCeil(a.x), mCeil(a.y)); }
+template <typename T> inline mVec2t<T> mRound(const mVec2t<T> &a) { return mVec2t<T>(mRound(a.x), mRound(a.y)); }
 
 typedef mVec2t<size_t> mVec2s;
 typedef mVec2t<int64_t> mVec2i;
@@ -472,40 +451,40 @@ struct mVec3t
   };
 #pragma warning(pop)
 
-  __host__ __device__ inline mVec3t() : x(0), y(0), z(0) {}
-  __host__ __device__ inline explicit mVec3t(T _v) : x(_v), y(_v), z(_v) {}
+  __host__ __device__ _CONSTEXPR_ inline mVec3t() : x(0), y(0), z(0) {}
+  __host__ __device__ _CONSTEXPR_ inline explicit mVec3t(T _v) : x(_v), y(_v), z(_v) {}
 
   // Cartesian: x, y, z;
   // Spherical: radius, theta, phi;
   // Cylindrical: rho, phi, z;
-  __host__ __device__ inline mVec3t(T _x, T _y, T _z) : x(_x), y(_y), z(_z) {}
-  __host__ __device__ inline explicit mVec3t(mVec2t<T> vector2, T _z) : x(vector2.x), y(vector2.y), z(_z) {}
+  __host__ __device__ _CONSTEXPR_ inline mVec3t(T _x, T _y, T _z) : x(_x), y(_y), z(_z) {}
+  __host__ __device__ _CONSTEXPR_ inline explicit mVec3t(mVec2t<T> vector2, T _z) : x(vector2.x), y(vector2.y), z(_z) {}
 
-  template <typename T2> __host__ __device__ inline explicit mVec3t(const mVec3t<T2> &cast) : x((T)cast.x), y((T)cast.y), z((T)cast.z) {}
+  template <typename T2> __host__ __device__ _CONSTEXPR_ inline explicit mVec3t(const mVec3t<T2> &cast) : x((T)cast.x), y((T)cast.y), z((T)cast.z) {}
 
-  __host__ __device__ inline mVec3t<T>  operator +  (const mVec3t<T> &a) const { return mVec3t<T>(x + a.x, y + a.y, z + a.z); };
-  __host__ __device__ inline mVec3t<T>  operator -  (const mVec3t<T> &a) const { return mVec3t<T>(x - a.x, y - a.y, z - a.z); };
-  __host__ __device__ inline mVec3t<T>  operator *  (const mVec3t<T> &a) const { return mVec3t<T>(x * a.x, y * a.y, z * a.z); };
-  __host__ __device__ inline mVec3t<T>  operator /  (const mVec3t<T> &a) const { return mVec3t<T>(x / a.x, y / a.y, z / a.z); };
-  __host__ __device__ inline mVec3t<T>& operator += (const mVec3t<T> &a) { return *this = mVec3t<T>(x + a.x, y + a.y, z + a.z); };
-  __host__ __device__ inline mVec3t<T>& operator -= (const mVec3t<T> &a) { return *this = mVec3t<T>(x - a.x, y - a.y, z - a.z); };
-  __host__ __device__ inline mVec3t<T>& operator *= (const mVec3t<T> &a) { return *this = mVec3t<T>(x * a.x, y * a.y, z * a.z); };
-  __host__ __device__ inline mVec3t<T>& operator /= (const mVec3t<T> &a) { return *this = mVec3t<T>(x / a.x, y / a.y, z / a.z); };
-  __host__ __device__ inline mVec3t<T>  operator *  (const T a) const { return mVec3t<T>(x * a, y * a, z * a); };
-  __host__ __device__ inline mVec3t<T>  operator /  (const T a) const { return mVec3t<T>(x / a, y / a, z / a); };
-  __host__ __device__ inline mVec3t<T>& operator *= (const T a) { return *this = mVec3t<T>(x * a, y * a, z * a); };
-  __host__ __device__ inline mVec3t<T>& operator /= (const T a) { return *this = mVec3t<T>(x / a, y / a, z / a); };
+  __host__ __device__ _CONSTEXPR_ inline mVec3t<T>  operator +  (const mVec3t<T> &a) const { return mVec3t<T>(x + a.x, y + a.y, z + a.z); };
+  __host__ __device__ _CONSTEXPR_ inline mVec3t<T>  operator -  (const mVec3t<T> &a) const { return mVec3t<T>(x - a.x, y - a.y, z - a.z); };
+  __host__ __device__ _CONSTEXPR_ inline mVec3t<T>  operator *  (const mVec3t<T> &a) const { return mVec3t<T>(x * a.x, y * a.y, z * a.z); };
+  __host__ __device__ _CONSTEXPR_ inline mVec3t<T>  operator /  (const mVec3t<T> &a) const { return mVec3t<T>(x / a.x, y / a.y, z / a.z); };
+  __host__ __device__ _CONSTEXPR_ inline mVec3t<T>& operator += (const mVec3t<T> &a) { return *this = mVec3t<T>(x + a.x, y + a.y, z + a.z); };
+  __host__ __device__ _CONSTEXPR_ inline mVec3t<T>& operator -= (const mVec3t<T> &a) { return *this = mVec3t<T>(x - a.x, y - a.y, z - a.z); };
+  __host__ __device__ _CONSTEXPR_ inline mVec3t<T>& operator *= (const mVec3t<T> &a) { return *this = mVec3t<T>(x * a.x, y * a.y, z * a.z); };
+  __host__ __device__ _CONSTEXPR_ inline mVec3t<T>& operator /= (const mVec3t<T> &a) { return *this = mVec3t<T>(x / a.x, y / a.y, z / a.z); };
+  __host__ __device__ _CONSTEXPR_ inline mVec3t<T>  operator *  (const T a) const { return mVec3t<T>(x * a, y * a, z * a); };
+  __host__ __device__ _CONSTEXPR_ inline mVec3t<T>  operator /  (const T a) const { return mVec3t<T>(x / a, y / a, z / a); };
+  __host__ __device__ _CONSTEXPR_ inline mVec3t<T>& operator *= (const T a) { return *this = mVec3t<T>(x * a, y * a, z * a); };
+  __host__ __device__ _CONSTEXPR_ inline mVec3t<T>& operator /= (const T a) { return *this = mVec3t<T>(x / a, y / a, z / a); };
 
-  __host__ __device__ inline mVec3t<T>  operator -  () const { return mVec3t<T>(-x, -y, -z); };
+  __host__ __device__ _CONSTEXPR_ inline mVec3t<T>  operator -  () const { return mVec3t<T>(-x, -y, -z); };
 
-  __host__ __device__ inline bool       operator == (const mVec3t<T> &a) const { return x == a.x && y == a.y && z == a.z; };
-  __host__ __device__ inline bool       operator != (const mVec3t<T> &a) const { return x != a.x || y != a.y || z != a.z; };
+  __host__ __device__ _CONSTEXPR_ inline bool       operator == (const mVec3t<T> &a) const { return x == a.x && y == a.y && z == a.z; };
+  __host__ __device__ _CONSTEXPR_ inline bool       operator != (const mVec3t<T> &a) const { return x != a.x || y != a.y || z != a.z; };
 
   __host__ __device__ inline typename mMath_FloatTypeFrom<T>::type Length() const { return mSqrt(x * x + y * y + z * z); };
-  __host__ __device__ inline T LengthSquared() const { return x * x + y * y + z * z; };
+  __host__ __device__ _CONSTEXPR_ inline T LengthSquared() const { return x * x + y * y + z * z; };
   __host__ __device__ inline mVec3t<T> Normalize() const { return *this / (T)Length(); };
 
-  __host__ __device__ inline mVec2t<T> ToVector2() const { return mVec2t<T>(x, y); };
+  __host__ __device__ _CONSTEXPR_ inline mVec2t<T> ToVector2() const { return mVec2t<T>(x, y); };
 
   __host__ __device__ inline mVec3t<T> CartesianToSpherical() const
   {
@@ -550,12 +529,12 @@ struct mVec3t
       return mVec3t<T>(p, (T)(-mASin(y / p) + mPI), z);
   };
 
-  __host__ __device__ inline static mVec3t<T> Cross(const mVec3t<T> a, const mVec3t<T> b)
+  __host__ __device__ _CONSTEXPR_ inline static mVec3t<T> Cross(const mVec3t<T> a, const mVec3t<T> b)
   {
     return mVec3t<T>(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
   };
 
-  __host__ __device__ inline static T Dot(const mVec3t<T> a, const mVec3t<T> b)
+  __host__ __device__ _CONSTEXPR_ inline static T Dot(const mVec3t<T> a, const mVec3t<T> b)
   {
     return a.x * b.x + a.y * b.y + a.z * b.z;
   };
@@ -575,21 +554,21 @@ struct mVec3t
 };
 
 template <typename T>
-__host__ __device__ inline mVec3t<T>  operator *  (const T a, const mVec3t<T> b) { return mVec3t<T>(a * b.x, a * b.y, a * b.z); };
+__host__ __device__ _CONSTEXPR_ inline mVec3t<T>  operator *  (const T a, const mVec3t<T> b) { return mVec3t<T>(a * b.x, a * b.y, a * b.z); };
 
 template <typename T>
-__host__ __device__ inline mVec3t<T>  operator /  (const T a, const mVec3t<T> b) { return mVec3t<T>(a / b.x, a / b.y, a / b.z); };
+__host__ __device__ _CONSTEXPR_ inline mVec3t<T>  operator /  (const T a, const mVec3t<T> b) { return mVec3t<T>(a / b.x, a / b.y, a / b.z); };
 
-template <typename T> T mMax(const mVec3t<T> &v) { return mMax(mMax(v.x, v.y), v.z); }
-template <typename T> T mMin(const mVec3t<T> &v) { return mMin(mMin(v.x, v.y), v.z); }
+template <typename T> _CONSTEXPR_ inline T mMax(const mVec3t<T> &v) { return mMax(mMax(v.x, v.y), v.z); }
+template <typename T> _CONSTEXPR_ inline T mMin(const mVec3t<T> &v) { return mMin(mMin(v.x, v.y), v.z); }
 
-template <typename T> mVec3t<T> mMax(const mVec3t<T> &a, const mVec3t<T> &b) { return mVec3t<T>(mMax(a.x, b.x), mMax(a.y, b.y), mMax(a.z, b.z)); }
-template <typename T> mVec3t<T> mMin(const mVec3t<T> &a, const mVec3t<T> &b) { return mVec3t<T>(mMin(a.x, b.x), mMin(a.y, b.y), mMin(a.z, b.z)); }
+template <typename T> _CONSTEXPR_ inline mVec3t<T> mMax(const mVec3t<T> &a, const mVec3t<T> &b) { return mVec3t<T>(mMax(a.x, b.x), mMax(a.y, b.y), mMax(a.z, b.z)); }
+template <typename T> _CONSTEXPR_ inline mVec3t<T> mMin(const mVec3t<T> &a, const mVec3t<T> &b) { return mVec3t<T>(mMin(a.x, b.x), mMin(a.y, b.y), mMin(a.z, b.z)); }
 
-template <typename T> mVec3t<T> mAbs(const mVec3t<T> &a) { return mVec3t<T>(mAbs(a.x), mAbs(a.y), mAbs(a.z)); }
-template <typename T> mVec3t<T> mFloor(const mVec3t<T> &a) { return mVec3t<T>(mFloor(a.x), mFloor(a.y), mFloor(a.z)); }
-template <typename T> mVec3t<T> mCeil(const mVec3t<T> &a) { return mVec3t<T>(mCeil(a.x), mCeil(a.y), mCeil(a.z)); }
-template <typename T> mVec3t<T> mRound(const mVec3t<T> &a) { return mVec3t<T>(mRound(a.x), mRound(a.y), mRound(a.z)); }
+template <typename T> inline mVec3t<T> mAbs(const mVec3t<T> &a) { return mVec3t<T>(mAbs(a.x), mAbs(a.y), mAbs(a.z)); }
+template <typename T> inline mVec3t<T> mFloor(const mVec3t<T> &a) { return mVec3t<T>(mFloor(a.x), mFloor(a.y), mFloor(a.z)); }
+template <typename T> inline mVec3t<T> mCeil(const mVec3t<T> &a) { return mVec3t<T>(mCeil(a.x), mCeil(a.y), mCeil(a.z)); }
+template <typename T> inline mVec3t<T> mRound(const mVec3t<T> &a) { return mVec3t<T>(mRound(a.x), mRound(a.y), mRound(a.z)); }
 
 typedef mVec3t<size_t> mVec3s;
 typedef mVec3t<int64_t> mVec3i;
@@ -615,42 +594,42 @@ struct mVec4t
   };
 #pragma warning(pop)
 
-  __host__ __device__ inline mVec4t() : x(0), y(0), z(0), w(0) {}
-  __host__ __device__ inline explicit mVec4t(T _v) : x(_v), y(_v), z(_v), w(_v) {}
-  __host__ __device__ inline mVec4t(T _x, T _y, T _z, T _w) : x(_x), y(_y), z(_z), w(_w) {}
-  __host__ __device__ inline explicit mVec4t(const mVec3t<T> vec3, const T _w) : x(vec3.x), y(vec3.y), z(vec3.z), w(_w) {}
-  __host__ __device__ inline explicit mVec4t(const T _x, const mVec3t<T> vec3) : x(_x), y(vec3.x), z(vec3.y), w(vec3.z) {}
-  __host__ __device__ inline explicit mVec4t(const mVec2t<T> vec2, const T _z, const T _w) : x(vec2.x), y(vec2.y), z(_z), w(_w) {}
-  __host__ __device__ inline explicit mVec4t(const mVec2t<T> vec2a, const mVec2t<T> vec2b) : x(vec2a.x), y(vec2a.y), z(vec2b.x), w(vec2b.y) {}
+  __host__ __device__ _CONSTEXPR_ inline mVec4t() : x(0), y(0), z(0), w(0) {}
+  __host__ __device__ _CONSTEXPR_ inline explicit mVec4t(T _v) : x(_v), y(_v), z(_v), w(_v) {}
+  __host__ __device__ _CONSTEXPR_ inline mVec4t(T _x, T _y, T _z, T _w) : x(_x), y(_y), z(_z), w(_w) {}
+  __host__ __device__ _CONSTEXPR_ inline explicit mVec4t(const mVec3t<T> vec3, const T _w) : x(vec3.x), y(vec3.y), z(vec3.z), w(_w) {}
+  __host__ __device__ _CONSTEXPR_ inline explicit mVec4t(const T _x, const mVec3t<T> vec3) : x(_x), y(vec3.x), z(vec3.y), w(vec3.z) {}
+  __host__ __device__ _CONSTEXPR_ inline explicit mVec4t(const mVec2t<T> vec2, const T _z, const T _w) : x(vec2.x), y(vec2.y), z(_z), w(_w) {}
+  __host__ __device__ _CONSTEXPR_ inline explicit mVec4t(const mVec2t<T> vec2a, const mVec2t<T> vec2b) : x(vec2a.x), y(vec2a.y), z(vec2b.x), w(vec2b.y) {}
 
-  template <typename T2> __host__ __device__ inline explicit mVec4t(const mVec4t<T2> &cast) : x((T)cast.x), y((T)cast.y), z((T)cast.z), w((T)cast.w) {}
+  template <typename T2> __host__ __device__ _CONSTEXPR_ inline explicit mVec4t(const mVec4t<T2> &cast) : x((T)cast.x), y((T)cast.y), z((T)cast.z), w((T)cast.w) {}
 
-  __host__ __device__ inline mVec4t<T>  operator +  (const mVec4t<T> &a) const { return mVec4t<T>(x + a.x, y + a.y, z + a.z, w + a.w); };
-  __host__ __device__ inline mVec4t<T>  operator -  (const mVec4t<T> &a) const { return mVec4t<T>(x - a.x, y - a.y, z - a.z, w - a.w); };
-  __host__ __device__ inline mVec4t<T>  operator *  (const mVec4t<T> &a) const { return mVec4t<T>(x * a.x, y * a.y, z * a.z, w * a.w); };
-  __host__ __device__ inline mVec4t<T>  operator /  (const mVec4t<T> &a) const { return mVec4t<T>(x / a.x, y / a.y, z / a.z, w / a.w); };
-  __host__ __device__ inline mVec4t<T>& operator += (const mVec4t<T> &a) { return *this = mVec4t<T>(x + a.x, y + a.y, z + a.z, w + a.w); };
-  __host__ __device__ inline mVec4t<T>& operator -= (const mVec4t<T> &a) { return *this = mVec4t<T>(x - a.x, y - a.y, z - a.z, w - a.w); };
-  __host__ __device__ inline mVec4t<T>& operator *= (const mVec4t<T> &a) { return *this = mVec4t<T>(x * a.x, y * a.y, z * a.z, w * a.w); };
-  __host__ __device__ inline mVec4t<T>& operator /= (const mVec4t<T> &a) { return *this = mVec4t<T>(x / a.x, y / a.y, z / a.z, w / a.w); };
-  __host__ __device__ inline mVec4t<T>  operator *  (const T a) const { return mVec4t<T>(x * a, y * a, z * a, w * a); };
-  __host__ __device__ inline mVec4t<T>  operator /  (const T a) const { return mVec4t<T>(x / a, y / a, z / a, w / a); };
-  __host__ __device__ inline mVec4t<T>& operator *= (const T a) { return *this = mVec4t<T>(x * a, y * a, z * a, w * a); };
-  __host__ __device__ inline mVec4t<T>& operator /= (const T a) { return *this = mVec4t<T>(x / a, y / a, z / a, w / a); };
+  __host__ __device__ _CONSTEXPR_ inline mVec4t<T>  operator +  (const mVec4t<T> &a) const { return mVec4t<T>(x + a.x, y + a.y, z + a.z, w + a.w); };
+  __host__ __device__ _CONSTEXPR_ inline mVec4t<T>  operator -  (const mVec4t<T> &a) const { return mVec4t<T>(x - a.x, y - a.y, z - a.z, w - a.w); };
+  __host__ __device__ _CONSTEXPR_ inline mVec4t<T>  operator *  (const mVec4t<T> &a) const { return mVec4t<T>(x * a.x, y * a.y, z * a.z, w * a.w); };
+  __host__ __device__ _CONSTEXPR_ inline mVec4t<T>  operator /  (const mVec4t<T> &a) const { return mVec4t<T>(x / a.x, y / a.y, z / a.z, w / a.w); };
+  __host__ __device__ _CONSTEXPR_ inline mVec4t<T>& operator += (const mVec4t<T> &a) { return *this = mVec4t<T>(x + a.x, y + a.y, z + a.z, w + a.w); };
+  __host__ __device__ _CONSTEXPR_ inline mVec4t<T>& operator -= (const mVec4t<T> &a) { return *this = mVec4t<T>(x - a.x, y - a.y, z - a.z, w - a.w); };
+  __host__ __device__ _CONSTEXPR_ inline mVec4t<T>& operator *= (const mVec4t<T> &a) { return *this = mVec4t<T>(x * a.x, y * a.y, z * a.z, w * a.w); };
+  __host__ __device__ _CONSTEXPR_ inline mVec4t<T>& operator /= (const mVec4t<T> &a) { return *this = mVec4t<T>(x / a.x, y / a.y, z / a.z, w / a.w); };
+  __host__ __device__ _CONSTEXPR_ inline mVec4t<T>  operator *  (const T a) const { return mVec4t<T>(x * a, y * a, z * a, w * a); };
+  __host__ __device__ _CONSTEXPR_ inline mVec4t<T>  operator /  (const T a) const { return mVec4t<T>(x / a, y / a, z / a, w / a); };
+  __host__ __device__ _CONSTEXPR_ inline mVec4t<T>& operator *= (const T a) { return *this = mVec4t<T>(x * a, y * a, z * a, w * a); };
+  __host__ __device__ _CONSTEXPR_ inline mVec4t<T>& operator /= (const T a) { return *this = mVec4t<T>(x / a, y / a, z / a, w / a); };
 
-  __host__ __device__ inline mVec4t<T>  operator -  () const { return mVec4t<T>(-x, -y, -z, -w); };
+  __host__ __device__ _CONSTEXPR_ inline mVec4t<T>  operator -  () const { return mVec4t<T>(-x, -y, -z, -w); };
 
-  __host__ __device__ inline bool       operator == (const mVec4t<T> &a) const { return x == a.x && y == a.y && z == a.z && w == a.w; };
-  __host__ __device__ inline bool       operator != (const mVec4t<T> &a) const { return x != a.x || y != a.y || z != a.z || w != a.w; };
+  __host__ __device__ _CONSTEXPR_ inline bool       operator == (const mVec4t<T> &a) const { return x == a.x && y == a.y && z == a.z && w == a.w; };
+  __host__ __device__ _CONSTEXPR_ inline bool       operator != (const mVec4t<T> &a) const { return x != a.x || y != a.y || z != a.z || w != a.w; };
 
   __host__ __device__ inline typename mMath_FloatTypeFrom<T>::type Length() const { return mSqrt(x * x + y * y + z * z + w * w); };
-  __host__ __device__ inline T LengthSquared() const { return x * x + y * y + z * z + w * w; };
+  __host__ __device__ _CONSTEXPR_ inline T LengthSquared() const { return x * x + y * y + z * z + w * w; };
   __host__ __device__ inline mVec4t<T> Normalize() const { return *this / (T)Length(); };
 
-  __host__ __device__ inline mVec2t<T> ToVector2() const { return mVec2t<T>(x, y); };
-  __host__ __device__ inline mVec3t<T> ToVector3() const { return mVec3t<T>(x, y, z); };
+  __host__ __device__ _CONSTEXPR_ inline mVec2t<T> ToVector2() const { return mVec2t<T>(x, y); };
+  __host__ __device__ _CONSTEXPR_ inline mVec3t<T> ToVector3() const { return mVec3t<T>(x, y, z); };
 
-  __host__ __device__ inline static T Dot(const mVec4t<T> a, const mVec4t<T> b)
+  __host__ __device__ _CONSTEXPR_ inline static T Dot(const mVec4t<T> a, const mVec4t<T> b)
   {
     return a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w;
   };
@@ -720,16 +699,16 @@ struct mVec4t
 };
 
 template <typename T>
-__host__ __device__ inline mVec4t<T>  operator *  (const T a, const mVec4t<T> b) { return mVec4t<T>(a * b.x, a * b.y, a * b.z, a * b.w); };
+__host__ __device__ _CONSTEXPR_ inline mVec4t<T>  operator *  (const T a, const mVec4t<T> b) { return mVec4t<T>(a * b.x, a * b.y, a * b.z, a * b.w); };
 
 template <typename T>
-__host__ __device__ inline mVec4t<T>  operator /  (const T a, const mVec4t<T> b) { return mVec4t<T>(a / b.x, a / b.y, a / b.z, a / b.w); };
+__host__ __device__ _CONSTEXPR_ inline mVec4t<T>  operator /  (const T a, const mVec4t<T> b) { return mVec4t<T>(a / b.x, a / b.y, a / b.z, a / b.w); };
 
-template <typename T> T mMax(const mVec4t<T> &v) { return mMax(mMax(v.x, v.y), mMax(v.z, v.w)); }
-template <typename T> T mMin(const mVec4t<T> &v) { return mMin(mMin(v.x, v.y), mMin(v.z, v.w)); }
+template <typename T> _CONSTEXPR_ T mMax(const mVec4t<T> &v) { return mMax(mMax(v.x, v.y), mMax(v.z, v.w)); }
+template <typename T> _CONSTEXPR_ T mMin(const mVec4t<T> &v) { return mMin(mMin(v.x, v.y), mMin(v.z, v.w)); }
 
-template <typename T> mVec4t<T> mMax(const mVec4t<T> &a, const mVec4t<T> &b) { return mVec4t<T>(mMax(a.x, b.x), mMax(a.y, b.y), mMax(a.z, b.z), mMax(a.w, b.w)); }
-template <typename T> mVec4t<T> mMin(const mVec4t<T> &a, const mVec4t<T> &b) { return mVec4t<T>(mMin(a.x, b.x), mMin(a.y, b.y), mMin(a.z, b.z), mMin(a.w, b.w)); }
+template <typename T> _CONSTEXPR_ mVec4t<T> mMax(const mVec4t<T> &a, const mVec4t<T> &b) { return mVec4t<T>(mMax(a.x, b.x), mMax(a.y, b.y), mMax(a.z, b.z), mMax(a.w, b.w)); }
+template <typename T> _CONSTEXPR_ mVec4t<T> mMin(const mVec4t<T> &a, const mVec4t<T> &b) { return mVec4t<T>(mMin(a.x, b.x), mMin(a.y, b.y), mMin(a.z, b.z), mMin(a.w, b.w)); }
 
 template <typename T> mVec4t<T> mAbs(const mVec4t<T> &a) { return mVec4t<T>(mAbs(a.x), mAbs(a.y), mAbs(a.z), mAbs(a.w)); }
 template <typename T> mVec4t<T> mFloor(const mVec4t<T> &a) { return mVec4t<T>(mFloor(a.x), mFloor(a.y), mFloor(a.z), mFloor(a.w)); }
@@ -1324,181 +1303,181 @@ inline T mLanczos(const T x)
 //////////////////////////////////////////////////////////////////////////
 
 template<>
-constexpr int8_t mMinValue<int8_t>()
+_CONSTEXPR_ int8_t mMinValue<int8_t>()
 {
   return INT8_MIN;
 }
 
 template<>
-constexpr int16_t mMinValue<int16_t>()
+_CONSTEXPR_ int16_t mMinValue<int16_t>()
 {
   return INT16_MIN;
 }
 
 template<>
-constexpr int32_t mMinValue<int32_t>()
+_CONSTEXPR_ int32_t mMinValue<int32_t>()
 {
   return INT32_MIN;
 }
 
 template<>
-constexpr int64_t mMinValue<int64_t>()
+_CONSTEXPR_ int64_t mMinValue<int64_t>()
 {
   return INT64_MIN;
 }
 
 template<>
-constexpr uint8_t mMinValue<uint8_t>()
+_CONSTEXPR_ uint8_t mMinValue<uint8_t>()
 {
   return 0;
 }
 
 template<>
-constexpr uint16_t mMinValue<uint16_t>()
+_CONSTEXPR_ uint16_t mMinValue<uint16_t>()
 {
   return 0;
 }
 
 template<>
-constexpr uint32_t mMinValue<uint32_t>()
+_CONSTEXPR_ uint32_t mMinValue<uint32_t>()
 {
   return 0;
 }
 
 template<>
-constexpr uint64_t mMinValue<uint64_t>()
+_CONSTEXPR_ uint64_t mMinValue<uint64_t>()
 {
   return 0;
 }
 
 template<>
-constexpr float_t mMinValue<float_t>()
+_CONSTEXPR_ float_t mMinValue<float_t>()
 {
   return -FLT_MAX;
 }
 
 template<>
-constexpr double_t mMinValue<double_t>()
+_CONSTEXPR_ double_t mMinValue<double_t>()
 {
   return -DBL_MAX;
 }
 
 template<>
-constexpr int8_t mMaxValue<int8_t>()
+_CONSTEXPR_ int8_t mMaxValue<int8_t>()
 {
   return INT8_MAX;
 }
 
 template<>
-constexpr int16_t mMaxValue<int16_t>()
+_CONSTEXPR_ int16_t mMaxValue<int16_t>()
 {
   return INT16_MAX;
 }
 
 template<>
-constexpr int32_t mMaxValue<int32_t>()
+_CONSTEXPR_ int32_t mMaxValue<int32_t>()
 {
   return INT32_MAX;
 }
 
 template<>
-constexpr int64_t mMaxValue<int64_t>()
+_CONSTEXPR_ int64_t mMaxValue<int64_t>()
 {
   return INT64_MAX;
 }
 
 template<>
-constexpr uint8_t mMaxValue<uint8_t>()
+_CONSTEXPR_ uint8_t mMaxValue<uint8_t>()
 {
   return UINT8_MAX;
 }
 
 template<>
-constexpr uint16_t mMaxValue<uint16_t>()
+_CONSTEXPR_ uint16_t mMaxValue<uint16_t>()
 {
   return UINT16_MAX;
 }
 
 template<>
-constexpr uint32_t mMaxValue<uint32_t>()
+_CONSTEXPR_ uint32_t mMaxValue<uint32_t>()
 {
   return UINT32_MAX;
 }
 
 template<>
-constexpr uint64_t mMaxValue<uint64_t>()
+_CONSTEXPR_ uint64_t mMaxValue<uint64_t>()
 {
   return UINT64_MAX;
 }
 
 template<>
-constexpr float_t mMaxValue<float_t>()
+_CONSTEXPR_ float_t mMaxValue<float_t>()
 {
   return FLT_MAX;
 }
 
 template<>
-constexpr double_t mMaxValue<double_t>()
+_CONSTEXPR_ double_t mMaxValue<double_t>()
 {
   return DBL_MAX;
 }
 
 template<>
-constexpr float_t mSmallest<float_t>()
+_CONSTEXPR_ float_t mSmallest<float_t>()
 {
   return FLT_EPSILON;
 };
 
 template<>
-constexpr double_t mSmallest<double_t>()
+_CONSTEXPR_ double_t mSmallest<double_t>()
 {
   return DBL_EPSILON;
 };
 
 template <>
-uint64_t constexpr mMod<uint64_t>(const uint64_t value, const uint64_t modulus)
+uint64_t _CONSTEXPR_ mMod<uint64_t>(const uint64_t value, const uint64_t modulus)
 {
   return value % modulus;
 }
 
 template <>
-int64_t constexpr mMod<int64_t>(const int64_t value, const int64_t modulus)
+int64_t _CONSTEXPR_ mMod<int64_t>(const int64_t value, const int64_t modulus)
 {
   return value % modulus;
 }
 
 template <>
-uint32_t constexpr mMod<uint32_t>(const uint32_t value, const uint32_t modulus)
+uint32_t _CONSTEXPR_ mMod<uint32_t>(const uint32_t value, const uint32_t modulus)
 {
   return value % modulus;
 }
 
 template <>
-int32_t constexpr mMod<int32_t>(const int32_t value, const int32_t modulus)
+int32_t _CONSTEXPR_ mMod<int32_t>(const int32_t value, const int32_t modulus)
 {
   return value % modulus;
 }
 
 template <>
-uint16_t constexpr mMod<uint16_t>(const uint16_t value, const uint16_t modulus)
+uint16_t _CONSTEXPR_ mMod<uint16_t>(const uint16_t value, const uint16_t modulus)
 {
   return value % modulus;
 }
 
 template <>
-int16_t constexpr mMod<int16_t>(const int16_t value, const int16_t modulus)
+int16_t _CONSTEXPR_ mMod<int16_t>(const int16_t value, const int16_t modulus)
 {
   return value % modulus;
 }
 
 template <>
-uint8_t constexpr mMod<uint8_t>(const uint8_t value, const uint8_t modulus)
+uint8_t _CONSTEXPR_ mMod<uint8_t>(const uint8_t value, const uint8_t modulus)
 {
   return value % modulus;
 }
 
 template <>
-int8_t constexpr mMod<int8_t>(const int8_t value, const int8_t modulus)
+int8_t _CONSTEXPR_ mMod<int8_t>(const int8_t value, const int8_t modulus)
 {
   return value % modulus;
 }
