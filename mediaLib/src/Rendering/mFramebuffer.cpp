@@ -33,6 +33,7 @@ mFUNCTION(mFramebuffer_Create, OUT mPtr<mFramebuffer> *pFramebuffer, IN mAllocat
   if (mFramebuffer_Queue == nullptr)
     mERROR_CHECK(mQueue_Create(&mFramebuffer_Queue, &mDefaultAllocator));
 
+  mDEFER_CALL_ON_ERROR(pFramebuffer, mSharedPointer_Destroy);
   mERROR_CHECK(mSharedPointer_Allocate(pFramebuffer, pAllocator, (std::function<void (mFramebuffer *)>)[](mFramebuffer *pData) { mFramebuffer_Destroy_Internal(pData); }, 1));
 
   mERROR_CHECK(mFramebuffer_Create_Internal(pFramebuffer->GetPointer(), size, textureParams, sampleCount, mPF_R8G8B8A8));
@@ -49,6 +50,7 @@ mFUNCTION(mFramebuffer_Create, OUT mPtr<mFramebuffer> *pFramebuffer, IN mAllocat
   if (mFramebuffer_Queue == nullptr)
     mERROR_CHECK(mQueue_Create(&mFramebuffer_Queue, &mDefaultAllocator));
 
+  mDEFER_CALL_ON_ERROR(pFramebuffer, mSharedPointer_Destroy);
   mERROR_CHECK(mSharedPointer_Allocate(pFramebuffer, pAllocator, (std::function<void (mFramebuffer *)>)[](mFramebuffer *pData) { mFramebuffer_Destroy_Internal(pData); }, 1));
 
   mERROR_CHECK(mFramebuffer_Create_Internal(pFramebuffer->GetPointer(), size, textureParams, sampleCount, pixelFormat));

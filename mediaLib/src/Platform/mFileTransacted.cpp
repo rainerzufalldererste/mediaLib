@@ -54,6 +54,7 @@ mFUNCTION(mFileTransaction_Create, OUT mPtr<mFileTransaction> *pTransaction, IN 
 
   mDEFER_ON_ERROR(CloseHandle(transactionHandle));
 
+  mDEFER_CALL_ON_ERROR(pTransaction, mSharedPointer_Destroy);
   mERROR_CHECK((mSharedPointer_Allocate<mFileTransaction>(pTransaction, pAllocator, [](mFileTransaction *pData) { mFileTransaction_Destroy_Internal(pData); }, 1)));
 
   (*pTransaction)->transactionHandle = transactionHandle;

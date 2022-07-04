@@ -143,6 +143,7 @@ mFUNCTION(mVideoPlaybackEngine_Create, OUT mPtr<mVideoPlaybackEngine> *pPlayback
 {
   mFUNCTION_SETUP();
 
+  mDEFER_CALL_ON_ERROR(pPlaybackEngine, mSharedPointer_Destroy);
   mERROR_CHECK(mSharedPointer_Allocate(pPlaybackEngine, pAllocator, (std::function<void(mVideoPlaybackEngine *)>)[](mVideoPlaybackEngine *pData) { mVideoPlaybackEngine_Destroy_Internal(pData); }, 1));
 
   mERROR_CHECK(mVideoPlaybackEngine_Create_Internal(pPlaybackEngine->GetPointer(), pAllocator, fileName, asyncTaskHandler, videoStreamIndex, outputPixelFormat, playbackFlags));

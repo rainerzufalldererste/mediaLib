@@ -18,6 +18,7 @@ mFUNCTION(mScreenQuad_Create, OUT mPtr<mScreenQuad> *pScreenQuad, IN mAllocator 
 {
   mFUNCTION_SETUP();
 
+  mDEFER_CALL_ON_ERROR(pScreenQuad, mSharedPointer_Destroy);
   mERROR_CHECK(mSharedPointer_Allocate(pScreenQuad, pAllocator, (std::function<void(mScreenQuad *)>)[](mScreenQuad *pData) {mScreenQuad_Destroy_Internal(pData);}, 1));
 
 #if defined(mRENDERER_OPENGL)

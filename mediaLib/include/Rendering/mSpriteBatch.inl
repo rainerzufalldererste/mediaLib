@@ -608,6 +608,8 @@ inline mFUNCTION(mSpriteBatch_Create_Internal, IN_OUT mSpriteBatch<Args...> *pSp
   mERROR_IF(0 > sprintf_s(fragmentShader, "%s\n}\n", fragmentShader), mR_InternalError);
   mERROR_IF(0 > sprintf_s(fragmentShaderMS, "%s\n}\n", fragmentShaderMS), mR_InternalError);
 
+  mDEFER_CALL_ON_ERROR(&pSpriteBatch->shader, mSharedPointer_Destroy);
+  mDEFER_CALL_ON_ERROR(&pSpriteBatch->multisampleShader, mSharedPointer_Destroy);
   mERROR_CHECK(mSharedPointer_Allocate(&pSpriteBatch->shader, nullptr, (std::function<void(mShader *)>)[](mShader *pData) {mShader_Destroy(pData);}, 1));
   mERROR_CHECK(mSharedPointer_Allocate(&pSpriteBatch->multisampleShader, nullptr, (std::function<void(mShader *)>)[](mShader *pData) {mShader_Destroy(pData); }, 1));
   mERROR_CHECK(mShader_Create(pSpriteBatch->shader.GetPointer(), vertexShader, fragmentShader, "fragColour0"));

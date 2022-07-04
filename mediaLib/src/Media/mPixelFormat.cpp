@@ -185,6 +185,75 @@ mFUNCTION(mPixelFormat_GetSize, const mPixelFormat pixelFormat, const mVec2s &si
   mRETURN_SUCCESS();
 }
 
+mFUNCTION(mPixelFormat_GetSize, const mPixelFormat pixelFormat, const mVec3s &size, OUT size_t *pBytes)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pBytes == nullptr, mR_ArgumentNull);
+
+  switch (pixelFormat)
+  {
+  case mPF_Monochrome8:
+    *pBytes = sizeof(uint8_t) * size.x * size.y * size.z;
+    break;
+
+  case mPF_Monochrome16:
+  case mPF_Monochromef16:
+    *pBytes = sizeof(uint16_t) * size.x * size.y * size.z;
+    break;
+
+  case mPF_Monochromef32:
+    *pBytes = sizeof(float_t) * size.x * size.y * size.z;
+    break;
+
+  case mPF_R8G8:
+    *pBytes = sizeof(uint8_t) * 2 * size.x * size.y * size.z;
+    break;
+
+  case mPF_R16G16:
+  case mPF_Rf16Gf16:
+    *pBytes = sizeof(uint16_t) * 2 * size.x * size.y * size.z;
+    break;
+
+  case mPF_Rf32Gf32:
+    *pBytes = sizeof(float_t) * 2 * size.x * size.y * size.z;
+    break;
+
+  case mPF_R8G8B8:
+  case mPF_B8G8R8:
+    *pBytes = sizeof(uint8_t) * 3 * size.x * size.y * size.z;
+    break;
+
+  case mPF_R16G16B16:
+  case mPF_Rf16Gf16Bf16:
+    *pBytes = sizeof(uint16_t) * 3 * size.x * size.y * size.z;
+    break;
+
+  case mPF_Rf32Gf32Bf32:
+    *pBytes = sizeof(float_t) * 3 * size.x * size.y * size.z;
+    break;
+
+  case mPF_R8G8B8A8:
+  case mPF_B8G8R8A8:
+    *pBytes = sizeof(uint8_t) * 4 * size.x * size.y * size.z;
+    break;
+
+  case mPF_R16G16B16A16:
+  case mPF_Rf16Gf16Bf16Af16:
+    *pBytes = sizeof(uint16_t) * 4 * size.x * size.y * size.z;
+    break;
+
+  case mPF_Rf32Gf32Bf32Af32:
+    *pBytes = sizeof(float_t) * 4 * size.x * size.y * size.z;
+    break;
+
+  default:
+    mRETURN_RESULT(mR_InvalidParameter);
+  }
+
+  mRETURN_SUCCESS();
+}
+
 mFUNCTION(mPixelFormat_GetComponentCount, const mPixelFormat pixelFormat, OUT size_t *pCount)
 {
   mFUNCTION_SETUP();

@@ -35,6 +35,7 @@ mFUNCTION(mPointRenderer_Create, OUT mPtr<mPointRenderer> *pPointRenderer, IN mA
 
   mERROR_IF(pPointRenderer == nullptr, mR_ArgumentNull);
 
+  mDEFER_CALL_ON_ERROR(pPointRenderer, mSharedPointer_Destroy);
   mERROR_CHECK(mSharedPointer_Allocate(pPointRenderer, pAllocator, (std::function<void (mPointRenderer *)>)[](mPointRenderer *pData) {mPointRenderer_Destroy_Internal(pData);}, 1));
 
 #if defined(mRENDERER_OPENGL)

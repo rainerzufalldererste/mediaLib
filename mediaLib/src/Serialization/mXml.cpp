@@ -79,8 +79,8 @@ mFUNCTION(mXmlReader_CreateFromString, OUT mPtr<mXmlReader> *pXmlReader, IN mAll
 
   mERROR_IF(pXmlReader == nullptr || string == nullptr, mR_ArgumentNull);
 
-  mERROR_CHECK(mSharedPointer_Allocate<mXmlReader>(pXmlReader, pAllocator, [](mXmlReader *pData) { mXmlReader_Destroy_Internal(pData); }, 1));
   mDEFER_CALL_ON_ERROR(pXmlReader, mSetToNullptr<mXmlReader>);
+  mERROR_CHECK(mSharedPointer_Allocate<mXmlReader>(pXmlReader, pAllocator, [](mXmlReader *pData) { mXmlReader_Destroy_Internal(pData); }, 1));
 
   mXmlReader *pXml = pXmlReader->GetPointer();
   
@@ -501,8 +501,8 @@ mFUNCTION(mXmlWriter_Create, OUT mPtr<mXmlWriter> *pXmlWriter, IN mAllocator *pA
   mERROR_IF(pXmlWriter == nullptr, mR_ArgumentNull);
   mERROR_IF(!mXmlWriter_IsValidString(rootElementTag) || mXmlWriter_StringNeedsEscaping(rootElementTag), mR_InvalidParameter);
 
-  mERROR_CHECK(mSharedPointer_Allocate<mXmlWriter>(pXmlWriter, pAllocator, [](mXmlWriter *pData) { mXmlWriter_Destroy_Internal(pData); }, 1));
   mDEFER_CALL_ON_ERROR(pXmlWriter, mSetToNullptr);
+  mERROR_CHECK(mSharedPointer_Allocate<mXmlWriter>(pXmlWriter, pAllocator, [](mXmlWriter *pData) { mXmlWriter_Destroy_Internal(pData); }, 1));
 
   (*pXmlWriter)->pAllocator = pAllocator;
 

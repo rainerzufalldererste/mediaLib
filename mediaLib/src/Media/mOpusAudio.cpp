@@ -5,6 +5,7 @@
 #include "opusenc.h"
 
 #include "mMutex.h"
+#include "mProfiler.h"
 
 #ifdef GIT_BUILD // Define __M_FILE__
   #ifdef __M_FILE__
@@ -40,6 +41,7 @@ mFUNCTION(mOpusEncoder_Create, OUT mPtr<mOpusEncoder> *pEncoder, IN mAllocator *
   mERROR_IF(audioSource->channelCount > mOpusEncoder_MaxChannelCount || audioSource->channelCount == 0, mR_NotSupported);
   mERROR_IF(audioSource->isBeingConsumed, mR_ResourceStateInvalid);
 
+  mDEFER_CALL_ON_ERROR(pEncoder, mSharedPointer_Destroy);
   mERROR_CHECK(mSharedPointer_Allocate<mOpusEncoder>(pEncoder, pAllocator, [](mOpusEncoder *pData) { mOpusEncoder_Destroy_Internal(pData); }, 1));
 
   (*pEncoder)->audioSource = audioSource;
@@ -180,6 +182,7 @@ mFUNCTION(mOpusEncoderPassive_Create, OUT mPtr<mOpusEncoderPassive> *pEncoder, I
   mERROR_IF(pEncoder == nullptr, mR_ArgumentNull);
   mERROR_IF(filename.bytes <= 1 || filename.hasFailed, mR_InvalidParameter);
 
+  mDEFER_CALL_ON_ERROR(pEncoder, mSharedPointer_Destroy);
   mERROR_CHECK(mSharedPointer_Allocate<mOpusEncoderPassive>(pEncoder, pAllocator, [](mOpusEncoderPassive *pData) { mOpusEncoderPassive_Destroy_Internal(pData); }, 1));
 
   (*pEncoder)->pComments = ope_comments_create();
@@ -289,6 +292,7 @@ mFUNCTION(mOpusFileAudioSource_Create, OUT mPtr<mAudioSource> *pAudioSource, IN 
   mERROR_IF(filename.hasFailed || filename.count <= 1, mR_InvalidParameter);
 
   mOpusFileAudioSource *pInstance = nullptr;
+  mDEFER_CALL_ON_ERROR(pAudioSource, mSharedPointer_Destroy);
   mERROR_CHECK((mSharedPointer_AllocateInherited<mAudioSource, mOpusFileAudioSource>(pAudioSource, pAllocator, [](mOpusFileAudioSource *pData) { mOpusFileAudioSource_Destroy_Internal(pData); }, &pInstance)));
 
   pInstance->pAllocator = pAllocator;
@@ -428,6 +432,8 @@ static mFUNCTION(mOpusFileAudioSource_GetBuffer_Internal, mPtr<mAudioSource> &au
 {
   mFUNCTION_SETUP();
 
+  mPROFILE_SCOPED("mOpusFileAudioSource_GetBuffer_Internal");
+
   mERROR_IF(audioSource == nullptr || pBuffer == nullptr || pBufferCount == nullptr, mR_ArgumentNull);
   mERROR_IF(channelIndex >= audioSource->channelCount, mR_InvalidParameter);
   mERROR_IF(audioSource->pGetBufferFunc != mOpusFileAudioSource_GetBuffer_Internal, mR_ResourceIncompatible);
@@ -471,6 +477,8 @@ static mFUNCTION(mOpusFileAudioSource_MoveToNextBuffer_Internal, mPtr<mAudioSour
 {
   mFUNCTION_SETUP();
 
+  mPROFILE_SCOPED("mOpusFileAudioSource_MoveToNextBuffer_Internal");
+
   mERROR_IF(audioSource == nullptr, mR_ArgumentNull);
   mERROR_IF(audioSource->pMoveToNextBufferFunc != mOpusFileAudioSource_MoveToNextBuffer_Internal, mR_ResourceIncompatible);
 
@@ -504,6 +512,8 @@ static mFUNCTION(mOpusFileAudioSource_MoveToNextBuffer_Internal, mPtr<mAudioSour
 static mFUNCTION(mOpusFileAudioSource_SeekSample_Internal, mPtr<mAudioSource> &audioSource, const size_t sample)
 {
   mFUNCTION_SETUP();
+
+  mPROFILE_SCOPED("mOpusFileAudioSource_SeekSample_Internal");
 
   mERROR_IF(audioSource == nullptr, mR_ArgumentNull);
   mERROR_IF(audioSource->pSeekSampleFunc != mOpusFileAudioSource_SeekSample_Internal, mR_ResourceIncompatible);
@@ -541,6 +551,8 @@ static mFUNCTION(mOpusFileAudioSource_ConsumeBuffer_Internal, IN mOpusFileAudioS
 static mFUNCTION(mOpusFileAudioSource_ReadBuffer_Internal, IN mOpusFileAudioSource *pAudioSource, const size_t samplesToLoad)
 {
   mFUNCTION_SETUP();
+
+  mPROFILE_SCOPED("mOpusFileAudioSource_ReadBuffer_Internal");
 
   mERROR_IF(samplesToLoad == 0, mR_Success);
 

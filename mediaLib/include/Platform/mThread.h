@@ -130,4 +130,15 @@ mFUNCTION(mThread_GetNativeHandle, IN mThread *pThread, OUT std::thread::native_
 
 mFUNCTION(mThread_GetMaximumConcurrentThreads, OUT size_t *pMaximumConcurrentThreadCount);
 
+enum mThread_Priority
+{
+  mT_P_Low,
+  mT_P_Normal,
+  mT_P_High,
+  mT_P_Realtime,
+};
+
+mFUNCTION(mThread_SetThreadPriority, IN mThread *pThread, const mThread_Priority priority);
+mFUNCTION(mThread_SetCurrentThreadPriority, const mThread_Priority priority);
+
 #endif // mThread_h__

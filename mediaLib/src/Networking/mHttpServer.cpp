@@ -120,6 +120,7 @@ mFUNCTION(mHttpServer_Create, OUT mPtr<mHttpServer> *pHttpServer, IN mAllocator 
 
   mERROR_IF(pHttpServer == nullptr, mR_ArgumentNull);
 
+  mDEFER_CALL_ON_ERROR(pHttpServer, mSharedPointer_Destroy);
   mERROR_CHECK(mSharedPointer_Allocate<mHttpServer>(pHttpServer, pAllocator, [](mHttpServer *pData) { mHttpServer_Destroy_Internal(pData); }, 1));
 
   mERROR_CHECK(mTcpServer_Create(&(*pHttpServer)->tcpServer, pAllocator, port));
@@ -896,6 +897,7 @@ mFUNCTION(mHttpErrorRequestHandler_CreateDefaultHandler, OUT mPtr<mHttpErrorRequ
 
   mDefaultHttpErrorRequestHandler *pHandler = nullptr;
 
+  mDEFER_CALL_ON_ERROR(pRequestHandler, mSharedPointer_Destroy);
   mERROR_CHECK((mSharedPointer_AllocateInherited<mHttpErrorRequestHandler, mDefaultHttpErrorRequestHandler>(pRequestHandler, pAllocator, nullptr, &pHandler)));
 
   pHandler->pHandleRequest = mDefaultHttpErrorRequestHandler_HandleRequest;

@@ -2032,6 +2032,7 @@ mFUNCTION(mFileWriter_Create, OUT mPtr<mFileWriter> *pWriter, IN mAllocator *pAl
   mDEFER_CALL(pFile, fclose);
 #endif
 
+  mDEFER_CALL_ON_ERROR(pWriter, mSharedPointer_Destroy);
   mERROR_CHECK(mSharedPointer_Allocate<mFileWriter>(pWriter, pAllocator, [](mFileWriter *pData) { mFileWriter_Destroy_Internal(pData); }, 1));
 
 #ifdef mPLATFORM_WINDOWS

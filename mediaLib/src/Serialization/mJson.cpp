@@ -50,6 +50,7 @@ mFUNCTION(mJsonWriter_Create, OUT mPtr<mJsonWriter> *pJsonWriter, IN mAllocator 
 
   mERROR_IF(pJsonWriter == nullptr, mR_ArgumentNull);
 
+  mDEFER_CALL_ON_ERROR(pJsonWriter, mSharedPointer_Destroy);
   mERROR_CHECK(mSharedPointer_Allocate(pJsonWriter, pAllocator, (std::function<void(mJsonWriter *)>)[](mJsonWriter *pData) { mJsonWriter_Destroy_Internal(pData); }, 1));
 
   mERROR_CHECK(mQueue_Create(&(*pJsonWriter)->currentBlock, pAllocator));
@@ -1227,6 +1228,7 @@ static mFUNCTION(mJsonReader_Create_Internal, OUT mPtr<mJsonReader> *pJsonReader
 
   mERROR_IF(pJsonReader == nullptr, mR_ArgumentNull);
 
+  mDEFER_CALL_ON_ERROR(pJsonReader, mSharedPointer_Destroy);
   mERROR_CHECK(mSharedPointer_Allocate(pJsonReader, pAllocator, (std::function<void(mJsonReader *)>)[](mJsonReader *pData) { mJsonReader_Destroy_Internal(pData); }, 1));
 
   mERROR_CHECK(mQueue_Create(&(*pJsonReader)->currentBlock, pAllocator));

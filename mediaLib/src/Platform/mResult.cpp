@@ -13,7 +13,9 @@ thread_local mResult g_mResult_lastErrorResult = mR_Success;
 
 #if !defined(GIT_BUILD)
 bool g_mResult_breakOnError_default = false;
+bool g_mResult_breakOnIndirectError_default = false;
 thread_local bool g_mResult_breakOnError = g_mResult_breakOnError_default;
+thread_local bool g_mResult_breakOnIndirectError = g_mResult_breakOnIndirectError_default;
 #endif
 
 bool g_mResult_silent_default = false;
@@ -67,24 +69,14 @@ const char * mResult_ToString(const mResult result)
 #endif
 }
 
-void mOnError(const mResult error)
+extern "C" void mOnError(const mResult error)
 {
-#ifndef GIT_BUILD
-  if (g_mResult_breakOnError)
-    mDEBUG_BREAK();
-#endif
-
   if (g_mResult_onError != nullptr)
     g_mResult_onError(error);
 }
 
-void mOnIndirectError(const mResult error)
+extern "C" void mOnIndirectError(const mResult error)
 {
-#ifndef GIT_BUILD
-  if (g_mResult_breakOnError)
-    mDEBUG_BREAK();
-#endif
-
   if (g_mResult_onIndirectError != nullptr)
     g_mResult_onIndirectError(error);
 }

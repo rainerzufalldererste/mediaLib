@@ -66,6 +66,21 @@ project(ProjectName)
   includedirs { "3rdParty/freetype/include" }
   includedirs { "3rdParty/dragonbox/include" }
 
+  if os.target() == "windows" then
+    if os.getenv("CUDA_PATH") then -- for nvidia
+      print("Initializing Project with Nvidia CUDA SDK OpenCL Headers.");
+      includedirs { "$(CUDA_PATH)/include" }
+    elseif os.getenv("AMDAPPSDKROOT") then -- for amd/radeon
+      print("Initializing Project with AMD APP SDK OpenCL Headers.");
+      includedirs { "$(AMDAPPSDKROOT)/include" }
+    else
+      print "Neither 'CUDA_PATH', nor 'AMDAPPSDKROOT' environment variable is defined. Using generic OpenCL headers from 3rdParty/OpenCL."
+      includedirs { "3rdParty/OpenCL/include" } -- copied from `AMDAPPSDKROOT`
+    end
+  else
+    includedirs { "3rdParty/OpenCL/include" } -- copied from `AMDAPPSDKROOT` on windows.
+  end
+
   filter { "configurations:Debug", "system:Windows" }
     ignoredefaultlibraries { "libcmt" }
   filter { }

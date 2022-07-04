@@ -54,6 +54,7 @@ mFUNCTION(mHttpRequest_Create, OUT mPtr<mHttpRequest> *pHttpRequest, IN mAllocat
   mERROR_IF(pHttpRequest == nullptr, mR_ArgumentNull);
   mERROR_IF(url.hasFailed || url.count < 2, mR_InvalidParameter);
 
+  mDEFER_CALL_ON_ERROR(pHttpRequest, mSharedPointer_Destroy);
   mERROR_CHECK(mSharedPointer_Allocate<mHttpRequest>(pHttpRequest, pAllocator, [](mHttpRequest *pData) { mHttpRequest_Destroy_Internal(pData); }, 1));
 
   if (!mHttpRequest_Initialized)

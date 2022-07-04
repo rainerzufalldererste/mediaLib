@@ -32,8 +32,8 @@ mFUNCTION(mCachedFileReader_Create, OUT mPtr<mCachedFileReader> *pCachedFileRead
     mERROR_IF(!fileExists, mR_ResourceNotFound);
   }
 
-  mERROR_CHECK(mSharedPointer_Allocate(pCachedFileReader, pAllocator, (std::function<void(mCachedFileReader *)>)[](mCachedFileReader *pData) {mCachedFileReader_Destroy_Internal(pData);}, 1));
   mDEFER_CALL_ON_ERROR(pCachedFileReader, mSharedPointer_Destroy);
+  mERROR_CHECK(mSharedPointer_Allocate(pCachedFileReader, pAllocator, (std::function<void(mCachedFileReader *)>)[](mCachedFileReader *pData) {mCachedFileReader_Destroy_Internal(pData);}, 1));
 
   (*pCachedFileReader)->pAllocator = pAllocator;
   (*pCachedFileReader)->maxCacheSize = maxCacheSize;

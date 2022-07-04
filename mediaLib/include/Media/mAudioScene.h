@@ -24,25 +24,25 @@ struct mVirtualMicrophone
   PUBLIC_FIELD volatile mVec3f nextPosition; // in Meters.
   PUBLIC_FIELD volatile mVec3f nextForward;
   
-  // < 1: Wider than dotp of audio source position and forward.
-  // > 1: Narrower than dotp of audio source position and forward.
+  // < 1: Narrower than dotp of audio source position and forward.
+  // > 1: Wider than dotp of audio source position and forward.
   //
   // Examples:
-  // 0 = Omni directional with 1 >= `polarPatternRaise` > 0.
   // 1 = Cardioid with `polarPatternRaise` = 0.
   PUBLIC_FIELD volatile float_t polarPatternWidth;
   
   // Minimum Volume Factor of a spacial audio source based on its angle to the microphone.
   // Should be 0 <= x <= 1.
+  //
+  // 1 = Omnidirectional (no matter what `polarPatternWidth` is).
   PUBLIC_FIELD volatile float_t polarPatternRaise;
 
   PUBLIC_FIELD volatile float_t behindFilterStrength;
   CONST_FIELD std::function<mResult(mVirtualMicrophone *pMicrophone, const size_t samples)> updateCallback;
 };
 
-mFUNCTION(mAudioScene_Create, OUT mPtr<mAudioSource> *pAudioScene, IN mAllocator *pAllocator, const size_t outputCount, const size_t sampleRate = 44100);
+mFUNCTION(mAudioScene_Create, OUT mPtr<mAudioSource> *pAudioScene, IN mAllocator *pAllocator, const size_t outputCount, const size_t sampleRate = 48000);
 
-// `behindFilterStrength` is not supported yet.
 mFUNCTION(mAudioScene_AddVirtualMicrophone, 
   OUT mPtr<mAudioSource> &audioScene, 
   OUT OPTIONAL mPtr<mVirtualMicrophone> *pMicrophone,
