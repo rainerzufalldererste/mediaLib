@@ -35,6 +35,7 @@ struct mAudioEngine
   volatile bool bufferReady;
   volatile bool keepRunning;
   volatile float_t masterVolume;
+  mAudio_ResampleQuality resampleQuality;
 };
 
 static mFUNCTION(mAudioEngine_Destroy_Internal, IN_OUT mAudioEngine *pAudioEngine);
@@ -82,6 +83,7 @@ mFUNCTION(mAudioEngine_Create, OUT mPtr<mAudioEngine> *pAudioEngine, IN mAllocat
   (*pAudioEngine)->pAllocator = pAllocator;
   (*pAudioEngine)->keepRunning = true;
   (*pAudioEngine)->masterVolume = 1.f;
+  (*pAudioEngine)->resampleQuality = mA_RQ_BestQuality;
 
   mERROR_CHECK(mThread_Create(&(*pAudioEngine)->pUpdateThread, pAllocator, mAudioEngine_PrepareNextAudioBuffer_Internal, pAudioEngine->GetPointer()));
   mERROR_CHECK(mAudioEngine_SetPaused(*pAudioEngine, false));
@@ -191,7 +193,7 @@ static void SDLCALL mAudioEngine_AudioCallback_Internal(IN void *pUserData, OUT 
 
 #if !defined(GIT_BUILD)
   if (i >= mAudioEngine_BufferNotReadyTries)
-    mDebugOut("! [AUDIO_ERROR]  AudioEngine callback could not be retrieved in time. (%" PRIu64 " tries)\n", i);
+    mDebugOut("! [AUDIO_ERROR]  AudioEngine callback could not be retrieved in time. (", i, " tries)\n");
 #endif
 
 epilogue:
@@ -203,6 +205,8 @@ static mFUNCTION(mAudioEngine_PrepareNextAudioBuffer_Internal, IN mAudioEngine *
   mFUNCTION_SETUP();
 
   mERROR_IF(pAudioEngine == nullptr, mR_ArgumentNull);
+
+  mERROR_CHECK(mThread_SetCurrentThreadPriority(mT_P_Realtime));
 
   while (pAudioEngine->keepRunning)
   {
@@ -256,6 +260,8 @@ static mFUNCTION(mAudioEngine_ManagedAudioCallback_Internal, IN mAudioEngine *pA
   mPROFILE_SCOPED("mAudioEngine_ManagedAudioCallback");
 
   const size_t perChannelLength = length / pAudioEngine->channelCount;
+  const int64_t startTimeNs = mGetCurrentTimeNs();
+  float_t resamplingTimeMs = 0;
 
   mDEFER(mQueue_Clear(pAudioEngine->unusedAudioSources));
 
@@ -269,6 +275,8 @@ static mFUNCTION(mAudioEngine_ManagedAudioCallback_Internal, IN mAudioEngine *pA
       continue;
     }
 
+    (*_item)->performanceInfo.processingTimeMs = 0;
+
     const size_t bufferLength = pAudioEngine->bufferSize * (*_item)->sampleRate / pAudioEngine->sampleRate;
     bool continueOuter = false;
 
@@ -276,7 +284,11 @@ static mFUNCTION(mAudioEngine_ManagedAudioCallback_Internal, IN mAudioEngine *pA
     {
       size_t bufferCount;
 
+      const int64_t processingStartNs = mGetCurrentTimeNs();
+
       const mResult result = mSILENCE_ERROR((*(*_item)->pGetBufferFunc)(*_item, pAudioEngine->audioCallbackBuffer + bufferLength * channel, bufferLength, channel, &bufferCount));
+
+      (*_item)->performanceInfo.processingTimeMs += (mGetCurrentTimeNs() - processingStartNs) * 1e-6f;
 
       if (mFAILED(result))
       {
@@ -295,7 +307,11 @@ static mFUNCTION(mAudioEngine_ManagedAudioCallback_Internal, IN mAudioEngine *pA
 
     if (!(*_item)->stopPlayback && (*_item)->pMoveToNextBufferFunc != nullptr)
     {
+      const int64_t processingStartNs = mGetCurrentTimeNs();
+
       const mResult result = mSILENCE_ERROR((*(*_item)->pMoveToNextBufferFunc)(*_item, bufferLength));
+
+      (*_item)->performanceInfo.processingTimeMs += (mGetCurrentTimeNs() - processingStartNs) * 1e-6f;
 
       if (mFAILED(result))
       {
@@ -330,12 +346,20 @@ static mFUNCTION(mAudioEngine_ManagedAudioCallback_Internal, IN mAudioEngine *pA
     {
       if ((*_item)->channelCount >= pAudioEngine->channelCount)
       {
+        const int64_t resamplingStartTimeNs = mGetCurrentTimeNs();
+
         for (size_t channel = 0; channel < pAudioEngine->channelCount; channel++)
-          mERROR_CHECK(mAudio_AddResampleToInterleavedFromChannelWithVolume(pStream, pAudioEngine->audioCallbackBuffer + channel * bufferLength, channel, pAudioEngine->channelCount, perChannelLength, bufferLength, volume));
+          mERROR_CHECK(mAudio_AddResampleToInterleavedFromChannelWithVolume(pStream, pAudioEngine->audioCallbackBuffer + channel * bufferLength, channel, pAudioEngine->channelCount, perChannelLength, bufferLength, volume, pAudioEngine->resampleQuality));
+
+        resamplingTimeMs += (mGetCurrentTimeNs() - resamplingStartTimeNs) * 1e-6f;
       }
       else if ((*_item)->channelCount == 1)
       {
-        mERROR_CHECK(mAudio_AddResampleMonoToInterleavedFromChannelWithVolume(pStream, pAudioEngine->audioCallbackBuffer, pAudioEngine->channelCount, perChannelLength, bufferLength, volume));
+        const int64_t resamplingStartTimeNs = mGetCurrentTimeNs();
+
+        mERROR_CHECK(mAudio_AddResampleMonoToInterleavedFromChannelWithVolume(pStream, pAudioEngine->audioCallbackBuffer, pAudioEngine->channelCount, perChannelLength, bufferLength, volume, pAudioEngine->resampleQuality));
+
+        resamplingTimeMs += (mGetCurrentTimeNs() - resamplingStartTimeNs) * 1e-6f;
       }
       else
       {
@@ -349,6 +373,36 @@ static mFUNCTION(mAudioEngine_ManagedAudioCallback_Internal, IN mAudioEngine *pA
     mPtr<mAudioSource> source;
     mDEFER_CALL(&source, mSharedPointer_Destroy);
     mERROR_CHECK(mPool_RemoveAt(pAudioEngine->audioSources, index, &source));
+  }
+
+  const float_t totalTimeMs = (float_t)(mGetCurrentTimeNs() - startTimeNs) * 1e-6f;
+
+  constexpr float_t allowedProcessingTimeFac = 0.9f;
+  const float_t maxProcessingTimeMs = perChannelLength / (pAudioEngine->sampleRate * 0.001f);
+
+  if (totalTimeMs > maxProcessingTimeMs * allowedProcessingTimeFac)
+  {
+#if !defined(GIT_BUILD)
+    mDebugOut("! [AUDIO_ERROR]  AudioEngine did not complete in time. (", totalTimeMs, " ms / ", maxProcessingTimeMs, " ms; ", mFF(Frac(2))((totalTimeMs / maxProcessingTimeMs) * 100.f), " %)\n");
+#endif
+
+    if (resamplingTimeMs / maxProcessingTimeMs >= 0.3f && pAudioEngine->resampleQuality < mA_RQ_Linear)
+    {
+      pAudioEngine->resampleQuality = (mAudio_ResampleQuality)(pAudioEngine->resampleQuality + 1);
+
+      mPRINT("AudioEngine default resampling quality degraded (0x", mFX()(pAudioEngine->resampleQuality), ").\n");
+    }
+
+    for (auto &&_item : pAudioEngine->audioSources->Iterate())
+    {
+      if ((*_item)->performanceInfo.processingTimeMs / maxProcessingTimeMs >= 0.3 && (*_item)->pBroadcastBottleneckFunc != nullptr)
+      {
+        const mResult result = mSILENCE_ERROR((*(*_item)->pBroadcastBottleneckFunc)(*_item, (*_item)->performanceInfo.processingTimeMs));
+
+        if (mFAILED(result))
+          mPRINT_ERROR("Audio Source failed in AudioEngine with error code 0x", mFUInt<mFHex>(result), " in pBroadcastBottleneckFunc. (", g_mResult_lastErrorFile, ": ", g_mResult_lastErrorLine, ")");
+      }
+    }
   }
 
   mRETURN_SUCCESS();

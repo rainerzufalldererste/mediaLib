@@ -177,7 +177,11 @@ mFUNCTION(mShader_CreateFromFile, OUT mShader *pShader, const mString &filename)
   mERROR_IF(pShader == nullptr, mR_ArgumentNull);
 
 #if defined(mRENDERER_OPENGL)
-  mERROR_CHECK(mShader_CreateFromFile(pShader, filename + ".vert", filename + ".frag", nullptr));
+  mString vertexShader, fragmentShader;
+  mERROR_CHECK(mString_Format(&vertexShader, &mDefaultTempAllocator, filename, ".vert"));
+  mERROR_CHECK(mString_Format(&fragmentShader, &mDefaultTempAllocator, filename, ".frag"));
+
+  mERROR_CHECK(mShader_CreateFromFile(pShader, vertexShader, fragmentShader, nullptr));
 #else
   mRETURN_RESULT(mR_NotImplemented);
 #endif

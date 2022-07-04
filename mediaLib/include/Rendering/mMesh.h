@@ -563,6 +563,7 @@ inline mFUNCTION(mMeshFactory_CreateMesh, mPtr<mMeshFactory<Args...>> &factory, 
   mERROR_CHECK(mShader_Create(shader.GetPointer(), factory->meshFactoryInternal.vertShader, factory->meshFactoryInternal.fragShader));
   mERROR_CHECK(mShader_Bind(*shader.GetPointer()));
 
+  mDEFER_CALL_ON_ERROR(pMesh, mSharedPointer_Destroy);
   mERROR_CHECK(mSharedPointer_Allocate(pMesh, pAllocator, (std::function<void(mMesh *)>)[](mMesh *pData) { mMesh_Destroy_Internal(pData); }, 1));
 
   (*pMesh)->uploadState = mRP_US_NotInitialized;
@@ -732,6 +733,7 @@ inline mFUNCTION(mMeshAttributeContainer_Create, OUT mPtr<mMeshAttributeContaine
   mERROR_IF(pMeshAttributeContainer == nullptr, mR_ArgumentNull);
   mERROR_IF(items.size() == 0, mR_InvalidParameter);
 
+  mDEFER_CALL_ON_ERROR(pMeshAttributeContainer, mSharedPointer_Destroy);
   mERROR_CHECK(mSharedPointer_Allocate(pMeshAttributeContainer, pAllocator, (std::function<void(mMeshAttributeContainer *)>)[](mMeshAttributeContainer *pData) {mMeshAttributeContainer_Destroy_Internal(pData); }, 1));
 
   mERROR_CHECK(mBinaryChunk_Create(&(*pMeshAttributeContainer)->attributes, pAllocator));
@@ -760,6 +762,7 @@ inline mFUNCTION(mMeshAttributeContainer_Create, OUT mPtr<mMeshAttributeContaine
 
   mERROR_IF(queueCount == 0, mR_InvalidParameter);
 
+  mDEFER_CALL_ON_ERROR(pMeshAttributeContainer, mSharedPointer_Destroy);
   mERROR_CHECK(mSharedPointer_Allocate(pMeshAttributeContainer, pAllocator, (std::function<void(mMeshAttributeContainer *)>)[](mMeshAttributeContainer *pData) {mMeshAttributeContainer_Destroy_Internal(pData); }, 1));
 
   mERROR_CHECK(mBinaryChunk_Create(&(*pMeshAttributeContainer)->attributes, pAllocator));

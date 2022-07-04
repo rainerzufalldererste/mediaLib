@@ -584,6 +584,7 @@ mFUNCTION(mFontRenderer_EndRenderable, mPtr<mFontRenderer> &fontRenderer, OUT mP
   fontRenderer->started = false;
   fontRenderer->startedRenderable = false;
 
+  mDEFER_CALL_ON_ERROR(pRenderable, mSharedPointer_Destroy);
   mERROR_CHECK(mSharedPointer_Allocate(pRenderable, pAllocator, (std::function<void(mFontRenderable *)>)[](mFontRenderable *pData) {mFontRenderable_Destroy_Internal(pData);}, 1));
 
   (*pRenderable)->textureAtlas = fontRenderer->textureAtlas;
@@ -2310,6 +2311,7 @@ mFUNCTION(mFontTextureAtlas_Create, OUT mPtr<mFontTextureAtlas> *pAtlas, mAlloca
 
   mERROR_IF(pAtlas == nullptr, mR_ArgumentNull);
 
+  mDEFER_CALL_ON_ERROR(pAtlas, mSharedPointer_Destroy);
   mERROR_CHECK(mSharedPointer_Allocate(pAtlas, pAllocator, (std::function<void(mFontTextureAtlas *)>)[](mFontTextureAtlas *pData) { mFontTextureAtlas_Destroy(pData); }, 1));
 
   mERROR_CHECK(mQueue_Create(&(*pAtlas)->fonts, pAllocator));

@@ -162,6 +162,7 @@ enum mRenderParams_VertexRenderMode
 
 enum mRenderParams_TextureWrapMode
 {
+  mRP_TWM_None = 0, // Not available for OpenGL.
   mRP_TWM_ClampToEdge = GL_CLAMP_TO_EDGE,
   mRP_TWM_ClampToBorder = GL_CLAMP_TO_BORDER,
   mRP_TWM_MirroredRepeat = GL_MIRRORED_REPEAT,
@@ -179,10 +180,10 @@ enum mRenderParams_TextureMinificationFilteringMode
 {
   mRP_TMinFM_NearestNeighbor = GL_NEAREST,
   mRP_TMinFM_BilinearInterpolation = GL_LINEAR,
-  mRP_TMagFM_NearestNeighborNearestMipMap = GL_NEAREST_MIPMAP_NEAREST,
-  mRP_TMagFM_BilinearInterpolationNearestMipMap = GL_LINEAR_MIPMAP_NEAREST,
-  mRP_TMagFM_NearestNeighborBlendMipMap = GL_NEAREST_MIPMAP_LINEAR,
-  mRP_TMagFM_BilinearInterpolationBlendMipMap = GL_LINEAR_MIPMAP_LINEAR,
+  mRP_TMinFM_NearestNeighborNearestMipMap = GL_NEAREST_MIPMAP_NEAREST,
+  mRP_TMinFM_BilinearInterpolationNearestMipMap = GL_LINEAR_MIPMAP_NEAREST,
+  mRP_TMinFM_NearestNeighborBlendMipMap = GL_NEAREST_MIPMAP_LINEAR,
+  mRP_TMinFM_BilinearInterpolationBlendMipMap = GL_LINEAR_MIPMAP_LINEAR,
 };
 
 struct mTexture2DParams

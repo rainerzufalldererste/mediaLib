@@ -166,6 +166,7 @@ inline mFUNCTION(mRenderDataBuffer_Create, IN mRenderDataBuffer<Args...> *pBuffe
 
   pBuffer->validVBO = false; // Upload buffer data to validate buffer.
 
+  mDEFER_CALL_ON_ERROR(&pBuffer->shader, mSharedPointer_Destroy);
   mERROR_CHECK(mSharedPointer_Allocate(&pBuffer->shader, pAllocator, (std::function<void(mShader *)>)[](mShader *pData) { mShader_Destroy(pData); }, 1));
   mERROR_CHECK(mShader_Create(pBuffer->shader.GetPointer(), vertexShaderSource, fragmentShaderSource));
 

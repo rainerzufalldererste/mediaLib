@@ -17,6 +17,7 @@ mFUNCTION(mBinaryChunk_Create, OUT mPtr<mBinaryChunk> *pBinaryChunk, IN mAllocat
 
   mERROR_IF(pBinaryChunk == nullptr, mR_ArgumentNull);
 
+  mDEFER_CALL_ON_ERROR(pBinaryChunk, mSharedPointer_Destroy);
   mERROR_CHECK(mSharedPointer_Allocate(pBinaryChunk, pAllocator, (std::function<void(mBinaryChunk *)>)[](mBinaryChunk *pData) { mBinaryChunk_Destroy_Internal(pData); }, 1));
   (*pBinaryChunk)->pAllocator = pAllocator;
 

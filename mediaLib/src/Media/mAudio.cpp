@@ -1,6 +1,7 @@
 #include "mAudio.h"
 
 #include "mCachedFileReader.h"
+#include "mProfiler.h"
 
 #include "samplerate.h"
 
@@ -827,12 +828,200 @@ mFUNCTION(mAudio_AddWithVolumeFloat, OUT float_t *pDestination, IN float_t *pSou
   mRETURN_SUCCESS();
 }
 
+static void mAudio_AddWithVolumeFloatVariableLowpass_AVX(OUT float_t *pDestination, IN float_t *pSource, const float_t volume, const size_t sampleCount, const float_t lerpFactor)
+{
+  size_t sampleIndex = 0;
+
+  typedef __m256 simd_t;
+  constexpr size_t loopSize = sizeof(simd_t) / sizeof(float_t);
+
+  const simd_t lerpFac = _mm256_set1_ps(lerpFactor);
+  const simd_t iLerpFac = _mm256_set1_ps(1.f - lerpFactor);
+
+  if (sampleCount > loopSize)
+  {
+    const simd_t mmvolume = _mm256_set1_ps(volume);
+
+    for (; sampleIndex < sampleCount - loopSize; sampleIndex += loopSize)
+    {
+      const simd_t s0 = _mm256_loadu_ps(pSource + sampleIndex);
+      const simd_t s1 = _mm256_loadu_ps(pSource + sampleIndex + 1);
+
+      const simd_t s = _mm256_add_ps(_mm256_mul_ps(s0, iLerpFac), _mm256_mul_ps(s1, lerpFac));
+
+      const simd_t d = _mm256_loadu_ps(pDestination + sampleIndex);
+
+      _mm256_storeu_ps(pDestination + sampleIndex, _mm256_add_ps(d, _mm256_mul_ps(s, mmvolume)));
+    }
+  }
+
+  for (; sampleIndex < sampleCount - 1; sampleIndex++)
+    pDestination[sampleIndex] += mLerp(pSource[sampleIndex], pSource[sampleIndex + 1], lerpFactor) * volume;
+
+  pDestination[sampleIndex] += pSource[sampleIndex] * volume;
+}
+
+mFUNCTION(mAudio_AddWithVolumeFloatVariableLowpass, OUT float_t *pDestination, IN float_t *pSource, const float_t volume, const size_t sampleCount, const float_t lowPassStrength)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pDestination == nullptr || pSource == nullptr, mR_ArgumentNull);
+
+  const float_t lerpFactor = mClamp(lowPassStrength * 0.5f, 0.f, 0.5f);
+
+  mCpuExtensions::Detect();
+
+  if (mCpuExtensions::avxSupported)
+  {
+    mAudio_AddWithVolumeFloatVariableLowpass_AVX(pDestination, pSource, volume, sampleCount, lerpFactor);
+  }
+  else
+  {
+    size_t sampleIndex = 0;
+
+    typedef __m128 simd_t;
+    constexpr size_t loopSize = sizeof(simd_t) / sizeof(float_t);
+
+    const simd_t lerpFac = _mm_set1_ps(lerpFactor);
+    const simd_t iLerpFac = _mm_set1_ps(1.f - lerpFactor);
+
+    if (sampleCount > loopSize)
+    {
+      const simd_t mmvolume = _mm_set1_ps(volume);
+
+      for (; sampleIndex < sampleCount - loopSize; sampleIndex += loopSize)
+      {
+        const simd_t s0 = _mm_loadu_ps(pSource + sampleIndex);
+        const simd_t s1 = _mm_loadu_ps(pSource + sampleIndex + 1);
+
+        const simd_t s = _mm_add_ps(_mm_mul_ps(s0, iLerpFac), _mm_mul_ps(s1, lerpFac));
+
+        const simd_t d = _mm_loadu_ps(pDestination + sampleIndex);
+
+        _mm_storeu_ps(pDestination + sampleIndex, _mm_add_ps(d, _mm_mul_ps(s, mmvolume)));
+      }
+    }
+
+    for (; sampleIndex < sampleCount - 1; sampleIndex++)
+      pDestination[sampleIndex] += mLerp(pSource[sampleIndex], pSource[sampleIndex + 1], lerpFactor) * volume;
+
+    pDestination[sampleIndex] += pSource[sampleIndex] * volume;
+  }
+
+  mRETURN_SUCCESS();
+}
+
+static void mAudio_AddWithVolumeFloatVariableOffAxisFilter_AVX(OUT float_t *pDestination, IN float_t *pSource, const float_t volume, const size_t sampleCount, const float_t filterStrength)
+{
+  size_t sampleIndex = 0;
+
+  typedef __m256 simd_t;
+  constexpr size_t loopSize = sizeof(simd_t) / sizeof(float_t);
+
+  constexpr float_t scaleFactor = 1.f / 6.f;
+  const float_t lerpFactor = mClamp(filterStrength * scaleFactor, 0.f, 0.25f);
+  const float_t mainFactor = 1.f - lerpFactor * 5.f;
+
+  if (sampleCount > loopSize)
+  {
+    const simd_t mainFac = _mm256_set1_ps(mainFactor);
+    const simd_t facA = _mm256_set1_ps(lerpFactor);
+    const simd_t mmvolume = _mm256_set1_ps(volume);
+
+    for (; sampleIndex < sampleCount - (loopSize + 27); sampleIndex += loopSize)
+    {
+      const simd_t s0 = _mm256_loadu_ps(pSource + sampleIndex);
+      const simd_t s1 = _mm256_loadu_ps(pSource + sampleIndex + 1);
+      const simd_t s2 = _mm256_loadu_ps(pSource + sampleIndex + 2);
+      const simd_t s3 = _mm256_loadu_ps(pSource + sampleIndex + 25);
+      const simd_t s4 = _mm256_loadu_ps(pSource + sampleIndex + 26);
+      const simd_t s5 = _mm256_loadu_ps(pSource + sampleIndex + 27);
+
+      const simd_t s = _mm256_add_ps(_mm256_mul_ps(s0, mainFac), _mm256_mul_ps(facA, _mm256_add_ps(_mm256_add_ps(s1, s2), _mm256_add_ps(_mm256_add_ps(s3, s4), s5))));
+
+      const simd_t d = _mm256_loadu_ps(pDestination + sampleIndex);
+
+      _mm256_storeu_ps(pDestination + sampleIndex, _mm256_add_ps(d, _mm256_mul_ps(s, mmvolume)));
+    }
+  }
+
+  for (; sampleIndex < sampleCount - 27; sampleIndex++)
+    pDestination[sampleIndex] += (pSource[sampleIndex] * mainFactor + (pSource[sampleIndex + 1] + pSource[sampleIndex + 2] + pSource[sampleIndex + 25] + pSource[sampleIndex + 26] + pSource[sampleIndex + 27]) * lerpFactor) * volume;
+
+  for (; sampleIndex < sampleCount - 1; sampleIndex++)
+    pDestination[sampleIndex] += mLerp(pSource[sampleIndex], pSource[sampleIndex + 1], lerpFactor * 2.f) * volume;
+
+  pDestination[sampleIndex] += pSource[sampleIndex] * volume;
+}
+
+mFUNCTION(mAudio_AddWithVolumeFloatVariableOffAxisFilter, OUT float_t *pDestination, IN float_t *pSource, const float_t volume, const size_t sampleCount, const float_t filterStrength)
+{
+  mFUNCTION_SETUP();
+
+  mPROFILE_SCOPED("mAudio_AddWithVolumeFloatVariableOffAxisFilter");
+
+  mERROR_IF(pDestination == nullptr || pSource == nullptr, mR_ArgumentNull);
+
+  mCpuExtensions::Detect();
+
+  if (mCpuExtensions::avxSupported)
+  {
+    mAudio_AddWithVolumeFloatVariableOffAxisFilter_AVX(pDestination, pSource, volume, sampleCount, filterStrength);
+  }
+  else
+  {
+    size_t sampleIndex = 0;
+
+    typedef __m128 simd_t;
+    constexpr size_t loopSize = sizeof(simd_t) / sizeof(float_t);
+
+    constexpr float_t scaleFactor = 1.f / 6.f;
+    const float_t lerpFactor = mClamp(filterStrength * scaleFactor, 0.f, 0.25f);
+    const float_t mainFactor = 1.f - lerpFactor * 5.f;
+
+    if (sampleCount > loopSize)
+    {
+      const simd_t mainFac = _mm_set1_ps(mainFactor);
+      const simd_t facA = _mm_set1_ps(lerpFactor);
+      const simd_t mmvolume = _mm_set1_ps(volume);
+
+      for (; sampleIndex < sampleCount - (loopSize + 27); sampleIndex += loopSize)
+      {
+        const simd_t s0 = _mm_loadu_ps(pSource + sampleIndex);
+        const simd_t s1 = _mm_loadu_ps(pSource + sampleIndex + 1);
+        const simd_t s2 = _mm_loadu_ps(pSource + sampleIndex + 2);
+        const simd_t s3 = _mm_loadu_ps(pSource + sampleIndex + 25);
+        const simd_t s4 = _mm_loadu_ps(pSource + sampleIndex + 26);
+        const simd_t s5 = _mm_loadu_ps(pSource + sampleIndex + 27);
+
+        const simd_t s = _mm_add_ps(_mm_mul_ps(s0, mainFac), _mm_mul_ps(facA, _mm_add_ps(_mm_add_ps(s1, s2), _mm_add_ps(_mm_add_ps(s3, s4), s5))));
+
+        const simd_t d = _mm_loadu_ps(pDestination + sampleIndex);
+
+        _mm_storeu_ps(pDestination + sampleIndex, _mm_add_ps(d, _mm_mul_ps(s, mmvolume)));
+      }
+    }
+
+    for (; sampleIndex < sampleCount - 27; sampleIndex++)
+      pDestination[sampleIndex] += (pSource[sampleIndex] * mainFactor + (pSource[sampleIndex + 1] + pSource[sampleIndex + 2] + pSource[sampleIndex + 25] + pSource[sampleIndex + 26] + pSource[sampleIndex + 27]) * lerpFactor) * volume;
+
+    for (; sampleIndex < sampleCount - 1; sampleIndex++)
+      pDestination[sampleIndex] += mLerp(pSource[sampleIndex], pSource[sampleIndex + 1], lerpFactor * 2.f) * volume;
+
+    pDestination[sampleIndex] += pSource[sampleIndex] * volume;
+  }
+
+  mRETURN_SUCCESS();
+}
+
 thread_local static float_t *_pResampled = nullptr;
 thread_local static size_t _resampledSampleCount = 0;
 
-mFUNCTION(mAudio_AddResampleToInterleavedFromChannelWithVolume, OUT float_t *pInterleaved, IN float_t *pChannel, const size_t channelIndex, const size_t channelCount, const size_t interleavedSampleCount, const size_t channelSampleCount, const float_t volume)
+mFUNCTION(mAudio_AddResampleToInterleavedFromChannelWithVolume, OUT float_t *pInterleaved, IN float_t *pChannel, const size_t channelIndex, const size_t channelCount, const size_t interleavedSampleCount, const size_t channelSampleCount, const float_t volume, const mAudio_ResampleQuality quality)
 {
   mFUNCTION_SETUP();
+
+  mPROFILE_SCOPED("mAudio_AddResampleToInterleavedFromChannelWithVolume");
 
   mERROR_IF(pChannel == nullptr || pInterleaved == nullptr, mR_ArgumentNull);
   mERROR_IF(channelIndex >= channelCount, mR_InvalidParameter);
@@ -851,16 +1040,18 @@ mFUNCTION(mAudio_AddResampleToInterleavedFromChannelWithVolume, OUT float_t *pIn
   data.output_frames = (int32_t)interleavedSampleCount;
   data.src_ratio = (double_t)interleavedSampleCount / (double_t)channelSampleCount;
 
-  mERROR_IF(0 != src_simple(&data, SRC_SINC_BEST_QUALITY, 1), mR_InternalError);
+  mERROR_IF(0 != src_simple(&data, quality, 1), mR_InternalError);
 
   mERROR_CHECK(mAudio_AddToInterleavedFromChannelWithVolumeFloat(pInterleaved, _pResampled, channelIndex, channelCount, interleavedSampleCount, volume));
 
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mAudio_AddResampleMonoToInterleavedFromChannelWithVolume, OUT float_t *pInterleaved, IN float_t *pChannel, const size_t channelCount, const size_t interleavedSampleCount, const size_t channelSampleCount, const float_t volume)
+mFUNCTION(mAudio_AddResampleMonoToInterleavedFromChannelWithVolume, OUT float_t *pInterleaved, IN float_t *pChannel, const size_t channelCount, const size_t interleavedSampleCount, const size_t channelSampleCount, const float_t volume, const mAudio_ResampleQuality quality)
 {
   mFUNCTION_SETUP();
+
+  mPROFILE_SCOPED("mAudio_AddResampleMonoToInterleavedFromChannelWithVolume");
 
   mERROR_IF(pChannel == nullptr || pInterleaved == nullptr, mR_ArgumentNull);
 
@@ -878,16 +1069,18 @@ mFUNCTION(mAudio_AddResampleMonoToInterleavedFromChannelWithVolume, OUT float_t 
   data.output_frames = (int32_t)interleavedSampleCount;
   data.src_ratio = (double_t)interleavedSampleCount / (double_t)channelSampleCount;
 
-  mERROR_IF(0 != src_simple(&data, SRC_SINC_BEST_QUALITY, 1), mR_InternalError);
+  mERROR_IF(0 != src_simple(&data, quality, 1), mR_InternalError);
 
   mERROR_CHECK(mAudio_AddToInterleavedBufferFromMonoWithVolumeFloat(pInterleaved, _pResampled, channelCount, interleavedSampleCount, volume));
 
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mAudio_InplaceResampleMono, OUT float_t *pChannel, const size_t currentSampleCount, const size_t desiredSampleCount)
+mFUNCTION(mAudio_InplaceResampleMono, OUT float_t *pChannel, const size_t currentSampleCount, const size_t desiredSampleCount, const mAudio_ResampleQuality quality)
 {
   mFUNCTION_SETUP();
+
+  mPROFILE_SCOPED("mAudio_InplaceResampleMono");
 
   mERROR_IF(pChannel == nullptr, mR_ArgumentNull);
 
@@ -905,16 +1098,18 @@ mFUNCTION(mAudio_InplaceResampleMono, OUT float_t *pChannel, const size_t curren
   data.output_frames = (int32_t)desiredSampleCount;
   data.src_ratio = (double_t)desiredSampleCount / (double_t)currentSampleCount;
 
-  mERROR_IF(0 != src_simple(&data, SRC_SINC_BEST_QUALITY, 1), mR_InternalError);
+  mERROR_IF(0 != src_simple(&data, quality, 1), mR_InternalError);
 
   mERROR_CHECK(mMemmove(pChannel, _pResampled, desiredSampleCount));
 
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mAudio_InplaceResampleMonoWithFade, OUT float_t *pChannel, const size_t currentSampleCount, const size_t desiredSampleCount, const size_t fadeSamples)
+mFUNCTION(mAudio_InplaceResampleMonoWithFade, OUT float_t *pChannel, const size_t currentSampleCount, const size_t desiredSampleCount, const size_t fadeSamples, const mAudio_ResampleQuality quality)
 {
   mFUNCTION_SETUP();
+
+  mPROFILE_SCOPED("mAudio_InplaceResampleMonoWithFade");
 
   mERROR_IF(pChannel == nullptr, mR_ArgumentNull);
   mERROR_IF(fadeSamples * 2 >= currentSampleCount || fadeSamples * 2 >= desiredSampleCount, mR_ArgumentOutOfBounds);
@@ -933,7 +1128,7 @@ mFUNCTION(mAudio_InplaceResampleMonoWithFade, OUT float_t *pChannel, const size_
   data.output_frames = (int32_t)desiredSampleCount;
   data.src_ratio = (double_t)desiredSampleCount / (double_t)currentSampleCount;
 
-  mERROR_IF(0 != src_simple(&data, SRC_SINC_BEST_QUALITY, 1), mR_InternalError);
+  mERROR_IF(0 != src_simple(&data, quality, 1), mR_InternalError);
 
   const float_t factor = 1.f / fadeSamples;
 
@@ -948,9 +1143,34 @@ mFUNCTION(mAudio_InplaceResampleMonoWithFade, OUT float_t *pChannel, const size_
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mAudio_AddResampleMonoToMonoWithVolume, OUT float_t *pDestination, IN float_t *pSource, const size_t currentSampleCount, const size_t desiredSampleCount, const float_t volume)
+mFUNCTION(mAudio_ResampleMonoToMonoWithVolume, OUT float_t *pDestination, IN float_t *pSource, const size_t currentSampleCount, const size_t desiredSampleCount, const float_t volume, const mAudio_ResampleQuality quality)
 {
   mFUNCTION_SETUP();
+
+  mPROFILE_SCOPED("mAudio_ResampleMonoToMonoWithVolume");
+
+  mERROR_IF(pDestination == nullptr || pSource == nullptr, mR_ArgumentNull);
+
+  SRC_DATA data;
+  data.data_in = pSource;
+  data.data_out = pDestination;
+  data.end_of_input = FALSE;
+  data.input_frames = (int32_t)currentSampleCount;
+  data.output_frames = (int32_t)desiredSampleCount;
+  data.src_ratio = (double_t)desiredSampleCount / (double_t)currentSampleCount;
+
+  mERROR_IF(0 != src_simple(&data, quality, 1), mR_InternalError);
+
+  mERROR_CHECK(mAudio_ApplyVolumeFloat(pDestination, volume, desiredSampleCount));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mAudio_AddResampleMonoToMonoWithVolume, OUT float_t *pDestination, IN float_t *pSource, const size_t currentSampleCount, const size_t desiredSampleCount, const float_t volume, const mAudio_ResampleQuality quality)
+{
+  mFUNCTION_SETUP();
+
+  mPROFILE_SCOPED("mAudio_AddResampleMonoToMonoWithVolume");
 
   mERROR_IF(pDestination == nullptr || pSource == nullptr, mR_ArgumentNull);
 
@@ -968,30 +1188,67 @@ mFUNCTION(mAudio_AddResampleMonoToMonoWithVolume, OUT float_t *pDestination, IN 
   data.output_frames = (int32_t)desiredSampleCount;
   data.src_ratio = (double_t)desiredSampleCount / (double_t)currentSampleCount;
 
-  mERROR_IF(0 != src_simple(&data, SRC_SINC_BEST_QUALITY, 1), mR_InternalError);
+  mERROR_IF(0 != src_simple(&data, quality, 1), mR_InternalError);
 
   mERROR_CHECK(mAudio_AddWithVolumeFloat(pDestination, _pResampled, volume, desiredSampleCount));
 
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mAudio_ResampleMonoToMonoWithVolume, OUT float_t *pDestination, IN float_t *pSource, const size_t currentSampleCount, const size_t desiredSampleCount, const float_t volume)
+mFUNCTION(mAudio_AddResampleMonoToMonoWithVolumeVariableLowpass, OUT float_t *pDestination, IN float_t *pSource, const size_t currentSampleCount, const size_t desiredSampleCount, const float_t volume, const float_t lowPassStrength, const mAudio_ResampleQuality quality)
 {
   mFUNCTION_SETUP();
 
+  mPROFILE_SCOPED("mAudio_AddResampleMonoToMonoWithVolumeVariableLowpass");
+
   mERROR_IF(pDestination == nullptr || pSource == nullptr, mR_ArgumentNull);
+
+  if (desiredSampleCount > _resampledSampleCount)
+  {
+    mERROR_CHECK(mRealloc(&_pResampled, desiredSampleCount));
+    _resampledSampleCount = desiredSampleCount;
+  }
 
   SRC_DATA data;
   data.data_in = pSource;
-  data.data_out = pDestination;
+  data.data_out = _pResampled;
   data.end_of_input = FALSE;
   data.input_frames = (int32_t)currentSampleCount;
   data.output_frames = (int32_t)desiredSampleCount;
   data.src_ratio = (double_t)desiredSampleCount / (double_t)currentSampleCount;
 
-  mERROR_IF(0 != src_simple(&data, SRC_SINC_BEST_QUALITY, 1), mR_InternalError);
+  mERROR_IF(0 != src_simple(&data, quality, 1), mR_InternalError);
 
-  mERROR_CHECK(mAudio_ApplyVolumeFloat(pDestination, volume, desiredSampleCount));
+  mERROR_CHECK(mAudio_AddWithVolumeFloatVariableLowpass(pDestination, _pResampled, volume, desiredSampleCount, lowPassStrength));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mAudio_AddResampleMonoToMonoWithVolumeVariableOffAxisFilter, OUT float_t *pDestination, IN float_t *pSource, const size_t currentSampleCount, const size_t desiredSampleCount, const float_t volume, const float_t filterStrength, const mAudio_ResampleQuality quality)
+{
+  mFUNCTION_SETUP();
+
+  mPROFILE_SCOPED("mAudio_AddResampleMonoToMonoWithVolumeVariableOffAxisFilter");
+
+  mERROR_IF(pDestination == nullptr || pSource == nullptr, mR_ArgumentNull);
+
+  if (desiredSampleCount > _resampledSampleCount)
+  {
+    mERROR_CHECK(mRealloc(&_pResampled, desiredSampleCount));
+    _resampledSampleCount = desiredSampleCount;
+  }
+
+  SRC_DATA data;
+  data.data_in = pSource;
+  data.data_out = _pResampled;
+  data.end_of_input = FALSE;
+  data.input_frames = (int32_t)currentSampleCount;
+  data.output_frames = (int32_t)desiredSampleCount;
+  data.src_ratio = (double_t)desiredSampleCount / (double_t)currentSampleCount;
+
+  mERROR_IF(0 != src_simple(&data, quality, 1), mR_InternalError);
+
+  mERROR_CHECK(mAudio_AddWithVolumeFloatVariableOffAxisFilter(pDestination, _pResampled, volume, desiredSampleCount, filterStrength));
 
   mRETURN_SUCCESS();
 }
@@ -1451,6 +1708,7 @@ mFUNCTION(mAudioSourceWav_Create, OUT mPtr<mAudioSource> *pAudioSource, IN mAllo
   mFUNCTION_SETUP();
 
   mAudioSourceWav *pAudioSourceWav = nullptr;
+  mDEFER_CALL_ON_ERROR(pAudioSource, mSharedPointer_Destroy);
   mERROR_CHECK((mSharedPointer_AllocateInherited<mAudioSource, mAudioSourceWav>(pAudioSource, pAllocator, (std::function<void(mAudioSourceWav *)>)[](mAudioSourceWav *pData) {mAudioSourceWav_Destroy_Internal(pData); }, &pAudioSourceWav)));
 
   mDEFER_CALL_ON_ERROR(pAudioSource, mSharedPointer_Destroy);
@@ -1510,6 +1768,8 @@ static mFUNCTION(mAudioSourceWav_GetBuffer_Internal, mPtr<mAudioSource> &audioSo
 {
   mFUNCTION_SETUP();
 
+  mPROFILE_SCOPED("mAudioSourceWav_GetBuffer_Internal");
+
   mERROR_IF(audioSource == nullptr || pBuffer == nullptr || pBufferCount == nullptr, mR_ArgumentNull);
   mERROR_IF(channelIndex >= audioSource->channelCount, mR_IndexOutOfBounds);
   mERROR_IF(audioSource->pGetBufferFunc != mAudioSourceWav_GetBuffer_Internal, mR_ResourceIncompatible);
@@ -1558,7 +1818,7 @@ struct mAudioSourceResampler : mAudioSource
   SRC_STATE **ppStates;
   mAllocator *pAllocator;
   mPtr<mAudioSource> audioSource;
-  mAudioSourceResampler_Quality resampleQuality;
+  mAudio_ResampleQuality resampleQuality;
 };
 
 static mFUNCTION(mAudioSourceResampler_Destroy_Internal, mAudioSourceResampler *pResampler);
@@ -1568,7 +1828,7 @@ static mFUNCTION(mAudioSourceResampler_SeekSample_Internal, mPtr<mAudioSource> &
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mAudioSourceResampler_Create, OUT mPtr<mAudioSource> *pResampler, IN mAllocator *pAllocator, mPtr<mAudioSource> &sourceAudioSource, const size_t targetSampleRate, const mAudioSourceResampler_Quality quality /* = mASR_Q_BestQuality */)
+mFUNCTION(mAudioSourceResampler_Create, OUT mPtr<mAudioSource> *pResampler, IN mAllocator *pAllocator, mPtr<mAudioSource> &sourceAudioSource, const size_t targetSampleRate, const mAudio_ResampleQuality quality /* = mA_RQ_BestQuality */)
 {
   mFUNCTION_SETUP();
 
@@ -1576,6 +1836,7 @@ mFUNCTION(mAudioSourceResampler_Create, OUT mPtr<mAudioSource> *pResampler, IN m
   mERROR_IF(sourceAudioSource->isBeingConsumed, mR_ResourceStateInvalid);
 
   mAudioSourceResampler *pInstance = nullptr;
+  mDEFER_CALL_ON_ERROR(pResampler, mSharedPointer_Destroy);
   mERROR_CHECK((mSharedPointer_AllocateInherited<mAudioSource, mAudioSourceResampler>(pResampler, pAllocator, [](mAudioSourceResampler *pData) { mAudioSourceResampler_Destroy_Internal(pData); }, &pInstance)));
 
   pInstance->audioSource = sourceAudioSource;
@@ -1666,6 +1927,8 @@ static mFUNCTION(mAudioSourceResampler_GetBuffer_Internal, mPtr<mAudioSource> &a
 {
   mFUNCTION_SETUP();
 
+  mPROFILE_SCOPED("mAudioSourceResampler_GetBuffer_Internal");
+
   mERROR_IF(audioSource == nullptr || pBuffer == nullptr || pBufferCount == nullptr, mR_ArgumentNull);
   mERROR_IF(audioSource->pGetBufferFunc != mAudioSourceResampler_GetBuffer_Internal, mR_ResourceIncompatible);
 
@@ -1754,6 +2017,8 @@ static mFUNCTION(mAudioSourceResampler_MoveToNextBuffer_Internal, mPtr<mAudioSou
 {
   mFUNCTION_SETUP();
 
+  mPROFILE_SCOPED("mAudioSourceResampler_MoveToNextBuffer_Internal");
+
   mERROR_IF(audioSource == nullptr, mR_ArgumentNull);
   mERROR_IF(audioSource->pMoveToNextBufferFunc != mAudioSourceResampler_MoveToNextBuffer_Internal, mR_ResourceIncompatible);
 
@@ -1775,6 +2040,8 @@ static mFUNCTION(mAudioSourceResampler_MoveToNextBuffer_Internal, mPtr<mAudioSou
 static mFUNCTION(mAudioSourceResampler_SeekSample_Internal, mPtr<mAudioSource> &audioSource, const size_t sample)
 {
   mFUNCTION_SETUP();
+
+  mPROFILE_SCOPED("mAudioSourceResampler_SeekSample_Internal");
 
   mERROR_IF(audioSource == nullptr, mR_ArgumentNull);
   mERROR_IF(audioSource->pSeekSampleFunc != mAudioSourceResampler_SeekSample_Internal, mR_ResourceIncompatible);
@@ -1837,6 +2104,7 @@ mFUNCTION(mMidSideStereoDecoder_Create, OUT mPtr<mAudioSource> *pMidSideStereoDe
   mERROR_IF(stereoAudioSource->channelCount != 2, mR_InvalidParameter);
 
   mMidSideStereoDecoder *pDecoder = nullptr;
+  mDEFER_CALL_ON_ERROR(pMidSideStereoDecoder, mSharedPointer_Destroy);
   mERROR_CHECK((mSharedPointer_AllocateInherited<mAudioSource, mMidSideStereoDecoder>(pMidSideStereoDecoder, pAllocator, [](mMidSideStereoDecoder *pData) { mMidSideStereoDecoder_Destroy_Internal(pData); }, &pDecoder)));
 
   pDecoder->audioSource = stereoAudioSource;
@@ -1878,6 +2146,8 @@ static mFUNCTION(mMidSideStereoDecoder_GetBuffer_Internal, mPtr<mAudioSource> &a
 {
   mFUNCTION_SETUP();
 
+  mPROFILE_SCOPED("mMidSideStereoDecoder_GetBuffer_Internal");
+
   mERROR_IF(audioSource == nullptr || pBufferCount == nullptr || pBuffer == nullptr, mR_ArgumentNull);
   mERROR_IF(channelIndex >= audioSource->channelCount, mR_InvalidParameter);
   mERROR_IF(audioSource->pGetBufferFunc != mMidSideStereoDecoder_GetBuffer_Internal, mR_ResourceIncompatible);
@@ -1917,6 +2187,8 @@ static mFUNCTION(mMidSideStereoDecoder_MoveToNextBuffer_Internal, mPtr<mAudioSou
 {
   mFUNCTION_SETUP();
 
+  mPROFILE_SCOPED("mMidSideStereoDecoder_MoveToNextBuffer_Internal");
+
   mERROR_IF(audioSource == nullptr, mR_ArgumentNull);
   mERROR_IF(audioSource->pMoveToNextBufferFunc != mMidSideStereoDecoder_MoveToNextBuffer_Internal, mR_ResourceIncompatible);
 
@@ -1938,6 +2210,8 @@ static mFUNCTION(mMidSideStereoDecoder_MoveToNextBuffer_Internal, mPtr<mAudioSou
 static mFUNCTION(mMidSideStereoDecoder_SeekSample_Internal, mPtr<mAudioSource> &audioSource, const size_t sample)
 {
   mFUNCTION_SETUP();
+
+  mPROFILE_SCOPED("mMidSideStereoDecoder_SeekSample_Internal");
 
   mERROR_IF(audioSource == nullptr, mR_ArgumentNull);
   mERROR_IF(audioSource->pSeekSampleFunc != mMidSideStereoDecoder_SeekSample_Internal, mR_ResourceIncompatible);
@@ -1984,6 +2258,7 @@ mFUNCTION(mMidSideSideQuadroDecoder_Create, OUT mPtr<mAudioSource> *pMidSideSter
   mERROR_IF(midAudioSource->sampleRate != leftRightAudioSource->sampleRate || leftRightAudioSource->sampleRate != frontBackAudioSource->channelCount != 1, mR_InvalidParameter);
 
   mMidSideSideQuadroDecoder *pDecoder = nullptr;
+  mDEFER_CALL_ON_ERROR(pMidSideStereoDecoder, mSharedPointer_Destroy);
   mERROR_CHECK((mSharedPointer_AllocateInherited<mAudioSource, mMidSideSideQuadroDecoder>(pMidSideStereoDecoder, pAllocator, [](mMidSideSideQuadroDecoder *pData) { mMidSideSideQuadroDecoder_Destroy_Internal(pData); }, &pDecoder)));
 
   pDecoder->mid = midAudioSource;
@@ -2030,6 +2305,8 @@ static mFUNCTION(mMidSideSideQuadroDecoder_Destroy_Internal, IN_OUT mMidSideSide
 static mFUNCTION(mMidSideSideQuadroDecoder_GetBuffer_Internal, mPtr<mAudioSource> &audioSource, OUT float_t *pBuffer, const size_t bufferLength, const size_t channelIndex, OUT size_t *pBufferCount)
 {
   mFUNCTION_SETUP();
+
+  mPROFILE_SCOPED("mMidSideSideQuadroDecoder_GetBuffer_Internal");
 
   mERROR_IF(audioSource == nullptr || pBufferCount == nullptr || pBuffer == nullptr, mR_ArgumentNull);
   mERROR_IF(channelIndex >= audioSource->channelCount, mR_InvalidParameter);
@@ -2086,6 +2363,8 @@ static mFUNCTION(mMidSideSideQuadroDecoder_MoveToNextBuffer_Internal, mPtr<mAudi
 {
   mFUNCTION_SETUP();
 
+  mPROFILE_SCOPED("mMidSideSideQuadroDecoder_MoveToNextBuffer_Internal");
+
   mERROR_IF(audioSource == nullptr, mR_ArgumentNull);
   mERROR_IF(audioSource->pMoveToNextBufferFunc != mMidSideSideQuadroDecoder_MoveToNextBuffer_Internal, mR_ResourceIncompatible);
 
@@ -2130,6 +2409,7 @@ mFUNCTION(mSinOscillator_Create, OUT mPtr<mAudioSource> *pOscillator, IN mAlloca
   mERROR_IF(pOscillator == nullptr, mR_ArgumentNull);
 
   mSinOscillator *pSinOscillator = nullptr;
+  mDEFER_CALL_ON_ERROR(pOscillator, mSharedPointer_Destroy);
   mERROR_CHECK((mSharedPointer_AllocateInherited<mAudioSource, mSinOscillator>(pOscillator, pAllocator, nullptr, &pSinOscillator)));
 
   pSinOscillator->sampleRate = sampleRate;
@@ -2207,6 +2487,7 @@ mFUNCTION(mLoopingAudioSource_Create, OUT mPtr<mAudioSource> *pAudioSource, IN m
   mERROR_IF(!innerAudioSource->seekable || innerAudioSource->pSeekSampleFunc == nullptr, mR_ResourceStateInvalid);
 
   mLoopingAudioSource *pLoopingAudioSource = nullptr;
+  mDEFER_CALL_ON_ERROR(pAudioSource, mSharedPointer_Destroy);
   mERROR_CHECK((mSharedPointer_AllocateInherited<mAudioSource, mLoopingAudioSource>(pAudioSource, pAllocator, [](mLoopingAudioSource *pData) { mLoopingAudioSource_Destroy_Internal(pData); }, &pLoopingAudioSource)));
 
   pLoopingAudioSource->innerAudioSource = innerAudioSource;
@@ -2252,6 +2533,8 @@ static mFUNCTION(mLoopingAudioSource_Destroy_Internal, IN_OUT mLoopingAudioSourc
 static mFUNCTION(mLoopingAudioSource_GetBuffer_Internal, mPtr<mAudioSource> &audioSource, OUT float_t *pBuffer, const size_t bufferLength, const size_t channelIndex, OUT size_t *pBufferCount)
 {
   mFUNCTION_SETUP();
+
+  mPROFILE_SCOPED("mLoopingAudioSource_GetBuffer_Internal");
 
   mERROR_IF(audioSource == nullptr || pBufferCount == nullptr || pBuffer == nullptr, mR_ArgumentNull);
   mERROR_IF(channelIndex >= audioSource->channelCount, mR_InvalidParameter);
@@ -2331,6 +2614,8 @@ static mFUNCTION(mLoopingAudioSource_GetBuffer_Internal, mPtr<mAudioSource> &aud
 static mFUNCTION(mLoopingAudioSource_MoveToNextBuffer_Internal, mPtr<mAudioSource> &audioSource, const size_t samples)
 {
   mFUNCTION_SETUP();
+
+  mPROFILE_SCOPED("mLoopingAudioSource_MoveToNextBuffer_Internal");
 
   mERROR_IF(audioSource == nullptr, mR_ArgumentNull);
   mERROR_IF(audioSource->pMoveToNextBufferFunc != mLoopingAudioSource_MoveToNextBuffer_Internal, mR_ResourceIncompatible);

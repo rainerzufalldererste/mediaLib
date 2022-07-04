@@ -515,6 +515,7 @@ mFUNCTION(mTasklessThreadPool_Create, OUT mPtr<mTasklessThreadPool> *pThreadPool
 
   *pThreadPool = nullptr;
 
+  mDEFER_CALL_ON_ERROR(pThreadPool, mSharedPointer_Destroy);
   mERROR_CHECK(mSharedPointer_Allocate<mTasklessThreadPool>(pThreadPool, pAllocator, mTasklessThreadPool_Destroy_Internal, 1));
 
   new (pThreadPool->GetPointer()) mTasklessThreadPool();

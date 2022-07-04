@@ -64,6 +64,7 @@ mFUNCTION(mLineRenderer_Create, OUT mPtr<mLineRenderer> *pLineRenderer, IN mAllo
 
   mERROR_IF(pLineRenderer == nullptr, mR_ArgumentNull);
 
+  mDEFER_CALL_ON_ERROR(pLineRenderer, mSharedPointer_Destroy);
   mERROR_CHECK(mSharedPointer_Allocate(pLineRenderer, pAllocator, (std::function<void(mLineRenderer *)>)[](mLineRenderer *pData) {mLineRenderer_Destroy_Internal(pData);}, 1));
 
   mERROR_CHECK(mShader_Allocate(&(*pLineRenderer)->shader, pAllocator));

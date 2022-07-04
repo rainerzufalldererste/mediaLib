@@ -39,7 +39,7 @@ mFUNCTION(mTexture_Create, OUT mTexture *pTexture, mPtr<mImageBuffer> &imageBuff
   glBindTexture(pTexture->sampleCount > 0 ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, pTexture->textureId);
   mERROR_CHECK(mTexture2DParams_ApplyToBoundTexture(textureParams, pTexture->sampleCount > 0));
 
-  if (textureParams.minFilter >= mRP_TMagFM_NearestNeighborNearestMipMap && textureParams.minFilter <= mRP_TMagFM_BilinearInterpolationBlendMipMap)
+  if (textureParams.minFilter >= mRP_TMinFM_NearestNeighborNearestMipMap && textureParams.minFilter <= mRP_TMinFM_BilinearInterpolationBlendMipMap)
     pTexture->isMipMapTexture = true;
 
 #else
@@ -101,7 +101,7 @@ mFUNCTION(mTexture_Create, OUT mTexture *pTexture, const uint8_t *pData, const m
     glBindTexture(pTexture->sampleCount > 0 ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, pTexture->textureId);
     mERROR_CHECK(mTexture2DParams_ApplyToBoundTexture(textureParams, pTexture->sampleCount > 0));
 
-    if (textureParams.minFilter >= mRP_TMagFM_NearestNeighborNearestMipMap && textureParams.minFilter <= mRP_TMagFM_BilinearInterpolationBlendMipMap)
+    if (textureParams.minFilter >= mRP_TMinFM_NearestNeighborNearestMipMap && textureParams.minFilter <= mRP_TMinFM_BilinearInterpolationBlendMipMap)
       pTexture->isMipMapTexture = true;
 
 #else
@@ -202,7 +202,7 @@ mFUNCTION(mTexture_Allocate, OUT mTexture *pTexture, const mVec2s size, const mP
 
   mERROR_CHECK(mTexture2DParams_ApplyToBoundTexture(textureParams, pTexture->sampleCount > 0));
 
-  if (textureParams.minFilter >= mRP_TMagFM_NearestNeighborNearestMipMap && textureParams.minFilter <= mRP_TMagFM_BilinearInterpolationBlendMipMap)
+  if (textureParams.minFilter >= mRP_TMinFM_NearestNeighborNearestMipMap && textureParams.minFilter <= mRP_TMinFM_BilinearInterpolationBlendMipMap)
     pTexture->isMipMapTexture = true;
 #else
   mRETURN_RESULT(mR_NotImplemented);

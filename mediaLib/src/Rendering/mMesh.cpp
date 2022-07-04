@@ -56,6 +56,7 @@ mFUNCTION(mMesh_Create, OUT mPtr<mMesh> *pMesh, IN mAllocator *pAllocator, mPtr<
 
   mERROR_IF(pMesh == nullptr || attributeInformation == nullptr || shader == nullptr || textures == nullptr, mR_ArgumentNull);
 
+  mDEFER_CALL_ON_ERROR(pMesh, mSharedPointer_Destroy);
   mERROR_CHECK(mSharedPointer_Allocate(pMesh, pAllocator, (std::function<void(mMesh *)>)[](mMesh *pData) { mMesh_Destroy_Internal(pData); }, 1));
 
   size_t attributeCount = 0;
@@ -156,6 +157,7 @@ mFUNCTION(mMesh_Create, OUT mPtr<mMesh> *pMesh, IN mAllocator *pAllocator, mPtr<
 
   mERROR_IF(pMesh == nullptr || attributeInformation == nullptr || shader == nullptr || data == nullptr || textures == nullptr, mR_ArgumentNull);
 
+  mDEFER_CALL_ON_ERROR(pMesh, mSharedPointer_Destroy);
   mERROR_CHECK(mSharedPointer_Allocate(pMesh, pAllocator, (std::function<void(mMesh *)>)[](mMesh *pData) { mMesh_Destroy_Internal(pData); }, 1));
 
   (*pMesh)->dataSize = 0;

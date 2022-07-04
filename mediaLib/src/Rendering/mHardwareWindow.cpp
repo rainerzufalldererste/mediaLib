@@ -48,6 +48,7 @@ mFUNCTION(mHardwareWindow_Create, OUT mPtr<mHardwareWindow> *pWindow, IN mAlloca
 
   mERROR_IF(SDL_Init(SDL_INIT_EVERYTHING), mR_InternalError);
 
+  mDEFER_CALL_ON_ERROR(pWindow, mSharedPointer_Destroy);
   mERROR_CHECK(mSharedPointer_Allocate(pWindow, pAllocator, (std::function<void(mHardwareWindow *)>)[](mHardwareWindow *pData) { mHardwareWindow_Destroy_Internal(pData); }, 1));
 
   mERROR_CHECK(mHardwareWindow_Create_Internal(pWindow->GetPointer(), pAllocator, title, position, size, displaymode, stereo3dIfAvailable));

@@ -10,6 +10,16 @@
   #define __M_FILE__ "w+GVUgE6PqC/G296f+6XL0mgKl7viykMlk1XCUlwBBh4X06l+LPg/8VYeRjlW8GJBS7iJzwDhq1TGnsn"
 #endif
 
+// From 'libresample.h'.
+enum mAudio_ResampleQuality
+{
+  mA_RQ_BestQuality = 0,
+  mA_RQ_MediumQuality = 1,
+  mA_RQ_Fastest = 2,
+  mA_RQ_ZeroOrderHold = 3,
+  mA_RQ_Linear = 4,
+};
+
 mFUNCTION(mAudio_ExtractFloatChannelFromInterleavedFloat, OUT float_t *pChannel, const size_t channelIndex, IN float_t *pInterleaved, const size_t channelCount, const size_t sampleCount);
 mFUNCTION(mAudio_ExtractFloatChannelFromInterleavedInt16, OUT float_t *pChannel, const size_t channelIndex, IN int16_t *pInterleaved, const size_t channelCount, const size_t sampleCount);
 
@@ -23,16 +33,20 @@ mFUNCTION(mAudio_AddToInterleavedBufferFromMonoWithVolumeFloat, OUT float_t *pIn
 
 mFUNCTION(mAudio_ApplyVolumeFloat, OUT float_t *pAudio, const float_t volume, const size_t sampleCount);
 mFUNCTION(mAudio_AddWithVolumeFloat, OUT float_t *pDestination, IN float_t *pSource, const float_t volume, const size_t sampleCount);
+mFUNCTION(mAudio_AddWithVolumeFloatVariableLowpass, OUT float_t *pDestination, IN float_t *pSource, const float_t volume, const size_t sampleCount, const float_t lowPassStrength);
+mFUNCTION(mAudio_AddWithVolumeFloatVariableOffAxisFilter, OUT float_t *pDestination, IN float_t *pSource, const float_t volume, const size_t sampleCount, const float_t filterStrength);
 
-mFUNCTION(mAudio_AddResampleToInterleavedFromChannelWithVolume, OUT float_t *pInterleaved, IN float_t *pChannel, const size_t channelIndex, const size_t channelCount, const size_t interleavedSampleCount, const size_t channelSampleCount, const float_t volume);
-mFUNCTION(mAudio_AddResampleMonoToInterleavedFromChannelWithVolume, OUT float_t *pInterleaved, IN float_t *pChannel, const size_t channelCount, const size_t interleavedSampleCount, const size_t channelSampleCount, const float_t volume);
-mFUNCTION(mAudio_InplaceResampleMono, OUT float_t *pChannel, const size_t currentSampleCount, const size_t desiredSampleCount);
+mFUNCTION(mAudio_AddResampleToInterleavedFromChannelWithVolume, OUT float_t *pInterleaved, IN float_t *pChannel, const size_t channelIndex, const size_t channelCount, const size_t interleavedSampleCount, const size_t channelSampleCount, const float_t volume, const mAudio_ResampleQuality quality);
+mFUNCTION(mAudio_AddResampleMonoToInterleavedFromChannelWithVolume, OUT float_t *pInterleaved, IN float_t *pChannel, const size_t channelCount, const size_t interleavedSampleCount, const size_t channelSampleCount, const float_t volume, const mAudio_ResampleQuality quality);
+mFUNCTION(mAudio_InplaceResampleMono, OUT float_t *pChannel, const size_t currentSampleCount, const size_t desiredSampleCount, const mAudio_ResampleQuality quality);
 
 // Fades to the original signal for `fadeSamples` at the beginning and end of the block.
-mFUNCTION(mAudio_InplaceResampleMonoWithFade, OUT float_t *pChannel, const size_t currentSampleCount, const size_t desiredSampleCount, const size_t fadeSamples);
+mFUNCTION(mAudio_InplaceResampleMonoWithFade, OUT float_t *pChannel, const size_t currentSampleCount, const size_t desiredSampleCount, const size_t fadeSamples, const mAudio_ResampleQuality quality);
 
-mFUNCTION(mAudio_AddResampleMonoToMonoWithVolume, OUT float_t *pDestination, IN float_t *pSource, const size_t currentSampleCount, const size_t desiredSampleCount, const float_t volume);
-mFUNCTION(mAudio_ResampleMonoToMonoWithVolume, OUT float_t *pDestination, IN float_t *pSource, const size_t currentSampleCount, const size_t desiredSampleCount, const float_t volume);
+mFUNCTION(mAudio_ResampleMonoToMonoWithVolume, OUT float_t *pDestination, IN float_t *pSource, const size_t currentSampleCount, const size_t desiredSampleCount, const float_t volume, const mAudio_ResampleQuality quality);
+mFUNCTION(mAudio_AddResampleMonoToMonoWithVolume, OUT float_t *pDestination, IN float_t *pSource, const size_t currentSampleCount, const size_t desiredSampleCount, const float_t volume, const mAudio_ResampleQuality quality);
+mFUNCTION(mAudio_AddResampleMonoToMonoWithVolumeVariableLowpass, OUT float_t *pDestination, IN float_t *pSource, const size_t currentSampleCount, const size_t desiredSampleCount, const float_t volume, const float_t lowPassStrength, const mAudio_ResampleQuality quality);
+mFUNCTION(mAudio_AddResampleMonoToMonoWithVolumeVariableOffAxisFilter, OUT float_t *pDestination, IN float_t *pSource, const size_t currentSampleCount, const size_t desiredSampleCount, const float_t volume, const float_t filterStrength, const mAudio_ResampleQuality quality);
 
 mFUNCTION(mAudio_InplaceMidSideToStereo, IN_OUT float_t *pMidToLeft, IN_OUT float_t *pSideToRight, const size_t sampleCount);
 mFUNCTION(mAudio_InplaceMidLateralLongitudinalToQuadro, IN_OUT float_t *pMidToFrontLeft, IN_OUT float_t *pLateralToFrontRight, IN_OUT float_t *pLongitudinalToBackLeft, OUT float_t *pBackRight, const size_t sampleCount);
@@ -75,6 +89,11 @@ inline float_t mAudio_FactorToLoudnessFactor(const float_t factor)
 
 //////////////////////////////////////////////////////////////////////////
 
+struct mAudioSource_PerformanceInfo
+{
+  float_t processingTimeMs;
+};
+
 struct mAudioSource
 {
   PUBLIC_FIELD volatile float_t volume; // this is a factor, not in decibels.
@@ -84,11 +103,13 @@ struct mAudioSource
   bool isBeingConsumed;
   PUBLIC_FIELD volatile bool stopPlayback;
   CONST_FIELD bool seekable;
+  mAudioSource_PerformanceInfo performanceInfo; // may or may not be unused by consumer.
 
   typedef mFUNCTION(mAudioSource_GetBuffer, mPtr<mAudioSource> &audioSource, OUT float_t *pBuffer, const size_t bufferLength, const size_t channelIndex, OUT size_t *pBufferCount);
   typedef mFUNCTION(mAudioSource_MoveToNextBuffer, mPtr<mAudioSource> &audioSource, const size_t samples);
   typedef mFUNCTION(mAudioSource_SeekSample, mPtr<mAudioSource> &audioSource, const size_t sampleIndex);
   typedef mFUNCTION(mAudioSource_BroadcastDelay, mPtr<mAudioSource> &audioSource, const size_t samples);
+  typedef mFUNCTION(mAudioSource_BroadcastBottleneck, mPtr<mAudioSource> &audioSource, const float_t referenceTimeMs);
 
   // In order to retrieve data at first `pGetBufferFunc` will be called for the channels (in any order), afterwards `pMoveToNextBufferFunc` will be called once per object.
   // All channels have to be asked for the same `bufferLength`.
@@ -103,7 +124,9 @@ struct mAudioSource
   // `pSeekSampleFunc` should be called before `pGetBufferFunc` is called and (if the audio source was previously iterated) after `pMoveToNextBufferFunc` was called.
   mAudioSource_SeekSample *pSeekSampleFunc; // Can be nullptr if not seekable.
 
-  mAudioSource_BroadcastDelay *pBroadcastDelayFunc; // Can be nullptr
+  mAudioSource_BroadcastDelay *pBroadcastDelayFunc; // Can be nullptr.
+
+  mAudioSource_BroadcastBottleneck *pBroadcastBottleneckFunc; // Can be nullptr.
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -113,18 +136,8 @@ mFUNCTION(mAudioSourceWav_Destroy, IN_OUT mPtr<mAudioSource> *pAudioSource);
 
 //////////////////////////////////////////////////////////////////////////
 
-// From 'libresample.h'.
-enum mAudioSourceResampler_Quality
-{
-  mASR_Q_BestQuality = 0,
-  mASR_Q_MediumQuality = 1,
-  mASR_Q_Fastest = 2,
-  mASR_Q_ZeroOrderHold = 3,
-  mASR_Q_Linear = 4,
-};
-
 // Attention: mAudioSoure.volume will constantly be set to the volume of the internal sourceAudioSource.
-mFUNCTION(mAudioSourceResampler_Create, OUT mPtr<mAudioSource> *pResampler, IN mAllocator *pAllocator, mPtr<mAudioSource> &sourceAudioSource, const size_t targetSampleRate, const mAudioSourceResampler_Quality quality = mASR_Q_BestQuality);
+mFUNCTION(mAudioSourceResampler_Create, OUT mPtr<mAudioSource> *pResampler, IN mAllocator *pAllocator, mPtr<mAudioSource> &sourceAudioSource, const size_t targetSampleRate, const mAudio_ResampleQuality quality = mA_RQ_BestQuality);
 
 //////////////////////////////////////////////////////////////////////////
 

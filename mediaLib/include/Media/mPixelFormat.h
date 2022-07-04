@@ -50,6 +50,7 @@ enum mPixelFormat
 mFUNCTION(mPixelFormat_HasSubBuffers, const mPixelFormat pixelFormat, OUT bool *pValue);
 mFUNCTION(mPixelFormat_IsChromaSubsampled, const mPixelFormat pixelFormat, OUT bool *pValue);
 mFUNCTION(mPixelFormat_GetSize, const mPixelFormat pixelFormat, const mVec2s &size, OUT size_t *pBytes);
+mFUNCTION(mPixelFormat_GetSize, const mPixelFormat pixelFormat, const mVec3s &size, OUT size_t *pBytes);
 mFUNCTION(mPixelFormat_GetUnitSize, const mPixelFormat pixelFormat, OUT size_t *pBytes);
 mFUNCTION(mPixelFormat_GetComponentCount, const mPixelFormat pixelFormat, OUT size_t *pCount);
 mFUNCTION(mPixelFormat_GetComponentSize, const mPixelFormat pixelFormat, OUT size_t *pBytes);

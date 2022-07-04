@@ -43,6 +43,7 @@ mFUNCTION(mSoftwareWindow_Create, OUT mPtr<mSoftwareWindow> *pWindow, IN mAlloca
 
   mERROR_IF(SDL_Init(SDL_INIT_EVERYTHING), mR_InternalError);
 
+  mDEFER_CALL_ON_ERROR(pWindow, mSharedPointer_Destroy);
   mERROR_CHECK(mSharedPointer_Allocate(pWindow, pAllocator, (std::function<void (mSoftwareWindow *)>)[](mSoftwareWindow *pData) { mSoftwareWindow_Destroy_Internal(pData); }, 1));
 
   mERROR_CHECK(mSoftwareWindow_Create_Internal(pWindow->GetPointer(), pAllocator, title, position, size, displaymode));

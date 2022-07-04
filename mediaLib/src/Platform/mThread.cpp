@@ -9,6 +9,10 @@
 
 static mFUNCTION(mThread_Destroy_Internal, IN_OUT mThread *pThread);
 
+#if defined (mPLATFORM_WINDOWS)
+static mFUNCTION(mThread_Priority_ToWinPriority_Internal, const mThread_Priority priority, OUT int32_t *pPriority);
+#endif
+
 //////////////////////////////////////////////////////////////////////////
 
 #if defined (mPLATFORM_WINDOWS)
@@ -107,6 +111,36 @@ mFUNCTION(mThread_GetMaximumConcurrentThreads, OUT size_t *pMaximumConcurrentThr
   mRETURN_SUCCESS();
 }
 
+mFUNCTION(mThread_SetThreadPriority, IN mThread *pThread, const mThread_Priority priority)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pThread == nullptr, mR_ArgumentNull);
+
+#if defined (mPLATFORM_WINDOWS)
+  int32_t prio = 0;
+  mERROR_CHECK(mThread_Priority_ToWinPriority_Internal(priority, &prio));
+
+  SetThreadPriority(pThread->handle, prio);
+#endif
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mThread_SetCurrentThreadPriority, const mThread_Priority priority)
+{
+  mFUNCTION_SETUP();
+
+#if defined (mPLATFORM_WINDOWS)
+  int32_t prio = 0;
+  mERROR_CHECK(mThread_Priority_ToWinPriority_Internal(priority, &prio));
+
+  SetThreadPriority(GetCurrentThread(), prio);
+#endif
+
+  mRETURN_SUCCESS();
+}
+
 //////////////////////////////////////////////////////////////////////////
 
 static mFUNCTION(mThread_Destroy_Internal, IN_OUT mThread *pThread)
@@ -134,3 +168,34 @@ static mFUNCTION(mThread_Destroy_Internal, IN_OUT mThread *pThread)
 
   mRETURN_SUCCESS();
 }
+
+#if defined (mPLATFORM_WINDOWS)
+static mFUNCTION(mThread_Priority_ToWinPriority_Internal, const mThread_Priority priority, OUT int32_t *pPriority)
+{
+  mFUNCTION_SETUP();
+
+  switch (priority)
+  {
+  case mT_P_Low:
+    *pPriority = THREAD_PRIORITY_LOWEST;
+    break;
+
+  case mT_P_Normal:
+    *pPriority = THREAD_PRIORITY_NORMAL;
+    break;
+
+  case mT_P_High:
+    *pPriority = THREAD_PRIORITY_HIGHEST;
+    break;
+
+  case mT_P_Realtime:
+    *pPriority = THREAD_PRIORITY_TIME_CRITICAL;
+    break;
+
+  default:
+    mRETURN_RESULT(mR_InvalidParameter);
+  }
+
+  mRETURN_SUCCESS();
+}
+#endif
