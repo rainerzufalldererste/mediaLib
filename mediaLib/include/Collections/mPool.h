@@ -109,7 +109,7 @@ template <typename T>
 mFUNCTION(mPool_RemoveAt, mPtr<mPool<T>> &pool, const size_t index, OUT T *pItem);
 
 template <typename T>
-mFUNCTION(mPool_GetCount, mPtr<mPool<T>> &pool, OUT size_t *pCount);
+mFUNCTION(mPool_GetCount, const mPtr<mPool<T>> &pool, OUT size_t *pCount);
 
 template <typename T>
 mFUNCTION(mPool_PeekAt, mPtr<mPool<T>> &pool, const size_t index, OUT T *pItem);
@@ -127,7 +127,7 @@ template <typename T>
 mFUNCTION(mPool_ForEach, mPtr<mPool<T>> &pool, const std::function<mResult (T *, size_t)> &function);
 
 template <typename T>
-mFUNCTION(mPool_ContainsIndex, mPtr<mPool<T>> &pool, const size_t index, OUT bool *pContained);
+mFUNCTION(mPool_ContainsIndex, const mPtr<mPool<T>> &pool, const size_t index, OUT bool *pContained);
 
 template <typename T>
 mFUNCTION(mPool_Clear, mPtr<mPool<T>> &pool);

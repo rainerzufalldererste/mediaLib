@@ -39,17 +39,17 @@ struct mHttpRequest_Parser : mHttpRequest
 };
 
 static mFUNCTION(mHttpServer_Destroy_Internal, IN_OUT mHttpServer *pHttpServer);
-static mFUNCTION(mHttpServer_Thread_Internal, mPtr<mHttpServer> &server);
-static mFUNCTION(mHttpServer_StaleTcpHandlerThread_Internal, mPtr<mHttpServer> &server);
+static mFUNCTION(mHttpServer_Thread_Internal, IN mHttpServer *pServer);
+static mFUNCTION(mHttpServer_StaleTcpHandlerThread_Internal, IN mHttpServer *pServer);
 static mFUNCTION(mHttpServer_SendResponsePacket_Internal, mPtr<mTcpClient> &client, const mPtr<mHttpResponse> &response, IN mAllocator *pAllocator);
-static mFUNCTION(mHttpServer_RespondWithError_Internal, mPtr<mHttpServer> &server, mPtr<mTcpClient> &client, const mHttpResponseStatusCode statusCode, const mString &errorString, IN mAllocator *pAllocator);
+static mFUNCTION(mHttpServer_RespondWithError_Internal, IN mHttpServer *pServer, mPtr<mTcpClient> &client, const mHttpResponseStatusCode statusCode, const mString &errorString, IN mAllocator *pAllocator);
 
 static int32_t mHttpServer_OnUrl_Internal(http_parser *, const char *at, size_t length);
 static int32_t mHttpServer_OnHeaderField_Internal(http_parser *, const char *at, size_t length);
 static int32_t mHttpServer_OnHeaderValue_Internal(http_parser *, const char *at, size_t length);
 static int32_t mHttpServer_OnBody_Internal(http_parser *, const char *at, size_t length);
 
-static void mHttpServer_HandleTcpClient_Internal(mPtr<mHttpServer> &server, mPtr<mTcpClient> &client);
+static void mHttpServer_HandleTcpClient_Internal(IN mHttpServer *pServer, mPtr<mTcpClient> &client);
 
 static mFUNCTION(mHttpRequest_Parser_Init_Internal, mPtr<mHttpRequest_Parser> &request, IN mAllocator *pAllocator, mPtr<mTcpClient> &client);
 static void mHttpRequest_Parser_Destroy_Internal(IN_OUT mHttpRequest_Parser *pRequest);
@@ -155,8 +155,8 @@ mFUNCTION(mHttpServer_Start, mPtr<mHttpServer> &httpServer)
   mERROR_IF(httpServer == nullptr, mR_ArgumentNull);
   mERROR_IF(httpServer->pListenerThread != nullptr, mR_ResourceStateInvalid);
 
-  mERROR_CHECK(mThread_Create(&httpServer->pListenerThread, httpServer->pAllocator, mHttpServer_Thread_Internal, httpServer));
-  mERROR_CHECK(mThread_Create(&httpServer->pStaleHandlerThread, httpServer->pAllocator, mHttpServer_StaleTcpHandlerThread_Internal, httpServer));
+  mERROR_CHECK(mThread_Create(&httpServer->pListenerThread, httpServer->pAllocator, mHttpServer_Thread_Internal, httpServer.GetPointer()));
+  mERROR_CHECK(mThread_Create(&httpServer->pStaleHandlerThread, httpServer->pAllocator, mHttpServer_StaleTcpHandlerThread_Internal, httpServer.GetPointer()));
 
   mRETURN_SUCCESS();
 }
@@ -209,47 +209,47 @@ static mFUNCTION(mHttpServer_Destroy_Internal, IN_OUT mHttpServer *pHttpServer)
   mRETURN_SUCCESS();
 }
 
-static mFUNCTION(mHttpServer_Thread_Internal, mPtr<mHttpServer> &server)
+static mFUNCTION(mHttpServer_Thread_Internal, IN mHttpServer *pServer)
 {
   mFUNCTION_SETUP();
 
-  while (server->keepRunning)
+  while (pServer->keepRunning)
   {
     mPtr<mTcpClient> client;
 
-    if (mSUCCEEDED(mTcpServer_Listen(server->tcpServer, &client, server->pAllocator)))
-      mERROR_CHECK(mTasklessThreadPool_EnqueueTask(server->threadPool, [server, client]() mutable { mHttpServer_HandleTcpClient_Internal(server, client); }));
+    if (mSUCCEEDED(mTcpServer_Listen(pServer->tcpServer, &client, pServer->pAllocator, 100)) && client != nullptr)
+      mERROR_CHECK(mTasklessThreadPool_EnqueueTask(pServer->threadPool, [pServer, client]() mutable { mHttpServer_HandleTcpClient_Internal(pServer, client); }));
   }
 
   mRETURN_SUCCESS();
 }
 
-static mFUNCTION(mHttpServer_StaleTcpHandlerThread_Internal, mPtr<mHttpServer> &server)
+static mFUNCTION(mHttpServer_StaleTcpHandlerThread_Internal, IN  mHttpServer *pServer)
 {
   mFUNCTION_SETUP();
 
-  while (server->keepRunning)
+  while (pServer->keepRunning)
   {
     size_t index = 0;
     size_t count = 0;
 
-    while (server->keepRunning)
+    while (pServer->keepRunning)
     {
       mPtr<mTcpClient> client = nullptr;
 
       // Get Next Client.
       {
-        mERROR_CHECK(mMutex_Lock(server->pStaleTcpClientMutex));
-        mDEFER_CALL(server->pStaleTcpClientMutex, mMutex_Unlock);
+        mERROR_CHECK(mMutex_Lock(pServer->pStaleTcpClientMutex));
+        mDEFER_CALL(pServer->pStaleTcpClientMutex, mMutex_Unlock);
 
-        mERROR_CHECK(mQueue_GetCount(server->staleTcpClients, &count));
+        mERROR_CHECK(mQueue_GetCount(pServer->staleTcpClients, &count));
 
         ++index;
 
         if (index >= count)
           break;
 
-        mERROR_CHECK(mQueue_PeekAt(server->staleTcpClients, index, &client));
+        mERROR_CHECK(mQueue_PeekAt(pServer->staleTcpClients, index, &client));
       }
 
       uint8_t _unused[1];
@@ -260,10 +260,10 @@ static mFUNCTION(mHttpServer_StaleTcpHandlerThread_Internal, mPtr<mHttpServer> &
       {
         // Remove from queue.
         {
-          mERROR_CHECK(mMutex_Lock(server->pStaleTcpClientMutex));
-          mDEFER_CALL(server->pStaleTcpClientMutex, mMutex_Unlock);
+          mERROR_CHECK(mMutex_Lock(pServer->pStaleTcpClientMutex));
+          mDEFER_CALL(pServer->pStaleTcpClientMutex, mMutex_Unlock);
 
-          mERROR_CHECK(mQueue_PopAt(server->staleTcpClients, index, &client));
+          mERROR_CHECK(mQueue_PopAt(pServer->staleTcpClients, index, &client));
         }
         
         client = nullptr;
@@ -273,14 +273,14 @@ static mFUNCTION(mHttpServer_StaleTcpHandlerThread_Internal, mPtr<mHttpServer> &
       // if the client has sent some more data.
       else if (bytesReadable > 0)
       {
-        mERROR_CHECK(mTasklessThreadPool_EnqueueTask(server->threadPool, [server, client]() mutable { mHttpServer_HandleTcpClient_Internal(server, client); }));
+        mERROR_CHECK(mTasklessThreadPool_EnqueueTask(pServer->threadPool, [pServer, client]() mutable { mHttpServer_HandleTcpClient_Internal(pServer, client); }));
 
         // Remove from queue.
         {
-          mERROR_CHECK(mMutex_Lock(server->pStaleTcpClientMutex));
-          mDEFER_CALL(server->pStaleTcpClientMutex, mMutex_Unlock);
+          mERROR_CHECK(mMutex_Lock(pServer->pStaleTcpClientMutex));
+          mDEFER_CALL(pServer->pStaleTcpClientMutex, mMutex_Unlock);
 
-          mERROR_CHECK(mQueue_PopAt(server->staleTcpClients, index, &client));
+          mERROR_CHECK(mQueue_PopAt(pServer->staleTcpClients, index, &client));
         }
 
         client = nullptr;
@@ -295,7 +295,7 @@ static mFUNCTION(mHttpServer_StaleTcpHandlerThread_Internal, mPtr<mHttpServer> &
   mRETURN_SUCCESS();
 }
 
-static void mHttpServer_HandleTcpClient_Internal(mPtr<mHttpServer> &server, mPtr<mTcpClient> &client)
+static void mHttpServer_HandleTcpClient_Internal(IN mHttpServer *pServer, mPtr<mTcpClient> &client)
 {
   // TODO: Use Arena Allocator.
 
@@ -312,16 +312,16 @@ static void mHttpServer_HandleTcpClient_Internal(mPtr<mHttpServer> &server, mPtr
     mUniqueContainer<mHttpRequest_Parser> request;
     mUniqueContainer<mHttpRequest_Parser>::CreateWithCleanupFunction(&request, mHttpRequest_Parser_Destroy_Internal);
 
-    if (mFAILED(mHttpRequest_Parser_Init_Internal(request, server->pAllocator, client)))
+    if (mFAILED(mHttpRequest_Parser_Init_Internal(request, pServer->pAllocator, client)))
       return;
 
     parser.data = request.GetPointer();
 
-    http_parser_execute(&parser, &server->settings, data, bytesReceived);
+    http_parser_execute(&parser, &pServer->settings, data, bytesReceived);
 
     if (mFAILED(request->result))
     {
-      mHttpServer_RespondWithError_Internal(server, client, mHRSC_BadRequest, "Failed to parse HTTP Header.", server->pAllocator);
+      mHttpServer_RespondWithError_Internal(pServer, client, mHRSC_BadRequest, "Failed to parse HTTP Header.", pServer->pAllocator);
 
       return;
     }
@@ -330,7 +330,7 @@ static void mHttpServer_HandleTcpClient_Internal(mPtr<mHttpServer> &server, mPtr
 
     if (parser.type != HTTP_REQUEST)
     {
-      mHttpServer_RespondWithError_Internal(server, client, mHRSC_BadRequest, "Expected HTTP Request.", server->pAllocator);
+      mHttpServer_RespondWithError_Internal(pServer, client, mHRSC_BadRequest, "Expected HTTP Request.", pServer->pAllocator);
 
       return;
     }
@@ -339,9 +339,9 @@ static void mHttpServer_HandleTcpClient_Internal(mPtr<mHttpServer> &server, mPtr
 
     if (request->requestMethod == mHRM_Post && request->body.bytes > 1)
     {
-      if (mFAILED(mHttpRequest_ParseArguments_Internal(request->body.c_str(), request->postParameters, server->pAllocator, false)))
+      if (mFAILED(mHttpRequest_ParseArguments_Internal(request->body.c_str(), request->postParameters, pServer->pAllocator, false)))
       {
-        mHttpServer_RespondWithError_Internal(server, client, mHRSC_BadRequest, "Failed to parse POST parameters.", server->pAllocator);
+        mHttpServer_RespondWithError_Internal(pServer, client, mHRSC_BadRequest, "Failed to parse POST parameters.", pServer->pAllocator);
 
         return;
       }
@@ -350,22 +350,22 @@ static void mHttpServer_HandleTcpClient_Internal(mPtr<mHttpServer> &server, mPtr
     mUniqueContainer<mHttpResponse> response;
     mUniqueContainer<mHttpResponse>::ConstructWithCleanupFunction(&response, mHttpResponse_Destroy_Internal);
 
-    if (mFAILED(mHttpResponse_Init_Internal(response, server->pAllocator)))
+    if (mFAILED(mHttpResponse_Init_Internal(response, pServer->pAllocator)))
       return;
 
     bool handled = false;
 
     mPtr<mHttpRequest> requestWrap = (mPtr<mHttpRequest>)((mPtr<mHttpRequest_Parser>)request);
 
-    for (auto &_handler : server->requestHandlers->Iterate())
+    for (auto &_handler : pServer->requestHandlers->Iterate())
     {
       handled = false;
 
       if (_handler->pHandleRequest && mSUCCEEDED(_handler->pHandleRequest(_handler, requestWrap, &handled, response)) && handled)
       {
-        if (mFAILED(mHttpServer_SendResponsePacket_Internal(client, response, server->pAllocator)))
+        if (mFAILED(mHttpServer_SendResponsePacket_Internal(client, response, pServer->pAllocator)))
         {
-          mHttpServer_RespondWithError_Internal(server, client, mHRSC_InternalServerError, "Failed to send response packet.", server->pAllocator);
+          mHttpServer_RespondWithError_Internal(pServer, client, mHRSC_InternalServerError, "Failed to send response packet.", pServer->pAllocator);
 
           return;
         }
@@ -376,7 +376,7 @@ static void mHttpServer_HandleTcpClient_Internal(mPtr<mHttpServer> &server, mPtr
 
     if (!handled)
     {
-      mHttpServer_RespondWithError_Internal(server, client, mHRSC_InternalServerError, "No Response Handler found for this request.", server->pAllocator);
+      mHttpServer_RespondWithError_Internal(pServer, client, mHRSC_InternalServerError, "No Response Handler found for this request.", pServer->pAllocator);
 
       return;
     }
@@ -388,10 +388,10 @@ static void mHttpServer_HandleTcpClient_Internal(mPtr<mHttpServer> &server, mPtr
 
     if (readableBytes == 0)
     {
-      if (mSUCCEEDED(mMutex_Lock(server->pStaleTcpClientMutex)))
+      if (mSUCCEEDED(mMutex_Lock(pServer->pStaleTcpClientMutex)))
       {
-        mQueue_PushBack(server->staleTcpClients, std::move(client));
-        mMutex_Unlock(server->pStaleTcpClientMutex);
+        mQueue_PushBack(pServer->staleTcpClients, std::move(client));
+        mMutex_Unlock(pServer->pStaleTcpClientMutex);
       }
 
       return;
@@ -401,13 +401,13 @@ static void mHttpServer_HandleTcpClient_Internal(mPtr<mHttpServer> &server, mPtr
   return;
 }
 
-static mFUNCTION(mHttpServer_RespondWithError_Internal, mPtr<mHttpServer> &server, mPtr<mTcpClient> &client, const mHttpResponseStatusCode statusCode, const mString &errorString, IN mAllocator *pAllocator)
+static mFUNCTION(mHttpServer_RespondWithError_Internal, IN mHttpServer *pServer, mPtr<mTcpClient> &client, const mHttpResponseStatusCode statusCode, const mString &errorString, IN mAllocator *pAllocator)
 {
   mFUNCTION_SETUP();
 
-  mERROR_IF(client == nullptr || server == nullptr, mR_ArgumentNull);
-  mERROR_IF(server->errorRequestHandler == nullptr, mR_Success);
-  mERROR_IF(server->errorRequestHandler->pHandleRequest == nullptr, mR_ResourceStateInvalid);
+  mERROR_IF(client == nullptr || pServer == nullptr, mR_ArgumentNull);
+  mERROR_IF(pServer->errorRequestHandler == nullptr, mR_Success);
+  mERROR_IF(pServer->errorRequestHandler->pHandleRequest == nullptr, mR_ResourceStateInvalid);
 
   mUniqueContainer<mHttpResponse> response;
   mUniqueContainer<mHttpResponse>::ConstructWithCleanupFunction(&response, mHttpResponse_Destroy_Internal);
@@ -417,7 +417,7 @@ static mFUNCTION(mHttpServer_RespondWithError_Internal, mPtr<mHttpServer> &serve
 
   response->statusCode = statusCode;
 
-  mERROR_CHECK(server->errorRequestHandler->pHandleRequest(server->errorRequestHandler, errorString, response));
+  mERROR_CHECK(pServer->errorRequestHandler->pHandleRequest(pServer->errorRequestHandler, errorString, response));
 
   mERROR_CHECK(mHttpServer_SendResponsePacket_Internal(client, response, pAllocator));
 

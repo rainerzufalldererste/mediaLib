@@ -13,6 +13,11 @@
 struct mBlobReader;
 
 mFUNCTION(mBlobReader_Create, OUT mPtr<mBlobReader> *pReader, IN mAllocator *pAllocator, IN const uint8_t *pBlobData, const size_t blobSize);
+mFUNCTION(mBlobReader_CreateWithSize, OUT mPtr<mBlobReader> *pReader, IN mAllocator *pAllocator, const size_t blobSize);
+mFUNCTION(mBlobReader_SetData, mPtr<mBlobReader> &reader, IN const uint8_t *pBlobData, const size_t dataSize);
+mFUNCTION(mBlobReader_GetInternalDataPtr, mPtr<mBlobReader> &reader, OUT uint8_t **ppBlobData);
+mFUNCTION(mBlobReader_AcceptSetData, mPtr<mBlobReader> &reader);
+
 mFUNCTION(mBlobReader_Destroy, IN_OUT mPtr<mBlobReader> *pReader);
 
 // This function will also enter baseTypeArrays and arrays.

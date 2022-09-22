@@ -13,4 +13,13 @@
 mFUNCTION(mDebugSymbolInfo_GetNameOfSymbol, IN void *pFunctionPtr, OUT char *name, const size_t length);
 mFUNCTION(mDebugSymbolInfo_GetStackTrace, OUT char *stackTrace, const size_t length);
 
+struct mDebugSymbolInfo_CallStack
+{
+  void *callstack[63];
+  uint16_t size;
+};
+
+mFUNCTION(mDebugSymbolInfo_GetCallStack, OUT mDebugSymbolInfo_CallStack *pCallstack);
+mFUNCTION(mDebugSymbolInfo_GetStackTraceFromCallStack, IN const mDebugSymbolInfo_CallStack *pCallstack, OUT char *stackTrace, const size_t length);
+
 #endif // mDebugSymbolInfo_h__

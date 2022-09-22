@@ -26,4 +26,25 @@ mFUNCTION(mRecursiveMutex_Destroy, IN_OUT mRecursiveMutex **ppMutex);
 mFUNCTION(mRecursiveMutex_Lock, IN mRecursiveMutex *pMutex);
 mFUNCTION(mRecursiveMutex_Unlock, IN mRecursiveMutex *pMutex);
 
+struct mSharedMutex;
+
+enum mSharedMutex_CreationFlags_ : size_t
+{
+  mSM_CF_Local = 0,
+  mSM_CF_Global = 1,
+  mSM_CF_InitiallyLocked = 1 << 1,
+  mSM_CF_Unnamed = 1 << 2, // only valid if not `mSM_CF_Global`.
+
+  mSM_CF_Default = mSM_CF_Local,
+};
+
+typedef size_t mSharedMutex_CreationFlags;
+
+mFUNCTION(mSharedMutex_Create, OUT mSharedMutex **ppMutex, IN OPTIONAL mAllocator *pAllocator, const mString &name, const mSharedMutex_CreationFlags flags = mSM_CF_Default);
+mFUNCTION(mSharedMutex_OpenExisting, OUT mSharedMutex **ppMutex, IN OPTIONAL mAllocator *pAllocator, const mString &name, const bool isGlobal = false);
+mFUNCTION(mSharedMutex_Destroy, IN_OUT mSharedMutex **ppMutex);
+
+mFUNCTION(mSharedMutex_Lock, IN mSharedMutex *pMutex, const size_t timeoutMs = (size_t)-1, OUT OPTIONAL bool *pLastAbandoned = nullptr);
+mFUNCTION(mSharedMutex_Unlock, IN mSharedMutex *pMutex);
+
 #endif // mMutex_h__

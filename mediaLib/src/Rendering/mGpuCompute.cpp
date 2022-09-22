@@ -341,9 +341,9 @@ static void mGpuComputeContext_Destroy(mGpuComputeContext *pContext);
 
 static mFUNCTION(mOpenCL_Initialize);
 static void mOpenCL_FreeLibrary();
-static mFUNCTION(mOpenCL_PixelFormatToImageFormatDataType, const mPixelFormat pixelFormat, OUT cl_channel_type *pValue);
-static mFUNCTION(mOpenCL_PixelFormatToImageFormatChannelOrder, const mPixelFormat pixelFormat, OUT cl_channel_order *pValue);
-static mFUNCTION(mOpenCL_PixelFormatToImageFormat, const mPixelFormat pixelFormat, OUT cl_image_format *pImageFormat);
+static mFUNCTION(mOpenCL_PixelFormatToImageFormatDataType, const mPixelFormatMapping pixelFormat, OUT cl_channel_type *pValue);
+static mFUNCTION(mOpenCL_PixelFormatToImageFormatChannelOrder, const mPixelFormatMapping pixelFormat, OUT cl_channel_order *pValue);
+static mFUNCTION(mOpenCL_PixelFormatToImageFormat, const mPixelFormatMapping pixelFormat, OUT cl_image_format *pImageFormat);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -860,7 +860,7 @@ struct mGpuComputeBuffer
 
   CONST_FIELD cl_mem handle;
 
-  mPixelFormat pixelFormat;
+  mPixelFormatMapping pixelFormat;
   mVec3s resolution;
 
   CONST_FIELD mPtr<mTexture> openGlTexture2D;
@@ -931,7 +931,7 @@ mFUNCTION(mGpuComputeBuffer_CreateDataBuffer, OUT mPtr<mGpuComputeBuffer> *pGpuB
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mGpuComputeBuffer_CreateTexture2D, OUT mPtr<mGpuComputeBuffer> *pGpuBuffer, IN mAllocator *pAllocator, mPtr<mGpuComputeContext> &context, const mGpuComputeBuffer_ReadWriteConfiguration rwconfig, const mVec2s resolution, const mPixelFormat pixelFormat, OPTIONAL const void *pDataToCopy /* = nullptr */)
+mFUNCTION(mGpuComputeBuffer_CreateTexture2D, OUT mPtr<mGpuComputeBuffer> *pGpuBuffer, IN mAllocator *pAllocator, mPtr<mGpuComputeContext> &context, const mGpuComputeBuffer_ReadWriteConfiguration rwconfig, const mVec2s resolution, const mPixelFormatMapping pixelFormat, OPTIONAL const void *pDataToCopy /* = nullptr */)
 {
   mFUNCTION_SETUP();
 
@@ -957,7 +957,7 @@ mFUNCTION(mGpuComputeBuffer_CreateTexture2D, OUT mPtr<mGpuComputeBuffer> *pGpuBu
   if (rwconfig == mGCB_RWC_Read && pDataToCopy == nullptr)
   {
     size_t bytes = 0;
-    mERROR_CHECK(mPixelFormat_GetSize(pixelFormat, resolution, &bytes));
+    mERROR_CHECK(mPixelFormat_GetSize(pixelFormat.basePixelFormat, resolution, &bytes));
 
     mERROR_CHECK(mAllocator_Allocate(pTempAllocator, &pTmpData, bytes));
   }
@@ -997,7 +997,7 @@ mFUNCTION(mGpuComputeBuffer_CreateTexture2D, OUT mPtr<mGpuComputeBuffer> *pGpuBu
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mGpuComputeBuffer_CreateTexture3D, OUT mPtr<mGpuComputeBuffer> *pGpuBuffer, IN mAllocator *pAllocator, mPtr<mGpuComputeContext> &context, const mGpuComputeBuffer_ReadWriteConfiguration rwconfig, const mVec3s resolution, const mPixelFormat pixelFormat, OPTIONAL const void *pDataToCopy /* = nullptr */)
+mFUNCTION(mGpuComputeBuffer_CreateTexture3D, OUT mPtr<mGpuComputeBuffer> *pGpuBuffer, IN mAllocator *pAllocator, mPtr<mGpuComputeContext> &context, const mGpuComputeBuffer_ReadWriteConfiguration rwconfig, const mVec3s resolution, const mPixelFormatMapping pixelFormat, OPTIONAL const void *pDataToCopy /* = nullptr */)
 {
   mFUNCTION_SETUP();
 
@@ -1023,7 +1023,7 @@ mFUNCTION(mGpuComputeBuffer_CreateTexture3D, OUT mPtr<mGpuComputeBuffer> *pGpuBu
   if (rwconfig == mGCB_RWC_Read && pDataToCopy == nullptr)
   {
     size_t bytes = 0;
-    mERROR_CHECK(mPixelFormat_GetSize(pixelFormat, resolution, &bytes));
+    mERROR_CHECK(mPixelFormat_GetSize(pixelFormat.basePixelFormat, resolution, &bytes));
 
     mERROR_CHECK(mAllocator_Allocate(pTempAllocator, &pTmpData, bytes));
   }
@@ -1063,7 +1063,7 @@ mFUNCTION(mGpuComputeBuffer_CreateTexture3D, OUT mPtr<mGpuComputeBuffer> *pGpuBu
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mGpuComputeBuffer_CreateTexture2DFromRendererTexture, OUT mPtr<mGpuComputeBuffer> *pGpuBuffer, IN mAllocator *pAllocator, mPtr<mGpuComputeContext> &context, const mGpuComputeBuffer_ReadWriteConfiguration rwconfig, mPtr<mTexture> &rendererTexture, const mPixelFormat pixelFormat)
+mFUNCTION(mGpuComputeBuffer_CreateTexture2DFromRendererTexture, OUT mPtr<mGpuComputeBuffer> *pGpuBuffer, IN mAllocator *pAllocator, mPtr<mGpuComputeContext> &context, const mGpuComputeBuffer_ReadWriteConfiguration rwconfig, mPtr<mTexture> &rendererTexture, const mPixelFormatMapping pixelFormat)
 {
   mFUNCTION_SETUP();
 
@@ -1108,7 +1108,7 @@ mFUNCTION(mGpuComputeBuffer_CreateTexture2DFromRendererTexture, OUT mPtr<mGpuCom
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mGpuComputeBuffer_CreateTexture3DFromRendererTexture, OUT mPtr<mGpuComputeBuffer> *pGpuBuffer, IN mAllocator *pAllocator, mPtr<mGpuComputeContext> &context, const mGpuComputeBuffer_ReadWriteConfiguration rwconfig, mPtr<mTexture3D> &rendererTexture, const mPixelFormat pixelFormat)
+mFUNCTION(mGpuComputeBuffer_CreateTexture3DFromRendererTexture, OUT mPtr<mGpuComputeBuffer> *pGpuBuffer, IN mAllocator *pAllocator, mPtr<mGpuComputeContext> &context, const mGpuComputeBuffer_ReadWriteConfiguration rwconfig, mPtr<mTexture3D> &rendererTexture, const mPixelFormatMapping pixelFormat)
 {
   mFUNCTION_SETUP();
 
@@ -1233,7 +1233,7 @@ mFUNCTION(mGpuComputeBuffer_EnqueueWriteToTexture2D, mPtr<mGpuComputeBuffer> &bu
   mERROR_IF(blocking && pEvent != nullptr, mR_InvalidParameter);
   mERROR_IF(buffer->type != mGCB_T_Texture2D && buffer->type != mGCB_T_Texture2DOpenGL, mR_ResourceIncompatible);
   mERROR_IF(buffer->type == mGCB_T_Texture2DOpenGL && !buffer->currentlyEnqueuedToBeAcquired, mR_ResourceIncompatible);
-  mERROR_IF(imageBuffer->pixelFormat != buffer->pixelFormat, mR_ResourceIncompatible);
+  mERROR_IF(imageBuffer->pixelFormat != buffer->pixelFormat.basePixelFormat, mR_ResourceIncompatible);
   mERROR_IF(imageBuffer->currentSize.x + writeOffset.x > buffer->resolution.x, mR_ResourceIncompatible);
   mERROR_IF(imageBuffer->currentSize.y + writeOffset.y > buffer->resolution.y, mR_ResourceIncompatible);
 
@@ -1264,7 +1264,7 @@ mFUNCTION(mGpuComputeBuffer_EnqueueWriteToTexture2D, mPtr<mGpuComputeBuffer> &bu
   mERROR_IF(blocking && pEvent != nullptr, mR_InvalidParameter);
   mERROR_IF(buffer->type != mGCB_T_Texture2D && buffer->type != mGCB_T_Texture2DOpenGL, mR_ResourceIncompatible);
   mERROR_IF(buffer->type == mGCB_T_Texture2DOpenGL && !buffer->currentlyEnqueuedToBeAcquired, mR_ResourceIncompatible);
-  mERROR_IF(pixelFormat != buffer->pixelFormat, mR_ResourceIncompatible);
+  mERROR_IF(pixelFormat != buffer->pixelFormat.basePixelFormat, mR_ResourceIncompatible);
   mERROR_IF(writeSize.x + writeOffset.x > buffer->resolution.x, mR_ResourceIncompatible);
   mERROR_IF(writeSize.y + writeOffset.y > buffer->resolution.y, mR_ResourceIncompatible);
 
@@ -1292,7 +1292,7 @@ mFUNCTION(mGpuComputeBuffer_EnqueueWriteToTexture3D, mPtr<mGpuComputeBuffer> &bu
   mERROR_IF(blocking && pEvent != nullptr, mR_InvalidParameter);
   mERROR_IF(buffer->type != mGCB_T_Texture3D && buffer->type != mGCB_T_Texture3DOpenGL, mR_ResourceIncompatible);
   mERROR_IF(buffer->type == mGCB_T_Texture3DOpenGL && !buffer->currentlyEnqueuedToBeAcquired, mR_ResourceIncompatible);
-  mERROR_IF(pixelFormat != buffer->pixelFormat, mR_ResourceIncompatible);
+  mERROR_IF(pixelFormat != buffer->pixelFormat.basePixelFormat, mR_ResourceIncompatible);
   mERROR_IF(writeSize.x + writeOffset.x > buffer->resolution.x, mR_ResourceIncompatible);
   mERROR_IF(writeSize.y + writeOffset.y > buffer->resolution.y, mR_ResourceIncompatible);
   mERROR_IF(writeSize.z + writeOffset.z > buffer->resolution.z, mR_ResourceIncompatible);
@@ -1342,7 +1342,7 @@ mFUNCTION(mGpuComputeBuffer_EnqueueReadFromTexture2D, mPtr<mGpuComputeBuffer> &b
   mERROR_IF(blocking && pEvent != nullptr, mR_InvalidParameter);
   mERROR_IF(buffer->type != mGCB_T_Texture2D && buffer->type != mGCB_T_Texture2DOpenGL, mR_ResourceIncompatible);
   mERROR_IF(buffer->type == mGCB_T_Texture2DOpenGL && !buffer->currentlyEnqueuedToBeAcquired, mR_ResourceIncompatible);
-  mERROR_IF(pixelFormat != buffer->pixelFormat, mR_ResourceIncompatible);
+  mERROR_IF(pixelFormat != buffer->pixelFormat.basePixelFormat, mR_ResourceIncompatible);
   mERROR_IF(readSize.x + readOffset.x > buffer->resolution.x, mR_ResourceIncompatible);
   mERROR_IF(readSize.y + readOffset.y > buffer->resolution.y, mR_ResourceIncompatible);
 
@@ -1370,7 +1370,7 @@ mFUNCTION(mGpuComputeBuffer_EnqueueReadFromTexture3D, mPtr<mGpuComputeBuffer> &b
   mERROR_IF(blocking && pEvent != nullptr, mR_InvalidParameter);
   mERROR_IF(buffer->type != mGCB_T_Texture3D && buffer->type != mGCB_T_Texture3DOpenGL, mR_ResourceIncompatible);
   mERROR_IF(buffer->type == mGCB_T_Texture3DOpenGL && !buffer->currentlyEnqueuedToBeAcquired, mR_ResourceIncompatible);
-  mERROR_IF(pixelFormat != buffer->pixelFormat, mR_ResourceIncompatible);
+  mERROR_IF(pixelFormat != buffer->pixelFormat.basePixelFormat, mR_ResourceIncompatible);
   mERROR_IF(readSize.x + readOffset.x > buffer->resolution.x, mR_ResourceIncompatible);
   mERROR_IF(readSize.y + readOffset.y > buffer->resolution.y, mR_ResourceIncompatible);
   mERROR_IF(readSize.z + readOffset.z > buffer->resolution.z, mR_ResourceIncompatible);
@@ -1398,7 +1398,7 @@ mFUNCTION(mGpuComputeBuffer_EnqueueReadFromBuffer, mPtr<mGpuComputeBuffer> &buff
   mERROR_IF(buffer == nullptr || ppData == nullptr, mR_ArgumentNull);
 
   size_t bytes = 0;
-  mERROR_CHECK(mPixelFormat_GetSize(buffer->pixelFormat, mVec2s(buffer->resolution.x - readOffset, 1), &bytes));
+  mERROR_CHECK(mPixelFormat_GetSize(buffer->pixelFormat.basePixelFormat, mVec2s(buffer->resolution.x - readOffset, 1), &bytes));
 
   if (pBytes != nullptr)
     *pBytes = bytes;
@@ -1422,13 +1422,13 @@ mFUNCTION(mGpuComputeBuffer_EnqueueReadFromTexture2D, mPtr<mGpuComputeBuffer> &b
   mERROR_IF(buffer == nullptr || ppData == nullptr, mR_ArgumentNull);
 
   size_t bytes = 0;
-  mERROR_CHECK(mPixelFormat_GetSize(buffer->pixelFormat, buffer->resolution.ToVector2() - readOffset, &bytes));
+  mERROR_CHECK(mPixelFormat_GetSize(buffer->pixelFormat.basePixelFormat, buffer->resolution.ToVector2() - readOffset, &bytes));
 
   uint8_t *pData = nullptr;
   mDEFER_CALL_2(mAllocator_FreePtr, pDataAllocator, &pData);
   mERROR_CHECK(mAllocator_Allocate(pDataAllocator, &pData, bytes));
 
-  mERROR_CHECK(mGpuComputeBuffer_EnqueueReadFromTexture2D(buffer, pData, buffer->pixelFormat, buffer->resolution.ToVector2() - readOffset, readOffset, 0, blocking, pEvent, pAllocator));
+  mERROR_CHECK(mGpuComputeBuffer_EnqueueReadFromTexture2D(buffer, pData, buffer->pixelFormat.basePixelFormat, buffer->resolution.ToVector2() - readOffset, readOffset, 0, blocking, pEvent, pAllocator));
 
   *ppData = pData;
   pData = nullptr; // to prevent `mAllocator_FreePtr` in `mDEFER_CALL_2`.
@@ -1446,13 +1446,13 @@ mFUNCTION(mGpuComputeBuffer_EnqueueReadFromTexture3D, mPtr<mGpuComputeBuffer> &b
   mERROR_IF(buffer == nullptr || ppData == nullptr, mR_ArgumentNull);
 
   size_t bytes = 0;
-  mERROR_CHECK(mPixelFormat_GetSize(buffer->pixelFormat, buffer->resolution - readOffset, &bytes));
+  mERROR_CHECK(mPixelFormat_GetSize(buffer->pixelFormat.basePixelFormat, buffer->resolution - readOffset, &bytes));
 
   uint8_t *pData = nullptr;
   mDEFER_CALL_2(mAllocator_FreePtr, pDataAllocator, &pData);
   mERROR_CHECK(mAllocator_Allocate(pDataAllocator, &pData, bytes));
 
-  mERROR_CHECK(mGpuComputeBuffer_EnqueueReadFromTexture3D(buffer, pData, buffer->pixelFormat, buffer->resolution - readOffset, readOffset, 0, 0, blocking, pEvent, pAllocator));
+  mERROR_CHECK(mGpuComputeBuffer_EnqueueReadFromTexture3D(buffer, pData, buffer->pixelFormat.basePixelFormat, buffer->resolution - readOffset, readOffset, 0, 0, blocking, pEvent, pAllocator));
 
   *ppData = pData;
   pData = nullptr; // to prevent `mAllocator_FreePtr` in `mDEFER_CALL_2`.
@@ -1463,7 +1463,7 @@ mFUNCTION(mGpuComputeBuffer_EnqueueReadFromTexture3D, mPtr<mGpuComputeBuffer> &b
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mGpuComputeBuffer_GetPixelFormat, mPtr<mGpuComputeBuffer> &buffer, OUT mPixelFormat *pPixelFormat)
+mFUNCTION(mGpuComputeBuffer_GetPixelFormat, mPtr<mGpuComputeBuffer> &buffer, OUT mPixelFormatMapping *pPixelFormat)
 {
   mFUNCTION_SETUP();
 
@@ -1739,9 +1739,19 @@ mFUNCTION(mGpuComputeKernel_SetArgAtIndex, mPtr<mGpuComputeKernel> &kernel, cons
 
   mERROR_IF(kernel == nullptr || sampler == nullptr, mR_ArgumentNull);
 
-  cl_int ret = CL_SUCCESS;
+  const cl_int ret = clSetKernelArg(kernel->handle, (cl_uint)index, sizeof(sampler->handle), &sampler->handle);
 
-  mERROR_IF(CL_SUCCESS != (ret = clSetKernelArg(kernel->handle, (cl_uint)index, sizeof(sampler->handle), &sampler->handle)), mR_InternalError);
+  if (mFAILED(ret))
+  {
+    switch (ret)
+    {
+    case CL_INVALID_MEM_OBJECT:
+      mRETURN_RESULT(mR_InvalidParameter);
+
+    default:
+      mRETURN_RESULT(mR_InternalError);
+    }
+  }
 
   mRETURN_SUCCESS();
 }
@@ -1782,6 +1792,9 @@ mFUNCTION(mGpuComputeKernel_EnqueueExecution, mPtr<mGpuComputeKernel> &kernel, c
     {
     case CL_INVALID_KERNEL_ARGS:
       mRETURN_RESULT(mR_InvalidParameter);
+
+    case CL_OUT_OF_RESOURCES:
+      mRETURN_RESULT(mR_ResourceBusy);
 
     default:
       mRETURN_RESULT(mR_InternalError);
@@ -1827,12 +1840,12 @@ static void mGpuComputeKernel_Destroy(IN mGpuComputeKernel *pKernel)
 
 //////////////////////////////////////////////////////////////////////////
 
-static mFUNCTION(mOpenCL_PixelFormatToImageFormat, const mPixelFormat pixelFormat, OUT cl_image_format *pImageFormat)
+static mFUNCTION(mOpenCL_PixelFormatToImageFormat, const mPixelFormatMapping pixelFormat, OUT cl_image_format *pImageFormat)
 {
   mFUNCTION_SETUP();
 
   bool hasSubBuffers = true;
-  mERROR_CHECK(mPixelFormat_HasSubBuffers(pixelFormat, &hasSubBuffers));
+  mERROR_CHECK(mPixelFormat_HasSubBuffers(pixelFormat.basePixelFormat, &hasSubBuffers));
   mERROR_IF(hasSubBuffers, mR_InvalidParameter);
 
   mERROR_CHECK(mOpenCL_PixelFormatToImageFormatChannelOrder(pixelFormat, &pImageFormat->image_channel_order));
@@ -1841,11 +1854,11 @@ static mFUNCTION(mOpenCL_PixelFormatToImageFormat, const mPixelFormat pixelForma
   mRETURN_SUCCESS();
 }
 
-static mFUNCTION(mOpenCL_PixelFormatToImageFormatChannelOrder, const mPixelFormat pixelFormat, OUT cl_channel_order *pValue)
+static mFUNCTION(mOpenCL_PixelFormatToImageFormatChannelOrder, const mPixelFormatMapping pixelFormat, OUT cl_channel_order *pValue)
 {
   mFUNCTION_SETUP();
 
-  switch (pixelFormat)
+  switch (pixelFormat.basePixelFormat)
   {
   case mPF_YUV444:
   case mPF_YUV422:
@@ -1895,11 +1908,11 @@ static mFUNCTION(mOpenCL_PixelFormatToImageFormatChannelOrder, const mPixelForma
   mRETURN_SUCCESS();
 }
 
-static mFUNCTION(mOpenCL_PixelFormatToImageFormatDataType, const mPixelFormat pixelFormat, OUT cl_channel_type *pValue)
+static mFUNCTION(mOpenCL_PixelFormatToImageFormatDataType, const mPixelFormatMapping pixelFormat, OUT cl_channel_type *pValue)
 {
   mFUNCTION_SETUP();
 
-  switch (pixelFormat)
+  switch (pixelFormat.basePixelFormat)
   {
   case mPF_YUV444:
   case mPF_YUV422:
@@ -1919,13 +1932,39 @@ static mFUNCTION(mOpenCL_PixelFormatToImageFormatDataType, const mPixelFormat pi
   case mPF_R8G8:
   case mPF_R8G8B8A8:
   case mPF_B8G8R8A8:
-    *pValue = CL_UNORM_INT8;
+    if (pixelFormat.isNormalized)
+    {
+      if (pixelFormat.isSigned)
+        *pValue = CL_SNORM_INT8;
+      else
+        *pValue = CL_UNORM_INT8;
+    }
+    else
+    {
+      if (pixelFormat.isSigned)
+        *pValue = CL_SIGNED_INT8;
+      else
+        *pValue = CL_UNSIGNED_INT8;
+    }
     break;
 
   case mPF_Monochrome16:
   case mPF_R16G16:
   case mPF_R16G16B16A16:
-    *pValue = CL_UNORM_INT16;
+    if (pixelFormat.isNormalized)
+    {
+      if (pixelFormat.isSigned)
+        *pValue = CL_SNORM_INT16;
+      else
+        *pValue = CL_UNORM_INT16;
+    }
+    else
+    {
+      if (pixelFormat.isSigned)
+        *pValue = CL_SIGNED_INT16;
+      else
+        *pValue = CL_UNSIGNED_INT16;
+    }
     break;
 
   case mPF_Monochromef16:

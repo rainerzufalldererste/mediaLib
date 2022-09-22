@@ -29,10 +29,10 @@ enum mGpuComputeBuffer_ReadWriteConfiguration
 struct mGpuComputeBuffer;
 
 mFUNCTION(mGpuComputeBuffer_CreateDataBuffer, OUT mPtr<mGpuComputeBuffer> *pGpuBuffer, IN mAllocator *pAllocator, mPtr<mGpuComputeContext> &context, const mGpuComputeBuffer_ReadWriteConfiguration rwconfig, const size_t bytes, OPTIONAL IN const void *pDataToCopy = nullptr);
-mFUNCTION(mGpuComputeBuffer_CreateTexture2D, OUT mPtr<mGpuComputeBuffer> *pGpuBuffer, IN mAllocator *pAllocator, mPtr<mGpuComputeContext> &context, const mGpuComputeBuffer_ReadWriteConfiguration rwconfig, const mVec2s resolution, const mPixelFormat pixelFormat, OPTIONAL const void *pDataToCopy = nullptr);
-mFUNCTION(mGpuComputeBuffer_CreateTexture3D, OUT mPtr<mGpuComputeBuffer> *pGpuBuffer, IN mAllocator *pAllocator, mPtr<mGpuComputeContext> &context, const mGpuComputeBuffer_ReadWriteConfiguration rwconfig, const mVec3s resolution, const mPixelFormat pixelFormat, OPTIONAL const void *pDataToCopy = nullptr);
-mFUNCTION(mGpuComputeBuffer_CreateTexture2DFromRendererTexture, OUT mPtr<mGpuComputeBuffer> *pGpuBuffer, IN mAllocator *pAllocator, mPtr<mGpuComputeContext> &context, const mGpuComputeBuffer_ReadWriteConfiguration rwconfig, mPtr<struct mTexture> &rendererTexture, const mPixelFormat pixelFormat);
-mFUNCTION(mGpuComputeBuffer_CreateTexture3DFromRendererTexture, OUT mPtr<mGpuComputeBuffer> *pGpuBuffer, IN mAllocator *pAllocator, mPtr<mGpuComputeContext> &context, const mGpuComputeBuffer_ReadWriteConfiguration rwconfig, mPtr<struct mTexture3D> &rendererTexture, const mPixelFormat pixelFormat);
+mFUNCTION(mGpuComputeBuffer_CreateTexture2D, OUT mPtr<mGpuComputeBuffer> *pGpuBuffer, IN mAllocator *pAllocator, mPtr<mGpuComputeContext> &context, const mGpuComputeBuffer_ReadWriteConfiguration rwconfig, const mVec2s resolution, const mPixelFormatMapping pixelFormat, OPTIONAL const void *pDataToCopy = nullptr);
+mFUNCTION(mGpuComputeBuffer_CreateTexture3D, OUT mPtr<mGpuComputeBuffer> *pGpuBuffer, IN mAllocator *pAllocator, mPtr<mGpuComputeContext> &context, const mGpuComputeBuffer_ReadWriteConfiguration rwconfig, const mVec3s resolution, const mPixelFormatMapping pixelFormat, OPTIONAL const void *pDataToCopy = nullptr);
+mFUNCTION(mGpuComputeBuffer_CreateTexture2DFromRendererTexture, OUT mPtr<mGpuComputeBuffer> *pGpuBuffer, IN mAllocator *pAllocator, mPtr<mGpuComputeContext> &context, const mGpuComputeBuffer_ReadWriteConfiguration rwconfig, mPtr<struct mTexture> &rendererTexture, const mPixelFormatMapping pixelFormat);
+mFUNCTION(mGpuComputeBuffer_CreateTexture3DFromRendererTexture, OUT mPtr<mGpuComputeBuffer> *pGpuBuffer, IN mAllocator *pAllocator, mPtr<mGpuComputeContext> &context, const mGpuComputeBuffer_ReadWriteConfiguration rwconfig, mPtr<struct mTexture3D> &rendererTexture, const mPixelFormatMapping pixelFormat);
 
 mFUNCTION(mGpuComputeBuffer_EnqueueAcquire, mPtr<mGpuComputeBuffer> &buffer, OUT OPTIONAL mPtr<mGpuComputeEvent> *pEvent = nullptr, IN OPTIONAL mAllocator *pAllocator = nullptr);
 mFUNCTION(mGpuComputeBuffer_EnqueueRelease, mPtr<mGpuComputeBuffer> &buffer, OUT OPTIONAL mPtr<mGpuComputeEvent> *pEvent = nullptr, IN OPTIONAL mAllocator *pAllocator = nullptr);
@@ -50,7 +50,7 @@ mFUNCTION(mGpuComputeBuffer_EnqueueReadFromBuffer, mPtr<mGpuComputeBuffer> &buff
 mFUNCTION(mGpuComputeBuffer_EnqueueReadFromTexture2D, mPtr<mGpuComputeBuffer> &buffer, OUT void **ppData, IN mAllocator *pDataAllocator, OPTIONAL OUT size_t *pBytes = nullptr, const mVec2s readOffset = mVec2s(0), const bool blocking = false, OUT OPTIONAL mPtr<mGpuComputeEvent> *pEvent = nullptr, IN OPTIONAL mAllocator *pAllocator = nullptr);
 mFUNCTION(mGpuComputeBuffer_EnqueueReadFromTexture3D, mPtr<mGpuComputeBuffer> &buffer, OUT void **ppData, IN mAllocator *pDataAllocator, OPTIONAL OUT size_t *pBytes = nullptr, const mVec3s readOffset = mVec3s(0), const bool blocking = false, OUT OPTIONAL mPtr<mGpuComputeEvent> *pEvent = nullptr, IN OPTIONAL mAllocator *pAllocator = nullptr);
 
-mFUNCTION(mGpuComputeBuffer_GetPixelFormat, mPtr<mGpuComputeBuffer> &buffer, OUT mPixelFormat *pPixelFormat);
+mFUNCTION(mGpuComputeBuffer_GetPixelFormat, mPtr<mGpuComputeBuffer> &buffer, OUT mPixelFormatMapping *pPixelFormat);
 
 mFUNCTION(mGpuComputeBuffer_GetSize, mPtr<mGpuComputeBuffer> &buffer, OUT size_t *pSize);
 mFUNCTION(mGpuComputeBuffer_GetSize, mPtr<mGpuComputeBuffer> &buffer, OUT mVec2s *pSize);

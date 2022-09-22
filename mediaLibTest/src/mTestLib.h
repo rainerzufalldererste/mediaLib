@@ -2,9 +2,12 @@
 #define mTestLib_h__
 
 #include "mediaLib.h"
-#include "gtest/gtest.h"
 
 #define mDEBUG_TESTS
+
+#ifndef mDEBUG_TESTS
+#include "gtest/gtest.h"
+#endif
 
 void mTest_PrintTestFailure(const char *text);
 #define mTEST_PRINT_FAILURE(...) mPrintToFunction(&mTest_PrintTestFailure, __VA_ARGS__)
@@ -108,6 +111,20 @@ inline bool mTest_FloatEquals(const double_t expected, const double_t value)
 
 extern size_t mTestDestructible_Count;
 
+#ifdef _DEBUG
+  #ifndef mDEBUG_MEMORY_ALLOCATIONS
+    #define mTEST_STORE_ALLOCATIONS
+  #endif
+#endif
+
+#ifdef mDEBUG_MEMORY_ALLOCATIONS
+#define mTEST_PRINT_REMAINING_ALLOCATIONS(pAllocator) mAllocatorDebugging_PrintRemainingMemoryAllocations(pAllocator)
+#elif defined(mTEST_STORE_ALLOCATIONS)
+#define mTEST_PRINT_REMAINING_ALLOCATIONS(pAllocator) mTestAllocator_PrintRemainingMemoryAllocations(pAllocator)
+#else
+#define mTEST_PRINT_REMAINING_ALLOCATIONS(pAllocator) do { } while (false)
+#endif
+
 #define mTEST_ALLOCATOR_SETUP() \
   mTestDestructible_Count = 0; \
   mAllocator __testAllocator; \
@@ -117,33 +134,26 @@ extern size_t mTestDestructible_Count;
   mUnused(pAllocator); \
   { 
 
-#ifdef mDEBUG_MEMORY_ALLOCATIONS
 #define mTEST_ALLOCATOR_ZERO_CHECK() \
   } \
   do \
   { size_t allocationCount = (size_t)-1; \
     mTEST_ASSERT_SUCCESS(mTestAllocator_GetCount(&__testAllocator, &allocationCount)); \
     if (allocationCount != 0) \
-      mAllocatorDebugging_PrintRemainingMemoryAllocations(&__testAllocator); \
+      mTEST_PRINT_REMAINING_ALLOCATIONS(&__testAllocator); \
     mTEST_ASSERT_EQUAL(allocationCount, 0); \
     mTEST_RETURN_SUCCESS(); \
   } while (0)
-#else
-#define mTEST_ALLOCATOR_ZERO_CHECK() \
-  } \
-  do \
-  { size_t allocationCount = (size_t)-1; \
-    mTEST_ASSERT_SUCCESS(mTestAllocator_GetCount(&__testAllocator, &allocationCount)); \
-    mTEST_ASSERT_EQUAL(allocationCount, 0); \
-    mTEST_RETURN_SUCCESS(); \
-  } while (0)
-#endif
 
 void mTestLib_Initialize();
 mFUNCTION(mTestLib_RunAllTests, int32_t *pArgc, const char **pArgv);
 
 mFUNCTION(mTestAllocator_Create, mAllocator *pTestAllocator);
 mFUNCTION(mTestAllocator_GetCount, mAllocator *pAllocator, size_t *pCount);
+
+#ifdef mTEST_STORE_ALLOCATIONS
+mFUNCTION(mTestAllocator_PrintRemainingMemoryAllocations, mAllocator *pAllocator);
+#endif
 
 struct mDummyDestructible
 {

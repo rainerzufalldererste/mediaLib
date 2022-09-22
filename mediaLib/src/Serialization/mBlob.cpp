@@ -678,6 +678,19 @@ mFUNCTION(mBlobReader_Create, OUT mPtr<mBlobReader> *pReader, IN mAllocator *pAl
   mERROR_IF(pReader == nullptr || pBlobData == nullptr, mR_ArgumentNull);
   mERROR_IF(blobSize < sizeof(mBlob_Header), mR_ResourceInvalid);
 
+  mERROR_CHECK(mBlobReader_CreateWithSize(pReader, pAllocator, blobSize));
+  mERROR_CHECK(mBlobReader_SetData(*pReader, pBlobData, blobSize));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mBlobReader_CreateWithSize, OUT mPtr<mBlobReader> *pReader, IN mAllocator *pAllocator, const size_t blobSize)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pReader == nullptr, mR_ArgumentNull);
+  mERROR_IF(blobSize < sizeof(mBlob_Header), mR_ResourceInvalid);
+
   mDEFER_CALL_ON_ERROR(pReader, mSharedPointer_Destroy);
   mERROR_CHECK((mSharedPointer_Allocate<mBlobReader>(pReader, pAllocator, mBlobReder_Destroy_Internal, 1)));
 
@@ -689,17 +702,51 @@ mFUNCTION(mBlobReader_Create, OUT mPtr<mBlobReader> *pReader, IN mAllocator *pAl
   mERROR_CHECK(mQueue_Create(&pInstance->parentContainerOffsets, pAllocator));
 
   mERROR_CHECK(mAllocator_Allocate(pInstance->pAllocator, &pInstance->pData, blobSize));
-  mERROR_CHECK(mMemcpy(pInstance->pData, pBlobData, blobSize));
 
-  mBlob_Header *pHeader = reinterpret_cast<mBlob_Header *>(pInstance->pData);
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mBlobReader_SetData, mPtr<mBlobReader> &reader, IN const uint8_t *pBlobData, const size_t dataSize)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(reader == nullptr || pBlobData == nullptr, mR_ArgumentNull);
+  mERROR_IF(dataSize != reader->size, mR_ArgumentNull);
+  mERROR_IF(reader->position != 0, mR_ResourceStateInvalid);
+
+  mERROR_CHECK(mMemcpy(reader->pData, pBlobData, dataSize));
+  mERROR_CHECK(mBlobReader_AcceptSetData(reader));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mBlobReader_GetInternalDataPtr, mPtr<mBlobReader> &reader, OUT uint8_t **ppBlobData)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(reader == nullptr || ppBlobData == nullptr, mR_ArgumentNull);
+
+  *ppBlobData = reader->pData;
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mBlobReader_AcceptSetData, mPtr<mBlobReader> &reader)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(reader == nullptr, mR_ArgumentNull);
+  mERROR_IF(reader->position != 0, mR_ResourceStateInvalid);
+
+  mBlob_Header *pHeader = reinterpret_cast<mBlob_Header *>(reader->pData);
 
   mERROR_IF(pHeader->version > mBlob_Version, mR_ResourceIncompatible);
   mERROR_IF(pHeader->container.type != mB_T_Container, mR_ResourceIncompatible);
-  mERROR_IF(pHeader->container.containerSizeBytes < blobSize - offsetof(mBlob_Header, container), mR_ResourceInvalid);
+  mERROR_IF(pHeader->container.containerSizeBytes < reader->size - offsetof(mBlob_Header, container), mR_ResourceInvalid);
 
-  mERROR_CHECK(mQueue_PushBack(pInstance->parentContainerOffsets, offsetof(mBlob_Header, container)));
+  mERROR_CHECK(mQueue_PushBack(reader->parentContainerOffsets, offsetof(mBlob_Header, container)));
 
-  pInstance->position = sizeof(mBlob_Header);
+  reader->position = sizeof(mBlob_Header);
 
   mRETURN_SUCCESS();
 }
@@ -714,6 +761,7 @@ mFUNCTION(mBlobReader_StepIntoContainer, mPtr<mBlobReader> &reader)
   mFUNCTION_SETUP();
 
   mERROR_IF(reader == nullptr, mR_ArgumentNull);
+  mERROR_IF(reader->position == 0, mR_ResourceStateInvalid);
 
   size_t parentOffset;
   mERROR_CHECK(mQueue_PeekBack(reader->parentContainerOffsets, &parentOffset));
@@ -769,6 +817,7 @@ mFUNCTION(mBlobReader_ExitContainer, mPtr<mBlobReader> &reader)
   mFUNCTION_SETUP();
 
   mERROR_IF(reader == nullptr, mR_ArgumentNull);
+  mERROR_IF(reader->position == 0, mR_ResourceStateInvalid);
 
   size_t parentOffset;
   mERROR_CHECK(mQueue_PeekBack(reader->parentContainerOffsets, &parentOffset));
@@ -800,6 +849,7 @@ mFUNCTION(mBlobReader_GetArrayCount, mPtr<mBlobReader> &reader, OUT size_t *pCou
   mFUNCTION_SETUP();
 
   mERROR_IF(reader == nullptr || pCount == nullptr, mR_ArgumentNull);
+  mERROR_IF(reader->position == 0, mR_ResourceStateInvalid);
 
   size_t parentOffset;
   mERROR_CHECK(mQueue_PeekBack(reader->parentContainerOffsets, &parentOffset));
@@ -839,6 +889,7 @@ mFUNCTION(mBlobReader_SkipValue, mPtr<mBlobReader> &reader)
   mFUNCTION_SETUP();
 
   mERROR_IF(reader == nullptr, mR_ArgumentNull);
+  mERROR_IF(reader->position == 0, mR_ResourceStateInvalid);
 
   size_t parentOffset;
   mERROR_CHECK(mQueue_PeekBack(reader->parentContainerOffsets, &parentOffset));
@@ -960,6 +1011,7 @@ mFUNCTION(mBlobReader_ResetToContainerFront, mPtr<mBlobReader> &reader)
   mFUNCTION_SETUP();
 
   mERROR_IF(reader == nullptr, mR_ArgumentNull);
+  mERROR_IF(reader->position == 0, mR_ResourceStateInvalid);
 
   size_t parentOffset;
   mERROR_CHECK(mQueue_PeekBack(reader->parentContainerOffsets, &parentOffset));
@@ -1076,6 +1128,7 @@ mFUNCTION(mBlobReader_ReadValue, mPtr<mBlobReader> &reader, OUT mString *pString
   mFUNCTION_SETUP();
 
   mERROR_IF(pString == nullptr, mR_ArgumentNull);
+  mERROR_IF(reader->position == 0, mR_ResourceStateInvalid);
 
   const char *text = nullptr;
   size_t length = 0;
@@ -1091,6 +1144,7 @@ mFUNCTION(mBlobReader_ReadValue, mPtr<mBlobReader> &reader, OUT const char **pTe
   mFUNCTION_SETUP();
 
   mERROR_IF(reader == nullptr, mR_ArgumentNull);
+  mERROR_IF(reader->position == 0, mR_ResourceStateInvalid);
   mERROR_IF(pText == nullptr || pLength == nullptr, mR_ArgumentNull);
 
   size_t parentOffset;
@@ -1132,6 +1186,7 @@ mFUNCTION(mBlobReader_ReadValue, mPtr<mBlobReader> &reader, OUT const uint8_t **
   mFUNCTION_SETUP();
 
   mERROR_IF(reader == nullptr, mR_ArgumentNull);
+  mERROR_IF(reader->position == 0, mR_ResourceStateInvalid);
   mERROR_IF(ppData == nullptr || pBytes == nullptr, mR_ArgumentNull);
 
   size_t parentOffset;

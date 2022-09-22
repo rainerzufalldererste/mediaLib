@@ -152,6 +152,19 @@ mFUNCTION(mProcess_CreateFromProcessId, OUT mPtr<mProcess> *pProcess, IN mAlloca
   mRETURN_SUCCESS();
 }
 
+mFUNCTION(mProcess_GetCurrentProcess, OUT mPtr<mProcess> *pProcess, IN mAllocator *pAllocator)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pProcess == nullptr, mR_ArgumentNull);
+
+  mERROR_CHECK(mSharedPointer_Allocate<mProcess>(pProcess, pAllocator, [](mProcess *pData) { mProcess_Destroy_Internal(pData); }, 1));
+
+  (*pProcess)->processHandle = GetCurrentProcess();
+
+  mRETURN_SUCCESS();
+}
+
 mFUNCTION(mProcess_Destroy, IN_OUT mPtr<mProcess> *pProcess)
 {
   mFUNCTION_SETUP();
@@ -326,7 +339,8 @@ static mFUNCTION(mProcess_Destroy_Internal, IN_OUT mProcess *pProcess)
 
   mERROR_IF(pProcess == nullptr, mR_ArgumentNull);
 
-  CloseHandle(pProcess->processHandle);
+  if (pProcess->processHandle != INVALID_HANDLE_VALUE && pProcess->processHandle != nullptr)
+    CloseHandle(pProcess->processHandle);
   
   mERROR_CHECK(mPipe_Destroy(&pProcess->_stdin));
   mERROR_CHECK(mPipe_Destroy(&pProcess->_stdout));
@@ -375,7 +389,9 @@ static mFUNCTION(mProcess_Run_Internal, const mString &executable, const mString
     CloseHandle(processInfo.hThread);
   );
 
-  if (FALSE == CreateProcessW(appName, commandLine, nullptr, nullptr, TRUE, CREATE_NO_WINDOW * !!(flags & mP_CF_NoWindow), NULL, workingDir, &startInfo, &processInfo))
+  const bool suspended = !!(flags & mP_CF_Restricted);
+
+  if (FALSE == CreateProcessW(appName, commandLine, nullptr, nullptr, TRUE, (CREATE_NO_WINDOW * !!(flags & mP_CF_NoWindow)) | (CREATE_SECURE_PROCESS * !!(flags & mP_CF_SecureProcess)) | (CREATE_SUSPENDED * suspended), NULL, workingDir, &startInfo, &processInfo))
   {
     const DWORD error = GetLastError();
     mUnused(error);
@@ -383,8 +399,121 @@ static mFUNCTION(mProcess_Run_Internal, const mString &executable, const mString
     mRETURN_RESULT(mR_InternalError);
   }
 
+  if (flags & mP_CF_Restricted)
+  {
+    HANDLE tokenHandle = nullptr;
+    mERROR_IF(0 == OpenProcessToken(processInfo.hProcess, TOKEN_ADJUST_PRIVILEGES, &tokenHandle), mR_InternalError);
+    mERROR_IF(0 == AdjustTokenPrivileges(tokenHandle, TRUE, nullptr, 0, nullptr, 0), mR_InternalError);
+  }
+
+  if (suspended)
+    ResumeThread(processInfo.hThread);
+
   if (pProcessHandle != nullptr)
     *pProcessHandle = processInfo.hProcess;
+
+  mRETURN_SUCCESS();
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+struct mProcessJob
+{
+  HANDLE jobHandle;
+  bool closeHandleOnDestroy;
+};
+
+//////////////////////////////////////////////////////////////////////////
+
+static mFUNCTION(mProcessJob_Destroy_Internal, IN_OUT mProcessJob *pJob);
+
+//////////////////////////////////////////////////////////////////////////
+
+mFUNCTION(mProcessJob_Create, OUT mPtr<mProcessJob> *pJob, IN mAllocator *pAllocator, const mString &name)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pJob == nullptr, mR_ArgumentNull);
+
+  wchar_t wname[MAX_PATH];
+  mERROR_CHECK(mString_ToWideString(name, wname, mARRAYSIZE(wname)));
+
+  HANDLE handle = CreateJobObjectW(nullptr, wname);
+  mERROR_IF(handle == nullptr || handle == INVALID_HANDLE_VALUE, mR_InternalError);
+  mDEFER_CALL_ON_ERROR(handle, CloseHandle);
+
+  mERROR_CHECK(mSharedPointer_Allocate<mProcessJob>(pJob, pAllocator, [](mProcessJob *pData) { mProcessJob_Destroy_Internal(pData); }, 1));
+
+  (*pJob)->jobHandle = handle;
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mProcessJob_Destroy, IN_OUT mPtr<mProcessJob> *pJob)
+{
+  return mSharedPointer_Destroy(pJob);
+}
+
+mFUNCTION(mProcess_IsInJob, mPtr<mProcess> &process, mPtr<mProcessJob> &job, OUT bool *pIsInJob)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(process == nullptr || job == nullptr || pIsInJob == nullptr, mR_ArgumentNull);
+
+  BOOL isInJob = FALSE;
+  mERROR_IF(0 == IsProcessInJob(process->processHandle, job->jobHandle, &isInJob), mR_InternalError);
+
+  *pIsInJob = isInJob;
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mProcess_AssignToJob, mPtr<mProcess> &process, mPtr<mProcessJob> &job)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(process == nullptr || job == nullptr, mR_ArgumentNull);
+
+  mERROR_IF(0 == AssignProcessToJobObject(job->jobHandle, process->processHandle), mR_InternalError);
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mProcessJob_SetKillAllOnClose, mPtr<mProcessJob> &job)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(job == nullptr, mR_ArgumentNull);
+
+  JOBOBJECT_EXTENDED_LIMIT_INFORMATION jeli = { 0 };
+  jeli.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
+
+  mERROR_IF(0 == SetInformationJobObject(job->jobHandle, JobObjectExtendedLimitInformation, &jeli, sizeof(jeli)), mR_InternalError);
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mProcessJob_CloseHandleOnDestroy, mPtr<mProcessJob> &job)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(job == nullptr, mR_ArgumentNull);
+
+  job->closeHandleOnDestroy = true;
+
+  mRETURN_SUCCESS();
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+static mFUNCTION(mProcessJob_Destroy_Internal, IN_OUT mProcessJob *pJob)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pJob == nullptr, mR_ArgumentNull);
+
+  if (pJob->closeHandleOnDestroy)
+    CloseHandle(pJob->jobHandle);
 
   mRETURN_SUCCESS();
 }

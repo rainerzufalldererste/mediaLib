@@ -69,4 +69,15 @@ mFUNCTION(mPixelFormat_CanInplaceTransform, const mPixelFormat source, const mPi
 mFUNCTION(mPixelFormat_InplaceTransformBuffer, mPtr<mImageBuffer> &source, const mPixelFormat target);
 mFUNCTION(mPixelFormat_InplaceTransformBuffer, mPtr<mImageBuffer> &source, const mPixelFormat target, mPtr<mThreadPool> &asyncTaskHandler);
 
+struct mPixelFormatMapping
+{
+  mPixelFormat basePixelFormat;
+  bool isSigned; // only relevant if the base pixel format is based on integers.
+  bool isNormalized; // only relevant if the base pixel format is based on integers.
+
+  mPixelFormatMapping() = default;
+  inline mPixelFormatMapping(const mPixelFormat pixelFormat) : basePixelFormat(pixelFormat), isSigned(false), isNormalized(true) {}
+  inline mPixelFormatMapping(const mPixelFormat pixelFormat, const bool _signed, const bool normalized) : basePixelFormat(pixelFormat), isSigned(_signed), isNormalized(normalized) {}
+};
+
 #endif // mPixelFormat_h__

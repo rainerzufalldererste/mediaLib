@@ -1173,6 +1173,8 @@ mFUNCTION(mRenderParams_PixelFormatToGLenumChannels, const mPixelFormat pixelFor
 {
   mFUNCTION_SETUP();
 
+  mERROR_IF(pValue == nullptr, mR_ArgumentNull);
+
   switch (pixelFormat)
   {
   case mPF_YUV444:
@@ -1220,11 +1222,13 @@ mFUNCTION(mRenderParams_PixelFormatToGLenumChannels, const mPixelFormat pixelFor
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mRenderParams_PixelFormatToGLenumDataType, const mPixelFormat pixelFormat, OUT GLenum *pValue)
+mFUNCTION(mRenderParams_PixelFormatToGLenumDataType, const mPixelFormatMapping pixelFormat, OUT GLenum *pValue)
 {
   mFUNCTION_SETUP();
 
-  switch (pixelFormat)
+  mERROR_IF(pValue == nullptr, mR_ArgumentNull);
+
+  switch (pixelFormat.basePixelFormat)
   {
   case mPF_YUV444:
   case mPF_YUV422:
@@ -1239,14 +1243,20 @@ mFUNCTION(mRenderParams_PixelFormatToGLenumDataType, const mPixelFormat pixelFor
   case mPF_R8G8:
   case mPF_R8G8B8:
   case mPF_R8G8B8A8:
-    *pValue = GL_UNSIGNED_BYTE;
+    if (pixelFormat.isSigned)
+      *pValue = GL_BYTE;
+    else
+      *pValue = GL_UNSIGNED_BYTE;
     break;
 
   case mPF_Monochrome16:
   case mPF_R16G16:
   case mPF_R16G16B16:
   case mPF_R16G16B16A16:
-    *pValue = GL_UNSIGNED_SHORT;
+    if (pixelFormat.isSigned)
+      *pValue = GL_SHORT;
+    else
+      *pValue = GL_UNSIGNED_SHORT;
     break;
 
   case mPF_Monochromef16:
@@ -1266,4 +1276,5 @@ mFUNCTION(mRenderParams_PixelFormatToGLenumDataType, const mPixelFormat pixelFor
 
   mRETURN_SUCCESS();
 }
+
 #endif

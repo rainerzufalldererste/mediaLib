@@ -2,6 +2,8 @@
 
 #include <chrono>
 
+#include "mDebugSymbolInfo.h"
+
 bool IsInitialized = false;
 
 #ifdef mDEBUG_TESTS
@@ -217,16 +219,129 @@ mFUNCTION(mTestLib_RunAllTests, int32_t *pArgc, const char **pArgv)
 //////////////////////////////////////////////////////////////////////////
                                 
 size_t mTestDestructible_Count = 0;
-const size_t mTestAllocator_BeginOffset = 16;
-const size_t mTestAllocator_EndOffset = 16;
-const uint8_t mTestAllocator_TestFlag = 0xCE;
+#ifdef mTEST_STORE_ALLOCATIONS
+constexpr size_t mTestAllocator_BeginOffsetRaw = 16;
+constexpr size_t mTestAllocator_BeginOffset = mTestAllocator_BeginOffsetRaw + sizeof(mDebugSymbolInfo_CallStack);
+#else
+constexpr size_t mTestAllocator_BeginOffset = 16;
+#endif
+constexpr size_t mTestAllocator_EndOffset = 16;
+constexpr uint8_t mTestAllocator_TestFlag = 0xCE;
 uint8_t mTestAllocator_TestFlagChunk[mTestAllocator_EndOffset];
+
+#ifdef mTEST_STORE_ALLOCATIONS
+struct Bucket
+{
+  size_t capacity;
+  size_t *pValues;
+};
+#endif
 
 struct mTestAllocatorUserData
 {
   mAllocator *pSelf;
   volatile size_t allocationCount;
+#ifdef mTEST_STORE_ALLOCATIONS
+  Bucket buckets[1024];
+#endif
 };
+
+#ifdef mTEST_STORE_ALLOCATIONS
+inline size_t Hash(size_t value)
+{
+  const uint64_t m = 0xC6A4A7935BD1E995ULL;
+  const uint64_t seed = 0x0B9EADD924CD36D0ULL;
+  const int32_t r = 47;
+
+  uint64_t h = seed ^ (8 * m);
+
+  uint64_t k = value;
+
+  k *= m;
+  k ^= k >> r;
+  k *= m;
+
+  h ^= k;
+  h *= m;
+
+  h ^= h >> r;
+  h *= m;
+  h ^= h >> r;
+
+  return h;
+}
+
+void AddToBucket(void *pUsrDat, uint8_t *pData)
+{
+  const size_t value = reinterpret_cast<size_t>(pData);
+  mTestAllocatorUserData *pUserData = reinterpret_cast<mTestAllocatorUserData *>(pUsrDat);
+  Bucket &bucket = pUserData->buckets[Hash(value) % mARRAYSIZE(pUserData->buckets)];
+  
+  if (bucket.capacity == 0)
+  {
+    const size_t newCapacity = 16;
+    bucket.pValues = reinterpret_cast<size_t *>(malloc(sizeof(size_t) * newCapacity));
+    bucket.capacity = newCapacity;
+    
+    if (bucket.pValues == nullptr)
+    {
+      puts("Failed to allocate buckets.");
+      fflush(stdout);
+      __debugbreak();
+    }
+
+    bucket.pValues[0] = value;
+    return;
+  }
+
+  for (size_t i = 0; i < bucket.capacity; i++)
+  {
+    if (bucket.pValues[i] == 0)
+    {
+      bucket.pValues[i] = value;
+      return;
+    }
+  }
+
+  size_t oldCapacity = bucket.capacity;
+  const size_t newCapacity = oldCapacity * 4;
+
+  bucket.pValues = reinterpret_cast<size_t *>(realloc(bucket.pValues, sizeof(size_t) * newCapacity));
+  bucket.capacity = newCapacity;
+
+  if (bucket.pValues == nullptr)
+  {
+    puts("Failed to allocate more buckets.");
+    fflush(stdout);
+    __debugbreak();
+  }
+
+  bucket.pValues[oldCapacity] = value;
+  memset(bucket.pValues + oldCapacity + 1, 0, (newCapacity - oldCapacity - 1) * sizeof(size_t));
+}
+
+void RemoveFromBucket(void *pUsrDat, const uint8_t *pData)
+{
+  if (pData == nullptr)
+    return;
+
+  const size_t value = reinterpret_cast<size_t>(pData);
+  mTestAllocatorUserData *pUserData = reinterpret_cast<mTestAllocatorUserData *>(pUsrDat);
+  Bucket &bucket = pUserData->buckets[Hash(value) % mARRAYSIZE(pUserData->buckets)];
+
+  if (bucket.capacity == 0)
+    return;
+
+  for (size_t i = 0; i < bucket.capacity; i++)
+  {
+    if (bucket.pValues[i] == value)
+    {
+      bucket.pValues[i] = 0;
+      return;
+    }
+  }
+}
+#endif
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -237,8 +352,14 @@ mFUNCTION(mTestAllocator_Alloc, OUT uint8_t **ppData, const size_t size, const s
   mERROR_CHECK(mAlloc(ppData, size * count + mTestAllocator_BeginOffset + mTestAllocator_EndOffset));
   ++(reinterpret_cast<mTestAllocatorUserData *>(pUserData))->allocationCount;
 
-  *(size_t *)*ppData = size * count;
+  *reinterpret_cast<size_t *>(*ppData) = size * count;
+#ifdef mTEST_STORE_ALLOCATIONS
+  mERROR_CHECK(mDebugSymbolInfo_GetCallStack(reinterpret_cast<mDebugSymbolInfo_CallStack *>(*ppData + sizeof(size_t))));
+#endif
   *ppData += mTestAllocator_BeginOffset;
+#ifdef mTEST_STORE_ALLOCATIONS
+  AddToBucket(pUserData, *ppData);
+#endif
 
   mERROR_CHECK(mMemset(*ppData + size * count, mTestAllocator_EndOffset, mTestAllocator_TestFlag));
 
@@ -252,8 +373,14 @@ mFUNCTION(mTestAllocator_AllocZero, OUT uint8_t **ppData, const size_t size, con
   mERROR_CHECK(mAllocZero(ppData, size * count + mTestAllocator_BeginOffset + mTestAllocator_EndOffset));
   ++(reinterpret_cast<mTestAllocatorUserData *>(pUserData))->allocationCount;
 
-  *(size_t *)*ppData = size * count;
+  *reinterpret_cast<size_t *>(*ppData) = size * count;
+#ifdef mTEST_STORE_ALLOCATIONS
+  mERROR_CHECK(mDebugSymbolInfo_GetCallStack(reinterpret_cast<mDebugSymbolInfo_CallStack *>(*ppData + sizeof(size_t))));
+#endif
   *ppData += mTestAllocator_BeginOffset;
+#ifdef mTEST_STORE_ALLOCATIONS
+  AddToBucket(pUserData, *ppData);
+#endif
 
   mERROR_CHECK(mMemset(*ppData + size * count, mTestAllocator_EndOffset, mTestAllocator_TestFlag));
 
@@ -264,13 +391,17 @@ mFUNCTION(mTestAllocator_Realloc, OUT uint8_t **ppData, const size_t size, const
 {
   mFUNCTION_SETUP();
 
+#ifdef mTEST_STORE_ALLOCATIONS
+  uint8_t *pOldPtr = *ppData;
+#endif
+
   if (*ppData == nullptr)
   {
     ++(reinterpret_cast<mTestAllocatorUserData *>(pUserData))->allocationCount;
   }
   else
   {
-    const size_t oldSize = *(size_t *)(*ppData - mTestAllocator_BeginOffset);
+    const size_t oldSize = *reinterpret_cast<size_t *>(*ppData - mTestAllocator_BeginOffset);
 
 #ifdef mDEBUG_MEMORY_ALLOCATIONS
     if (memcmp(mTestAllocator_TestFlagChunk, *ppData + oldSize, mTestAllocator_EndOffset) != 0)
@@ -285,8 +416,15 @@ mFUNCTION(mTestAllocator_Realloc, OUT uint8_t **ppData, const size_t size, const
   mDEFER_ON_ERROR(--(reinterpret_cast<mTestAllocatorUserData *>(pUserData))->allocationCount);
   mERROR_CHECK(mRealloc(ppData, size * count + mTestAllocator_BeginOffset + mTestAllocator_EndOffset));
 
-  *(size_t *)*ppData = size * count;
+  *reinterpret_cast<size_t *>(*ppData) = size * count;
   *ppData += mTestAllocator_BeginOffset;
+#ifdef mTEST_STORE_ALLOCATIONS
+  if (pOldPtr != *ppData)
+  {
+    RemoveFromBucket(pUserData, pOldPtr);
+    AddToBucket(pUserData, *ppData);
+  }
+#endif
 
   mERROR_CHECK(mMemset(*ppData + size * count, mTestAllocator_EndOffset, mTestAllocator_TestFlag));
 
@@ -299,14 +437,14 @@ mFUNCTION(mTestAllocator_Free, OUT uint8_t *pData, IN void *pUserData)
 
   if (pData != nullptr)
   {
-    const size_t oldSize = *(size_t *)(pData - mTestAllocator_BeginOffset);
+    const size_t size = *reinterpret_cast<size_t *>(pData - mTestAllocator_BeginOffset);
 
 #ifdef mDEBUG_MEMORY_ALLOCATIONS
     if (memcmp(mTestAllocator_TestFlagChunk, pData + oldSize, mTestAllocator_EndOffset) != 0)
       mAllocatorDebugging_PrintMemoryAllocationInfo((reinterpret_cast<mTestAllocatorUserData *>(pUserData))->pSelf, pData);
 #endif
 
-    mASSERT(memcmp(mTestAllocator_TestFlagChunk, pData + oldSize, mTestAllocator_EndOffset) == 0, "Memory override detected");
+    mASSERT(memcmp(mTestAllocator_TestFlagChunk, pData + size, mTestAllocator_EndOffset) == 0, "Memory override detected");
   }
 
   pData -= mTestAllocator_BeginOffset;
@@ -314,6 +452,10 @@ mFUNCTION(mTestAllocator_Free, OUT uint8_t *pData, IN void *pUserData)
 
   if(pData != nullptr)
     --(reinterpret_cast<mTestAllocatorUserData *>(pUserData))->allocationCount;
+
+#ifdef mTEST_STORE_ALLOCATIONS
+  RemoveFromBucket(pUserData, pData);
+#endif
 
   mRETURN_SUCCESS();
 }
@@ -331,8 +473,21 @@ mFUNCTION(mTestAllocator_Destroy, IN mAllocator *pAllocator, IN void *pUserData)
     mFAIL(mFormat("Memory leak detected: not all memory allocated by this allocator has been released (", (reinterpret_cast<mTestAllocatorUserData *>(pUserData))->allocationCount, " Allocations)."));
   }
 #else
+#ifdef mTEST_STORE_ALLOCATIONS
+  mTestAllocatorUserData *pUsrDat = reinterpret_cast<mTestAllocatorUserData *>(pAllocator->pUserData);
+
+  if (pUsrDat->allocationCount != 0)
+  {
+    mTestAllocator_PrintRemainingMemoryAllocations(pAllocator);
+    mFAIL(mFormat("Memory leak detected: not all memory allocated by this allocator has been released (", pUsrDat->allocationCount, " Allocations)."));
+  }
+
+  for (size_t i = 0; i < mARRAYSIZE(pUsrDat->buckets); i++)
+    free(pUsrDat->buckets[i].pValues);
+#else
   mUnused(pAllocator);
   mASSERT((reinterpret_cast<mTestAllocatorUserData *>(pUserData))->allocationCount == 0, mFormat("Memory leak detected: not all memory allocated by this allocator has been released (", (reinterpret_cast<mTestAllocatorUserData *>(pUserData))->allocationCount, " Allocations)."));
+#endif
 #endif
 
   mERROR_CHECK(mFree(pUserData));
@@ -367,6 +522,42 @@ mFUNCTION(mTestAllocator_GetCount, mAllocator *pAllocator, size_t *pCount)
 
   mRETURN_SUCCESS();
 }
+
+#ifdef mTEST_STORE_ALLOCATIONS
+mFUNCTION(mTestAllocator_PrintRemainingMemoryAllocations, mAllocator *pAllocator)
+{
+  mFUNCTION_SETUP();
+
+  mTestAllocatorUserData *pUserData = reinterpret_cast<mTestAllocatorUserData *>(pAllocator->pUserData);
+
+  mERROR_IF(pUserData == nullptr, mR_ArgumentNull);
+
+  for (size_t b = 0; b < mARRAYSIZE(pUserData->buckets); b++)
+  {
+    for (size_t i = 0; i < pUserData->buckets[b].capacity; i++)
+    {
+      const size_t value = pUserData->buckets[b].pValues[i];
+
+      if (value == 0)
+        continue;
+
+      uint8_t *pData = reinterpret_cast<uint8_t *>(value);
+
+      printf("0x%" PRIx64 ": (%" PRIu64 " bytes)\n", value, *reinterpret_cast<size_t *>(pData - mTestAllocator_BeginOffset));
+
+      const mDebugSymbolInfo_CallStack *pCallStack = reinterpret_cast<mDebugSymbolInfo_CallStack *>(pData - mTestAllocator_BeginOffset + sizeof(size_t));
+      char stackTrace[1024 * 8];
+      
+      if (mSUCCEEDED(mDebugSymbolInfo_GetStackTraceFromCallStack(pCallStack, stackTrace, mARRAYSIZE(stackTrace))))
+        puts(stackTrace);
+
+      puts("");
+    }
+  }
+
+  mRETURN_SUCCESS();
+}
+#endif
 
 mFUNCTION(mDummyDestructible_Create, mDummyDestructible *pDestructable, mAllocator *pAllocator)
 {

@@ -251,7 +251,7 @@ static mFUNCTION(mSystemError_ShowMessageBox_Internal, const mSystemError_Type t
   wchar_t wtitle[1024 * 4];
   mERROR_CHECK(mString_ToWideString(title, wtitle, mARRAYSIZE(wtitle)));
 
-  const int result = MessageBoxExW(window, wtext, wtitle, mbmode, MAKELANGID(LANG_NEUTRAL, SUBLANG_NEUTRAL));
+  const int32_t result = MessageBoxExW(window, wtext, wtitle, mbmode, MAKELANGID(LANG_NEUTRAL, SUBLANG_NEUTRAL));
 
   if (pResponse != nullptr)
   {

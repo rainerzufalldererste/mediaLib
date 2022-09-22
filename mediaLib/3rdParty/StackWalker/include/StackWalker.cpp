@@ -1318,6 +1318,18 @@ BOOL StackWalker::ShowObject(LPVOID pObject)
   // Object name output
   this->OnOutput(pSym->Name);
 
+  IMAGEHLP_LINE64 line;
+  memset(&line, 0, sizeof(line));
+  line.SizeOfStruct = sizeof(line);
+
+  DWORD offsetFromLine;
+  if (SUCCEEDED(this->m_sw->pSGLFA(this->m_hProcess, reinterpret_cast<DWORD64>(pObject), &offsetFromLine, &line)))
+  {
+    char buffer[64];
+    if (mSUCCEEDED(mFormatTo(buffer, mARRAYSIZE(buffer), " (Line ", (uint32_t)line.LineNumber, ")")))
+      this->OnOutput(buffer);
+  }
+
   free(pSym);
   return TRUE;
 };
