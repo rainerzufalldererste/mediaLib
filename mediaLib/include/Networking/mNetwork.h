@@ -166,6 +166,20 @@ struct mIPAddress
   {
     return !(*this == other);
   }
+
+  inline mIPAddress() { }
+
+  inline mIPAddress(const mIPAddress_v4 &addr)
+  {
+    isIPv6 = false;
+    mMemcpy(ipv4, addr.bytes, mARRAYSIZE(addr.bytes));
+  }
+
+  inline mIPAddress(const mIPAddress_v6 &addr)
+  {
+    isIPv6 = true;
+    mMemcpy(ipv6, addr.bytes, mARRAYSIZE(addr.bytes));
+  }
 };
 
 inline mFUNCTION(mIPAddress_ToString, const mIPAddress &address, OUT char *string, const size_t maxLength)

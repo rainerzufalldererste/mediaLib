@@ -11,7 +11,7 @@
   #define __M_FILE__ "c+hgJ/qsL0rAbbtA4d41yPRr1RJobiLDjDAY6G7QaMKtHpKZvGHBxedWT5dCuFXNX4y/WKbvjlx3nspX"
 #endif
 
-struct mTcpConnectionInfo : mIPAddress
+struct mTcpEndPoint : mIPAddress
 {
   uint16_t port;
 
@@ -32,7 +32,7 @@ struct mTcpConnectionInfo : mIPAddress
     }
   }
 
-  inline bool operator == (const mTcpConnectionInfo &other)
+  inline bool operator == (const mTcpEndPoint &other)
   {
     if (other.isIPv6 != isIPv6 || other.port != port)
       return false;
@@ -40,13 +40,13 @@ struct mTcpConnectionInfo : mIPAddress
     return memcmp(other.ipv6, ipv6, isIPv6 ? sizeof(ipv6) : sizeof(ipv4)) == 0;
   }
 
-  inline bool operator != (const mTcpConnectionInfo &other)
+  inline bool operator != (const mTcpEndPoint &other)
   {
     return !(*this == other);
   }
 };
 
-inline mFUNCTION(mTcpConnectionInfo_ToString, const mTcpConnectionInfo &connectionInfo, OUT char *string, const size_t maxLength)
+inline mFUNCTION(mTcpConnectionInfo_ToString, const mTcpEndPoint &connectionInfo, OUT char *string, const size_t maxLength)
 {
   return connectionInfo.ToString(string, maxLength);
 }
@@ -54,8 +54,9 @@ inline mFUNCTION(mTcpConnectionInfo_ToString, const mTcpConnectionInfo &connecti
 struct mTcpServer;
 struct mTcpClient;
 
-mFUNCTION(mTcpServer_Create, OUT mPtr<mTcpServer> *pTcpServer, IN mAllocator *pAllocator, const uint16_t port);
-mFUNCTION(mTcpServer_Listen, mPtr<mTcpServer> &tcpServer, OUT mPtr<mTcpClient> *pClient, IN mAllocator *pAllocator);
+mFUNCTION(mTcpServer_Create, OUT mPtr<mTcpServer> *pTcpServer, IN mAllocator *pAllocator, const uint16_t port, OPTIONAL IN const mIPAddress *pAddress = nullptr);
+mFUNCTION(mTcpServer_Listen, mPtr<mTcpServer> &tcpServer, OUT mPtr<mTcpClient> *pClient, IN mAllocator *pAllocator, OPTIONAL size_t timeoutMs = (size_t)-1 /* If set, `*pClient` may be `nullptr` if no client is available.*/);
+mFUNCTION(mTcpServer_GetLocalEndPointInfo, const mPtr<mTcpServer> &tcpServer, OUT mTcpEndPoint *pConnectionInfo);
 
 mFUNCTION(mTcpClient_Create, OUT mPtr<mTcpClient> *pClient, IN mAllocator *pAllocator, const mIPAddress_v4 &ipv4, const uint16_t port);
 mFUNCTION(mTcpClient_Create, OUT mPtr<mTcpClient> *pClient, IN mAllocator *pAllocator, const mIPAddress_v6 &ipv6, const uint16_t port);
@@ -65,6 +66,11 @@ mFUNCTION(mTcpClient_Receive, mPtr<mTcpClient> &tcpClient, OUT void *pData, cons
 mFUNCTION(mTcpClient_GetReadableBytes, mPtr<mTcpClient> &tcpClient, OUT size_t *pReadableBytes, OPTIONAL size_t timeoutMs = 0);
 mFUNCTION(mTcpClient_GetWriteableBytes, mPtr<mTcpClient> &tcpClient, OUT size_t *pWriteableBytes, OPTIONAL size_t timeoutMs = 0);
 
-mFUNCTION(mTcpClient_GetConnectionInfo, mPtr<mTcpClient> &tcpClient, OUT mTcpConnectionInfo *pConnectionInfo);
+mFUNCTION(mTcpClient_GetRemoteEndPointInfo, const mPtr<mTcpClient> &tcpClient, OUT mTcpEndPoint *pConnectionInfo);
+mFUNCTION(mTcpClient_GetLocalEndPointInfo, const mPtr<mTcpClient> &tcpClient, OUT mTcpEndPoint *pConnectionInfo);
+
+mFUNCTION(mTcpClient_DisableSendDelay, mPtr<mTcpClient> &tcpClient);
+mFUNCTION(mTcpClient_SetSendTimeout, mPtr<mTcpClient> &tcpClient, const size_t milliseconds);
+mFUNCTION(mTcpClient_SetReceiveTimeout, mPtr<mTcpClient> &tcpClient, const size_t milliseconds);
 
 #endif // mTCPSocket_h__

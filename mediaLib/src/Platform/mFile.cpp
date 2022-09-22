@@ -165,7 +165,7 @@ mFUNCTION(mFile_ReadAllText, const mString &filename, IN OPTIONAL mAllocator *pA
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mFile_WriteAllBytes, IN const wchar_t *filename, mArray<uint8_t> &bytes)
+mFUNCTION(mFile_WriteAllBytes, IN const wchar_t *filename, const mArray<uint8_t> &bytes)
 {
   mFUNCTION_SETUP();
 
@@ -177,14 +177,14 @@ mFUNCTION(mFile_WriteAllBytes, IN const wchar_t *filename, mArray<uint8_t> &byte
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mFile_WriteAllBytes, const mString &filename, mArray<uint8_t> &bytes)
+mFUNCTION(mFile_WriteAllBytes, const mString &filename, const mArray<uint8_t> &bytes)
 {
   mFUNCTION_SETUP();
 
   wchar_t wfilename[MAX_PATH];
   mERROR_CHECK(mString_ToWideString(filename, wfilename, mARRAYSIZE(wfilename)));
 
-  mERROR_CHECK(mFile_WriteRawBytes(wfilename, reinterpret_cast<const uint8_t *>(bytes.pData), bytes.count));
+  mERROR_CHECK(mFile_WriteRawBytes(wfilename, bytes.pData, bytes.count));
 
   mRETURN_SUCCESS();
 }

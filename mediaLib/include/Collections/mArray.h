@@ -13,13 +13,19 @@
 template <typename T>
 struct mArray
 {
-  mArray() { }
+  inline mArray() { }
 
   T *pData = nullptr;
   size_t count = 0;
   mAllocator *pAllocator = nullptr;
 
   T& operator [](const size_t index);
+
+  inline ~mArray()
+  {
+    if (pData != nullptr)
+      mAllocator_FreePtr(pAllocator, &pData);
+  }
 };
 
 template <typename T>

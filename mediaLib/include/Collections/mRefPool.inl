@@ -265,7 +265,7 @@ inline mFUNCTION(mRefPool_PeekAt, mPtr<mRefPool<T>> &refPool, const size_t index
 }
 
 template<typename T>
-inline mFUNCTION(mRefPool_GetCount, mPtr<mRefPool<T>> &refPool, OUT size_t *pCount)
+inline mFUNCTION(mRefPool_GetCount, const mPtr<mRefPool<T>> &refPool, OUT size_t *pCount)
 {
   mFUNCTION_SETUP();
 
@@ -315,7 +315,7 @@ inline mFUNCTION(mRefPool_GetPointerIndex, const mPtr<T> &ptr, size_t *pIndex)
 }
 
 template <typename T>
-mFUNCTION(mRefPool_ContainsIndex, mPtr<mRefPool<T>> &refPool, const size_t index, OUT bool *pIsContained)
+mFUNCTION(mRefPool_ContainsIndex, const mPtr<mRefPool<T>> &refPool, const size_t index, OUT bool *pIsContained)
 {
   mFUNCTION_SETUP();
 

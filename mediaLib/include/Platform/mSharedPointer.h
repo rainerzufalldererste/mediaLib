@@ -71,6 +71,7 @@ public:
   ~mSharedPointer();
 
   mSharedPointer<T>& operator = (const mSharedPointer<T> &copy);
+  const mSharedPointer<T>& operator = (const mSharedPointer<T> &copy) const;
   mSharedPointer<T>& operator = (mSharedPointer<T> &&move);
 
   template <typename T2, typename = std::enable_if<!std::is_same<T, T2>::value && std::is_base_of<T, T2>::value>>
@@ -891,6 +892,9 @@ inline mSharedPointer<T>::~mSharedPointer()
 template<typename T>
 inline mSharedPointer<T>& mSharedPointer<T>::operator=(const mSharedPointer<T> &copy)
 {
+  if (copy.m_pParams == this->m_pParams)
+    return *this;
+
   this->~mSharedPointer<T>();
 
   if (copy == nullptr)
@@ -900,6 +904,25 @@ inline mSharedPointer<T>& mSharedPointer<T>::operator=(const mSharedPointer<T> &
   m_pParams = copy.m_pParams;
 
   ++m_pParams->referenceCount;
+
+  return *this;
+}
+
+template<typename T>
+inline const mSharedPointer<T>& mSharedPointer<T>::operator=(const mSharedPointer<T> &copy) const
+{
+  if (copy.m_pParams == this->m_pParams)
+    return *this;
+
+  this->~mSharedPointer<T>();
+
+  if (copy == nullptr)
+    return *this;
+
+  *const_cast<T **>(&m_pData) = copy.m_pData;
+  *const_cast<mSharedPointer<T>::PointerParams **>(&m_pParams) = copy.m_pParams;
+
+  ++*const_cast<size_t *>(&m_pParams->referenceCount);
 
   return *this;
 }
@@ -931,6 +954,9 @@ template<typename T>
 template <typename T2, typename>
 inline mSharedPointer<T>& mSharedPointer<T>::operator=(const mSharedPointer<T2> &copy)
 {
+  if (reinterpret_cast<const void *>(copy.m_pParams) == reinterpret_cast<const void *>(this->m_pParams))
+    return *this;
+
   this->~mSharedPointer<T>();
 
   if (copy == nullptr)

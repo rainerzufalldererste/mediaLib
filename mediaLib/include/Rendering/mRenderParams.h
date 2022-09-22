@@ -210,7 +210,8 @@ mFUNCTION(mRenderParams_PrintRenderState, const bool onlyNewValues = false, cons
 mFUNCTION(mRenderParams_SetOnErrorDebugCallback, const std::function<mResult (const GLenum source, const GLenum type, const GLuint id, const GLenum severity, const GLsizei length, const char *msg)> &callback);
 
 mFUNCTION(mRenderParams_PixelFormatToGLenumChannels, const mPixelFormat pixelFormat, OUT GLenum *pValue);
-mFUNCTION(mRenderParams_PixelFormatToGLenumDataType, const mPixelFormat pixelFormat, OUT GLenum *pValue);
+mFUNCTION(mRenderParams_PixelFormatToGLenumDataType, const mPixelFormatMapping pixelFormat, OUT GLenum *pValue);
+mFUNCTION(mRenderParams_PixelFormatToGLenumInternalFormat, const mPixelFormatMapping pixelFormat, OUT GLenum *pValue);
 #endif
 
 #endif // mRenderParams_h__

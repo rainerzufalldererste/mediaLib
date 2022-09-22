@@ -323,3 +323,27 @@ mTEST(mUniqueContainer, TestCreateCleanup)
 
   mTEST_ALLOCATOR_ZERO_CHECK();
 }
+
+mTEST(mSharedPointer, TestSelfAssign)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  mPtr<size_t> value;
+  mTEST_ASSERT_SUCCESS(mSharedPointer_Allocate<size_t>(&value, pAllocator, 1234));
+
+  *value = 10;
+
+  struct _internal
+  {
+    static void AssignToSelf(mPtr<size_t> &val, const mPtr<size_t> &b)
+    {
+      val = b;
+    }
+  };
+
+  _internal::AssignToSelf(value, value);
+
+  mTEST_ASSERT_TRUE(value != nullptr);
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}

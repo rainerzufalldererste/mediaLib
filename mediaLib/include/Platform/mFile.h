@@ -29,8 +29,8 @@ mFUNCTION(mFile_ReadAllBytes, const mString &filename, IN OPTIONAL mAllocator *p
 mFUNCTION(mFile_ReadAllBytes, IN const wchar_t *filename, IN OPTIONAL mAllocator *pAllocator, OUT mArray<uint8_t> *pBytes);
 mFUNCTION(mFile_ReadAllText, const mString &filename, IN OPTIONAL mAllocator *pAllocator, OUT mString *pText, const mFile_Encoding encoding = mFile_Encoding::mF_E_UTF8);
 
-mFUNCTION(mFile_WriteAllBytes, IN const wchar_t *filename, mArray<uint8_t> &bytes);
-mFUNCTION(mFile_WriteAllBytes, const mString &filename, mArray<uint8_t> &bytes);
+mFUNCTION(mFile_WriteAllBytes, IN const wchar_t *filename, const mArray<uint8_t> &bytes);
+mFUNCTION(mFile_WriteAllBytes, const mString &filename, const mArray<uint8_t> &bytes);
 mFUNCTION(mFile_WriteAllText, const mString &filename, const mString &text, const mFile_Encoding encoding = mFile_Encoding::mF_E_UTF8);
 
 template <typename T>

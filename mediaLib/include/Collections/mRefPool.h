@@ -130,7 +130,7 @@ template <typename T>
 mFUNCTION(mRefPool_PeekAt, mPtr<mRefPool<T>> &refPool, const size_t index, OUT mPtr<T> *pIndex);
 
 template <typename T>
-mFUNCTION(mRefPool_GetCount, mPtr<mRefPool<T>> &refPool, OUT size_t *pCount);
+mFUNCTION(mRefPool_GetCount, const mPtr<mRefPool<T>> &refPool, OUT size_t *pCount);
 
 template <typename T>
 mFUNCTION(mRefPool_RemoveOwnReference, mPtr<mRefPool<T>> &refPool);
@@ -139,7 +139,7 @@ template <typename T>
 mFUNCTION(mRefPool_GetPointerIndex, const mPtr<T> &ptr, size_t *pIndex);
 
 template <typename T>
-mFUNCTION(mRefPool_ContainsIndex, mPtr<mRefPool<T>> &refPool, const size_t index, OUT bool *pIsContained);
+mFUNCTION(mRefPool_ContainsIndex, const mPtr<mRefPool<T>> &refPool, const size_t index, OUT bool *pIsContained);
 
 // would be handled by cpp but still nicer if explicitly defined.
 template <typename T>

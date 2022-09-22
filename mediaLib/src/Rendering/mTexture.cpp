@@ -19,6 +19,7 @@ mFUNCTION(mTexture_Create, OUT mTexture *pTexture, mPtr<mImageBuffer> &imageBuff
   pTexture->uploadState = mRP_US_NotInitialized;
   pTexture->resolution = imageBuffer->currentSize;
   pTexture->resolutionF = (mVec2f)pTexture->resolution;
+  pTexture->pixelFormat = imageBuffer->pixelFormat;
   pTexture->foreignTexture = false;
   pTexture->textureParams = textureParams;
 
@@ -70,7 +71,7 @@ mFUNCTION(mTexture_Create, OUT mTexture *pTexture, const mString &filename, cons
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mTexture_Create, OUT mTexture *pTexture, const uint8_t *pData, const mVec2s &size, const mPixelFormat pixelFormat /* = mPF_B8G8R8A8 */, const bool upload /* = true */, const size_t textureUnit /* = 0 */, const mTexture2DParams &textureParams /* = mTexture2DParams() */)
+mFUNCTION(mTexture_Create, OUT mTexture *pTexture, const uint8_t *pData, const mVec2s &size, const mPixelFormatMapping pixelFormat /* = mPF_B8G8R8A8 */, const bool upload /* = true */, const size_t textureUnit /* = 0 */, const mTexture2DParams &textureParams /* = mTexture2DParams() */)
 {
   mFUNCTION_SETUP();
 
@@ -81,6 +82,7 @@ mFUNCTION(mTexture_Create, OUT mTexture *pTexture, const uint8_t *pData, const m
     pTexture->uploadState = mRP_US_NotInitialized;
     pTexture->resolution = size;
     pTexture->resolutionF = (mVec2f)pTexture->resolution;
+    pTexture->pixelFormat = pixelFormat;
     pTexture->foreignTexture = false;
     pTexture->textureParams = textureParams;
 
@@ -114,9 +116,11 @@ mFUNCTION(mTexture_Create, OUT mTexture *pTexture, const uint8_t *pData, const m
   {
     mPtr<mImageBuffer> imageBuffer;
     mDEFER_CALL(&imageBuffer, mImageBuffer_Destroy);
-    mERROR_CHECK(mImageBuffer_Create(&imageBuffer, nullptr, (void *)pData, size, pixelFormat));
+    mERROR_CHECK(mImageBuffer_Create(&imageBuffer, nullptr, (void *)pData, size, pixelFormat.basePixelFormat));
 
     mERROR_CHECK(mTexture_Create(pTexture, imageBuffer, upload, textureUnit, textureParams));
+
+    pTexture->pixelFormat = pixelFormat;
   }
 
   mRETURN_SUCCESS();
@@ -131,6 +135,7 @@ mFUNCTION(mTexture_CreateFromUnownedIndex, OUT mTexture *pTexture, int textureIn
   pTexture->uploadState = mRP_US_NotInitialized;
   pTexture->resolution = mVec2s(1);
   pTexture->resolutionF = (mVec2f)pTexture->resolution;
+  pTexture->pixelFormat = mPixelFormat::mPixelFormat_Count; // This is intentionally invalid.
   pTexture->foreignTexture = true;
 
 #if defined(mRENDERER_OPENGL)
@@ -149,6 +154,11 @@ mFUNCTION(mTexture_CreateFromUnownedIndex, OUT mTexture *pTexture, int textureIn
   glGetTexLevelParameteriv(pTexture->sampleCount > 0 ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &resolution.x);
   glGetTexLevelParameteriv(pTexture->sampleCount > 0 ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &resolution.y);
 
+  // TODO: Determine correct internal format.
+  //GLint internalFormat, internalType;
+  //glGetTexLevelParameteriv(pTexture->sampleCount > 0 ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, 0, GL_TEXTURE_INTERNAL_FORMAT, &internalFormat);
+  //glGetTexLevelParameteriv(pTexture->sampleCount > 0 ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, 0, GL_TEXTURE_RED_TYPE, &internalType);
+
   mGL_DEBUG_ERROR_CHECK();
 
   pTexture->resolution = (mVec2s)resolution;
@@ -164,13 +174,14 @@ mFUNCTION(mTexture_CreateFromUnownedIndex, OUT mTexture *pTexture, int textureIn
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mTexture_Allocate, OUT mTexture *pTexture, const mVec2s size, const mPixelFormat pixelFormat /* = mPF_R8G8B8A8 */, const size_t textureUnit /* = 0 */, const mTexture2DParams &textureParams /* = mTexture2DParams() */)
+mFUNCTION(mTexture_Allocate, OUT mTexture *pTexture, const mVec2s size, const mPixelFormatMapping pixelFormat /* = mPF_R8G8B8A8 */, const size_t textureUnit /* = 0 */, const mTexture2DParams &textureParams /* = mTexture2DParams() */)
 {
   mFUNCTION_SETUP();
 
   pTexture->uploadState = mRP_US_NotInitialized;
   pTexture->resolution = size;
   pTexture->resolutionF = (mVec2f)pTexture->resolution;
+  pTexture->pixelFormat = pixelFormat;
   pTexture->foreignTexture = false;
   pTexture->textureParams = textureParams;
 
@@ -191,7 +202,7 @@ mFUNCTION(mTexture_Allocate, OUT mTexture *pTexture, const mVec2s size, const mP
   glBindTexture(pTexture->sampleCount > 0 ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, pTexture->textureId);
 
   GLenum glPixelFormat = GL_RGBA;
-  mERROR_CHECK(mRenderParams_PixelFormatToGLenumChannels(pixelFormat, &glPixelFormat));
+  mERROR_CHECK(mRenderParams_PixelFormatToGLenumChannels(pixelFormat.basePixelFormat, &glPixelFormat));
 
   GLenum glType = GL_UNSIGNED_BYTE;
   mERROR_CHECK(mRenderParams_PixelFormatToGLenumDataType(pixelFormat, &glType));
@@ -265,6 +276,7 @@ mFUNCTION(mTexture_Upload, mTexture &texture)
     mRETURN_SUCCESS();
 
   mERROR_IF(texture.imageBuffer == nullptr, mR_NotInitialized);
+  mERROR_IF(texture.pixelFormat.basePixelFormat != texture.imageBuffer->pixelFormat, mR_ResourceStateInvalid);
 
   mPROFILE_SCOPED("mTexture_Upload");
 
@@ -353,6 +365,18 @@ mFUNCTION(mTexture_SetTo, mTexture &texture, mPtr<mImageBuffer> &imageBuffer, co
 
   mERROR_IF(imageBuffer == nullptr, mR_ArgumentNull);
 
+  mERROR_CHECK(mTexture_SetTo(texture, imageBuffer, imageBuffer->pixelFormat, upload));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mTexture_SetTo, mTexture &texture, mPtr<mImageBuffer> &imageBuffer, const mPixelFormatMapping pixelFormatMapping, const bool upload)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(imageBuffer == nullptr, mR_ArgumentNull);
+  mERROR_IF(imageBuffer->pixelFormat != pixelFormatMapping.basePixelFormat, mR_InvalidParameter);
+
 #if defined (mRENDERER_OPENGL)
 #ifndef GIT_BUILD
   size_t bytes = 0;
@@ -364,6 +388,7 @@ mFUNCTION(mTexture_SetTo, mTexture &texture, mPtr<mImageBuffer> &imageBuffer, co
   texture.uploadState = mRP_US_NotInitialized;
   texture.resolution = imageBuffer->currentSize;
   texture.resolutionF = (mVec2f)texture.resolution;
+  texture.pixelFormat = pixelFormatMapping;
 
 #if defined(mRENDERER_OPENGL)
   glActiveTexture(GL_TEXTURE0 + (GLuint)texture.textureUnit);
@@ -383,7 +408,7 @@ mFUNCTION(mTexture_SetTo, mTexture &texture, mPtr<mImageBuffer> &imageBuffer, co
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mTexture_SetTo, mTexture &texture, const uint8_t *pData, const mVec2s &size, const mPixelFormat pixelFormat /* = mPF_B8G8R8A8 */, const bool upload /* = true */)
+mFUNCTION(mTexture_SetTo, mTexture &texture, const uint8_t *pData, const mVec2s &size, const mPixelFormatMapping pixelFormat /* = mPF_B8G8R8A8 */, const bool upload /* = true */)
 {
   mFUNCTION_SETUP();
 
@@ -394,7 +419,7 @@ mFUNCTION(mTexture_SetTo, mTexture &texture, const uint8_t *pData, const mVec2s 
 #if defined (mRENDERER_OPENGL)
 #ifndef GIT_BUILD
   size_t bytes = 0;
-  mERROR_CHECK(mPixelFormat_GetSize(pixelFormat, size, &bytes));
+  mERROR_CHECK(mPixelFormat_GetSize(pixelFormat.basePixelFormat, size, &bytes));
   mASSERT((bytes & 3) == 0, "OpenGL expects this texture to be 4 byte aligned. mTexture currently doesn't do this.");
 #endif
 #endif
@@ -409,9 +434,9 @@ mFUNCTION(mTexture_SetTo, mTexture &texture, const uint8_t *pData, const mVec2s 
   {
     mPtr<mImageBuffer> imageBuffer;
     mDEFER_CALL(&imageBuffer, mImageBuffer_Destroy);
-    mERROR_CHECK(mImageBuffer_Create(&imageBuffer, &mDefaultAllocator, reinterpret_cast<const uint8_t *>(pData), size, pixelFormat));
+    mERROR_CHECK(mImageBuffer_Create(&imageBuffer, &mDefaultAllocator, reinterpret_cast<const uint8_t *>(pData), size, pixelFormat.basePixelFormat));
 
-    mERROR_CHECK(mTexture_SetTo(texture, imageBuffer, upload));
+    mERROR_CHECK(mTexture_SetTo(texture, imageBuffer, pixelFormat, upload));
   }
   else
   {
@@ -428,7 +453,7 @@ mFUNCTION(mTexture_SetTo, mTexture &texture, const uint8_t *pData, const mVec2s 
 
     mGL_DEBUG_ERROR_CHECK();
 
-    if (pixelFormat == mPF_YUV420 || pixelFormat == mPF_YUV422 || pixelFormat == mPF_B8G8R8 || pixelFormat == mPF_B8G8R8A8)
+    if (pixelFormat.basePixelFormat == mPF_YUV420 || pixelFormat.basePixelFormat == mPF_YUV422 || pixelFormat.basePixelFormat == mPF_B8G8R8 || pixelFormat.basePixelFormat == mPF_B8G8R8A8)
     {
       mPtr<mImageBuffer> imageBuffer;
       mDEFER_CALL(&imageBuffer, mImageBuffer_Destroy);
@@ -441,7 +466,7 @@ mFUNCTION(mTexture_SetTo, mTexture &texture, const uint8_t *pData, const mVec2s 
     else
     {
       GLenum glPixelFormat = GL_RGBA;
-      mERROR_CHECK(mRenderParams_PixelFormatToGLenumChannels(pixelFormat, &glPixelFormat));
+      mERROR_CHECK(mRenderParams_PixelFormatToGLenumChannels(pixelFormat.basePixelFormat, &glPixelFormat));
 
       GLenum glType = GL_UNSIGNED_BYTE;
       mERROR_CHECK(mRenderParams_PixelFormatToGLenumDataType(pixelFormat, &glType));
@@ -451,6 +476,7 @@ mFUNCTION(mTexture_SetTo, mTexture &texture, const uint8_t *pData, const mVec2s 
 
     texture.resolution = size;
     texture.resolutionF = (mVec2f)texture.resolution;
+    texture.pixelFormat = pixelFormat;
     texture.uploadState = mRP_US_Ready;
 
     mGL_DEBUG_ERROR_CHECK();
