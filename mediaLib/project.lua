@@ -63,6 +63,7 @@ project(ProjectName)
   includedirs { "3rdParty/expat/include" }
   includedirs { "3rdParty/turbojpeg/include" }
   includedirs { "3rdParty/curl/include" }
+  includedirs { "3rdParty/fpng/include" }
   includedirs { "3rdParty/freetype/include" }
   includedirs { "3rdParty/dragonbox/include" }
 
@@ -113,6 +114,12 @@ linkoptions { "3rdParty/expat/lib/expat.lib" }
 linkoptions { "3rdParty/turbojpeg/lib/turbojpeg-static.lib" }
 linkoptions { "3rdParty/curl/lib/libcurl.lib" }
 linkoptions { "Shlwapi.lib" }
+
+filter {"configurations:Release"}
+  linkoptions { "3rdParty/fpng/lib/fpng.lib" }
+filter {"configurations:Debug"}
+  linkoptions { "3rdParty/fpng/lib/fpngD.lib" }
+filter { }
 
 warnings "Extra"
 
