@@ -14,6 +14,9 @@
 
 #include "turbojpeg.h"
 
+#define FPNG_RAW_PTRS
+#include "fpng.h"
+
 //////////////////////////////////////////////////////////////////////////
 
 #ifdef GIT_BUILD // Define __M_FILE__
@@ -323,34 +326,68 @@ mFUNCTION(mImageBuffer_SaveAsPng, mPtr<mImageBuffer> &imageBuffer, const mString
   mFUNCTION_SETUP();
 
   mERROR_IF(imageBuffer == nullptr || imageBuffer->pPixels == nullptr, mR_NotInitialized);
+  mERROR_IF(imageBuffer->currentSize.x > INT32_MAX || imageBuffer->currentSize.y > INT32_MAX, mR_ResourceIncompatible);
 
-  int components;
+  int32_t channels = 4;
 
   switch (imageBuffer->pixelFormat)
   {
   case mPF_R8G8B8A8:
-    components = 4;
+    channels = 4;
     break;
 
   case mPF_R8G8B8:
-    components = 3;
+    channels = 3;
     break;
 
   case mPF_Monochrome8:
-    components = 1;
+    channels = 1;
     break;
 
   default:
     mRETURN_RESULT(mR_OperationNotSupported);
   }
 
-  WriteFuncData fileWriteData;
-  mERROR_CHECK(mFileWriter_Create(&fileWriteData.file, filename));
+  // Attempt to save using fpng.
+  {
+    uint8_t *pData = nullptr;
+    uint64_t dataSize = 0;
 
-  const int result = stbi_write_png_to_func(WriteFuncData::Write, &fileWriteData, (int32_t)imageBuffer->currentSize.x, (int32_t)imageBuffer->currentSize.y, components, imageBuffer->pPixels, (int32_t)(imageBuffer->lineStride * sizeof(uint8_t)) * components);
+    struct _internal 
+    {
+      static void *realloc(void *pData, size_t size)
+      {
+        if (mFAILED(mRealloc(reinterpret_cast<uint8_t **>(&pData), size)))
+          return nullptr;
 
-  mERROR_IF(mFAILED(fileWriteData.result), fileWriteData.result);
-  mERROR_IF(result == 0, mR_InternalError);
+        return pData;
+      }
+
+      static void free(void *pData)
+      {
+        mFree(pData);
+      }
+    };
+
+    mDEFER_CALL(pData, _internal::free);
+
+    if (fpng::fpng_encode_image_to_memory_ptr(imageBuffer->pPixels, (int32_t)imageBuffer->currentSize.x, (int32_t)imageBuffer->currentSize.y, channels, &pData, dataSize, _internal::realloc, _internal::free))
+    {
+      mERROR_CHECK(mFile_WriteRaw(filename, pData, dataSize));
+      mRETURN_SUCCESS();
+    }
+  }
+
+  // Attempt to save using stbi.
+  {
+    WriteFuncData fileWriteData;
+    mERROR_CHECK(mFileWriter_Create(&fileWriteData.file, filename));
+
+    const int result = stbi_write_png_to_func(WriteFuncData::Write, &fileWriteData, (int32_t)imageBuffer->currentSize.x, (int32_t)imageBuffer->currentSize.y, channels, imageBuffer->pPixels, (int32_t)(imageBuffer->lineStride * sizeof(uint8_t)) * channels);
+
+    mERROR_IF(mFAILED(fileWriteData.result), fileWriteData.result);
+    mERROR_IF(result == 0, mR_InternalError);
+  }
 
   mRETURN_SUCCESS();
 }
@@ -361,21 +398,148 @@ mFUNCTION(mImageBuffer_SaveAsJpeg, mPtr<mImageBuffer> &imageBuffer, const mStrin
 
   mERROR_IF(imageBuffer == nullptr || imageBuffer->pPixels == nullptr, mR_NotInitialized);
   mERROR_IF(imageBuffer->lineStride != imageBuffer->currentSize.x, mR_InvalidParameter);
+  mERROR_IF(imageBuffer->currentSize.x > INT32_MAX || imageBuffer->currentSize.y > INT32_MAX, mR_ResourceIncompatible);
 
-  int components;
+  // Attempt to use turbo jpeg.
+  {
+    static tjhandle encoder = tjInitCompress();
+
+    if (encoder == nullptr)
+      goto fast_jpeg_encoder_failed;
+
+    switch (imageBuffer->pixelFormat)
+    {
+    case mPF_B8G8R8:
+    case mPF_B8G8R8A8:
+    case mPF_R8G8B8:
+    case mPF_R8G8B8A8:
+    case mPF_Monochrome8:
+    {
+      size_t componentCount = 0;
+
+      if (mFAILED(mPixelFormat_GetComponentCount(imageBuffer->pixelFormat, &componentCount)))
+        goto fast_jpeg_encoder_failed;
+
+      int32_t tjPixelFormat = 0;
+
+      switch (imageBuffer->pixelFormat)
+      {
+      case mPF_B8G8R8:
+        tjPixelFormat = TJPF_BGR;
+        break;
+
+      case mPF_B8G8R8A8:
+        tjPixelFormat = TJPF_BGRA;
+        break;
+
+      case mPF_R8G8B8:
+        tjPixelFormat = TJPF_RGB;
+        break;
+
+      case mPF_R8G8B8A8:
+        tjPixelFormat = TJPF_RGBA;
+        break;
+
+      case mPF_Monochrome8:
+        tjPixelFormat = TJPF_GRAY;
+        break;
+
+      default:
+        mFAIL_DEBUG("Invalid State.");
+        goto fast_jpeg_encoder_failed;
+      }
+
+      uint8_t *pJpegBuffer = nullptr;
+      unsigned long jpegBufferSize = 0;
+
+      mDEFER(
+        if (pJpegBuffer != nullptr)
+          tjFree(pJpegBuffer);
+      );
+
+      const int32_t result = tjCompress2(encoder, imageBuffer->pPixels, (int32_t)imageBuffer->currentSize.x, (int32_t)(imageBuffer->lineStride * componentCount), (int32_t)imageBuffer->currentSize.y, tjPixelFormat, &pJpegBuffer, &jpegBufferSize, TJSAMP_420, 85, TJFLAG_FASTDCT);
+
+      if (result != 0)
+        goto fast_jpeg_encoder_failed;
+
+      mERROR_CHECK(mFile_WriteRaw(filename, pJpegBuffer, (size_t)jpegBufferSize));
+      mRETURN_SUCCESS();
+
+      break;
+    }
+
+    case mPF_YUV411:
+    case mPF_YUV420:
+    case mPF_YUV422:
+    case mPF_YUV440:
+    case mPF_YUV444:
+    {
+      int32_t tjSubSampling = 0;
+
+      switch (imageBuffer->pixelFormat)
+      {
+      case mPF_YUV411:
+        tjSubSampling = TJSAMP_411;
+        break;
+
+      case mPF_YUV420:
+        tjSubSampling = TJSAMP_420;
+        break;
+
+      case mPF_YUV422:
+        tjSubSampling = TJSAMP_422;
+        break;
+
+      case mPF_YUV440:
+        tjSubSampling = TJSAMP_440;
+        break;
+
+      case mPF_YUV444:
+        tjSubSampling = TJSAMP_444;
+        break;
+
+      default:
+        mFAIL_DEBUG("Invalid State.");
+        goto fast_jpeg_encoder_failed;
+      }
+
+      uint8_t *pJpegBuffer = nullptr;
+      unsigned long jpegBufferSize = 0;
+
+      mDEFER(
+        if (pJpegBuffer != nullptr)
+          tjFree(pJpegBuffer);
+      );
+
+      const int32_t result = tjCompressFromYUV(encoder, imageBuffer->pPixels, (int32_t)imageBuffer->currentSize.x, 1, (int32_t)imageBuffer->currentSize.y, tjSubSampling, &pJpegBuffer, &jpegBufferSize, 85, TJFLAG_FASTDCT);
+
+      if (result != 0)
+        goto fast_jpeg_encoder_failed;
+
+      mERROR_CHECK(mFile_WriteRaw(filename, pJpegBuffer, (size_t)jpegBufferSize));
+      mRETURN_SUCCESS();
+
+      break;
+    }
+    }
+  }
+
+fast_jpeg_encoder_failed:
+
+  int32_t channels = 4;
 
   switch (imageBuffer->pixelFormat)
   {
   case mPF_R8G8B8A8:
-    components = 4;
+    channels = 4;
     break;
 
   case mPF_R8G8B8:
-    components = 3;
+    channels = 3;
     break;
 
   case mPF_Monochrome8:
-    components = 1;
+    channels = 1;
     break;
 
   default:
@@ -385,7 +549,7 @@ mFUNCTION(mImageBuffer_SaveAsJpeg, mPtr<mImageBuffer> &imageBuffer, const mStrin
   WriteFuncData fileWriteData;
   mERROR_CHECK(mFileWriter_Create(&fileWriteData.file, filename));
 
-  const int result = stbi_write_jpg_to_func(WriteFuncData::Write, &fileWriteData, (int32_t)imageBuffer->currentSize.x, (int32_t)imageBuffer->currentSize.y, components, imageBuffer->pPixels, 85);
+  const int result = stbi_write_jpg_to_func(WriteFuncData::Write, &fileWriteData, (int32_t)imageBuffer->currentSize.x, (int32_t)imageBuffer->currentSize.y, channels, imageBuffer->pPixels, 85);
 
   mERROR_IF(mFAILED(fileWriteData.result), fileWriteData.result);
   mERROR_IF(result == 0, mR_InternalError);
@@ -520,17 +684,15 @@ mFUNCTION(mImageBuffer_SetToData, mPtr<mImageBuffer> &imageBuffer, IN const uint
 
   if (tryJpeg)
   {
-    tjhandle decoder = tjInitDecompress();
+    static tjhandle decoder = tjInitDecompress();
 
     int32_t width, height, subSampling;
 
     if (decoder == nullptr)
-      goto jpeg_decoder_failed;
-
-    mDEFER(tjDestroy(decoder));
+      goto fast_jpeg_decoder_failed;
 
     if (0 != tjDecompressHeader2(decoder, const_cast<uint8_t *>(reinterpret_cast<const uint8_t *>(pData)), (uint32_t)size, &width, &height, &subSampling))
-      goto jpeg_decoder_failed;
+      goto fast_jpeg_decoder_failed;
 
     mPixelFormat sourcePixelFormat;
 
@@ -561,16 +723,16 @@ mFUNCTION(mImageBuffer_SetToData, mPtr<mImageBuffer> &imageBuffer, IN const uint
       break;
 
     default:
-      goto jpeg_decoder_failed;
+      goto fast_jpeg_decoder_failed;
     }
 
     if (pixelFormat == sourcePixelFormat)
     {
       if (mFAILED(mImageBuffer_AllocateBuffer(imageBuffer, mVec2s((size_t)width, (size_t)height), pixelFormat)))
-        goto jpeg_decoder_failed;
+        goto fast_jpeg_decoder_failed;
 
       if (0 != tjDecompressToYUV2(decoder, pData, (uint32_t)size, imageBuffer->pPixels, width, 1, height, TJFLAG_FASTDCT))
-        goto jpeg_decoder_failed;
+        goto fast_jpeg_decoder_failed;
     }
     else
     {
@@ -585,25 +747,25 @@ mFUNCTION(mImageBuffer_SetToData, mPtr<mImageBuffer> &imageBuffer, IN const uint
         if (canInplaceTransform)
         {
           if (mFAILED(mImageBuffer_AllocateBuffer(imageBuffer, mVec2s((size_t)width, (size_t)height), sourcePixelFormat)))
-            goto jpeg_decoder_failed;
+            goto fast_jpeg_decoder_failed;
 
           if (0 != tjDecompressToYUV2(decoder, pData, (uint32_t)size, imageBuffer->pPixels, width, 1, height, TJFLAG_FASTDCT))
-            goto jpeg_decoder_failed;
+            goto fast_jpeg_decoder_failed;
 
           mERROR_CHECK(mPixelFormat_InplaceTransformBuffer(imageBuffer, pixelFormat));
         }
         else
         {
           if (mFAILED(mImageBuffer_AllocateBuffer(imageBuffer, mVec2s((size_t)width, (size_t)height), pixelFormat)))
-            goto jpeg_decoder_failed;
+            goto fast_jpeg_decoder_failed;
 
           mPtr<mImageBuffer> tmp;
 
           if (mFAILED(mImageBuffer_Create(&tmp, &mDefaultTempAllocator, mVec2s((size_t)width, (size_t)height), sourcePixelFormat)))
-            goto jpeg_decoder_failed;
+            goto fast_jpeg_decoder_failed;
 
           if (0 != tjDecompressToYUV2(decoder, pData, (uint32_t)size, tmp->pPixels, width, 1, height, TJFLAG_FASTDCT))
-            goto jpeg_decoder_failed;
+            goto fast_jpeg_decoder_failed;
 
           mERROR_CHECK(mPixelFormat_TransformBuffer(tmp, imageBuffer));
         }
@@ -636,22 +798,74 @@ mFUNCTION(mImageBuffer_SetToData, mPtr<mImageBuffer> &imageBuffer, IN const uint
           break;
 
         default:
-          goto jpeg_decoder_failed;
+          goto fast_jpeg_decoder_failed;
           break;
         }
 
         if (mFAILED(mImageBuffer_AllocateBuffer(imageBuffer, mVec2s((size_t)width, (size_t)height), pixelFormat)) || mFAILED(mPixelFormat_GetUnitSize(pixelFormat, &pixelSize)))
-          goto jpeg_decoder_failed;
+          goto fast_jpeg_decoder_failed;
 
         if (0 != tjDecompress2(decoder, pData, (uint32_t)size, imageBuffer->pPixels, width, (int32_t)(width * pixelSize), height, tjPixelFormat, TJFLAG_FASTDCT))
-          goto jpeg_decoder_failed;
+          goto fast_jpeg_decoder_failed;
       }
     }
 
     mRETURN_SUCCESS();
   }
 
-jpeg_decoder_failed:
+fast_jpeg_decoder_failed:
+
+  const bool tryFPng = (size > 7 && pData[0] == 0x89 && pData[1] == 0x50 && pData[2] == 0x4E && pData[3] == 0x47 && pData[4] == 0x0D && pData[5] == 0x0A && pData[6] == 0x1A && pData[7] == 0x0A && size <= UINT32_MAX);
+
+  if (tryFPng)
+  {
+    switch (pixelFormat)
+    {
+    case mPF_B8G8R8:
+    case mPF_R8G8B8:
+      components = 3;
+      readPixelFormat = mPF_R8G8B8;
+      break;
+
+    case mPF_B8G8R8A8:
+    case mPF_R8G8B8A8:
+      components = 4;
+      readPixelFormat = mPF_R8G8B8A8;
+      break;
+
+    case mPF_Monochrome8:
+    case mPF_Monochrome16:
+      components = 1;
+      readPixelFormat = mPF_Monochrome8;
+      break;
+
+    default:
+      goto fpng_failed;
+    }
+
+    uint64_t requiredCapacity = 0;
+    uint32_t width, height, channelsInFile, idatOffset, idatSize;
+
+    int32_t result = fpng::fpng_decode_memory_get_required_capacity(pData, (uint32_t)size, requiredCapacity, width, height, channelsInFile, (uint32_t)components, idatOffset, idatSize);
+
+    if (result != fpng::FPNG_DECODE_SUCCESS)
+      goto fpng_failed;
+
+    if (mFAILED(mImageBuffer_AllocateBuffer(imageBuffer, mVec2s((size_t)width, (size_t)height), pixelFormat)))
+      goto fpng_failed;
+
+    if (imageBuffer->allocatedSize < requiredCapacity)
+      goto fpng_failed;
+
+    result = fpng::fpng_decode_memory_ptr(pData, (uint32_t)size, imageBuffer->pPixels, requiredCapacity, width, height, channelsInFile, (uint32_t)components, idatOffset, idatSize);
+
+    if (result != fpng::FPNG_DECODE_SUCCESS)
+      goto fpng_failed;
+
+    mRETURN_SUCCESS();
+  }
+
+fpng_failed:
 
   switch (pixelFormat)
   {
