@@ -8,8 +8,8 @@ IF "%1"=="2" GOTO TWO;
 ECHO INVALID PARAMETER (%1)
 
 :MANUAL_CONFIG
-ECHO 1. Visual Studio 2019 Solution
-ECHO 2. Visual Studio 2015 Solution
+ECHO 1. Visual Studio 2022 Solution
+ECHO 2. Visual Studio 2019 Solution
 
 CHOICE /N /C:12 /M "[1-2]:"
 
@@ -18,13 +18,14 @@ IF ERRORLEVEL ==1 GOTO ONE
 GOTO END
 
 :TWO
- ECHO Creating VS2015 Project...
- premake\premake5.exe vs2015
+ ECHO Creating VS2019 Project...
+ premake\premake5.exe vs2019 %2 %3 %4 %5 %6 %7
  GOTO END
 
 :ONE
- ECHO Creating VS2019 Project...
- premake\premake5.exe vs2019
+ ECHO Creating VS2022 Project...
+ premake\premake5.exe vs2022 %2 %3 %4 %5 %6 %7
  GOTO END
 
 :END
+

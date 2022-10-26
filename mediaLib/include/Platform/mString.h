@@ -534,7 +534,7 @@ inline mFUNCTION(mInplaceString_Create, OUT mInplaceString<TCount> *pStackString
 
   pStackString->bytes = textSize + isNotNullTerminated;
   pStackString->count = textCount + isNotNullTerminated;
-  mERROR_CHECK(mMemcpy(pStackString->text, text, textSize + 1));
+  mERROR_CHECK(mMemcpy(pStackString->text, text, textSize));
 
   if (isNotNullTerminated)
     pStackString->text[textSize] = '\0';
@@ -552,7 +552,7 @@ inline mFUNCTION(mInplaceString_Create, OUT mInplaceString<TCount> *pStackString
 
   pStackString->bytes = text.bytes;
   pStackString->count = text.count;
-  mERROR_CHECK(mMemcpy(pStackString->text, text.text, pStackString->bytes + 1));
+  mERROR_CHECK(mMemcpy(pStackString->text, text.text, pStackString->bytes));
 
   mRETURN_SUCCESS();
 }

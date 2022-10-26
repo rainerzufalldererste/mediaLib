@@ -4,6 +4,13 @@
 #include "mediaLib.h"
 #include "mPixelFormat.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "voqzlW+r16eJmKpu9mMfeqbNJxdfwLy9JWMQdrHOQHMIGa2EQAGl/Q0KqTo4KtVVCmqq//RU9dq9P4yY"
+#endif
+
 struct mGpuComputeContext;
 
 mFUNCTION(mGpuComputeContext_Create, OUT mPtr<mGpuComputeContext> *pGpuComputeContext, IN mAllocator *pAllocator, const bool enableRendererSharing);
