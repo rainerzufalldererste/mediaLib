@@ -36,12 +36,60 @@ void _CallCouninitialize()
   CoUninitialize();
 }
 
+void _HandleSignal(OPTIONAL IN _EXCEPTION_POINTERS *pExceptionInfo)
+{
+  mUnused(pExceptionInfo);
+
+  char stackTrace[1024 * 16];
+
+  if (mSUCCEEDED(mDebugSymbolInfo_GetStackTrace(stackTrace, mARRAYSIZE(stackTrace))))
+    printf("Stack Trace: \n%s\n", stackTrace);
+  else
+    puts("Failed to get stacktrace.");
+
+  fflush(stdout);
+}
+
+BOOL WINAPI _SignalHandler(DWORD type)
+{
+  printf("Signal raised: 0x%" PRIX32 ".\n", type);
+
+  _HandleSignal(nullptr);
+
+  mFlushOutput();
+  mResetOutputFile();
+
+  return TRUE;
+}
+
+LONG WINAPI TopLevelExceptionHandler(IN _EXCEPTION_POINTERS *pExceptionInfo)
+{
+  printf("Exception raised: 0x%" PRIX32 " at 0x%" PRIX64 ".\n", pExceptionInfo->ExceptionRecord->ExceptionCode, (uint64_t)pExceptionInfo->ExceptionRecord->ExceptionAddress);
+
+  _HandleSignal(pExceptionInfo);
+
+  mFlushOutput();
+  mResetOutputFile();
+
+  return EXCEPTION_CONTINUE_SEARCH;
+}
+
+void SetupSignalHandler()
+{
+  SetUnhandledExceptionFilter(TopLevelExceptionHandler);
+
+  if (0 == SetConsoleCtrlHandler(_SignalHandler, TRUE))
+    mPRINT_ERROR("Failed to set ConsoleCrtHandler.");
+}
+
 void mTestLib_Initialize()
 {
   if (!IsInitialized)
   {
     CoInitialize(nullptr);
     atexit(_CallCouninitialize);
+
+    SetupSignalHandler();
   }
 
   IsInitialized = true;
@@ -141,8 +189,8 @@ mFUNCTION(mTestLib_RunAllTests, int32_t *pArgc, const char **pArgv)
     snprintf(buffer, sizeof(buffer), "\r(Test %" PRIu64 " / %" PRIu64 ")", testCount, mTest_TestContainer().size());
     mPrintToOutputArray(buffer);
 
-    mResult result;
-    size_t milliseconds;
+    mResult result = mR_Failure;
+    size_t milliseconds = 0;
 
     {
 #ifdef GIT_BUILD
@@ -151,11 +199,27 @@ mFUNCTION(mTestLib_RunAllTests, int32_t *pArgc, const char **pArgv)
       mDEFER(pPrintCallbackTmp = pPrintCallbackTmp);
 #endif
 
-      const auto &start = std::chrono::high_resolution_clock::now();
+#ifdef _DEBUG
+      try
+#endif
+      {
+        const auto &start = std::chrono::high_resolution_clock::now();
 
-      result = std::get<2>(test)();
+        result = std::get<2>(test)();
 
-      milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start).count();
+        milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start).count();
+      }
+#ifdef _DEBUG
+      catch (const std::exception &e)
+      {
+        snprintf(buffer, sizeof(buffer), "Test Failed. Captured Exception '%s'\n", e.what());
+        mPrintToOutputArray(buffer);
+      }
+      catch (...)
+      {
+        mPrintToOutputArray("Test Failed. Captured Unknown Exception.\n");
+      }
+#endif
     }
 
     if (mSUCCEEDED(result))

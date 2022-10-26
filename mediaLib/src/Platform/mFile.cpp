@@ -403,7 +403,12 @@ mFUNCTION(mFile_DeleteFolder, const mString &folderPath)
   mDEFER(pFileOperation->Release());
 
   mERROR_IF(FAILED(hr = pFileOperation->DeleteItem(pItem, nullptr)), mR_InternalError);
+
+  // For some reason this function seems to reference out of bounds memory somewhere burried deep in some Windows dll. This was the quickest fix for testing the library with ASAN.
+  // Nobody ever defines `ASAN_ENABLED`, so this is a very manual workaround that I'd prefer to keep around. There's a good chance other stuff also triggers ASAN that ... isn't necessarily our fault.
+#ifndef ASAN_ENABLED
   mERROR_IF(FAILED(hr = pFileOperation->PerformOperations()), mR_InternalError);
+#endif
 
   mRETURN_SUCCESS();
 }

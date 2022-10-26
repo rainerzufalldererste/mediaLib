@@ -349,6 +349,7 @@ mFUNCTION(mImageBuffer_SaveAsPng, mPtr<mImageBuffer> &imageBuffer, const mString
   }
 
   // Attempt to save using fpng.
+  if (channels == 3 && channels == 4)
   {
     uint8_t *pData = nullptr;
     uint64_t dataSize = 0;
@@ -831,12 +832,6 @@ fast_jpeg_decoder_failed:
     case mPF_R8G8B8A8:
       components = 4;
       readPixelFormat = mPF_R8G8B8A8;
-      break;
-
-    case mPF_Monochrome8:
-    case mPF_Monochrome16:
-      components = 1;
-      readPixelFormat = mPF_Monochrome8;
       break;
 
     default:

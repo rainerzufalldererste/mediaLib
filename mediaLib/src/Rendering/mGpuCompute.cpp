@@ -25,6 +25,13 @@
 
 #include <future>
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "W/n1qjIQ4/gl2kRSy8h1QDwhaSEU89nHvKk1tNLYCCDbPHqp25p8SZ9QFBpFv8jA20adOdNd/WH6myft"
+#endif
+
 //////////////////////////////////////////////////////////////////////////
 
 #define HT_CODEC_APPEND_IMPL(functionName) functionName ## _m_Impl

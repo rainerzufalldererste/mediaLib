@@ -76,7 +76,6 @@ warnings "Extra"
 targetname "%{prj.name}"
 
 flags { "NoMinimalRebuild", "NoPCH" }
-exceptionhandling "Off"
 rtti "Off"
 floatingpoint "Fast"
 
@@ -92,6 +91,7 @@ filter { "configurations:Release" }
   omitframepointer "On"
   symbols "On"
   editandcontinue "Off"
+  exceptionhandling "Off"
 
 filter { "system:windows" }
   defines { "WIN32", "_WINDOWS" }

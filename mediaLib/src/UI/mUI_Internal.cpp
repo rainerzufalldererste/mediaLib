@@ -17,6 +17,13 @@
 #undef DECLSPEC
 #pragma warning(pop)
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "5BeVFt/sA+THXQJnB80cl3l1FogXKMUG7JeAESG2oQPRFK4V0EaB23ECM7Ml2evXswd+x2RbxHcC7eBu"
+#endif
+
 namespace ImGui
 {
   // See: https://github.com/ocornut/imgui/issues/1901

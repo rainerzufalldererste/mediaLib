@@ -1,5 +1,6 @@
 #include "mediaLib.h"
 
+#ifndef _DEBUG
 extern "C"
 {
 #pragma warning(push, 0)
@@ -7,6 +8,7 @@ extern "C"
   #include "rpmalloc/src/rpmalloc.c"
 #pragma warning(pop)
 }
+#endif
 
 #ifdef GIT_BUILD // Define __M_FILE__
   #ifdef __M_FILE__
@@ -17,62 +19,109 @@ extern "C"
 
 extern void mMemory_OnProcessStart()
 {
+#ifndef _DEBUG
   rpmalloc_initialize();
+#endif
 }
 
 extern void mMemory_OnThreadStart()
 {
+#ifndef _DEBUG
   rpmalloc_thread_initialize();
+#endif
 }
 
 extern void mMemory_OnThreadExit()
 {
+#ifndef _DEBUG
   rpmalloc_thread_finalize(0);
+#endif
 }
 
 extern void mMemory_OnProcessExit()
 {
+#ifndef _DEBUG
   rpmalloc_finalize();
+#endif
 }
 
 _Check_return_ _Ret_maybenull_ _Post_writable_byte_size_(size) _CRTALLOCATOR _CRTRESTRICT void *_m_internal_alloc(_In_ const size_t size)
 {
+#ifndef _DEBUG
   return rpmalloc(size);
+#else
+  return malloc(size);
+#endif
 }
 
 _Check_return_ _Ret_maybenull_ _Post_writable_byte_size_(size) _CRTALLOCATOR _CRTRESTRICT void *_m_internal_alloc_zero(_In_ const size_t size)
 {
+#ifndef _DEBUG
   return rpcalloc(size, 1);
+#else
+  return calloc(size, 1);
+#endif
 }
 
 _Success_(return != 0) _Check_return_ _Ret_maybenull_ _Post_writable_byte_size_(size) _CRTALLOCATOR _CRTRESTRICT void *_m_internal_realloc(_Pre_maybenull_ _Post_invalid_ void *pBlock, _In_ const size_t size)
 {
+#ifndef _DEBUG
   return rprealloc(pBlock, size);
+#else
+  return realloc(pBlock, size);
+#endif
 }
 
 void __cdecl _m_internal_free(_Pre_maybenull_ _Post_invalid_ void *pBlock)
 {
+#ifndef _DEBUG
   rpfree(pBlock);
+#else
+  free(pBlock);
+#endif
 }
 
 _Check_return_ _Ret_maybenull_ _Post_writable_byte_size_(size) _CRTALLOCATOR _CRTRESTRICT void *_m_internal_alloc_aligned(_In_ const size_t size, _In_ const size_t alignment)
 {
+#ifndef _DEBUG
   return rpaligned_alloc(alignment, size);
+#else
+  return _aligned_malloc(size, alignment);
+#endif
 }
 
 _Check_return_ _Ret_maybenull_ _Post_writable_byte_size_(size) _CRTALLOCATOR _CRTRESTRICT void *_m_internal_alloc_aligned_zero(_In_ const size_t size, _In_ const size_t alignment)
 {
+#ifndef _DEBUG
   return rpaligned_calloc(alignment, size, 1);
+#else
+  void *pData = _aligned_malloc(size, alignment);
+
+  if (pData != nullptr)
+    memset(pData, 0, size);
+
+  return pData;
+#endif
 }
 
 _Success_(return != 0) _Check_return_ _Ret_maybenull_ _Post_writable_byte_size_(size) _CRTALLOCATOR _CRTRESTRICT void *_m_internal_realloc(_Pre_maybenull_ _Post_invalid_ void *pBlock, _In_ const size_t size, _In_ const size_t oldSize, _In_ const size_t alignment)
 {
+#ifndef _DEBUG
   return rpaligned_realloc(pBlock, alignment, size, oldSize, 0);
+#else
+  mUnused(oldSize);
+
+  return _aligned_realloc(pBlock, size, alignment);
+#endif
 }
 
 void __cdecl _m_internal_free_aligned(_Pre_maybenull_ _Post_invalid_ void *pBlock)
 {
+#ifndef _DEBUG
   rpfree(pBlock);
+#else
+  return _aligned_free(pBlock);
+#endif
 }
 
 mFUNCTION(mStringLength, const char *text, const size_t maxCount, OUT size_t *pCount)

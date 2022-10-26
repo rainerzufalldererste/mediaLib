@@ -270,4 +270,13 @@ public:
 #define mSILENCE_ERROR_DEBUG(result) (result)
 #endif
 
+#define mSILENT_RETURN_RESULT(result) \
+  do { mErrorPushSilent_Internal __silence__##__LINE__##_; mRETURN_RESULT(result); } while (0)
+
+#define mSILENT_ERROR_CHECK(functionCall, ...) \
+  do { mSTDRESULT = functionCall; { mErrorPushSilent_Internal __silence__##__LINE__##_; mERROR_CHECK(mSTDRESULT, __VA_ARGS__); } } while (0)
+
+#define mSILENT_ERROR_IF(conditional, resultOnError, ...) \
+  do { mErrorPushSilent_Internal __silence__##__LINE__##_; mERROR_IF(conditional, resultOnError, __VA_ARGS__); } while (0)
+
 #endif // mResult_h__
