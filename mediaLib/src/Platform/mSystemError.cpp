@@ -94,7 +94,7 @@ mFUNCTION(mSystemError_WriteMiniDump, const mString &filename, IN OPTIONAL struc
 
   HMODULE library = LoadLibraryW(L"Dbghelp.dll");
   mERROR_IF(library == nullptr, mR_InternalError);
-  mDEFER(FreeLibrary(library));
+  mDEFER_CALL(library, FreeLibrary);
 
   typedef BOOL(WINAPI WriteMiniDumpFunc)(HANDLE hProcess, DWORD dwPid, HANDLE fileHandle, MINIDUMP_TYPE DumpType, CONST PMINIDUMP_EXCEPTION_INFORMATION ExceptionParam, CONST PMINIDUMP_USER_STREAM_INFORMATION UserStreamParam, CONST PMINIDUMP_CALLBACK_INFORMATION CallbackParam);
 
@@ -107,7 +107,7 @@ mFUNCTION(mSystemError_WriteMiniDump, const mString &filename, IN OPTIONAL struc
 
   HANDLE fileHandle = CreateFileW(wfilename, GENERIC_WRITE, FILE_SHARE_WRITE, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
   mERROR_IF(fileHandle == INVALID_HANDLE_VALUE, mR_InternalError);
-  mDEFER(CloseHandle(fileHandle));
+  mDEFER_CALL(fileHandle, CloseHandle);
 
   _MINIDUMP_EXCEPTION_INFORMATION exceptionInfo;
   mERROR_CHECK(mZeroMemory(&exceptionInfo));

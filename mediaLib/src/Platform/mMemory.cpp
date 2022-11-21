@@ -17,38 +17,60 @@ extern "C"
   #define __M_FILE__ "Rx6R99ErVSc74oQfABhd3lN1Z/7LbxaWj5aofNcPw+3mWMReFYhCMscW350rxwq48gtWVS1+nWs+s8Dw"
 #endif
 
+extern bool mMemory_RpMallocEnabled = false;
+extern bool mMemory_HasActiveAllocations = false;
+
 extern void mMemory_OnProcessStart()
 {
 #ifndef _DEBUG
-  rpmalloc_initialize();
+  if (mMemory_HasActiveAllocations)
+    return;
+
+  HMODULE moduleHandle = nullptr;
+
+  if (GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, reinterpret_cast<LPWSTR>(const_cast<void *>(reinterpret_cast<const void *>(mMemory_OnProcessStart))), &moduleHandle) != 0)
+    moduleHandle = nullptr;
+
+  mMemory_RpMallocEnabled = (GetModuleHandleW(nullptr) == moduleHandle);
+
+  if (mMemory_RpMallocEnabled && 0 != rpmalloc_initialize())
+    mMemory_RpMallocEnabled = false;
 #endif
 }
 
 extern void mMemory_OnThreadStart()
 {
 #ifndef _DEBUG
-  rpmalloc_thread_initialize();
+  if (mMemory_RpMallocEnabled)
+    rpmalloc_thread_initialize();
 #endif
 }
 
 extern void mMemory_OnThreadExit()
 {
 #ifndef _DEBUG
-  rpmalloc_thread_finalize(0);
+  if (mMemory_RpMallocEnabled)
+    rpmalloc_thread_finalize(0);
 #endif
 }
 
 extern void mMemory_OnProcessExit()
 {
 #ifndef _DEBUG
-  rpmalloc_finalize();
+  if (mMemory_RpMallocEnabled)
+    rpmalloc_finalize();
 #endif
 }
 
 _Check_return_ _Ret_maybenull_ _Post_writable_byte_size_(size) _CRTALLOCATOR _CRTRESTRICT void *_m_internal_alloc(_In_ const size_t size)
 {
 #ifndef _DEBUG
-  return rpmalloc(size);
+  mMemory_HasActiveAllocations = true;
+
+  if (mMemory_RpMallocEnabled)
+    return rpmalloc(size);
+  else
+    return malloc(size);
 #else
   return malloc(size);
 #endif
@@ -57,7 +79,12 @@ _Check_return_ _Ret_maybenull_ _Post_writable_byte_size_(size) _CRTALLOCATOR _CR
 _Check_return_ _Ret_maybenull_ _Post_writable_byte_size_(size) _CRTALLOCATOR _CRTRESTRICT void *_m_internal_alloc_zero(_In_ const size_t size)
 {
 #ifndef _DEBUG
-  return rpcalloc(size, 1);
+  mMemory_HasActiveAllocations = true;
+
+  if (mMemory_RpMallocEnabled)
+    return rpcalloc(size, 1);
+  else
+    return calloc(size, 1);
 #else
   return calloc(size, 1);
 #endif
@@ -66,7 +93,12 @@ _Check_return_ _Ret_maybenull_ _Post_writable_byte_size_(size) _CRTALLOCATOR _CR
 _Success_(return != 0) _Check_return_ _Ret_maybenull_ _Post_writable_byte_size_(size) _CRTALLOCATOR _CRTRESTRICT void *_m_internal_realloc(_Pre_maybenull_ _Post_invalid_ void *pBlock, _In_ const size_t size)
 {
 #ifndef _DEBUG
-  return rprealloc(pBlock, size);
+  mMemory_HasActiveAllocations = true;
+
+  if (mMemory_RpMallocEnabled)
+    return rprealloc(pBlock, size);
+  else
+    return realloc(pBlock, size);
 #else
   return realloc(pBlock, size);
 #endif
@@ -75,7 +107,10 @@ _Success_(return != 0) _Check_return_ _Ret_maybenull_ _Post_writable_byte_size_(
 void __cdecl _m_internal_free(_Pre_maybenull_ _Post_invalid_ void *pBlock)
 {
 #ifndef _DEBUG
-  rpfree(pBlock);
+  if (mMemory_RpMallocEnabled)
+    rpfree(pBlock);
+  else
+    free(pBlock);
 #else
   free(pBlock);
 #endif
@@ -84,7 +119,12 @@ void __cdecl _m_internal_free(_Pre_maybenull_ _Post_invalid_ void *pBlock)
 _Check_return_ _Ret_maybenull_ _Post_writable_byte_size_(size) _CRTALLOCATOR _CRTRESTRICT void *_m_internal_alloc_aligned(_In_ const size_t size, _In_ const size_t alignment)
 {
 #ifndef _DEBUG
-  return rpaligned_alloc(alignment, size);
+  mMemory_HasActiveAllocations = true;
+
+  if (mMemory_RpMallocEnabled)
+    return rpaligned_alloc(alignment, size);
+  else
+    return _aligned_malloc(size, alignment);
 #else
   return _aligned_malloc(size, alignment);
 #endif
@@ -93,7 +133,21 @@ _Check_return_ _Ret_maybenull_ _Post_writable_byte_size_(size) _CRTALLOCATOR _CR
 _Check_return_ _Ret_maybenull_ _Post_writable_byte_size_(size) _CRTALLOCATOR _CRTRESTRICT void *_m_internal_alloc_aligned_zero(_In_ const size_t size, _In_ const size_t alignment)
 {
 #ifndef _DEBUG
-  return rpaligned_calloc(alignment, size, 1);
+  mMemory_HasActiveAllocations = true;
+
+  if (mMemory_RpMallocEnabled)
+  {
+    return rpaligned_calloc(alignment, size, 1);
+  }
+  else
+  {
+    void *pData = _aligned_malloc(size, alignment);
+
+    if (pData != nullptr)
+      memset(pData, 0, size);
+
+    return pData;
+  }
 #else
   void *pData = _aligned_malloc(size, alignment);
 
@@ -107,7 +161,12 @@ _Check_return_ _Ret_maybenull_ _Post_writable_byte_size_(size) _CRTALLOCATOR _CR
 _Success_(return != 0) _Check_return_ _Ret_maybenull_ _Post_writable_byte_size_(size) _CRTALLOCATOR _CRTRESTRICT void *_m_internal_realloc(_Pre_maybenull_ _Post_invalid_ void *pBlock, _In_ const size_t size, _In_ const size_t oldSize, _In_ const size_t alignment)
 {
 #ifndef _DEBUG
-  return rpaligned_realloc(pBlock, alignment, size, oldSize, 0);
+  mMemory_HasActiveAllocations = true;
+
+  if (mMemory_RpMallocEnabled)
+    return rpaligned_realloc(pBlock, alignment, size, oldSize, 0);
+  else
+    return _aligned_realloc(pBlock, size, alignment);
 #else
   mUnused(oldSize);
 
@@ -118,9 +177,12 @@ _Success_(return != 0) _Check_return_ _Ret_maybenull_ _Post_writable_byte_size_(
 void __cdecl _m_internal_free_aligned(_Pre_maybenull_ _Post_invalid_ void *pBlock)
 {
 #ifndef _DEBUG
-  rpfree(pBlock);
+  if (mMemory_RpMallocEnabled)
+    rpfree(pBlock);
+  else
+    _aligned_free(pBlock);
 #else
-  return _aligned_free(pBlock);
+  _aligned_free(pBlock);
 #endif
 }
 

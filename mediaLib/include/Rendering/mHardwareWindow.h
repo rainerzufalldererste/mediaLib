@@ -55,6 +55,7 @@ mFUNCTION(mHardwareWindow_MaximizeWindow, mPtr<mHardwareWindow> &window);
 mFUNCTION(mHardwareWindow_MinimizeWindow, mPtr<mHardwareWindow> &window);
 mFUNCTION(mHardwareWindow_RestoreWindow, mPtr<mHardwareWindow> &window);
 mFUNCTION(mHardwareWindow_SetResizable, mPtr<mHardwareWindow> &window, const bool resizable);
+mFUNCTION(mHardwareWindow_SetTitle, mPtr<mHardwareWindow> &window, const mString &title);
 
 mFUNCTION(mHardwareWindow_AddOnResizeEvent, mPtr<mHardwareWindow> &window, const std::function<mResult(const mVec2s &)> &callback);
 mFUNCTION(mHardwareWindow_AddOnCloseEvent, mPtr<mHardwareWindow> &window, const std::function<mResult(void)> &callback);

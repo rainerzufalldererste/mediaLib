@@ -415,6 +415,18 @@ mFUNCTION(mHardwareWindow_SetResizable, mPtr<mHardwareWindow> &window, const boo
   mRETURN_SUCCESS();
 }
 
+mFUNCTION(mHardwareWindow_SetTitle, mPtr<mHardwareWindow> &window, const mString &title)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(window == nullptr, mR_ArgumentNull);
+  mERROR_IF(title.hasFailed, mR_InvalidParameter);
+
+  SDL_SetWindowTitle(window->pWindow, title.c_str());
+
+  mRETURN_SUCCESS();
+}
+
 mFUNCTION(mHardwareWindow_AddOnResizeEvent, mPtr<mHardwareWindow> &window, const std::function<mResult(const mVec2s&)> &callback)
 {
   mFUNCTION_SETUP();

@@ -28,7 +28,7 @@ static mFUNCTION(mFile_GetKnownPath_Internal, OUT mString *pString, const GUID &
 static mFUNCTION(mFileInfo_FromFindDataWStruct_Internal, IN_OUT mFileInfo *pFileInfo, IN const WIN32_FIND_DATAW *pFileData, IN mAllocator *pAllocator);
 static mFUNCTION(mFileInfo_FromByHandleFileInformationStruct_Internal, IN_OUT mFileInfo *pFileInfo, IN const BY_HANDLE_FILE_INFORMATION *pFileData);
 static mFUNCTION(mFile_CreateDirectoryRecursive_Internal, const wchar_t *directoryPath);
-static mFUNCTION(mRegistry_FindKey_Internal, const mString &keyUrl, OUT HKEY *pParentKey, IN mAllocator *pAllocator, OUT wchar_t **pPathOrValue, OUT size_t *pPathOrValueCount, OUT wchar_t **pValueName, OUT size_t *pValueNameCount);
+mFUNCTION(mRegistry_FindKey_Internal, const mString &keyUrl, OUT HKEY *pParentKey, IN mAllocator *pAllocator, OUT wchar_t **pPathOrValue, OUT size_t *pPathOrValueCount, OUT wchar_t **pValueName, OUT size_t *pValueNameCount);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -346,7 +346,7 @@ mFUNCTION(mFile_CreateDirectory, const mString &folderPath)
   wchar_t wDirectoryName[MAX_PATH];
   mERROR_CHECK(mString_ToWideString(path, wDirectoryName, mARRAYSIZE(wDirectoryName)));
 
-  const int errorCode = SHCreateDirectoryExW(NULL, wDirectoryName, NULL);
+  const int errorCode = SHCreateDirectoryExW(nullptr, wDirectoryName, nullptr);
 
   switch (errorCode)
   {
@@ -1057,6 +1057,45 @@ mFUNCTION(mFile_GetCurrentApplicationFilePath, OUT mString *pAppDirectory)
   mRETURN_RESULT(mR_InternalError);
 }
 
+mFUNCTION(mFile_GetCurrentModuleFilePath, OUT mString *pModuleDirectory, IN OPTIONAL const void *pFunctionInModule /* = nullptr */)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pModuleDirectory == nullptr, mR_ArgumentNull);
+
+  HMODULE moduleHandle = nullptr;
+
+  if (pFunctionInModule == nullptr)
+    pFunctionInModule = &mFile_GetCurrentModuleFilePath;
+
+  if (GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, reinterpret_cast<LPWSTR>(const_cast<void *>(pFunctionInModule)), &moduleHandle) == 0)
+    moduleHandle = nullptr;
+
+  wchar_t filePath[MAX_PATH];
+
+  const DWORD result = GetModuleFileNameW(moduleHandle, filePath, (DWORD)mARRAYSIZE(filePath));
+
+  if (result != 0)
+  {
+    const DWORD error = GetLastError();
+
+    switch (error)
+    {
+    case ERROR_SUCCESS:
+      mERROR_CHECK(mString_Create(pModuleDirectory, filePath, pModuleDirectory->pAllocator));
+      mRETURN_SUCCESS();
+      break;
+
+    case ERROR_INSUFFICIENT_BUFFER:
+    default:
+      mRETURN_RESULT(mR_InternalError);
+      break;
+    }
+  }
+
+  mRETURN_RESULT(mR_InternalError);
+}
+
 mFUNCTION(mFile_ExtractDirectoryFromPath, OUT mString *pDirectory, const mString &filePath)
 {
   mFUNCTION_SETUP();
@@ -1177,7 +1216,7 @@ mFUNCTION(mFile_GetDirectoryContents, const mString &directoryPath, const mStrin
     mERROR_CHECK(mQueue_Clear(*pFiles));
   
   WIN32_FIND_DATAW fileData;
-  const HANDLE handle = FindFirstFileExW(absolutePath, FindExInfoBasic, &fileData, FindExSearchNameMatch, NULL, FIND_FIRST_EX_LARGE_FETCH);
+  const HANDLE handle = FindFirstFileExW(absolutePath, FindExInfoBasic, &fileData, FindExSearchNameMatch, nullptr, FIND_FIRST_EX_LARGE_FETCH);
 
   if (handle == INVALID_HANDLE_VALUE)
   {
@@ -1310,7 +1349,7 @@ mFUNCTION(mFile_GetInfo, const mString &filename, OUT mFileInfo *pFileInfo)
   wchar_t wfilename[MAX_PATH];
   mERROR_CHECK(mString_ToWideString(filename, wfilename, mARRAYSIZE(wfilename)));
 
-  HANDLE fileHandle = CreateFileW(wfilename, STANDARD_RIGHTS_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+  HANDLE fileHandle = CreateFileW(wfilename, STANDARD_RIGHTS_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
 
   if (fileHandle == INVALID_HANDLE_VALUE)
   {
@@ -1350,7 +1389,7 @@ mFUNCTION(mFile_GetSize, const mString &filename, OUT size_t *pSizeBytes)
   wchar_t wfilename[MAX_PATH];
   mERROR_CHECK(mString_ToWideString(filename, wfilename, mARRAYSIZE(wfilename)));
 
-  HANDLE fileHandle = CreateFileW(wfilename, STANDARD_RIGHTS_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+  HANDLE fileHandle = CreateFileW(wfilename, STANDARD_RIGHTS_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
 
   if (fileHandle == INVALID_HANDLE_VALUE)
   {
@@ -1725,7 +1764,7 @@ mFUNCTION(mFile_CreateShortcut, const mString &path, const mString &targetDestin
   IShellLinkW *pShellLink = nullptr;
   mDEFER_IF(pShellLink != nullptr, pShellLink->Release());
 
-  HRESULT hr = CoCreateInstance(CLSID_ShellLink, NULL, CLSCTX_ALL, IID_IShellLink, (void **)&pShellLink);
+  HRESULT hr = CoCreateInstance(CLSID_ShellLink, nullptr, CLSCTX_ALL, IID_IShellLink, (void **)&pShellLink);
   mERROR_IF(FAILED(hr), mR_InternalError);
 
   mERROR_IF(FAILED(hr = pShellLink->SetPath(wTargetDestination)), mR_InternalError);
@@ -2181,7 +2220,7 @@ HRESULT mFile_CreateAndInitializeFileOperation_Internal(REFIID riid, void **ppFi
   // Create the IFileOperation object.
   IFileOperation *pfo;
 
-  HRESULT hr = CoCreateInstance(__uuidof(FileOperation), NULL, CLSCTX_ALL, IID_PPV_ARGS(&pfo));
+  HRESULT hr = CoCreateInstance(__uuidof(FileOperation), nullptr, CLSCTX_ALL, IID_PPV_ARGS(&pfo));
 
   if (SUCCEEDED(hr))
   {
@@ -2275,7 +2314,7 @@ mFUNCTION(mRegistry_WriteKey, const mString &keyUrl, const mString &value, OUT O
   HKEY key = nullptr;
   DWORD disposition = 0;
 
-  LSTATUS result = RegCreateKeyExW(parentKey, wPathOrValue, 0, NULL, 0, KEY_ALL_ACCESS, NULL, &key, &disposition);
+  LSTATUS result = RegCreateKeyExW(parentKey, wPathOrValue, 0, nullptr, 0, KEY_ALL_ACCESS, nullptr, &key, &disposition);
   mDEFER_IF(key != nullptr, RegCloseKey(key));
   mERROR_IF(result != ERROR_SUCCESS, mR_InternalError);
 
@@ -2313,7 +2352,7 @@ mFUNCTION(mRegistry_WriteKey, const mString &keyUrl, const uint32_t value, OUT O
   HKEY key = nullptr;
   DWORD disposition = 0;
 
-  LSTATUS result = RegCreateKeyExW(parentKey, wPathOrValue, 0, NULL, 0, KEY_ALL_ACCESS, NULL, &key, &disposition);
+  LSTATUS result = RegCreateKeyExW(parentKey, wPathOrValue, 0, nullptr, 0, KEY_ALL_ACCESS, nullptr, &key, &disposition);
   mDEFER_IF(key != nullptr, RegCloseKey(key));
   mERROR_IF(result != ERROR_SUCCESS, mR_InternalError);
 
@@ -2346,7 +2385,7 @@ mFUNCTION(mRegistry_WriteKey, const mString &keyUrl, const uint64_t value, OUT O
   HKEY key = nullptr;
   DWORD disposition = 0;
 
-  LSTATUS result = RegCreateKeyExW(parentKey, wPathOrValue, 0, NULL, 0, KEY_ALL_ACCESS, NULL, &key, &disposition);
+  LSTATUS result = RegCreateKeyExW(parentKey, wPathOrValue, 0, nullptr, 0, KEY_ALL_ACCESS, nullptr, &key, &disposition);
   mDEFER_IF(key != nullptr, RegCloseKey(key));
   mERROR_IF(result != ERROR_SUCCESS, mR_InternalError);
 
@@ -2382,13 +2421,15 @@ mFUNCTION(mRegistry_ReadKey, const mString &keyUrl, OUT mString *pValue)
 
   LSTATUS result = RegOpenKeyExW(parentKey, wPathOrValue, 0, KEY_QUERY_VALUE, &key);
   mDEFER_IF(key != nullptr, RegCloseKey(key));
+  mERROR_IF(result == ERROR_ACCESS_DENIED, mR_InsufficientPrivileges);
   mERROR_IF(result != ERROR_SUCCESS, mR_ResourceNotFound);
 
   DWORD type = 0;
   DWORD bytes = 0;
 
-  result = RegQueryValueExW(key, wValueName, NULL, &type, NULL, &bytes);
+  result = RegQueryValueExW(key, wValueName, nullptr, &type, nullptr, &bytes);
   mERROR_IF(result == ERROR_FILE_NOT_FOUND, mR_ResourceNotFound);
+  mERROR_IF(result == ERROR_ACCESS_DENIED, mR_InsufficientPrivileges);
   mERROR_IF(result != ERROR_SUCCESS, mR_InternalError);
 
   mERROR_IF(type != REG_SZ, mR_ResourceStateInvalid);
@@ -2399,8 +2440,19 @@ mFUNCTION(mRegistry_ReadKey, const mString &keyUrl, OUT mString *pValue)
     mERROR_CHECK(mAllocator_Reallocate(pAllocator, &wPathOrValue, wPathOrValueCount));
   }
 
-  result = RegQueryValueExW(key, wValueName, NULL, NULL, reinterpret_cast<BYTE *>(wPathOrValue), &bytes);
-  mERROR_IF(result != ERROR_SUCCESS, mR_InternalError);
+  result = RegQueryValueExW(key, wValueName, nullptr, nullptr, reinterpret_cast<BYTE *>(wPathOrValue), &bytes);
+  
+  if (result != ERROR_SUCCESS)
+  {
+    switch (result)
+    {
+    default:
+      mRETURN_RESULT(mR_InternalError);
+
+    case ERROR_ACCESS_DENIED:
+      mRETURN_RESULT(mR_InsufficientPrivileges);
+    }
+  }
 
   mERROR_CHECK(mString_Create(pValue, wPathOrValue, wPathOrValueCount, pValue->pAllocator));
 
@@ -2430,20 +2482,33 @@ mFUNCTION(mRegistry_ReadKey, const mString &keyUrl, OUT uint32_t *pValue)
 
   LSTATUS result = RegOpenKeyExW(parentKey, wPathOrValue, 0, KEY_QUERY_VALUE, &key);
   mDEFER_IF(key != nullptr, RegCloseKey(key));
+  mERROR_IF(result == ERROR_ACCESS_DENIED, mR_InsufficientPrivileges);
   mERROR_IF(result != ERROR_SUCCESS, mR_ResourceNotFound);
 
   DWORD type = 0;
   DWORD bytes = 0;
 
-  result = RegQueryValueExW(key, wValueName, NULL, &type, NULL, &bytes);
+  result = RegQueryValueExW(key, wValueName, nullptr, &type, nullptr, &bytes);
   mERROR_IF(result == ERROR_FILE_NOT_FOUND, mR_ResourceNotFound);
+  mERROR_IF(result == ERROR_ACCESS_DENIED, mR_InsufficientPrivileges);
   mERROR_IF(result != ERROR_SUCCESS, mR_InternalError);
 
   mERROR_IF(type != REG_DWORD && type != REG_DWORD_BIG_ENDIAN, mR_ResourceStateInvalid);
   mERROR_IF(bytes != sizeof(uint32_t), mR_InternalError);
 
-  result = RegQueryValueExW(key, wValueName, NULL, NULL, reinterpret_cast<BYTE *>(pValue), &bytes);
-  mERROR_IF(result != ERROR_SUCCESS, mR_InternalError);
+  result = RegQueryValueExW(key, wValueName, nullptr, nullptr, reinterpret_cast<BYTE *>(pValue), &bytes);
+
+  if (result != ERROR_SUCCESS)
+  {
+    switch (result)
+    {
+    default:
+      mRETURN_RESULT(mR_InternalError);
+
+    case ERROR_ACCESS_DENIED:
+      mRETURN_RESULT(mR_InsufficientPrivileges);
+    }
+  }
 
   if (type == REG_DWORD_BIG_ENDIAN)
     *pValue = ((*pValue >> 24) & 0xFF) | ((*pValue >> 8) & 0xFF00) | ((*pValue << 8) & 0xFF0000) | ((*pValue << 24) & 0xFF000000);
@@ -2474,20 +2539,33 @@ mFUNCTION(mRegistry_ReadKey, const mString &keyUrl, OUT uint64_t *pValue)
 
   LSTATUS result = RegOpenKeyExW(parentKey, wPathOrValue, 0, KEY_QUERY_VALUE, &key);
   mDEFER_IF(key != nullptr, RegCloseKey(key));
+  mERROR_IF(result == ERROR_ACCESS_DENIED, mR_InsufficientPrivileges);
   mERROR_IF(result != ERROR_SUCCESS, mR_ResourceNotFound);
 
   DWORD type = 0;
   DWORD bytes = 0;
 
-  result = RegQueryValueExW(key, wValueName, NULL, &type, NULL, &bytes);
+  result = RegQueryValueExW(key, wValueName, nullptr, &type, nullptr, &bytes);
   mERROR_IF(result == ERROR_FILE_NOT_FOUND, mR_ResourceNotFound);
+  mERROR_IF(result == ERROR_ACCESS_DENIED, mR_InsufficientPrivileges);
   mERROR_IF(result != ERROR_SUCCESS, mR_InternalError);
 
   mERROR_IF(type != REG_QWORD, mR_ResourceStateInvalid);
   mERROR_IF(bytes != sizeof(uint32_t), mR_InternalError);
 
-  result = RegQueryValueExW(key, wValueName, NULL, NULL, reinterpret_cast<BYTE *>(pValue), &bytes);
-  mERROR_IF(result != ERROR_SUCCESS, mR_InternalError);
+  result = RegQueryValueExW(key, wValueName, nullptr, nullptr, reinterpret_cast<BYTE *>(pValue), &bytes);
+
+  if (result != ERROR_SUCCESS)
+  {
+    switch (result)
+    {
+    default:
+      mRETURN_RESULT(mR_InternalError);
+
+    case ERROR_ACCESS_DENIED:
+      mRETURN_RESULT(mR_InsufficientPrivileges);
+    }
+  }
 
   mRETURN_SUCCESS();
 }
@@ -2589,6 +2667,7 @@ mFUNCTION(mRegistry_DeleteKey, const mString &keyUrl)
 
   LSTATUS result = RegOpenKeyExW(parentKey, wPath, 0, KEY_ALL_ACCESS, &key);
   mDEFER_IF(key != nullptr, RegCloseKey(key));
+  mERROR_IF(result == ERROR_ACCESS_DENIED, mR_InsufficientPrivileges);
   mERROR_IF(result != ERROR_SUCCESS, mR_ResourceNotFound);
 
   if (valueName.bytes <= 1)
@@ -2646,9 +2725,71 @@ mFUNCTION(mRegistry_DeleteKey, const mString &keyUrl)
   mRETURN_SUCCESS();
 }
 
+mFUNCTION(mRegistry_SetKeyAccessibleToAllUsers, const mString &keyUrl)
+{
+  mFUNCTION_SETUP();
+
+  wchar_t *wPathOrValue = nullptr;
+  size_t wPathOrValueCount = 0;
+  mAllocator *pAllocator = &mDefaultTempAllocator;
+  mDEFER_CALL_2(mAllocator_FreePtr, pAllocator, &wPathOrValue);
+
+  wchar_t *wValueName = nullptr;
+  size_t wValueNameCount = 0;
+  mDEFER_CALL_2(mAllocator_FreePtr, pAllocator, &wValueName);
+
+  HKEY parentKey = nullptr;
+
+  mERROR_CHECK(mRegistry_FindKey_Internal(keyUrl, &parentKey, pAllocator, &wPathOrValue, &wPathOrValueCount, &wValueName, &wValueNameCount));
+
+  HKEY key = nullptr;
+
+  LSTATUS result = RegOpenKeyExW(parentKey, wPathOrValue, 0, KEY_QUERY_VALUE, &key);
+  mDEFER_IF(key != nullptr, RegCloseKey(key));
+  mERROR_IF(result == ERROR_ACCESS_DENIED, mR_InsufficientPrivileges);
+  mERROR_IF(result != ERROR_SUCCESS, mR_ResourceNotFound);
+
+  ACL *pOldDACL = nullptr;
+  SECURITY_DESCRIPTOR *pSD = nullptr;
+
+  mDEFER_CALL(pSD, LocalFree);
+
+  mERROR_IF(ERROR_SUCCESS != GetSecurityInfo(key, SE_REGISTRY_KEY, DACL_SECURITY_INFORMATION, nullptr, nullptr, &pOldDACL, nullptr, reinterpret_cast<void **>(&pSD)), mR_InternalError);
+
+  PSID pSid = nullptr;
+  mDEFER_CALL(pSid, FreeSid);
+
+  SID_IDENTIFIER_AUTHORITY authNt = SECURITY_NT_AUTHORITY;
+
+  if (0 == AllocateAndInitializeSid(&authNt, 2, SECURITY_BUILTIN_DOMAIN_RID, DOMAIN_ALIAS_RID_USERS, 0, 0, 0, 0, 0, 0, &pSid))
+  {
+    const DWORD error = GetLastError();
+    mUnused(error);
+
+    mRETURN_RESULT(mR_InternalError);
+  }
+
+  EXPLICIT_ACCESS ea = { 0 };
+  ea.grfAccessMode = GRANT_ACCESS;
+  ea.grfAccessPermissions = GENERIC_ALL;
+  ea.grfInheritance = CONTAINER_INHERIT_ACE | OBJECT_INHERIT_ACE;
+  ea.Trustee.TrusteeType = TRUSTEE_IS_GROUP;
+  ea.Trustee.TrusteeForm = TRUSTEE_IS_SID;
+  ea.Trustee.ptstrName = (LPTSTR)pSid;
+
+  ACL *pNewDACL = nullptr;
+  mDEFER_CALL(pNewDACL, LocalFree);
+  mERROR_IF(ERROR_SUCCESS != SetEntriesInAclW(1, &ea, pOldDACL, &pNewDACL), mR_InternalError);
+
+  if (pNewDACL)
+    mERROR_IF(ERROR_SUCCESS != SetSecurityInfo(key, SE_REGISTRY_KEY, DACL_SECURITY_INFORMATION, nullptr, nullptr, pNewDACL, nullptr), mR_InternalError);
+
+  mRETURN_SUCCESS();
+}
+
 //////////////////////////////////////////////////////////////////////////
 
-static mFUNCTION(mRegistry_FindKey_Internal, const mString &keyUrl, OUT HKEY *pParentKey, IN mAllocator *pAllocator, OUT wchar_t **pPathOrValue, OUT size_t *pPathOrValueCount, OUT wchar_t **pValueName, OUT size_t *pValueNameCount)
+mFUNCTION(mRegistry_FindKey_Internal, const mString &keyUrl, OUT HKEY *pParentKey, IN mAllocator *pAllocator, OUT wchar_t **pPathOrValue, OUT size_t *pPathOrValueCount, OUT wchar_t **pValueName, OUT size_t *pValueNameCount)
 {
   mFUNCTION_SETUP();
 

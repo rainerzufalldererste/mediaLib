@@ -358,11 +358,6 @@ mPrintCallbackFunc *mPrintTraceCallback = &mTracePrint;
 
 //////////////////////////////////////////////////////////////////////////
 
-extern void mMemory_OnProcessStart();
-extern void mMemory_OnThreadStart();
-extern void mMemory_OnThreadExit();
-extern void mMemory_OnProcessExit();
-
 extern "C" void NTAPI tls_callback(PVOID /* dllHandle */, const DWORD reason, PVOID /* reserved */)
 {
   switch (reason)
@@ -922,6 +917,358 @@ bool mStartsWithUInt(IN const char *text, const size_t length)
 
   for (; i < length; i++)
     if (text[i] < '0' || text[i] > '9')
+      return i > 0;
+
+  return i > 0;
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+int64_t mParseInt(IN const wchar_t *start, OPTIONAL OUT const wchar_t **pEnd /* = nullptr */)
+{
+  const wchar_t *endIfNoEnd = nullptr;
+
+  if (pEnd == nullptr)
+    pEnd = &endIfNoEnd;
+
+  int64_t ret = 0;
+
+  // See: https://graphics.stanford.edu/~seander/bithacks.html#ConditionalNegate
+  int64_t negate = 0;
+
+  if (*start == L'-')
+  {
+    negate = 1;
+    start++;
+  }
+
+  while (true)
+  {
+    uint16_t digit = *start - L'0';
+
+    if (digit > 9)
+      break;
+
+    ret = (ret << 1) + (ret << 3) + digit;
+    start++;
+  }
+
+  *pEnd = start;
+
+  return (ret ^ -negate) + negate;
+}
+
+uint64_t mParseUInt(IN const wchar_t *start, OPTIONAL OUT const wchar_t **pEnd /* = nullptr */)
+{
+  const wchar_t *endIfNoEnd = nullptr;
+
+  if (pEnd == nullptr)
+    pEnd = &endIfNoEnd;
+
+  uint64_t ret = 0;
+
+  while (true)
+  {
+    uint16_t digit = *start - L'0';
+
+    if (digit > 9)
+      break;
+
+    ret = (ret << 1) + (ret << 3) + digit;
+    start++;
+  }
+
+  *pEnd = start;
+
+  return ret;
+}
+
+double_t mParseFloat(IN const wchar_t *start, OPTIONAL OUT const wchar_t **pEnd /* = nullptr */)
+{
+  const wchar_t *endIfNoEnd = nullptr;
+
+  if (pEnd == nullptr)
+    pEnd = &endIfNoEnd;
+
+  uint64_t sign = 0;
+
+  if (*start == L'-')
+  {
+    sign = (uint64_t)1 << 63; // IEEE floating point signed bit.
+    ++start;
+  }
+
+  const wchar_t *_end = start;
+  const int64_t left = mParseInt(start, &_end);
+  double_t ret = (double_t)left;
+
+  if (*_end == L'.')
+  {
+    start = _end + 1;
+    const int64_t right = mParseInt(start, &_end);
+
+    const double_t fracMult[] = { 0.0, 1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7, 1e-8, 1e-9, 1e-10, 1e-11, 1e-12, 1e-13 };
+
+    if (_end - start < (ptrdiff_t)mARRAYSIZE(fracMult))
+      ret = (ret + right * fracMult[_end - start]);
+    else
+      ret = (ret + right * mPow(10, _end - start));
+
+    // Get Sign. (memcpy should get optimized away and is only there to prevent undefined behavior)
+    {
+      uint64_t data;
+      static_assert(sizeof(data) == sizeof(ret), "Platform not supported.");
+      memcpy(&data, &ret, sizeof(data));
+      data ^= sign;
+      memcpy(&ret, &data, sizeof(data));
+    }
+
+    *pEnd = _end;
+
+    if (*_end == L'e' || *_end == L'E')
+    {
+      start = ++_end;
+
+      if ((*start >= L'0' && *start <= L'9') || *start == L'-')
+      {
+        ret *= mPow(10, mParseInt(start, &_end));
+
+        *pEnd = _end;
+      }
+    }
+  }
+  else
+  {
+    // Get Sign. (memcpy should get optimized away and is only there to prevent undefined behavior)
+    {
+      uint64_t data;
+      static_assert(sizeof(data) == sizeof(ret), "Platform not supported.");
+      memcpy(&data, &ret, sizeof(data));
+      data ^= sign;
+      memcpy(&ret, &data, sizeof(data));
+    }
+
+    if (*_end == L'e' || *_end == L'E')
+    {
+      start = ++_end;
+
+      if ((*start >= L'0' && *start <= L'9') || *start == L'-')
+        ret *= mPow(10, mParseInt(start, &_end));
+    }
+
+    *pEnd = _end;
+  }
+
+  return ret;
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+bool mIsInt(IN const wchar_t *text)
+{
+  if (text == nullptr)
+    return false;
+
+  return mIsInt(text, wcslen(text));
+}
+
+bool mIsInt(IN const wchar_t *text, const size_t length)
+{
+  if (text == nullptr)
+    return false;
+
+  const bool sign = (text[0] == L'-');
+  size_t i = (size_t)sign;
+
+  for (; i < length; i++)
+  {
+    if (text[i] < L'0' || text[i] > L'9')
+    {
+      if (text[i] == L'\0')
+        return (i > (size_t)sign);
+
+      return false;
+    }
+  }
+
+  return i > (size_t)sign;
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+bool mIsUInt(IN const wchar_t *text)
+{
+  if (text == nullptr)
+    return false;
+
+  return mIsUInt(text, wcslen(text));
+}
+
+bool mIsUInt(IN const wchar_t *text, const size_t length)
+{
+  if (text == nullptr)
+    return false;
+
+  size_t i = 0;
+
+  for (; i < length; i++)
+  {
+    if (text[i] < L'0' || text[i] > L'9')
+    {
+      if (text[i] == L'\0')
+        return i > 0;
+
+      return false;
+    }
+  }
+
+  return i > 0;
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+bool mIsFloat(IN const wchar_t *text)
+{
+  if (text == nullptr)
+    return false;
+
+  return mIsFloat(text, wcslen(text));
+}
+
+bool mIsFloat(IN const wchar_t *text, const size_t length)
+{
+  if (text == nullptr)
+    return false;
+
+  bool hasDigits = false;
+  bool hasPostPeriodDigits = false;
+  bool hasPostExponentDigits = false;
+
+  size_t i = (size_t)(text[0] == L'-');
+
+  for (; i < length; i++)
+  {
+    if (text[i] == L'\0')
+    {
+      return hasDigits;
+    }
+    else if (text[i] == L'.')
+    {
+      i++;
+      goto period;
+    }
+    else if (text[i] == L'e' || text[i] == L'E')
+    {
+      if (!hasDigits)
+        return false;
+
+      i++;
+      goto exponent;
+    }
+    else if (text[i] < L'0' || text[i] > L'9')
+    {
+      return false;
+    }
+    else
+    {
+      hasDigits = true;
+    }
+  }
+
+  return hasDigits;
+
+period:
+  for (; i < length; i++)
+  {
+    if (text[i] == L'\0')
+    {
+      return hasDigits || hasPostPeriodDigits;
+    }
+    else if (text[i] == L'e' || text[i] == L'E')
+    {
+      if (!(hasDigits || hasPostPeriodDigits))
+        return false;
+
+      i++;
+      goto exponent;
+    }
+    else if (text[i] < L'0' || text[i] > L'9')
+    {
+      return false;
+    }
+    else
+    {
+      hasPostPeriodDigits = true;
+    }
+  }
+
+  return hasDigits || hasPostPeriodDigits;
+
+exponent:
+  i += (size_t)(text[i] == L'-');
+
+  for (; i < length; i++)
+  {
+    if (text[i] < L'0' || text[i] > L'9')
+    {
+      if (text[i] == L'\0')
+        return hasPostExponentDigits && (hasPostPeriodDigits || hasDigits);
+
+      return false;
+    }
+    else
+    {
+      hasPostExponentDigits = true;
+    }
+  }
+
+  return hasPostExponentDigits && (hasPostPeriodDigits || hasDigits);
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+bool mStartsWithInt(IN const wchar_t *text)
+{
+  if (text == nullptr)
+    return false;
+
+  return mStartsWithInt(text, wcslen(text));
+}
+
+bool mStartsWithInt(IN const wchar_t *text, const size_t length)
+{
+  if (text == nullptr)
+    return false;
+
+  const bool sign = (text[0] == L'-');
+  size_t i = (size_t)sign;
+
+  for (; i < length; i++)
+    if (text[i] < L'0' || text[i] > L'9')
+      return (i > (size_t)sign);
+
+  return i > (size_t)sign;
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+bool mStartsWithUInt(IN const wchar_t *text)
+{
+  if (text == nullptr)
+    return false;
+
+  return mStartsWithUInt(text, wcslen(text));
+}
+
+bool mStartsWithUInt(IN const wchar_t *text, const size_t length)
+{
+  if (text == nullptr)
+    return false;
+
+  size_t i = 0;
+
+  for (; i < length; i++)
+    if (text[i] < L'0' || text[i] > L'9')
       return i > 0;
 
   return i > 0;

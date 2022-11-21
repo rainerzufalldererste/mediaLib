@@ -135,7 +135,7 @@ void mSystemInfo_SetDPIAware()
 #if defined(mPLATFORM_WINDOWS)
   SetProcessDPIAware();
 
-  HMODULE User32_dll = LoadLibraryW(L"User32.dll");
+  HMODULE User32_dll = LoadLibraryW(TEXT("User32.dll"));
 
   if (User32_dll == INVALID_HANDLE_VALUE || User32_dll == NULL)
     return;
@@ -477,7 +477,7 @@ mFUNCTION(mSystemInfo_GetDeviceInfo, OUT mString *pManufacturer, OUT mString *pM
   IWbemServices *pServices = nullptr;
   mDEFER_CALL(&pServices, mSafeRelease);
 
-  result = pLocator->ConnectServer(L"ROOT\\CIMV2", nullptr, nullptr, 0, NULL, 0, 0, &pServices);
+  result = pLocator->ConnectServer(TEXT("ROOT\\CIMV2"), nullptr, nullptr, nullptr, 0, nullptr, nullptr, &pServices);
   mERROR_IF(FAILED(result) || pServices == nullptr, mR_InternalError);
 
   // Set the IWbemServices proxy so that impersonation of the user (client) occurs.
@@ -486,7 +486,7 @@ mFUNCTION(mSystemInfo_GetDeviceInfo, OUT mString *pManufacturer, OUT mString *pM
 
   IEnumWbemClassObject *pEnumerator = nullptr;
   mDEFER_CALL(&pEnumerator, mSafeRelease);
-  result = pServices->ExecQuery(L"WQL", L"SELECT * FROM Win32_ComputerSystem", WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY, nullptr, &pEnumerator);
+  result = pServices->ExecQuery(TEXT("WQL"), TEXT("SELECT * FROM Win32_ComputerSystem"), WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY, nullptr, &pEnumerator);
   mERROR_IF(FAILED(result) || pEnumerator == nullptr, mR_InternalError);
 
   IWbemClassObject *pClassObject = nullptr;
@@ -500,7 +500,7 @@ mFUNCTION(mSystemInfo_GetDeviceInfo, OUT mString *pManufacturer, OUT mString *pM
   {
     VARIANT propertyValue;
     mDEFER_CALL(&propertyValue, VariantClear);
-    result = pClassObject->Get(L"Manufacturer", 0, &propertyValue, nullptr, nullptr);
+    result = pClassObject->Get(TEXT("Manufacturer"), 0, &propertyValue, nullptr, nullptr);
     
     if (!(FAILED(result)) && propertyValue.vt == VT_BSTR)
       mERROR_CHECK(mString_Create(pManufacturer, propertyValue.bstrVal));
@@ -510,7 +510,7 @@ mFUNCTION(mSystemInfo_GetDeviceInfo, OUT mString *pManufacturer, OUT mString *pM
   {
     VARIANT propertyValue;
     mDEFER_CALL(&propertyValue, VariantClear);
-    result = pClassObject->Get(L"Model", 0, &propertyValue, nullptr, nullptr);
+    result = pClassObject->Get(TEXT("Model"), 0, &propertyValue, nullptr, nullptr);
     
     if (!(FAILED(result)) && propertyValue.vt == VT_BSTR)
       mERROR_CHECK(mString_Create(pModel, propertyValue.bstrVal));
@@ -626,6 +626,445 @@ mFUNCTION(mSystemInfo_GetInfo, OUT mSystemInfo *pInfo)
     mERROR_CHECK(mString_Create(&pInfo->preferredUILanguages, ""));
   else
     mERROR_CHECK(mString_Create(&pInfo->preferredUILanguages, languageCodes, sizeof(languageCodes)));
+
+  mRETURN_SUCCESS();
+}
+
+static mFUNCTION(mSystemInfo_GetProcessPerformanceInfo_Internal_ReadUInt32, IWbemClassObject *pObject, const wchar_t *propertyName, OUT uint32_t *pValue)
+{
+  mFUNCTION_SETUP();
+  
+  VARIANT value;
+  CIMTYPE type = 0;
+
+  HRESULT result = pObject->Get(propertyName, 0, &value, &type, nullptr);
+  mERROR_IF(mFAILED(result), mR_ResourceNotFound);
+
+  mDEFER_CALL(&value, VariantClear);
+  
+  if (value.vt != VT_UI4)
+  {
+    *pValue = value.uintVal;
+  }
+  else if (value.vt != VT_I4)
+  {
+    mERROR_IF(value.intVal < 0, mR_ArgumentOutOfBounds);
+    *pValue = value.intVal;
+  }
+  else
+  {
+    mRETURN_RESULT(mR_ResourceIncompatible);
+  }
+
+  mRETURN_SUCCESS();
+}
+
+static mFUNCTION(mSystemInfo_GetProcessPerformanceInfo_Internal_ReadUInt64, IWbemClassObject *pObject, const wchar_t *propertyName, OUT uint64_t *pValue)
+{
+  mFUNCTION_SETUP();
+  
+  VARIANT value;
+  CIMTYPE type = 0;
+
+  HRESULT result = pObject->Get(propertyName, 0, &value, &type, nullptr);
+  mERROR_IF(mFAILED(result), mR_ResourceNotFound);
+
+  mDEFER_CALL(&value, VariantClear);
+
+  if (value.vt == VT_UI4)
+  {
+    *pValue = value.ullVal;
+  }
+  else if (value.vt == VT_BSTR)
+  {
+    mERROR_IF(!mIsUInt(value.bstrVal), mR_ResourceIncompatible);
+    *pValue = mParseUInt(value.bstrVal);
+  }
+  else
+  {
+    mRETURN_RESULT(mR_ResourceIncompatible);
+  }
+
+  mRETURN_SUCCESS();
+}
+
+static mFUNCTION(mSystemInfo_GetProcessPerformanceInfo_Internal, OUT mSystemInfo_ProcessPerformanceSnapshot *pSnapshot, IN IWbemServices *pServices, const wchar_t *className)
+{
+  mFUNCTION_SETUP();
+
+  mString query;
+  mERROR_CHECK(mString_Format(&query, &mDefaultTempAllocator, "select * from ", className, " where IDProcess = ", (uint64_t)GetCurrentProcessId()));
+
+  wchar_t queryW[0x100];
+  mERROR_CHECK(mString_ToWideString(query, queryW, mARRAYSIZE(queryW)));
+
+  IEnumWbemClassObject *pEnumerator = nullptr;
+  mDEFER_CALL(&pEnumerator, mSafeRelease);
+  HRESULT result = pServices->ExecQuery(TEXT("WQL"), queryW, WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY, nullptr, &pEnumerator);
+  mERROR_IF(FAILED(result) || pEnumerator == nullptr, mR_InternalError);
+
+  IWbemClassObject *pValue = nullptr;
+
+  ULONG count = 0;
+  result = pEnumerator->Next(WBEM_INFINITE, 1, &pValue, &count);
+  mERROR_IF(mFAILED(result), mR_InternalError);
+  mERROR_IF(count == 0, mR_ResourceNotFound);
+  mDEFER_CALL(&pValue, mSafeRelease);
+
+  mERROR_CHECK(mSystemInfo_GetProcessPerformanceInfo_Internal_ReadUInt32(pValue, TEXT("HandleCount"), &pSnapshot->handleCount));
+  mERROR_CHECK(mSystemInfo_GetProcessPerformanceInfo_Internal_ReadUInt64(pValue, TEXT("PageFileBytes"), &pSnapshot->pageFileBytes));
+  mERROR_CHECK(mSystemInfo_GetProcessPerformanceInfo_Internal_ReadUInt64(pValue, TEXT("PageFileBytesPeak"), &pSnapshot->pageFileBytesPeak));
+  mERROR_CHECK(mSystemInfo_GetProcessPerformanceInfo_Internal_ReadUInt32(pValue, TEXT("PoolNonpagedBytes"), &pSnapshot->poolNonpagedBytes));
+  mERROR_CHECK(mSystemInfo_GetProcessPerformanceInfo_Internal_ReadUInt32(pValue, TEXT("PoolPagedBytes"), &pSnapshot->poolPagedBytes));
+  mERROR_CHECK(mSystemInfo_GetProcessPerformanceInfo_Internal_ReadUInt32(pValue, TEXT("PriorityBase"), &pSnapshot->priorityBase));
+  mERROR_CHECK(mSystemInfo_GetProcessPerformanceInfo_Internal_ReadUInt64(pValue, TEXT("PrivateBytes"), &pSnapshot->privateBytes));
+  mERROR_CHECK(mSystemInfo_GetProcessPerformanceInfo_Internal_ReadUInt32(pValue, TEXT("ThreadCount"), &pSnapshot->threadCount));
+  mERROR_CHECK(mSystemInfo_GetProcessPerformanceInfo_Internal_ReadUInt64(pValue, TEXT("VirtualBytes"), &pSnapshot->virtualBytes));
+  mERROR_CHECK(mSystemInfo_GetProcessPerformanceInfo_Internal_ReadUInt64(pValue, TEXT("VirtualBytesPeak"), &pSnapshot->virtualBytesPeak));
+  mERROR_CHECK(mSystemInfo_GetProcessPerformanceInfo_Internal_ReadUInt64(pValue, TEXT("WorkingSet"), &pSnapshot->workingSet));
+  mERROR_CHECK(mSystemInfo_GetProcessPerformanceInfo_Internal_ReadUInt64(pValue, TEXT("WorkingSetPeak"), &pSnapshot->workingSetPeak));
+
+  static size_t logicalThreads = std::thread::hardware_concurrency();
+
+  static uint64_t lastElapsed100Ns = 0;
+
+  uint64_t elapsed100Ns = 0;
+  mERROR_CHECK(mSystemInfo_GetProcessPerformanceInfo_Internal_ReadUInt64(pValue, TEXT("Timestamp_Sys100NS"), &elapsed100Ns));
+
+  const uint64_t elapsed100NsIntervals = elapsed100Ns - lastElapsed100Ns;
+
+  pSnapshot->totalSeconds = elapsed100Ns * 1e-7;
+  pSnapshot->containedSeconds = elapsed100NsIntervals * 1e-7;
+
+  const double_t invCurrentSecondRange = 1.0 / mMax((double_t)(elapsed100Ns - lastElapsed100Ns) * 1e-7, 1e-7);
+
+  lastElapsed100Ns = elapsed100Ns;
+
+  uint64_t value = 0;
+  mERROR_CHECK(mSystemInfo_GetProcessPerformanceInfo_Internal_ReadUInt64(pValue, TEXT("IODataOperationsPerSec"), &value));
+
+  // Calculate & Store New Value.
+  {
+    static uint64_t lastValue = 0;
+    pSnapshot->ioDataOperationsPerSec = (value - lastValue) * invCurrentSecondRange;
+    pSnapshot->totalIODataOperations = value;
+    lastValue = value;
+  }
+
+  mERROR_CHECK(mSystemInfo_GetProcessPerformanceInfo_Internal_ReadUInt64(pValue, TEXT("IOOtherOperationsPerSec"), &value));
+
+  // Calculate & Store New Value.
+  {
+    static uint64_t lastValue = 0;
+    pSnapshot->ioOtherOperationsPerSec = (value - lastValue) * invCurrentSecondRange;
+    pSnapshot->totalIOOtherOperations = value;
+    lastValue = value;
+  }
+
+  mERROR_CHECK(mSystemInfo_GetProcessPerformanceInfo_Internal_ReadUInt64(pValue, TEXT("IOReadBytesPerSec"), &value));
+
+  // Calculate & Store New Value.
+  {
+    static uint64_t lastValue = 0;
+    pSnapshot->ioReadBytesPerSec = (value - lastValue) * invCurrentSecondRange;
+    pSnapshot->totalIOReadBytes = value;
+    lastValue = value;
+  }
+
+  mERROR_CHECK(mSystemInfo_GetProcessPerformanceInfo_Internal_ReadUInt64(pValue, TEXT("IOReadOperationsPerSec"), &value));
+
+  // Calculate & Store New Value.
+  {
+    static uint64_t lastValue = 0;
+    pSnapshot->ioReadOperationsPerSec = (value - lastValue) * invCurrentSecondRange;
+    pSnapshot->totalIOReadOperations = value;
+    lastValue = value;
+  }
+
+  mERROR_CHECK(mSystemInfo_GetProcessPerformanceInfo_Internal_ReadUInt64(pValue, TEXT("IOWriteBytesPerSec"), &value));
+
+  // Calculate & Store New Value.
+  {
+    static uint64_t lastValue = 0;
+    pSnapshot->ioWriteBytesPerSec = (value - lastValue) * invCurrentSecondRange;
+    pSnapshot->totalIOWriteBytes = value;
+    lastValue = value;
+  }
+
+  mERROR_CHECK(mSystemInfo_GetProcessPerformanceInfo_Internal_ReadUInt64(pValue, TEXT("IOWriteOperationsPerSec"), &value));
+
+  // Calculate & Store New Value.
+  {
+    static uint64_t lastValue = 0;
+    pSnapshot->ioWriteOperationsPerSec = (value - lastValue) * invCurrentSecondRange;
+    pSnapshot->totalIOWriteOperations = value;
+    lastValue = value;
+  }
+
+  mERROR_CHECK(mSystemInfo_GetProcessPerformanceInfo_Internal_ReadUInt64(pValue, TEXT("IODataBytesPerSec"), &value));
+
+  // Calculate & Store New Value.
+  {
+    static uint64_t lastValue = 0;
+    pSnapshot->ioDataBytesPerSec = (value - lastValue) * invCurrentSecondRange;
+    pSnapshot->totalIODataBytes = value;
+    lastValue = value;
+  }
+
+  mERROR_CHECK(mSystemInfo_GetProcessPerformanceInfo_Internal_ReadUInt64(pValue, TEXT("IOOtherBytesPerSec"), &value));
+
+  // Calculate & Store New Value.
+  {
+    static uint64_t lastValue = 0;
+    pSnapshot->ioOtherBytesPerSec = (value - lastValue) * invCurrentSecondRange;
+    pSnapshot->totalIOOtherBytes = value;
+    lastValue = value;
+  }
+
+  uint32_t value32 = 0;
+  mERROR_CHECK(mSystemInfo_GetProcessPerformanceInfo_Internal_ReadUInt32(pValue, TEXT("PageFaultsPerSec"), &value32));
+
+  // Calculate & Store New Value.
+  {
+    static uint32_t lastValue = 0;
+    pSnapshot->pageFaultsPerSec = (value32 - lastValue) * invCurrentSecondRange;
+    pSnapshot->totalPageFaults = value32;
+    lastValue = value32;
+  }
+
+  static uint64_t lastTicks = 0;
+
+  uint64_t ticks = 0;
+  mERROR_CHECK(mSystemInfo_GetProcessPerformanceInfo_Internal_ReadUInt64(pValue, TEXT("Timestamp_PerfTime"), &ticks));
+
+  pSnapshot->containedTicks = ticks - lastTicks;
+  pSnapshot->totalTicks = ticks;
+
+  const double_t invCurrentTicksRange = 1.0 / mMax((double_t)elapsed100NsIntervals * (double_t)logicalThreads, 1.0);
+
+  lastTicks = ticks;
+
+  mERROR_CHECK(mSystemInfo_GetProcessPerformanceInfo_Internal_ReadUInt64(pValue, TEXT("PercentPrivilegedTime"), &value));
+
+  // Calculate & Store New Value.
+  {
+    static size_t lastValue = 0;
+    pSnapshot->percentPrivilegedTime = (double_t)(value - lastValue) * 100.0 * invCurrentTicksRange;
+    lastValue = value;
+  }
+
+  mERROR_CHECK(mSystemInfo_GetProcessPerformanceInfo_Internal_ReadUInt64(pValue, TEXT("PercentProcessorTime"), &value));
+
+  // Calculate & Store New Value.
+  {
+    static size_t lastValue = 0;
+    pSnapshot->percentProcessorTime = (double_t)(value - lastValue) * 100.0 * invCurrentTicksRange;
+    lastValue = value;
+  }
+
+  mERROR_CHECK(mSystemInfo_GetProcessPerformanceInfo_Internal_ReadUInt64(pValue, TEXT("PercentUserTime"), &value));
+
+  // Calculate & Store New Value.
+  {
+    static size_t lastValue = 0;
+    pSnapshot->percentUserTime = (double_t)(value - lastValue) * 100.0 * invCurrentTicksRange;
+    lastValue = value;
+  }
+
+  mRETURN_SUCCESS();
+}
+
+static mFUNCTION(mSystemInfo_GetProcessPerformanceInfoGpuUtilization_Internal, OUT mSystemInfo_ProcessPerformanceSnapshot *pSnapshot, IN IWbemServices *pServices)
+{
+  mFUNCTION_SETUP();
+
+  IEnumWbemClassObject *pEnumerator = nullptr;
+  mDEFER_CALL(&pEnumerator, mSafeRelease);
+  HRESULT result = pServices->ExecQuery(TEXT("WQL"), TEXT("select * from Win32_PerfRawData_GPUPerformanceCounters_GPUEngine"), WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY, nullptr, &pEnumerator);
+  mERROR_IF(FAILED(result) || pEnumerator == nullptr, mR_InternalError);
+
+  IWbemClassObject *ppValues[1024 * 4];
+
+  ULONG count = 0;
+  result = pEnumerator->Next(WBEM_INFINITE, (ULONG)mARRAYSIZE(ppValues), ppValues, &count);
+  mERROR_IF(FAILED(result) && result != S_FALSE, mR_InternalError);
+  mERROR_IF(count == 0, mR_ResourceNotFound);
+
+  mDEFER(
+    for (size_t i = 0; i < count; i++)
+    {
+      if (ppValues[i] == nullptr)
+        continue;
+
+      ppValues[i]->Release();
+      ppValues[i] = nullptr;
+    }
+  );
+
+  mString pid;
+  mERROR_CHECK(mString_Format(&pid, &mDefaultTempAllocator, "pid_", (uint64_t)GetCurrentProcessId(), "_"));
+
+  wchar_t pidW[0x100];
+  mERROR_CHECK(mString_ToWideString(pid, pidW, mARRAYSIZE(pidW)));
+
+  const size_t pidWLen = wcsnlen(pidW, mARRAYSIZE(pidW));
+
+  size_t gpuUtilizationSum = 0;
+  size_t timestamp = 0;
+
+  for (size_t i = 0; i < count; i++)
+  {
+    if (ppValues[i] == nullptr)
+      continue;
+
+    // Ensure this is actually information about the correct process.
+    {
+      VARIANT value;
+      CIMTYPE type = 0;
+
+      result = ppValues[i]->Get(TEXT("Name"), 0, &value, &type, nullptr);
+      mERROR_IF(mFAILED(result), mR_ResourceNotFound);
+
+      mDEFER_CALL(&value, VariantClear);
+
+      if (value.vt != VT_BSTR)
+        continue;
+
+      if (wcsncmp(value.bstrVal, pidW, pidWLen) != 0)
+        continue;
+    }
+
+    uint64_t value;
+    mERROR_CHECK(mSystemInfo_GetProcessPerformanceInfo_Internal_ReadUInt64(ppValues[i], TEXT("UtilizationPercentage"), &value));
+
+    gpuUtilizationSum += value;
+
+    if (timestamp == 0)
+      mERROR_CHECK(mSystemInfo_GetProcessPerformanceInfo_Internal_ReadUInt64(ppValues[i], TEXT("Timestamp_Sys100NS"), &timestamp));
+  }
+
+  mERROR_IF(timestamp == 0, mR_ResourceNotFound);
+
+  static size_t lastGpuUtilization = 0;
+  static size_t lastTimestamp = 0;
+
+  pSnapshot->gpuCombinedUtilizationPercentage = mMin(100.0, (double_t)(gpuUtilizationSum - lastGpuUtilization) * 100.0 / (double_t)(timestamp - lastTimestamp));
+  pSnapshot->containedGpuSeconds = (double_t)(timestamp - lastTimestamp) * 1e-7;
+
+  lastGpuUtilization = gpuUtilizationSum;
+  lastTimestamp = timestamp;
+
+  mRETURN_SUCCESS();
+}
+
+static mFUNCTION(mSystemInfo_GetProcessPerformanceInfoGpuMemory_Internal, OUT mSystemInfo_ProcessPerformanceSnapshot *pSnapshot, IN IWbemServices *pServices)
+{
+  mFUNCTION_SETUP();
+
+  IEnumWbemClassObject *pEnumerator = nullptr;
+  mDEFER_CALL(&pEnumerator, mSafeRelease);
+  HRESULT result = pServices->ExecQuery(TEXT("WQL"), TEXT("select * from Win32_PerfRawData_GPUPerformanceCounters_GPUProcessMemory"), WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY, nullptr, &pEnumerator);
+  mERROR_IF(FAILED(result) || pEnumerator == nullptr, mR_InternalError);
+
+  IWbemClassObject *ppValues[1024 * 4];
+
+  ULONG count = 0;
+  result = pEnumerator->Next(WBEM_INFINITE, (ULONG)mARRAYSIZE(ppValues), ppValues, &count);
+  mERROR_IF(FAILED(result) && result != S_FALSE, mR_InternalError);
+  mERROR_IF(count == 0, mR_ResourceNotFound);
+
+  mDEFER(
+    for (size_t i = 0; i < count; i++)
+    {
+      if (ppValues[i] == nullptr)
+        continue;
+
+      ppValues[i]->Release();
+      ppValues[i] = nullptr;
+    }
+  );
+
+  mString pid;
+  mERROR_CHECK(mString_Format(&pid, &mDefaultTempAllocator, "pid_", (uint64_t)GetCurrentProcessId(), "_"));
+
+  wchar_t pidW[0x100];
+  mERROR_CHECK(mString_ToWideString(pid, pidW, mARRAYSIZE(pidW)));
+
+  const size_t pidWLen = wcsnlen(pidW, mARRAYSIZE(pidW));
+
+  size_t gpuTotalMemorySum = 0;
+  size_t gpuDedicatedMemorySum = 0;
+  size_t gpuSharedMemorySum = 0;
+
+  for (size_t i = 0; i < count; i++)
+  {
+    if (ppValues[i] == nullptr)
+      continue;
+
+    // Ensure this is actually information about the correct process.
+    {
+      VARIANT value;
+      CIMTYPE type = 0;
+
+      result = ppValues[i]->Get(TEXT("Name"), 0, &value, &type, nullptr);
+      mERROR_IF(mFAILED(result), mR_ResourceNotFound);
+
+      mDEFER_CALL(&value, VariantClear);
+
+      if (value.vt != VT_BSTR)
+        continue;
+
+      if (wcsncmp(value.bstrVal, pidW, pidWLen) != 0)
+        continue;
+    }
+
+    uint64_t value;
+    mERROR_CHECK(mSystemInfo_GetProcessPerformanceInfo_Internal_ReadUInt64(ppValues[i], TEXT("TotalCommitted"), &value));
+
+    gpuTotalMemorySum += value;
+
+    mERROR_CHECK(mSystemInfo_GetProcessPerformanceInfo_Internal_ReadUInt64(ppValues[i], TEXT("DedicatedUsage"), &value));
+
+    gpuDedicatedMemorySum += value;
+
+    mERROR_CHECK(mSystemInfo_GetProcessPerformanceInfo_Internal_ReadUInt64(ppValues[i], TEXT("SharedUsage"), &value));
+
+    gpuSharedMemorySum += value;
+  }
+
+  pSnapshot->gpuTotalMemory = gpuTotalMemorySum;
+  pSnapshot->gpuDedicatedMemory = gpuDedicatedMemorySum;
+  pSnapshot->gpuSharedMemory = gpuSharedMemorySum;
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mSystemInfo_GetProcessPerformanceInfo, OUT mSystemInfo_ProcessPerformanceSnapshot *pInfo)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pInfo == nullptr, mR_ArgumentNull);
+
+  mZeroMemory(pInfo);
+
+  IWbemLocator *pLocator = nullptr;
+  mDEFER_CALL(&pLocator, mSafeRelease);
+  HRESULT result = CoCreateInstance(CLSID_WbemLocator, nullptr, CLSCTX_INPROC_SERVER, IID_IWbemLocator, reinterpret_cast<void **>(&pLocator));
+  mERROR_IF(FAILED(result) || pLocator == nullptr, mR_InternalError);
+
+  IWbemServices *pServices = nullptr;
+  mDEFER_CALL(&pServices, mSafeRelease);
+
+  result = pLocator->ConnectServer(TEXT("ROOT\\CIMV2"), nullptr, nullptr, nullptr, 0, nullptr, nullptr, &pServices);
+  mERROR_IF(FAILED(result) || pServices == nullptr, mR_InternalError);
+
+  // Set the IWbemServices proxy so that impersonation of the user (client) occurs.
+  result = CoSetProxyBlanket(pServices, RPC_C_AUTHN_WINNT, RPC_C_AUTHZ_NONE, nullptr, RPC_C_AUTHN_LEVEL_CALL, RPC_C_IMP_LEVEL_IMPERSONATE, nullptr, EOAC_NONE);
+  mERROR_IF(FAILED(result), mR_InternalError);
+
+  mERROR_CHECK(mSystemInfo_GetProcessPerformanceInfo_Internal(pInfo, pServices, TEXT("Win32_PerfRawData_PerfProc_Process")));
+  /* mERROR_CHECK */(mSILENCE_ERROR(mSystemInfo_GetProcessPerformanceInfoGpuUtilization_Internal(pInfo, pServices)));
+  /* mERROR_CHECK */(mSILENCE_ERROR(mSystemInfo_GetProcessPerformanceInfoGpuMemory_Internal(pInfo, pServices)));
 
   mRETURN_SUCCESS();
 }

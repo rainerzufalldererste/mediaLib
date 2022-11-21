@@ -297,6 +297,73 @@ mFUNCTION(mSoftwareWindow_GetWindowHandle, mPtr<mSoftwareWindow> &window, OUT HW
 }
 #endif
 
+mFUNCTION(mSoftwareWindow_SetFullscreenMode, mPtr<mSoftwareWindow> &window, const mSoftwareWindow_DisplayMode displayMode)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(window == nullptr, mR_ArgumentNull);
+
+  mERROR_IF(0 != SDL_SetWindowFullscreen(window->pWindow, displayMode), mR_NotSupported);
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mSoftwareWindow_MaximizeWindow, mPtr<mSoftwareWindow> &window)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(window == nullptr, mR_ArgumentNull);
+
+  SDL_MaximizeWindow(window->pWindow);
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mSoftwareWindow_MinimizeWindow, mPtr<mSoftwareWindow> &window)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(window == nullptr, mR_ArgumentNull);
+
+  SDL_MinimizeWindow(window->pWindow);
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mSoftwareWindow_RestoreWindow, mPtr<mSoftwareWindow> &window)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(window == nullptr, mR_ArgumentNull);
+
+  SDL_RestoreWindow(window->pWindow);
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mSoftwareWindow_SetResizable, mPtr<mSoftwareWindow> &window, const bool resizable)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(window == nullptr, mR_ArgumentNull);
+
+  SDL_SetWindowResizable(window->pWindow, resizable ? SDL_TRUE : SDL_FALSE);
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mSoftwareWindow_SetTitle, mPtr<mSoftwareWindow> &window, const mString &title)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(window == nullptr, mR_ArgumentNull);
+  mERROR_IF(title.hasFailed, mR_InvalidParameter);
+
+  SDL_SetWindowTitle(window->pWindow, title.c_str());
+
+  mRETURN_SUCCESS();
+}
+
 mFUNCTION(mSoftwareWindow_AddOnResizeEvent, mPtr<mSoftwareWindow> &window, const std::function<mResult(const mVec2s&)> &callback)
 {
   mFUNCTION_SETUP();
@@ -457,6 +524,32 @@ mFUNCTION(mSoftwareWindow_AddOnDarkModeChangedEvent, mPtr<mSoftwareWindow> &wind
   std::function<mResult(const bool)> function = callback;
 
   mERROR_CHECK(mQueue_PushBack(window->onDarkModeChanged, &function));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mSoftwareWindow_GetWindowDPIScalingFactor, mPtr<mSoftwareWindow> &window, OUT float_t *pScalingFactor)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(window == nullptr || pScalingFactor == nullptr, mR_ArgumentNull);
+
+  HMODULE User32_dll = LoadLibraryW(L"User32.dll");
+  mERROR_IF(User32_dll == INVALID_HANDLE_VALUE || User32_dll == NULL, mR_NotSupported);
+
+  typedef UINT(*GetDpiForWindowFunc)(
+    HWND hwnd
+    );
+
+  GetDpiForWindowFunc pGetDpiForWindow = reinterpret_cast<GetDpiForWindowFunc>(GetProcAddress(User32_dll, "GetDpiForWindow"));
+  mERROR_IF(pGetDpiForWindow == nullptr, mR_NotSupported);
+
+  HWND hwnd;
+  mERROR_CHECK(mSoftwareWindow_GetWindowHandle(window, &hwnd));
+
+  const UINT dpi = pGetDpiForWindow(hwnd);
+
+  *pScalingFactor = ((float_t)dpi / 96.f);
 
   mRETURN_SUCCESS();
 }

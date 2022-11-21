@@ -68,4 +68,56 @@ mFUNCTION(mSystemInfo_GetDisplayBounds, const size_t displayIndex, OUT mRectangl
 
 mFUNCTION(mSystemInfo_IsElevated, OUT bool *pIsElevated);
 
+struct mSystemInfo_ProcessPerformanceSnapshot
+{
+  uint32_t handleCount;
+  double_t ioDataOperationsPerSec;
+  double_t ioOtherOperationsPerSec;
+  double_t ioReadBytesPerSec;
+  double_t ioReadOperationsPerSec;
+  double_t ioWriteBytesPerSec;
+  double_t ioWriteOperationsPerSec;
+  double_t ioDataBytesPerSec;
+  double_t ioOtherBytesPerSec;
+  double_t pageFaultsPerSec;
+  uint64_t pageFileBytes;
+  uint64_t pageFileBytesPeak;
+  double_t percentPrivilegedTime;
+  double_t percentProcessorTime;
+  double_t percentUserTime;
+  uint32_t poolNonpagedBytes;
+  uint32_t poolPagedBytes;
+  uint32_t priorityBase;
+  uint64_t privateBytes;
+  uint32_t threadCount;
+  uint64_t virtualBytes;
+  uint64_t virtualBytesPeak;
+  uint64_t workingSet;
+  uint64_t workingSetPeak;
+
+  double_t totalSeconds;
+  uint64_t totalTicks;
+  double_t containedSeconds;
+  uint64_t containedTicks;
+
+  uint64_t totalIODataOperations;
+  uint64_t totalIOOtherOperations;
+  uint64_t totalIOReadBytes;
+  uint64_t totalIOReadOperations;
+  uint64_t totalIOWriteBytes;
+  uint64_t totalIOWriteOperations;
+  uint64_t totalIODataBytes;
+  uint64_t totalIOOtherBytes;
+  uint32_t totalPageFaults;
+
+  double_t gpuCombinedUtilizationPercentage;
+  double_t containedGpuSeconds;
+
+  uint64_t gpuTotalMemory;
+  uint64_t gpuDedicatedMemory;
+  uint64_t gpuSharedMemory;
+};
+
+mFUNCTION(mSystemInfo_GetProcessPerformanceInfo, OUT mSystemInfo_ProcessPerformanceSnapshot *pInfo);
+
 #endif // mSystemInfo_h__

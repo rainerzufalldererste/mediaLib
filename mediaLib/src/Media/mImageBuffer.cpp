@@ -729,6 +729,10 @@ mFUNCTION(mImageBuffer_SetToData, mPtr<mImageBuffer> &imageBuffer, IN const uint
 
     if (pixelFormat == sourcePixelFormat)
     {
+      // Ensure sufficient allocation in some weird cases.
+      if (mFAILED(mImageBuffer_AllocateBuffer(imageBuffer, mVec2s(((size_t)width + 7) & ~(size_t)7, ((size_t)height + 7) & ~(size_t)7), pixelFormat)))
+        goto fast_jpeg_decoder_failed;
+
       if (mFAILED(mImageBuffer_AllocateBuffer(imageBuffer, mVec2s((size_t)width, (size_t)height), pixelFormat)))
         goto fast_jpeg_decoder_failed;
 

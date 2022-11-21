@@ -163,19 +163,19 @@ mFUNCTION(mPixelFormat_GetSize, const mPixelFormat pixelFormat, const mVec2s &si
     break;
 
   case mPF_YUV422:
-    *pBytes = sizeof(uint8_t) * size.x * size.y * 2;
+    *pBytes = sizeof(uint8_t) * (size.x * size.y + 2 * (((size.x + 1) / 2) * size.y));
     break;
 
   case mPF_YUV440:
-    *pBytes = sizeof(uint8_t) * size.x * size.y * 2;
+    *pBytes = sizeof(uint8_t) * (size.x * size.y + 2 * (size.x * ((size.y + 1) / 2)));
     break;
 
   case mPF_YUV420:
-    *pBytes = sizeof(uint8_t) * size.x * size.y * 3 / 2;
+    *pBytes = sizeof(uint8_t) * (size.x * size.y + 2 * ((size.x + 1) / 2) * ((size.y + 1) / 2));
     break;
 
   case mPF_YUV411:
-    *pBytes = sizeof(uint8_t) * size.x * size.y * 3 / 2;
+    *pBytes = sizeof(uint8_t) * (size.x * size.y + 2 * ((size.x + 3) / 4) * size.y);
     break;
 
   default:
@@ -508,7 +508,7 @@ mFUNCTION(mPixelFormat_GetSubBufferSize, const mPixelFormat pixelFormat, const s
 
     case 1:
     case 2:
-      *pSubBufferSize = mVec2s(size.x / 2, size.y);
+      *pSubBufferSize = mVec2s((size.x + 1) / 2, size.y);
       break;
 
     default:
@@ -525,7 +525,7 @@ mFUNCTION(mPixelFormat_GetSubBufferSize, const mPixelFormat pixelFormat, const s
 
     case 1:
     case 2:
-      *pSubBufferSize = mVec2s(size.x, size.y / 2);
+      *pSubBufferSize = mVec2s(size.x, (size.y + 1) / 2);
       break;
 
     default:
@@ -542,7 +542,7 @@ mFUNCTION(mPixelFormat_GetSubBufferSize, const mPixelFormat pixelFormat, const s
 
     case 1:
     case 2:
-      *pSubBufferSize = mVec2s(size.x / 2, size.y / 2);
+      *pSubBufferSize = mVec2s((size.x + 1) / 2, (size.y + 1) / 2);
       break;
 
     default:
@@ -559,7 +559,7 @@ mFUNCTION(mPixelFormat_GetSubBufferSize, const mPixelFormat pixelFormat, const s
 
     case 1:
     case 2:
-      *pSubBufferSize = mVec2s(size.x / 4, size.y);
+      *pSubBufferSize = mVec2s((size.x + 1) / 4, size.y);
       break;
 
     default:
