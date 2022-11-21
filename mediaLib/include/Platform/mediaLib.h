@@ -382,6 +382,22 @@ bool mStartsWithInt(IN const char *text, const size_t length);
 bool mStartsWithUInt(IN const char *text);
 bool mStartsWithUInt(IN const char *text, const size_t length);
 
+int64_t mParseInt(IN const wchar_t *start, OPTIONAL OUT const wchar_t **pEnd = nullptr);
+uint64_t mParseUInt(IN const wchar_t *start, OPTIONAL OUT const wchar_t **pEnd = nullptr);
+double_t mParseFloat(IN const wchar_t *start, OPTIONAL OUT const wchar_t **pEnd = nullptr);
+
+bool mIsInt(IN const wchar_t *text);
+bool mIsInt(IN const wchar_t *text, const size_t length);
+bool mIsUInt(IN const wchar_t *text);
+bool mIsUInt(IN const wchar_t *text, const size_t length);
+bool mIsFloat(IN const wchar_t *text);
+bool mIsFloat(IN const wchar_t *text, const size_t length);
+
+bool mStartsWithInt(IN const wchar_t *text);
+bool mStartsWithInt(IN const wchar_t *text, const size_t length);
+bool mStartsWithUInt(IN const wchar_t *text);
+bool mStartsWithUInt(IN const wchar_t *text, const size_t length);
+
 uint64_t mRnd();
 
 #endif // mediaLib_h__

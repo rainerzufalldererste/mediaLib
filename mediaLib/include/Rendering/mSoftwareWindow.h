@@ -28,12 +28,14 @@ mFUNCTION(mSoftwareWindow_GetBuffer, mPtr<mSoftwareWindow> &window, OUT mPtr<mIm
 mFUNCTION(mSoftwareWindow_GetPixelPtr, mPtr<mSoftwareWindow> &window, OUT uint32_t **ppPixels);
 mFUNCTION(mSoftwareWindow_Swap, mPtr<mSoftwareWindow> &window);
 mFUNCTION(mSoftwareWindow_SetSize, mPtr<mSoftwareWindow> &window, const mVec2s &size);
-mFUNCTION(mSoftwareWindow_SetPosition, mPtr<mHardwareWindow> &window, const mVec2i &position);
+mFUNCTION(mSoftwareWindow_SetPosition, mPtr<mSoftwareWindow> &window, const mVec2i &position);
 mFUNCTION(mSoftwareWindow_AddOnResizeEvent, mPtr<mSoftwareWindow> &window, const std::function<mResult(const mVec2s&)> &callback);
 mFUNCTION(mSoftwareWindow_AddOnAnyEvent, mPtr<mSoftwareWindow> &window, const std::function<mResult(IN SDL_Event*)> &callback);
 mFUNCTION(mSoftwareWindow_AddOnCloseEvent, mPtr<mSoftwareWindow> &window, const std::function<mResult(void)> &callback);
 mFUNCTION(mSoftwareWindow_ClearEventHandlers, mPtr<mSoftwareWindow> &window);
 mFUNCTION(mSoftwareWindow_GetSdlWindowPtr, mPtr<mSoftwareWindow> &window, OUT SDL_Window **ppSdlWindow);
+mFUNCTION(mSoftwareWindow_SetFullscreenMode, mPtr<mSoftwareWindow> &window, const mSoftwareWindow_DisplayMode displayMode);
+mFUNCTION(mSoftwareWindow_SetActive, mPtr<mSoftwareWindow> &window);
 
 #if defined(mPLATFORM_WINDOWS)
 mFUNCTION(mSoftwareWindow_GetWindowHandle, mPtr<mSoftwareWindow> &window, OUT HWND *pHWND);
@@ -46,6 +48,13 @@ mFUNCTION(mSoftwareWindow_IsMaximized, const mPtr<mSoftwareWindow> &window, OUT 
 
 mFUNCTION(mSoftwareWindow_RespectDarkModePreference, mPtr<mSoftwareWindow> &window);
 mFUNCTION(mSoftwareWindow_AddOnDarkModeChangedEvent, mPtr<mSoftwareWindow> &window, const std::function<mResult(const bool isDarkMode)> &callback);
+mFUNCTION(mSoftwareWindow_GetWindowDPIScalingFactor, mPtr<mSoftwareWindow> &window, OUT float_t *pScalingFactor);
+
+mFUNCTION(mSoftwareWindow_MaximizeWindow, mPtr<mSoftwareWindow> &window);
+mFUNCTION(mSoftwareWindow_MinimizeWindow, mPtr<mSoftwareWindow> &window);
+mFUNCTION(mSoftwareWindow_RestoreWindow, mPtr<mSoftwareWindow> &window);
+mFUNCTION(mSoftwareWindow_SetResizable, mPtr<mSoftwareWindow> &window, const bool resizable);
+mFUNCTION(mSoftwareWindow_SetTitle, mPtr<mSoftwareWindow> &window, const mString &title);
 
 mFUNCTION(mSoftwareWindow_EnableDragAndDrop);
 

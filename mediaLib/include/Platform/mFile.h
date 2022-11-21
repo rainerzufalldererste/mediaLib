@@ -84,6 +84,7 @@ mFUNCTION(mFile_GetStartMenuPrograms_AllUsers, OUT mString *pString);
 mFUNCTION(mFile_GetWorkingDirectory, OUT mString *pWorkingDirectory);
 mFUNCTION(mFile_SetWorkingDirectory, const mString &workingDirectory);
 mFUNCTION(mFile_GetCurrentApplicationFilePath, OUT mString *pAppDirectory);
+mFUNCTION(mFile_GetCurrentModuleFilePath, OUT mString *pModuleDirectory, IN OPTIONAL const void *pFunctionInModule = nullptr);
 
 mFUNCTION(mFile_ExtractDirectoryFromPath, OUT mString *pDirectory, const mString &filePath);
 mFUNCTION(mFile_ExtractFileExtensionFromPath, OUT mString *pExtension, const mString &filePath);
@@ -283,5 +284,6 @@ mFUNCTION(mRegistry_WriteKey, const mString &keyUrl, const mString &value, OUT O
 mFUNCTION(mRegistry_WriteKey, const mString &keyUrl, const uint32_t value, OUT OPTIONAL bool *pNewlyCreated = nullptr);
 mFUNCTION(mRegistry_WriteKey, const mString &keyUrl, const uint64_t value, OUT OPTIONAL bool *pNewlyCreated = nullptr);
 mFUNCTION(mRegistry_DeleteKey, const mString &keyUrl);
+mFUNCTION(mRegistry_SetKeyAccessibleToAllUsers, const mString &keyUrl);
 
 #endif // mFile_h__
