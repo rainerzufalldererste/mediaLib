@@ -155,6 +155,8 @@ mFUNCTION(mString_ToWideString, const mString &string, OUT wchar_t *pWideString,
 mFUNCTION(mString_ToWideString, const mString &string, OUT wchar_t *pWideString, const size_t bufferCount, OUT size_t *pWideStringCount);
 mFUNCTION(mString_GetRequiredWideStringCount, const mString &string, OUT size_t *pWideStringCount);
 
+mFUNCTION(mString_ToWideStringRaw, const char *string, OUT wchar_t *pWideString, const size_t bufferCount, OPTIONAL OUT size_t *pWideStringCount = nullptr);
+
 mFUNCTION(mString_Substring, const mString &text, OUT mString *pSubstring, const size_t startCharacter);
 mFUNCTION(mString_Substring, const mString &text, OUT mString *pSubstring, const size_t startCharacter, const size_t length);
 

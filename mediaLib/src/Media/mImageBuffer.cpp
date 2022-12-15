@@ -403,7 +403,7 @@ mFUNCTION(mImageBuffer_SaveAsJpeg, mPtr<mImageBuffer> &imageBuffer, const mStrin
 
   // Attempt to use turbo jpeg.
   {
-    static tjhandle encoder = tjInitCompress();
+    thread_local tjhandle encoder = tjInitCompress();
 
     if (encoder == nullptr)
       goto fast_jpeg_encoder_failed;
@@ -678,6 +678,8 @@ mFUNCTION(mImageBuffer_SetToData, mPtr<mImageBuffer> &imageBuffer, IN const uint
   mERROR_IF(imageBuffer == nullptr || pData == nullptr, mR_ArgumentNull);
   mERROR_IF(size == 0, mR_InvalidParameter);
 
+  mPROFILE_SCOPED("mImageBuffer_SetToData");
+
   int32_t components = 4;
   mPixelFormat readPixelFormat = mPF_R8G8B8A8;
 
@@ -685,7 +687,7 @@ mFUNCTION(mImageBuffer_SetToData, mPtr<mImageBuffer> &imageBuffer, IN const uint
 
   if (tryJpeg)
   {
-    static tjhandle decoder = tjInitDecompress();
+    thread_local tjhandle decoder = tjInitDecompress();
 
     int32_t width, height, subSampling;
 

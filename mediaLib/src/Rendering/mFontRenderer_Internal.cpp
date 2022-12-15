@@ -66,6 +66,9 @@
 mFUNCTION(texture_atlas_get_region, texture_atlas_t *pSelf, const size_t width, const size_t height, OUT mRectangle2D<int32_t> *pRegion);
 mFUNCTION(texture_atlas_set_region, texture_atlas_t *pSelf, const size_t x, const size_t y, const size_t width, const size_t height, const uint8_t *data, const size_t stride);
 
+mFUNCTION(texture_font_load_face, texture_font_t *pSelf, float_t size, texture_font_library_t *pLibrary);
+mFUNCTION(texture_font_generate_kerning_range, texture_font_t *pSelf, FT_Face *pFace, const uint32_t codepointA, const uint32_t codepointB);
+
 //////////////////////////////////////////////////////////////////////////
 
 constexpr size_t _HRES = 64;
@@ -205,10 +208,11 @@ void texture_glyph_delete(texture_glyph_t **ppGlyph)
 
 float_t texture_glyph_get_kerning(const texture_glyph_t *pSelf, const uint32_t codepoint)
 {
-  uint32_t i = codepoint >> 8;
-  uint32_t j = codepoint & 0xFF;
+  if (pSelf == nullptr)
+    return 0;
 
-  mASSERT_DEBUG(pSelf != nullptr, "Invalid Parameter");
+  const uint32_t i = codepoint >> 8;
+  const uint32_t j = codepoint & 0xFF;
 
   if (codepoint == -1)
     return 0;
@@ -222,6 +226,36 @@ float_t texture_glyph_get_kerning(const texture_glyph_t *pSelf, const uint32_t c
     return 0;
   else
     return pKerningIndex[j];
+}
+
+mFUNCTION(texture_glyph_generate_kerning_on_demand, texture_font_t *pFont, texture_glyph_t *pGlyph, const uint32_t codepoint, OUT float_t *pKerning)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pFont == nullptr || pGlyph == nullptr || pKerning == nullptr, mR_ArgumentNull);
+
+  const uint32_t i = codepoint >> 8;
+  const uint32_t j = codepoint & 0xFF;
+
+  if (codepoint == -1)
+  {
+    *pKerning = 0;
+    mRETURN_SUCCESS();
+  }
+
+  if (pGlyph->kerning.count <= i || pGlyph->kerning[i] == nullptr || pGlyph->kerning[i][j] == 0)
+  {
+    mDEFER_CALL_3(texture_font_close, pFont, MODE_AUTO_CLOSE, MODE_AUTO_CLOSE);
+    mERROR_CHECK(texture_font_load_face(pFont, pFont->size, pFont->pLibrary));
+
+    mERROR_CHECK(texture_font_generate_kerning_range(pFont, &pFont->face, pGlyph->codepoint, codepoint));
+
+    mERROR_IF(pGlyph->kerning.count <= i || pGlyph->kerning[i] == nullptr || pGlyph->kerning[i][j] == 0, mR_InternalError);
+  }
+
+  *pKerning = pGlyph->kerning[i][j];
+
+  mRETURN_SUCCESS();
 }
 
 mFUNCTION(texture_library_new, OUT texture_font_library_t **pLibrary, IN mAllocator *pAllocator)
@@ -587,10 +621,14 @@ mFUNCTION(texture_glyph_clone, const texture_glyph_t *pSelf, texture_glyph_t **p
   for (size_t i = 0; i < pSelf->kerning.count; i++)
   {
     const float_t *pSource = pSelf->kerning[i];
-    float_t **ppTarget = &pNewGlyph->kerning[i];
 
-    mERROR_CHECK(mAllocZero(ppTarget, 0x100));
-    mMemcpy(*ppTarget, pSource, 0x100);
+    if (pSource != nullptr)
+    {
+      float_t **ppTarget = &pNewGlyph->kerning[i];
+
+      mERROR_CHECK(mAllocZero(ppTarget, 0x100));
+      mMemcpy(*ppTarget, pSource, 0x100);
+    }
   }
 
   *ppClone = pNewGlyph;
@@ -608,14 +646,38 @@ mFUNCTION(texture_font_index_kerning, texture_glyph_t *pSelf, const uint32_t cod
   if (pSelf->kerning.count <= i)
     mERROR_CHECK(mList_ResizeWith(pSelf->kerning, i + 1, (float_t *)nullptr));
 
-  float_t **pKerningIndex = &pSelf->kerning[i];
+  float_t **ppKerningIndex = &pSelf->kerning[i];
 
-  if (*pKerningIndex == nullptr)
-    mERROR_CHECK(mAllocZero(pKerningIndex, 0x100));
+  if (*ppKerningIndex == nullptr)
+    mERROR_CHECK(mAllocZero(ppKerningIndex, 0x100));
 
-  (*pKerningIndex)[j] = kerning;
+  float_t kerningValue = kerning;
+
+  if (kerningValue == 0)
+    kerningValue = FLT_EPSILON;
+  
+  (*ppKerningIndex)[j] = kerningValue;
 
   mRETURN_SUCCESS();
+}
+
+bool texture_font_has_kerning_info(texture_glyph_t *pSelf, const uint32_t codepoint)
+{
+  const uint32_t i = codepoint >> 8;
+  const uint32_t j = codepoint & 0xFF;
+
+  if (pSelf->kerning.count <= i)
+    return false;
+
+  float_t **ppKerningIndex = &pSelf->kerning[i];
+
+  if (*ppKerningIndex == nullptr)
+    return false;
+
+  if ((*ppKerningIndex)[j] == 0)
+    return false;
+
+  return true;
 }
 
 double_t edgedf(double_t gx, double_t gy, const double_t a)
@@ -1282,6 +1344,8 @@ mFUNCTION(texture_font_generate_kerning, texture_font_t *pSelf, FT_Face *pFace)
 
   mERROR_IF(pSelf == nullptr || pFace == nullptr, mR_ArgumentNull);
 
+  mPROFILE_SCOPED("Generate Font Kerning");
+
   // For each glyph couple combination, check if kerning is necessary.
   // Starts at index 1 since 0 is for the special background glyph.
 
@@ -1289,53 +1353,113 @@ mFUNCTION(texture_font_generate_kerning, texture_font_t *pSelf, FT_Face *pFace)
   {
     texture_glyph_t **ppGlyphsA = pSelf->glyphs[i];
 
-    if (ppGlyphsA != nullptr)
+    if (ppGlyphsA == nullptr)
+      continue;
+
+    for (int32_t subIndex0 = 0; subIndex0 < 0x100; subIndex0++)
     {
-      for (int32_t subIndex0 = 0; subIndex0 < 0x100; subIndex0++)
+      texture_glyph_t *pGlyph = ppGlyphsA[subIndex0];
+
+      if (pGlyph == nullptr)
+        continue;
+
+      const FT_UInt glyph_index = FT_Get_Char_Index(*pFace, pGlyph->codepoint);
+
+      // This was the original code, but why the hell would anyone want to do that?
+      // for (size_t k = 0; k < pGlyph->kerning.count; k++)
+      //   mFreePtr(&pGlyph->kerning[k]);
+      //
+      // mERROR_CHECK(mList_Clear(pGlyph->kerning));
+
+      for (size_t j = 0; j < pSelf->glyphs.count; j++)
       {
-        texture_glyph_t *pGlyph = ppGlyphsA[subIndex0];
+        texture_glyph_t **ppGlyphsB = pSelf->glyphs[j];
 
-        if (pGlyph != nullptr)
+        if (ppGlyphsB == nullptr)
+          continue;
+
+        for (int32_t subIndex1 = 0; subIndex1 < 0x100; subIndex1++)
         {
-          const FT_UInt glyph_index = FT_Get_Char_Index(*pFace, pGlyph->codepoint);
+          texture_glyph_t *pPreviousGlyph = ppGlyphsB[subIndex1];
 
-          for (size_t k = 0; k < pGlyph->kerning.count; k++)
-            mFreePtr(&pGlyph->kerning[k]);
+          if (pPreviousGlyph == nullptr)
+            continue;
 
-          mERROR_CHECK(mList_Clear(pGlyph->kerning));
+          const FT_UInt prev_index = FT_Get_Char_Index(*pFace, pPreviousGlyph->codepoint);
 
-          for (size_t j = 0; j < pSelf->glyphs.count; j++)
+          FT_Vector kerning;
+
+          if (!texture_font_has_kerning_info(pGlyph, pPreviousGlyph->codepoint))
           {
-            texture_glyph_t **ppGlyphsB = pSelf->glyphs[j];
+            // FT_KERNING_UNFITTED returns FT_F26Dot6 values.
+            FT_Get_Kerning(*pFace, prev_index, glyph_index, FT_KERNING_UNFITTED, &kerning);
 
-            if (ppGlyphsB != nullptr)
-            {
-              for (int32_t subIndex1 = 0; subIndex1 < 0x100; subIndex1++)
-              {
-                texture_glyph_t *pPreviousGlyph = ppGlyphsB[subIndex1];
+            mERROR_CHECK(texture_font_index_kerning(pGlyph, pPreviousGlyph->codepoint, _F26Dot6ToFloat(kerning.x) / _HRESf));
+          }
 
-                if (pPreviousGlyph != nullptr)
-                {
-                  const FT_UInt prev_index = FT_Get_Char_Index(*pFace, pPreviousGlyph->codepoint);
+          if (!texture_font_has_kerning_info(pPreviousGlyph, pGlyph->codepoint))
+          {
+            // also insert kerning with the current added element
+            FT_Get_Kerning(*pFace, glyph_index, prev_index, FT_KERNING_UNFITTED, &kerning);
 
-                  FT_Vector kerning;
-
-                  // FT_KERNING_UNFITTED returns FT_F26Dot6 values.
-                  FT_Get_Kerning(*pFace, prev_index, glyph_index, FT_KERNING_UNFITTED, &kerning);
-
-                  if (kerning.x)
-                    mERROR_CHECK(texture_font_index_kerning(pGlyph, pPreviousGlyph->codepoint, _F26Dot6ToFloat(kerning.x) / _HRESf));
-
-                  // also insert kerning with the current added element
-                  FT_Get_Kerning(*pFace, glyph_index, prev_index, FT_KERNING_UNFITTED, &kerning);
-
-                  if (kerning.x)
-                    mERROR_CHECK(texture_font_index_kerning(pPreviousGlyph, pGlyph->codepoint, kerning.x / (float_t)(_HRESf * _HRESf)));
-                }
-              }
-            }
+            mERROR_CHECK(texture_font_index_kerning(pPreviousGlyph, pGlyph->codepoint, kerning.x / (float_t)(_HRESf * _HRESf)));
           }
         }
+      }
+    }
+  }
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(texture_font_generate_kerning_range, texture_font_t *pSelf, FT_Face *pFace, const uint32_t codepointA, const uint32_t codepointB)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pSelf == nullptr || pFace == nullptr, mR_ArgumentNull);
+
+  mPROFILE_SCOPED("Generate Kerning for requested Regions");
+
+  const uint32_t rangeA = codepointA >> 8;
+  const uint32_t rangeB = codepointB >> 8;
+
+  mERROR_IF(pSelf->glyphs.count <= mMax(rangeA, rangeB), mR_ResourceNotFound);
+  mERROR_IF(pSelf->glyphs[rangeA] == nullptr || pSelf->glyphs[rangeB] == nullptr, mR_ResourceNotFound);
+
+  for (size_t i = 0; i < 0x100; i++)
+  {
+    texture_glyph_t *pGlyphA = pSelf->glyphs[rangeA][i];
+
+    if (pGlyphA == nullptr)
+      continue;
+
+    const FT_UInt glyphIndexA = FT_Get_Char_Index(*pFace, pGlyphA->codepoint);
+    
+    for (size_t j = 0; j < 0x100; j++)
+    {
+      texture_glyph_t *pGlyphB = pSelf->glyphs[rangeB][j];
+
+      if (pGlyphB == nullptr)
+        continue;
+
+      const FT_UInt glyphIndexB = FT_Get_Char_Index(*pFace, pGlyphB->codepoint);
+
+      FT_Vector kerning;
+
+      if (!texture_font_has_kerning_info(pGlyphA, pGlyphB->codepoint))
+      {
+        // FT_KERNING_UNFITTED returns FT_F26Dot6 values.
+        FT_Get_Kerning(*pFace, glyphIndexB, glyphIndexA, FT_KERNING_UNFITTED, &kerning);
+
+        mERROR_CHECK(texture_font_index_kerning(pGlyphA, pGlyphB->codepoint, _F26Dot6ToFloat(kerning.x) / _HRESf));
+      }
+
+      if (!texture_font_has_kerning_info(pGlyphB, pGlyphA->codepoint))
+      {
+        // also insert kerning with the current added element
+        FT_Get_Kerning(*pFace, glyphIndexA, glyphIndexB, FT_KERNING_UNFITTED, &kerning);
+
+        mERROR_CHECK(texture_font_index_kerning(pGlyphB, pGlyphA->codepoint, kerning.x / (float_t)(_HRESf * _HRESf)));
       }
     }
   }
@@ -1365,6 +1489,7 @@ mFUNCTION(texture_font_load_glyph_gi, texture_font_t *pFont, uint32_t glyph_inde
 
   const bool fontWasNotLoaded = (pFont->face == nullptr);
 
+  mDEFER_CALL_3(texture_font_close, pFont, MODE_AUTO_CLOSE, MODE_AUTO_CLOSE);
   mERROR_CHECK(texture_font_load_face(pFont, pFont->size, pFont->pLibrary));
 
   if (fontWasNotLoaded)
@@ -1382,8 +1507,6 @@ mFUNCTION(texture_font_load_glyph_gi, texture_font_t *pFont, uint32_t glyph_inde
 
     if (pNullGlyph != nullptr)
     {
-      mDEFER(texture_font_close(pFont, MODE_AUTO_CLOSE, MODE_AUTO_CLOSE));
-
       texture_glyph_t *pGlyph = nullptr;
       mERROR_CHECK(texture_glyph_clone(pNullGlyph, &pGlyph));
       mDEFER_CALL_ON_ERROR(&pGlyph, texture_glyph_delete);
@@ -1437,7 +1560,6 @@ mFUNCTION(texture_font_load_glyph_gi, texture_font_t *pFont, uint32_t glyph_inde
   if (error)
   {
     _FreetypeError(error);
-    texture_font_close(pFont, MODE_AUTO_CLOSE, MODE_AUTO_CLOSE);
     mRETURN_RESULT(mR_InternalError);
   }
 
@@ -1459,7 +1581,6 @@ mFUNCTION(texture_font_load_glyph_gi, texture_font_t *pFont, uint32_t glyph_inde
     {
       _FreetypeError(error);
       FT_Stroker_Done(stroker);
-      texture_font_close(pFont, MODE_AUTO_CLOSE, MODE_AUTO_CLOSE);
       mRETURN_RESULT(mR_InternalError);
     }
 
@@ -1471,22 +1592,24 @@ mFUNCTION(texture_font_load_glyph_gi, texture_font_t *pFont, uint32_t glyph_inde
     {
       _FreetypeError(error);
       FT_Stroker_Done(stroker);
-      texture_font_close(pFont, MODE_AUTO_CLOSE, MODE_AUTO_CLOSE);
       mRETURN_RESULT(mR_InternalError);
     }
 
-    if (pFont->rendermode == RENDER_OUTLINE_EDGE)
-      error = FT_Glyph_Stroke(&ft_glyph, stroker, 1);
-    else if (pFont->rendermode == RENDER_OUTLINE_POSITIVE)
-      error = FT_Glyph_StrokeBorder(&ft_glyph, stroker, 0, 1);
-    else if (pFont->rendermode == RENDER_OUTLINE_NEGATIVE)
-      error = FT_Glyph_StrokeBorder(&ft_glyph, stroker, 1, 1);
+    {
+      mPROFILE_SCOPED("FreeType Stroke Glyph");
+
+      if (pFont->rendermode == RENDER_OUTLINE_EDGE)
+        error = FT_Glyph_Stroke(&ft_glyph, stroker, 1);
+      else if (pFont->rendermode == RENDER_OUTLINE_POSITIVE)
+        error = FT_Glyph_StrokeBorder(&ft_glyph, stroker, 0, 1);
+      else if (pFont->rendermode == RENDER_OUTLINE_NEGATIVE)
+        error = FT_Glyph_StrokeBorder(&ft_glyph, stroker, 1, 1);
+    }
 
     if (error)
     {
       _FreetypeError(error);
       FT_Stroker_Done(stroker);
-      texture_font_close(pFont, MODE_AUTO_CLOSE, MODE_AUTO_CLOSE);
       mRETURN_RESULT(mR_InternalError);
     }
 
@@ -1506,7 +1629,6 @@ mFUNCTION(texture_font_load_glyph_gi, texture_font_t *pFont, uint32_t glyph_inde
     {
       _FreetypeError(error);
       FT_Stroker_Done(stroker);
-      texture_font_close(pFont, MODE_AUTO_CLOSE, MODE_AUTO_CLOSE);
       mRETURN_RESULT(mR_InternalError);
     }
 
@@ -1517,11 +1639,7 @@ mFUNCTION(texture_font_load_glyph_gi, texture_font_t *pFont, uint32_t glyph_inde
 
     FT_Stroker_Done(stroker);
 
-    if (error)
-    {
-      texture_font_close(pFont, MODE_AUTO_CLOSE, MODE_AUTO_CLOSE);
-      mRETURN_RESULT(mR_InternalError);
-    }
+    mERROR_IF(error, mR_InternalError);
   }
 
   struct
@@ -1570,6 +1688,7 @@ mFUNCTION(texture_font_load_glyph_gi, texture_font_t *pFont, uint32_t glyph_inde
   // Copy pixel data over
   uint8_t *pBuffer = nullptr;
   mERROR_CHECK(mAllocZero(&pBuffer, tgt_w * tgt_h * pFont->pAtlas->depth));
+  mDEFER_CALL(&pBuffer, mFreePtr);
 
   uint8_t *pDestination = pBuffer + (padding.top * tgt_w + padding.left) * pFont->pAtlas->depth;
   uint8_t *pSource = ft_bitmap.buffer;
@@ -1627,19 +1746,19 @@ mFUNCTION(texture_font_load_glyph_gi, texture_font_t *pFont, uint32_t glyph_inde
 
   if (pFont->rendermode == RENDER_SIGNED_DISTANCE_FIELD)
   {
+    mPROFILE_SCOPED("Generate Signed Distance Field");
+
     uint8_t *pSignedDistanceField = nullptr;
     mERROR_CHECK(mAllocZero(&pSignedDistanceField, tgt_w * tgt_h));
-    mDEFER_CALL(&pBuffer, mFreePtr);
+    mDEFER_CALL(&pSignedDistanceField, mFreePtr);
 
     mERROR_CHECK(make_distance_mapb(pBuffer, pSignedDistanceField, (uint32_t)tgt_w, (uint32_t)tgt_h));
     
-    std::swap(pBuffer, pSignedDistanceField);
+    if (pSignedDistanceField != nullptr)
+      std::swap(pBuffer, pSignedDistanceField);
   }
 
-  {
-    mDEFER(mFreePtr(&pBuffer));
-    mERROR_CHECK(texture_atlas_set_region(pFont->pAtlas, x, y, tgt_w, tgt_h, pBuffer, tgt_w * pFont->pAtlas->depth));
-  }
+  mERROR_CHECK(texture_atlas_set_region(pFont->pAtlas, x, y, tgt_w, tgt_h, pBuffer, tgt_w * pFont->pAtlas->depth));
 
   texture_glyph_t *pGlyph = nullptr;
   mERROR_CHECK(texture_glyph_new(&pGlyph, pFont->pAllocator));
@@ -1703,9 +1822,8 @@ mFUNCTION(texture_font_load_glyph_gi, texture_font_t *pFont, uint32_t glyph_inde
   if (pFont->rendermode != RENDER_NORMAL && pFont->rendermode != RENDER_SIGNED_DISTANCE_FIELD)
     FT_Done_Glyph(ft_glyph);
 
-  mERROR_CHECK(texture_font_generate_kerning(pFont, &pFont->face));
-
-  texture_font_close(pFont, MODE_AUTO_CLOSE, MODE_AUTO_CLOSE);
+  // Generate Kerning for immediate surroundings.
+  mERROR_CHECK(texture_font_generate_kerning_range(pFont, &pFont->face, pGlyph->codepoint, pGlyph->codepoint));
 
   mRETURN_SUCCESS();
 }

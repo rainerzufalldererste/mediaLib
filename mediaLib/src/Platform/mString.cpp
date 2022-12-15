@@ -783,6 +783,54 @@ mFUNCTION(mString_ToWideString, const mString &string, OUT wchar_t *pWideString,
   mRETURN_SUCCESS();
 }
 
+mFUNCTION(mString_ToWideStringRaw, const char *string, OUT wchar_t *pWideString, const size_t bufferCount, OPTIONAL OUT size_t *pWideStringCount /* = nullptr */)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pWideString == nullptr, mR_ArgumentNull);
+  
+  if (string == nullptr)
+  {
+    mERROR_IF(bufferCount == 0, mR_ArgumentOutOfBounds);
+
+    pWideString[0] = L'\0';
+
+    if (pWideStringCount != nullptr)
+      *pWideStringCount = 1;
+  }
+  else
+  {
+    const size_t stringLength = (strlen(string) + 1);
+    mERROR_IF(stringLength > INT32_MAX, mR_ArgumentOutOfBounds);
+
+    int32_t length = 0;
+
+    if (0 >= (length = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, string, (int32_t)stringLength, pWideString, (int32_t)bufferCount)))
+    {
+      const DWORD error = GetLastError();
+
+      switch (error)
+      {
+      case ERROR_INSUFFICIENT_BUFFER:
+        mRETURN_RESULT(mR_IndexOutOfBounds);
+
+      case ERROR_NO_UNICODE_TRANSLATION:
+        mRETURN_RESULT(mR_InvalidParameter);
+
+      case ERROR_INVALID_FLAGS:
+      case ERROR_INVALID_PARAMETER:
+      default:
+        mRETURN_RESULT(mR_InternalError);
+      }
+    }
+
+    if (pWideStringCount != nullptr)
+      *pWideStringCount = length;
+  }
+
+  mRETURN_SUCCESS();
+}
+
 mFUNCTION(mString_GetRequiredWideStringCount, const mString &string, OUT size_t *pWideStringCount)
 {
   mFUNCTION_SETUP();
