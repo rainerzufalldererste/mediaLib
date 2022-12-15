@@ -24,6 +24,16 @@
 #define mINVSQRT2f 0.7071067811865475f
 #define mSQRT3f 1.414213562373095f
 #define mINVSQRT3f 0.57735026918962576f
+#define mEULER M_E
+#define mLOG2E M_LOG2E
+#define mLOG10E M_LOG10E
+#define mLN2 M_LN2
+#define mLN10 M_LN10
+#define mEULERf ((float)M_E)
+#define mLOG2Ef ((float)M_LOG2E)
+#define mLOG10Ef ((float)M_LOG10E)
+#define mLN2f ((float)M_LN2)
+#define mLN10f ((float)M_LN10)
 
 #define mDEG2RAD (mPI / 180.0)
 #define mDEG2RADf (mPIf / 180.0f)

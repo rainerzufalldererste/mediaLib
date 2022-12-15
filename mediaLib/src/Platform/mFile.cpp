@@ -1,5 +1,7 @@
 #include "mFile.h"
 
+#include "mProfiler.h"
+
 #include <sys\stat.h>
 
 #include <shobjidl.h>
@@ -165,6 +167,36 @@ mFUNCTION(mFile_ReadAllText, const mString &filename, IN OPTIONAL mAllocator *pA
   mRETURN_SUCCESS();
 }
 
+mFUNCTION(mFile_ReadRaw_Internal, const wchar_t *filename, OUT uint8_t **ppData, const size_t elementSize, IN mAllocator *pAllocator, OUT size_t *pCount)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(ppData == nullptr || pCount == nullptr, mR_ArgumentNull);
+
+  mPROFILE_SCOPED("mFile_ReadRaw_Internal");
+
+  FILE *pFile = _wfopen(filename, L"rb");
+  mDEFER_IF(pFile != nullptr, fclose(pFile));
+  mERROR_IF(pFile == nullptr, mR_ResourceNotFound);
+
+  mERROR_IF(0 != fseek(pFile, 0, SEEK_END), mR_IOFailure);
+
+  const size_t length = ftell(pFile);
+
+  mERROR_IF(0 != fseek(pFile, 0, SEEK_SET), mR_IOFailure);
+
+  mERROR_CHECK(mAllocator_Allocate(pAllocator, ppData, length + (elementSize > 2 ? 0 : elementSize)));
+
+  if (elementSize <= 2)
+    mERROR_CHECK(mZeroMemory(&((*ppData)[length]), elementSize)); // To zero terminate strings. This is out of bounds for all other data types anyways.
+
+  const size_t readLength = fread(*ppData, 1, length, pFile);
+
+  *pCount = readLength / elementSize;
+
+  mRETURN_SUCCESS();
+}
+
 mFUNCTION(mFile_WriteAllBytes, IN const wchar_t *filename, const mArray<uint8_t> &bytes)
 {
   mFUNCTION_SETUP();
@@ -234,7 +266,9 @@ mFUNCTION(mFile_WriteRawBytes, const wchar_t *filename, IN const uint8_t *pData,
 {
   mFUNCTION_SETUP();
 
-  mERROR_IF(pData == nullptr || filename == nullptr, mR_ArgumentNull);
+  mERROR_IF((pData == nullptr && bytes != 0) || filename == nullptr, mR_ArgumentNull);
+
+  mPROFILE_SCOPED("mFile_WriteRawBytes");
 
   HANDLE fileHandle = CreateFileW(filename, GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
   DWORD error = GetLastError(); // Might be `ERROR_ALREADY_EXISTS` even if the `fileHandle` is valid.

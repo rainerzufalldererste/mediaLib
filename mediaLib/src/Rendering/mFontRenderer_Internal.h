@@ -215,7 +215,8 @@ mFUNCTION(texture_font_load_glyph, texture_font_t *pSelf, const uint32_t codepoi
 texture_glyph_t * texture_font_find_glyph(texture_font_t *pSelf, const char *codepoint);
 
 void texture_glyph_delete(texture_glyph_t **ppGlyph);
-float texture_glyph_get_kerning(const texture_glyph_t *pSelf, const uint32_t codepoint);
+float_t texture_glyph_get_kerning(const texture_glyph_t *pSelf, const uint32_t codepoint);
+mFUNCTION(texture_glyph_generate_kerning_on_demand, texture_font_t *pFont, texture_glyph_t *pGlyph, const uint32_t codepoint, OUT float_t *pKerning);
 
 mFUNCTION(texture_atlas_new, OUT texture_atlas_t **ppAtlas, IN mAllocator *pAllocator, const size_t width, const size_t height, const size_t depth);
 void texture_atlas_clear(texture_atlas_t *pSelf);

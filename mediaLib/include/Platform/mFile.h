@@ -45,6 +45,8 @@ mFUNCTION(mFile_ReadRaw, IN const wchar_t *filename, OUT T **ppData, IN mAllocat
 template <typename T>
 mFUNCTION(mFile_ReadRaw, const mString &filename, OUT T **ppData, IN mAllocator *pAllocator, OUT size_t *pCount);
 
+mFUNCTION(mFile_ReadRaw_Internal, const wchar_t *filename, OUT uint8_t **ppData, const size_t elementSize, IN mAllocator *pAllocator, OUT size_t *pCount);
+
 template <typename T>
 mFUNCTION(mFile_WriteRaw, IN const wchar_t *filename, IN T *pData, const size_t count);
 
@@ -213,26 +215,7 @@ inline mFUNCTION(mFile_ReadRaw, const wchar_t *filename, OUT T **ppData, IN mAll
 {
   mFUNCTION_SETUP();
 
-  mERROR_IF(ppData == nullptr || pCount == nullptr, mR_ArgumentNull);
-
-  FILE *pFile = _wfopen(filename, L"rb");
-  mDEFER(if (pFile) { fclose(pFile); });
-  mERROR_IF(pFile == nullptr, mR_ResourceNotFound);
-
-  mERROR_IF(0 != fseek(pFile, 0, SEEK_END), mR_IOFailure);
-  
-  const size_t length = ftell(pFile);
-  const size_t count = length / sizeof(T);
-
-  mERROR_IF(0 != fseek(pFile, 0, SEEK_SET), mR_IOFailure);
-
-  mERROR_CHECK(mAllocator_Allocate(pAllocator, (uint8_t **)ppData, length + 1));
-  
-  mERROR_CHECK(mZeroMemory(&((*ppData)[length]), 1)); // To zero terminate strings. This is out of bounds for all other data types anyways.
-
-  const size_t readLength = fread(*ppData, 1, length, pFile);
-
-  *pCount = readLength / sizeof(T);
+  mERROR_CHECK(mFile_ReadRaw_Internal(filename, reinterpret_cast<uint8_t **>(ppData), sizeof(T), pAllocator, pCount));
 
   mRETURN_SUCCESS();
 }
@@ -255,7 +238,7 @@ inline mFUNCTION(mFile_WriteRaw, IN const wchar_t *filename, IN T *pData, const 
 {
   mFUNCTION_SETUP();
 
-  mERROR_IF(pData == nullptr || filename == nullptr, mR_ArgumentNull);
+  mERROR_IF((pData == nullptr && count != 0) || filename == nullptr, mR_ArgumentNull);
 
   mERROR_CHECK(mFile_WriteRawBytes(filename, reinterpret_cast<const uint8_t *>(pData), count * sizeof(T)));
 

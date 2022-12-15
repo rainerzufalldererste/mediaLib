@@ -90,6 +90,16 @@ project(ProjectName)
     vectorextensions "AVX2"
     defines { "AVX2", "AVX", "SSE42", "SSE41", "SSSE3", "SSE3" }
   configuration {}
+
+  if _OPTIONS['asan'] then
+    buildoptions { "/fsanitize=address" }
+    flags { "NoIncrementalLink" }
+    defines { "ASAN_ENABLED" }
+    editandcontinue "Off"
+    debugenvs { "PATH=$(VC_ExecutablePath_x64);%PATH%" }
+    debugenvs { "ASAN_SYMBOLIZER_PATH=$(VC_ExecutablePath_x64)" }
+    debugenvs { "ASAN_OPTIONS=verbosity=1:windows_hook_legacy_allocators=true" }
+  end
   
   targetname(ProjectName)
   targetdir "lib"

@@ -10,6 +10,11 @@ newoption {
   description = "Build with AVX2 code generation"
 }
 
+newoption {
+  trigger     = "asan",
+  description = "Enable the AddressSanitizer"
+}
+
 solution "mediaLib"
 
 if not _OPTIONS["buildtype"] then

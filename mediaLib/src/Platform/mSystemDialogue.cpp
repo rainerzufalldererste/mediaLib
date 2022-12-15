@@ -320,7 +320,7 @@ static mFUNCTION(mSystemDialogue_SelectDirectory_Internal, HWND window, const mS
   browseWindowOptions.hwndOwner = window;
   browseWindowOptions.lpszTitle = headline;
   browseWindowOptions.pszDisplayName = folderName;
-  browseWindowOptions.ulFlags = BIF_VALIDATE | BIF_USENEWUI | BIF_RETURNONLYFSDIRS;
+  browseWindowOptions.ulFlags = BIF_VALIDATE | BIF_RETURNONLYFSDIRS; // this can't use `BIF_USENEWUI` or `BIF_NEWDIALOGSTYLE` because they might - you know - HANG THE APPLICATION INDEFINETELY depending on the flag that `CoInitialize`/`CoInitializeEx` has been called with... Thanks Microsoft!
 
   const PIDLIST_ABSOLUTE result = SHBrowseForFolderW(&browseWindowOptions);
 

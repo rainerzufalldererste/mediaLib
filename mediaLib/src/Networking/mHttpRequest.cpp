@@ -1,5 +1,7 @@
 #include "mHttpRequest.h"
 
+#include "mProfiler.h"
+
 #define CURL_STATICLIB 1
 #include "curl/curl.h"
 
@@ -343,6 +345,8 @@ static mFUNCTION(mHttpRequest_Destroy_Internal, mHttpRequest *pHttpRequest)
 static mFUNCTION(mHttpRequest_Send_Internal, mPtr<mHttpRequest> &httpRequest)
 {
   mFUNCTION_SETUP();
+
+  mPROFILE_SCOPED("mHttpRequest_Send_Internal");
 
   mERROR_IF(CURLE_OK != curl_easy_setopt(httpRequest->pCurl, CURLOPT_URL, httpRequest->url.c_str()), mR_InternalError);
 
