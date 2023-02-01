@@ -633,9 +633,9 @@ mFUNCTION(mTexture3DParams_ApplyToBoundTexture, const mTexture3DParams &params, 
 }
 
 #ifdef _DEBUG
-#define mPRINT_FUNC mPRINT_DEBUG
+#define mPRINT_FUNC(...) mPRINT_DEBUG(__VA_ARGS__)
 #else
-#define mPRINT_FUNC mPRINT
+#define mPRINT_FUNC(...) mPRINT(__VA_ARGS__, '\n')
 #endif
 
 mFUNCTION(mRenderParams_PrintRenderState, const bool onlyNewValues /* = false */, const bool onlyUpdateValues /* = false */)
@@ -648,7 +648,7 @@ mFUNCTION(mRenderParams_PrintRenderState, const bool onlyNewValues /* = false */
 #ifdef mRENDERER_OPENGL
 
   if (!onlyUpdateValues)
-    mPRINT_FUNC("GL STATE:\n================================================\n");
+    mPRINT_FUNC("GL STATE:\n================================================");
 
 #define mGL_PRINT_PARAM(func, param, paramString, var) \
   do { if (func != nullptr) \
@@ -659,11 +659,11 @@ mFUNCTION(mRenderParams_PrintRenderState, const bool onlyNewValues /* = false */
   { const bool valueIsNew = mCONCAT_LITERALS(_var_, param)[0] != mCONCAT_LITERALS(_local_var_, param)[0]; \
     if (onlyNewValues) \
     { if (valueIsNew) \
-      { mPRINT_FUNC(paramString " = ", mCONCAT_LITERALS(_local_var_, param)[0], " [was ", mCONCAT_LITERALS(_var_, param)[0], "]\n"); \
+      { mPRINT_FUNC(paramString " = ", mCONCAT_LITERALS(_local_var_, param)[0], " [was ", mCONCAT_LITERALS(_var_, param)[0], "]"); \
       } \
     } \
     else \
-    { mPRINT_FUNC((valueIsNew ? " * " : "   "), paramString " = ", mCONCAT_LITERALS(_local_var_, param)[0], "\n"); \
+    { mPRINT_FUNC((valueIsNew ? " * " : "   "), paramString " = ", mCONCAT_LITERALS(_local_var_, param)[0]); \
     } \
   } \
   mCONCAT_LITERALS(_var_, param)[0] = mCONCAT_LITERALS(_local_var_, param)[0]; } } while (0)
@@ -677,11 +677,11 @@ mFUNCTION(mRenderParams_PrintRenderState, const bool onlyNewValues /* = false */
   { const bool valueIsNew = mCONCAT_LITERALS(_var_, param)[0] != mCONCAT_LITERALS(_local_var_, param)[0] || mCONCAT_LITERALS(_var_, param)[1] != mCONCAT_LITERALS(_local_var_, param)[1]; \
     if (onlyNewValues) \
     { if (valueIsNew) \
-      { mPRINT_FUNC(paramString " = (", mCONCAT_LITERALS(_local_var_, param)[0], ", ", mCONCAT_LITERALS(_local_var_, param)[1], ") [was (", mCONCAT_LITERALS(_var_, param)[0], ", ", mCONCAT_LITERALS(_var_, param)[1], ")]\n"); \
+      { mPRINT_FUNC(paramString " = (", mCONCAT_LITERALS(_local_var_, param)[0], ", ", mCONCAT_LITERALS(_local_var_, param)[1], ") [was (", mCONCAT_LITERALS(_var_, param)[0], ", ", mCONCAT_LITERALS(_var_, param)[1], ")]"); \
       } \
     } \
     else \
-    { mPRINT_FUNC((valueIsNew ? " * " : "   "), paramString " = (", mCONCAT_LITERALS(_local_var_, param)[0], ", ", mCONCAT_LITERALS(_local_var_, param)[1], ")\n"); \
+    { mPRINT_FUNC((valueIsNew ? " * " : "   "), paramString " = (", mCONCAT_LITERALS(_local_var_, param)[0], ", ", mCONCAT_LITERALS(_local_var_, param)[1], ")"); \
     } \
   } \
   mCONCAT_LITERALS(_var_, param)[0] = mCONCAT_LITERALS(_local_var_, param)[0]; \
@@ -696,11 +696,11 @@ mFUNCTION(mRenderParams_PrintRenderState, const bool onlyNewValues /* = false */
   { const bool valueIsNew = mCONCAT_LITERALS(_var_, param)[0] != mCONCAT_LITERALS(_local_var_, param)[0] || mCONCAT_LITERALS(_var_, param)[1] != mCONCAT_LITERALS(_local_var_, param)[1] || mCONCAT_LITERALS(_var_, param)[2] != mCONCAT_LITERALS(_local_var_, param)[2]; \
     if (onlyNewValues) \
     { if (valueIsNew) \
-      { mPRINT_FUNC(paramString " = (", mCONCAT_LITERALS(_local_var_, param)[0], ", ", mCONCAT_LITERALS(_local_var_, param)[1], ", ", mCONCAT_LITERALS(_local_var_, param)[2], ") [was (", mCONCAT_LITERALS(_var_, param)[0], ", ", mCONCAT_LITERALS(_var_, param)[1], ", ", mCONCAT_LITERALS(_var_, param)[2], ")]\n"); \
+      { mPRINT_FUNC(paramString " = (", mCONCAT_LITERALS(_local_var_, param)[0], ", ", mCONCAT_LITERALS(_local_var_, param)[1], ", ", mCONCAT_LITERALS(_local_var_, param)[2], ") [was (", mCONCAT_LITERALS(_var_, param)[0], ", ", mCONCAT_LITERALS(_var_, param)[1], ", ", mCONCAT_LITERALS(_var_, param)[2], ")]"); \
       } \
     } \
     else \
-    {  mPRINT_FUNC((valueIsNew ? " * " : "   "), paramString " = (", mCONCAT_LITERALS(_local_var_, param)[0], ", ", mCONCAT_LITERALS(_local_var_, param)[1], ", ", mCONCAT_LITERALS(_local_var_, param)[2], ")\n"); \
+    {  mPRINT_FUNC((valueIsNew ? " * " : "   "), paramString " = (", mCONCAT_LITERALS(_local_var_, param)[0], ", ", mCONCAT_LITERALS(_local_var_, param)[1], ", ", mCONCAT_LITERALS(_local_var_, param)[2], ")"); \
     } \
   } \
   mCONCAT_LITERALS(_var_, param)[0] = mCONCAT_LITERALS(_local_var_, param)[0]; \
@@ -716,11 +716,11 @@ mFUNCTION(mRenderParams_PrintRenderState, const bool onlyNewValues /* = false */
   { const bool valueIsNew = mCONCAT_LITERALS(_var_, param)[0] != mCONCAT_LITERALS(_local_var_, param)[0] || mCONCAT_LITERALS(_var_, param)[1] != mCONCAT_LITERALS(_local_var_, param)[1] || mCONCAT_LITERALS(_var_, param)[2] != mCONCAT_LITERALS(_local_var_, param)[2] || mCONCAT_LITERALS(_var_, param)[3] != mCONCAT_LITERALS(_local_var_, param)[3]; \
     if (onlyNewValues) \
     { if (valueIsNew) \
-      { mPRINT_FUNC(paramString " = (", mCONCAT_LITERALS(_local_var_, param)[0], ", ", mCONCAT_LITERALS(_local_var_, param)[1], ", ", mCONCAT_LITERALS(_local_var_, param)[2], ", ", mCONCAT_LITERALS(_local_var_, param)[3], ") [was (", mCONCAT_LITERALS(_var_, param)[0], ", ", mCONCAT_LITERALS(_var_, param)[1], ", ", mCONCAT_LITERALS(_var_, param)[2], ", ", mCONCAT_LITERALS(_var_, param)[3], ")]\n"); \
+      { mPRINT_FUNC(paramString " = (", mCONCAT_LITERALS(_local_var_, param)[0], ", ", mCONCAT_LITERALS(_local_var_, param)[1], ", ", mCONCAT_LITERALS(_local_var_, param)[2], ", ", mCONCAT_LITERALS(_local_var_, param)[3], ") [was (", mCONCAT_LITERALS(_var_, param)[0], ", ", mCONCAT_LITERALS(_var_, param)[1], ", ", mCONCAT_LITERALS(_var_, param)[2], ", ", mCONCAT_LITERALS(_var_, param)[3], ")]"); \
       } \
     } \
     else \
-    {  mPRINT_FUNC((valueIsNew ? " * " : "   "), paramString " = (", mCONCAT_LITERALS(_local_var_, param)[0], ", ", mCONCAT_LITERALS(_local_var_, param)[1], ", ", mCONCAT_LITERALS(_local_var_, param)[2], ", ", mCONCAT_LITERALS(_local_var_, param)[3], ")\n"); \
+    {  mPRINT_FUNC((valueIsNew ? " * " : "   "), paramString " = (", mCONCAT_LITERALS(_local_var_, param)[0], ", ", mCONCAT_LITERALS(_local_var_, param)[1], ", ", mCONCAT_LITERALS(_local_var_, param)[2], ", ", mCONCAT_LITERALS(_local_var_, param)[3], ")"); \
     } \
   } \
   mCONCAT_LITERALS(_var_, param)[0] = mCONCAT_LITERALS(_local_var_, param)[0]; \
@@ -738,11 +738,11 @@ mFUNCTION(mRenderParams_PrintRenderState, const bool onlyNewValues /* = false */
     { const bool valueIsNew = __local_var != __var__; \
       if (onlyNewValues) \
       { if (valueIsNew) \
-        { mPRINT_FUNC(#target ": " #attachment " (" #param ") = ", __local_var, " [was ", __var__, "]\n"); \
+        { mPRINT_FUNC(#target ": " #attachment " (" #param ") = ", __local_var, " [was ", __var__, "]"); \
         } \
       } \
       else \
-      { mPRINT_FUNC((valueIsNew ? " * " : "   "), #target ": " #attachment " (" #param ")" " = ", __local_var, "\n"); \
+      { mPRINT_FUNC((valueIsNew ? " * " : "   "), #target ": " #attachment " (" #param ")" " = ", __local_var); \
       } \
     } \
     __var__ = __local_var; \
@@ -1092,7 +1092,7 @@ mFUNCTION(mRenderParams_PrintRenderState, const bool onlyNewValues /* = false */
   }
 
   if (!onlyUpdateValues)
-    mPRINT_FUNC("================================================\nEND OF GL STATE\n");
+    mPRINT_FUNC("================================================\nEND OF GL STATE");
 
 #endif
 
