@@ -56,7 +56,7 @@ inline mFUNCTION(mSpriteBatch_Destroy, IN_OUT mPtr<mSpriteBatch<Args...>> *pSpri
 {
   mFUNCTION_SETUP();
 
-  mERROR_IF(pSpriteBatch == nullptr, mR_ArgumentNull);
+  mERROR_IF(pSpriteBatch == nullptr || *pSpriteBatch == nullptr, mR_ArgumentNull);
   mASSERT_DEBUG((*pSpriteBatch)->isStarted == false, "The sprite batch should currently not be started.");
 
   mERROR_CHECK(mSharedPointer_Destroy(pSpriteBatch));

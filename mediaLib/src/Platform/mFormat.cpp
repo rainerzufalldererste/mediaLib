@@ -65,7 +65,7 @@ size_t _mFormat_GetStringCount(const char *value, const size_t length)
 {
   size_t count, size;
 
-  if (mSUCCEEDED(mInplaceString_GetCount_Internal(value, length, &count, &size)))
+  if (mSUCCEEDED(mSILENCE_ERROR(mInplaceString_GetCount_Internal(value, length, &count, &size))))
     return count;
 
   return 0;
