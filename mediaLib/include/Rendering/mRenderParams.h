@@ -21,7 +21,7 @@ extern mVec2s mRenderParams_BackBufferResolution;
 extern mVec2f mRenderParams_BackBufferResolutionF;
 
 typedef size_t mRenderContextId;
-extern mRenderContextId mRenderParams_CurrentRenderContext;
+extern thread_local mRenderContextId mRenderParams_CurrentRenderContext;
 
 struct mRenderContext
 {
@@ -37,7 +37,7 @@ extern size_t mRenderParams_RenderContextCount;
 extern size_t mRenderParams_InitializedRenderContextCount;
 
 #if defined(mRENDERER_OPENGL)
-extern GLenum mRenderParams_GLError;
+extern thread_local GLenum mRenderParams_GLError;
 
 #define mOPENGL_ERROR_CHECK() \
   do { \
@@ -72,6 +72,7 @@ mFUNCTION(mRenderParams_InitializeToDefault);
 mFUNCTION(mRenderParams_CreateRenderContext, OUT mRenderContextId *pRenderContextId, mPtr<mHardwareWindow> &window);
 mFUNCTION(mRenderParams_ActivateRenderContext, mPtr<mHardwareWindow> &window, const mRenderContextId renderContextId);
 mFUNCTION(mRenderParams_DestroyRenderContext, IN_OUT mRenderContextId *pRenderContextId);
+mFUNCTION(mRenderParams_DetachRenderContextFromWindow, const mRenderContextId renderContextId);
 
 #if defined(mRENDERER_OPENGL)
 mFUNCTION(mRenderParams_GetRenderContext, mPtr<mHardwareWindow> &window, OUT SDL_GLContext *pContext);

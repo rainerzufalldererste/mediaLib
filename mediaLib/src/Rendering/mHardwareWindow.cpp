@@ -28,7 +28,7 @@ struct mHardwareWindow
   mPtr<mQueue<std::function<mResult(const mVec2s &)>>> onResizeCallbacks;
   mPtr<mQueue<std::function<mResult(const bool)>>> onDarkModeChanged;
   mUniqueContainer<mFramebuffer> fakeFramebuffer;
-  bool respectDarkMode, isDarkMode, processMessageQueueExplicit;
+  bool respectDarkMode, isDarkMode, processMessageQueueExplicit, explicitResizeRenderTargetReactivation;
 };
 
 static mFUNCTION(mHardwareWindow_Create_Internal, IN_OUT mHardwareWindow *pWindow, IN mAllocator *pAllocator, const mString &title, const mVec2i &position, const mVec2s &size, const mHardwareWindow_DisplayMode displaymode, const bool stereo3dIfAvailable);
@@ -65,7 +65,8 @@ mFUNCTION(mHardwareWindow_Create, OUT mPtr<mHardwareWindow> *pWindow, IN mAlloca
 
   mERROR_CHECK(mHardwareWindow_SetAsActiveRenderTarget(*pWindow));
 
-  mPRINT("GPU: ", reinterpret_cast<const char *>(glGetString(GL_VENDOR)), " ", reinterpret_cast<const char *>(glGetString(GL_RENDERER)),"\nDriver Version: ", reinterpret_cast<const char *>(glGetString(GL_VERSION)), "\nGLSL Version: ", reinterpret_cast<const char *>(glGetString(GL_SHADING_LANGUAGE_VERSION)), "\n");
+  if (mRenderParams_RenderContextCount == 0)
+    mPRINT("GPU: ", reinterpret_cast<const char *>(glGetString(GL_VENDOR)), " ", reinterpret_cast<const char *>(glGetString(GL_RENDERER)), "\nDriver Version: ", reinterpret_cast<const char *>(glGetString(GL_VERSION)), "\nGLSL Version: ", reinterpret_cast<const char *>(glGetString(GL_SHADING_LANGUAGE_VERSION)), "\n");
 
   mGL_ERROR_CHECK();
 
@@ -177,7 +178,8 @@ mFUNCTION(mHardwareWindow_ProcessMessageQueue, mPtr<mHardwareWindow> &window)
       mRenderParams_BackBufferResolution = size;
       mRenderParams_BackBufferResolutionF = mVec2f(size);
 
-      mERROR_CHECK(mHardwareWindow_SetAsActiveRenderTarget(window));
+      if (!window->explicitResizeRenderTargetReactivation)
+        mERROR_CHECK(mHardwareWindow_SetAsActiveRenderTarget(window));
 
       size_t onResizeCallbackCount = 0;
       mERROR_CHECK(mQueue_GetCount(window->onResizeCallbacks, &onResizeCallbackCount));
@@ -246,6 +248,17 @@ mFUNCTION(mHardwareWindow_ProcessMessageQueue, mPtr<mHardwareWindow> &window)
 #endif
     }
   }
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mHardwareWindow_SetReactivateRenderTargetOnResize, mPtr<mHardwareWindow> &window, const bool reactivateRenderTargetOnResize)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(window == nullptr, mR_ArgumentNull);
+
+  window->explicitResizeRenderTargetReactivation = !reactivateRenderTargetOnResize;
 
   mRETURN_SUCCESS();
 }
@@ -643,7 +656,10 @@ static mFUNCTION(mHardwareWindow_Create_Internal, IN_OUT mHardwareWindow *pWindo
   mERROR_IF(size.x > INT_MAX || size.y > INT_MAX, mR_ArgumentOutOfBounds);
   mERROR_IF(position.x > INT_MAX || position.y > INT_MAX || position.x < INT_MIN || position.y < INT_MIN, mR_ArgumentOutOfBounds);
 
-  const mHardwareWindow_DisplayMode innerDisplayMode = ((displaymode & SDL_WINDOW_FULLSCREEN_DESKTOP) == SDL_WINDOW_FULLSCREEN_DESKTOP) ? (mHardwareWindow_DisplayMode)((displaymode ^ SDL_WINDOW_FULLSCREEN_DESKTOP) | SDL_WINDOW_MAXIMIZED | SDL_WINDOW_BORDERLESS | SDL_WINDOW_RESIZABLE) : displaymode;
+  const bool isFullscreenWindow = ((displaymode & SDL_WINDOW_FULLSCREEN_DESKTOP) == SDL_WINDOW_FULLSCREEN_DESKTOP);
+  const mHardwareWindow_DisplayMode fullscreenWindowDisplayMode = (mHardwareWindow_DisplayMode)((displaymode ^ SDL_WINDOW_FULLSCREEN_DESKTOP) | SDL_WINDOW_MAXIMIZED | SDL_WINDOW_BORDERLESS | SDL_WINDOW_RESIZABLE);
+
+  const mHardwareWindow_DisplayMode innerDisplayMode = isFullscreenWindow ? fullscreenWindowDisplayMode : displaymode;
 
   bool try3d = stereo3dIfAvailable;
 retry_without_3d:

@@ -14,12 +14,13 @@
   #define __M_FILE__ "1fNBDeKfYQkAJQSQhx6M314RdQis15VJ++OE3e/ZzoZ1izXkI8uLSr1ef2wIzw9teQ3VDdElhcuqYIOr"
 #endif
 
-GLuint mFrameBuffer_ActiveFrameBufferHandle = 0;
+thread_local GLuint mFrameBuffer_ActiveFrameBufferHandle = 0;
 #endif
 
-mPtr<mQueue<mPtr<mFramebuffer>>> mFramebuffer_Queue = nullptr;
+static thread_local mPtr<mQueue<mPtr<mFramebuffer>>> mFramebuffer_Queue = nullptr;
 
 static mFUNCTION(mFramebuffer_Create_Internal, OUT mFramebuffer *pFramebuffer, const mVec2s &size, const mTexture2DParams &params, const size_t sampleCount, const mPixelFormat pixelFormat);
+static mFUNCTION(mFramebuffer_CreateFromForeign_Internal, OUT mFramebuffer *pFramebuffer, const GLuint textureId, const size_t sampleCount);
 static mFUNCTION(mFramebuffer_Destroy_Internal, IN mFramebuffer *pFramebuffer);
 
 //////////////////////////////////////////////////////////////////////////
@@ -54,6 +55,23 @@ mFUNCTION(mFramebuffer_Create, OUT mPtr<mFramebuffer> *pFramebuffer, IN mAllocat
   mERROR_CHECK(mSharedPointer_Allocate(pFramebuffer, pAllocator, (std::function<void (mFramebuffer *)>)[](mFramebuffer *pData) { mFramebuffer_Destroy_Internal(pData); }, 1));
 
   mERROR_CHECK(mFramebuffer_Create_Internal(pFramebuffer->GetPointer(), size, textureParams, sampleCount, pixelFormat));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mFramebuffer_CreateFromForeignTextureId, OUT mPtr<mFramebuffer> *pFramebuffer, IN mAllocator *pAllocator, const GLuint textureId, const size_t sampleCount /* = 0 */)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pFramebuffer == nullptr, mR_ArgumentNull);
+
+  if (mFramebuffer_Queue == nullptr)
+    mERROR_CHECK(mQueue_Create(&mFramebuffer_Queue, &mDefaultAllocator));
+
+  mDEFER_CALL_ON_ERROR(pFramebuffer, mSharedPointer_Destroy);
+  mERROR_CHECK(mSharedPointer_Allocate(pFramebuffer, pAllocator, (std::function<void(mFramebuffer *)>)[](mFramebuffer *pData) { mFramebuffer_Destroy_Internal(pData); }, 1));
+
+  mERROR_CHECK(mFramebuffer_CreateFromForeign_Internal(pFramebuffer->GetPointer(), textureId, sampleCount));
 
   mRETURN_SUCCESS();
 }
@@ -195,13 +213,20 @@ mFUNCTION(mFramebuffer_SetResolution, mPtr<mFramebuffer> &framebuffer, const mVe
   glBindTexture((framebuffer->sampleCount > 0) ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, framebuffer->textureId);
 
   if (framebuffer->sampleCount > 0)
-    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, (GLsizei)framebuffer->sampleCount, glPixelFormat, (GLsizei)size.x, (GLsizei)size.y, false);
+    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, (GLsizei)framebuffer->sampleCount, glPixelFormat, (GLsizei)size.x, (GLsizei)size.y, true);
   else
     glTexImage2D(GL_TEXTURE_2D, 0, glPixelFormat, (GLsizei)size.x, (GLsizei)size.y, 0, glPixelFormat, GL_UNSIGNED_BYTE, nullptr);
 
   mERROR_CHECK(mTexture2DParams_ApplyToBoundTexture(framebuffer->textureParams, framebuffer->sampleCount > 0));
 
-  mGL_DEBUG_ERROR_CHECK();
+  glBindRenderbuffer(GL_RENDERBUFFER, framebuffer->rboDepthStencil);
+
+  if (framebuffer->sampleCount > 0)
+    glRenderbufferStorageMultisample(GL_RENDERBUFFER, (GLint)framebuffer->sampleCount, GL_DEPTH24_STENCIL8, (GLsizei)framebuffer->allocatedSize.x, (GLsizei)framebuffer->allocatedSize.y);
+  else
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, (GLsizei)framebuffer->allocatedSize.x, (GLsizei)framebuffer->allocatedSize.y);
+
+  mGL_ERROR_CHECK();
 
   mRETURN_SUCCESS();
 }
@@ -451,26 +476,29 @@ static mFUNCTION(mFramebuffer_Create_Internal, mFramebuffer *pFramebuffer, const
 
   glGenFramebuffers(1, &pFramebuffer->frameBufferHandle);
   glBindFramebuffer(GL_FRAMEBUFFER, pFramebuffer->frameBufferHandle);
+
   glGenTextures(1, &pFramebuffer->textureId);
   glBindTexture((pFramebuffer->sampleCount > 0) ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, pFramebuffer->textureId);
 
   if (pFramebuffer->sampleCount > 0)
-    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, (GLsizei)sampleCount, glPixelFormat, (GLsizei)size.x, (GLsizei)size.y, false);
+    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, (GLsizei)pFramebuffer->sampleCount, glPixelFormat, (GLsizei)size.x, (GLsizei)size.y, true);
   else
     glTexImage2D(GL_TEXTURE_2D, 0, glPixelFormat, (GLsizei)size.x, (GLsizei)size.y, 0, glPixelFormat, glType, nullptr);
 
   mERROR_CHECK(mTexture2DParams_ApplyToBoundTexture(params, pFramebuffer->sampleCount > 0));
-  
-  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, (pFramebuffer->sampleCount > 0) ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, pFramebuffer->textureId, 0);
 
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, (pFramebuffer->sampleCount > 0) ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, pFramebuffer->textureId, 0);
+  
   glGenRenderbuffers(1, &pFramebuffer->rboDepthStencil);
   glBindRenderbuffer(GL_RENDERBUFFER, pFramebuffer->rboDepthStencil);
 
-  if (sampleCount > 0)
-    glRenderbufferStorageMultisample(GL_RENDERBUFFER, (GLint)sampleCount, GL_DEPTH24_STENCIL8, (GLsizei)size.x, (GLsizei)size.y);
+  if (pFramebuffer->sampleCount > 0)
+    glRenderbufferStorageMultisample(GL_RENDERBUFFER, (GLsizei)pFramebuffer->sampleCount, GL_DEPTH24_STENCIL8, (GLsizei)size.x, (GLsizei)size.y);
   else
     glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, (GLsizei)size.x, (GLsizei)size.y);
-  
+
+  glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, pFramebuffer->rboDepthStencil);
+
   const GLenum result = glCheckFramebufferStatus(GL_FRAMEBUFFER);
   mERROR_IF(result != GL_FRAMEBUFFER_COMPLETE, mR_RenderingError);
 
@@ -481,6 +509,78 @@ static mFUNCTION(mFramebuffer_Create_Internal, mFramebuffer *pFramebuffer, const
 
 #ifdef DEBUG_FRAMBUFFER_CREATION
   mPRINT_DEBUG("Created Framebuffer ", (uint64_t)pFramebuffer->frameBufferHandle, " with texture ", (uint64_t)pFramebuffer->textureId, ".");
+#endif
+
+  mGL_ERROR_CHECK();
+
+  size_t queueCount = 0;
+  mERROR_CHECK(mQueue_GetCount(mFramebuffer_Queue, &queueCount));
+
+  // bind previous framebuffer (if any)
+  if (queueCount > 0)
+  {
+    mPtr<mFramebuffer> framebuffer;
+    mDEFER_CALL(&framebuffer, mFramebuffer_Destroy);
+    mERROR_CHECK(mQueue_PeekBack(mFramebuffer_Queue, &framebuffer));
+    mERROR_CHECK(mFramebuffer_Bind(framebuffer));
+  }
+
+  mRETURN_SUCCESS();
+}
+
+static mFUNCTION(mFramebuffer_CreateFromForeign_Internal, OUT mFramebuffer *pFramebuffer, const GLuint textureId, const size_t sampleCount)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pFramebuffer == nullptr, mR_ArgumentNull);
+
+  mPROFILE_SCOPED("mFramebuffer_CreateFromForeign_Internal");
+
+  pFramebuffer->isForeignTexture = true;
+  pFramebuffer->allocatedSize = pFramebuffer->size = mVec2s(0);
+  pFramebuffer->textureUnit = (size_t)-1;
+  pFramebuffer->sampleCount = sampleCount;
+  pFramebuffer->pixelFormat = mPixelFormat_Count;
+  pFramebuffer->textureParams = mTexture2DParams();
+
+#ifdef mRENDERER_OPENGL
+  mGL_ERROR_CHECK();
+
+  glGenFramebuffers(1, &pFramebuffer->frameBufferHandle);
+  glBindFramebuffer(GL_FRAMEBUFFER, pFramebuffer->frameBufferHandle);
+  
+  pFramebuffer->textureId = textureId;
+  
+  glBindTexture((pFramebuffer->sampleCount > 0) ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, pFramebuffer->textureId);
+
+  mVec2t<GLint> size;
+  glGetTexLevelParameteriv(pFramebuffer->sampleCount > 0 ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &size.x);
+  glGetTexLevelParameteriv(pFramebuffer->sampleCount > 0 ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &size.y);
+
+  pFramebuffer->allocatedSize = pFramebuffer->size = mVec2s(size);
+
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, (pFramebuffer->sampleCount > 0) ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, pFramebuffer->textureId, 0);
+
+  glGenRenderbuffers(1, &pFramebuffer->rboDepthStencil);
+  glBindRenderbuffer(GL_RENDERBUFFER, pFramebuffer->rboDepthStencil);
+
+  if (pFramebuffer->sampleCount > 0)
+    glRenderbufferStorageMultisample(GL_RENDERBUFFER, (GLint)pFramebuffer->sampleCount, GL_DEPTH24_STENCIL8, (GLsizei)pFramebuffer->allocatedSize.x, (GLsizei)pFramebuffer->allocatedSize.y);
+  else
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, (GLsizei)pFramebuffer->allocatedSize.x, (GLsizei)pFramebuffer->allocatedSize.y);
+
+  glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, pFramebuffer->rboDepthStencil);
+
+  const GLenum result = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+  mERROR_IF(result != GL_FRAMEBUFFER_COMPLETE, mR_RenderingError);
+
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+  mGL_DEBUG_ERROR_CHECK();
+#endif
+
+#ifdef DEBUG_FRAMBUFFER_CREATION
+  mPRINT_DEBUG("Created Framebuffer ", (uint64_t)pFramebuffer->frameBufferHandle, " with foreign texture ", (uint64_t)pFramebuffer->textureId, ".");
 #endif
 
   mGL_ERROR_CHECK();
@@ -514,7 +614,7 @@ static mFUNCTION(mFramebuffer_Destroy_Internal, IN mFramebuffer *pFramebuffer)
 
   pFramebuffer->frameBufferHandle = 0;
 
-  if (pFramebuffer->textureId)
+  if (pFramebuffer->textureId && !pFramebuffer->isForeignTexture)
     glDeleteTextures(0, &pFramebuffer->textureId);
 
   pFramebuffer->textureId = 0;
