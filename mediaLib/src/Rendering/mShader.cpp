@@ -3,7 +3,6 @@
 #include "mFile.h"
 #include "mProfiler.h"
 
-#if defined (mRENDERER_OPENGL)
 #ifdef GIT_BUILD // Define __M_FILE__
   #ifdef __M_FILE__
     #undef __M_FILE__
@@ -11,7 +10,8 @@
   #define __M_FILE__ "CP/+iAj83Qa9F7fA/hEsrZHGN6ltysXmthtC0t9KsybDSrKZYCvAtcUdR2ubW1DXTgmibHGPVOGf9fg4"
 #endif
 
-GLuint mShader_CurrentlyBoundShader = (GLuint)-1;
+#if defined (mRENDERER_OPENGL)
+static thread_local GLuint mShader_CurrentlyBoundShader = (GLuint)-1;
 #endif
 
 mFUNCTION(mShader_Allocate, OUT mPtr<mShader> *pShader, mAllocator *pAllocator)

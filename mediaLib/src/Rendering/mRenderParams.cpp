@@ -27,17 +27,17 @@ mVec2f mRenderParams_CurrentRenderResolutionF;
 mVec2s mRenderParams_BackBufferResolution;
 mVec2f mRenderParams_BackBufferResolutionF;
 
-mRenderContextId mRenderParams_CurrentRenderContext;
+thread_local mRenderContextId mRenderParams_CurrentRenderContext;
 
 #if defined(mRENDERER_OPENGL)
-GLenum mRenderParams_GLError = GL_NO_ERROR;
+thread_local GLenum mRenderParams_GLError = GL_NO_ERROR;
 #endif
 
 mRenderContext *mRenderParams_pRenderContexts = nullptr;
 size_t mRenderParams_RenderContextCount = 0;
 size_t mRenderParams_InitializedRenderContextCount = 0;
 
-bool mRenderParams_OnErrorCallbackAllowed = true;
+thread_local bool mRenderParams_OnErrorCallbackAllowed = true;
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -100,8 +100,13 @@ mFUNCTION(mRenderParams_ActivateRenderContext, mPtr<mHardwareWindow> &window, co
   SDL_Window *pWindow;
   mERROR_CHECK(mHardwareWindow_GetSdlWindowPtr(window, &pWindow));
 
-  int result = 0;
-  mERROR_IF(0 != (result = SDL_GL_MakeCurrent(pWindow, mRenderParams_pRenderContexts[renderContextId].glContext)), mR_RenderingError);
+  const int32_t result = SDL_GL_MakeCurrent(pWindow, mRenderParams_pRenderContexts[renderContextId].glContext);
+  
+  if (0 != result)
+    mPRINT_ERROR(SDL_GetError());
+
+  mERROR_IF(0 != result, mR_RenderingError);
+  
   mRenderParams_CurrentRenderContext = renderContextId;
 #else
   mRETURN_RESULT(mR_NotImplemented);
@@ -131,6 +136,19 @@ mFUNCTION(mRenderParams_DestroyRenderContext, IN_OUT mRenderContextId *pRenderCo
   }
 
   *pRenderContextId = (mRenderContextId)-1;
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mRenderParams_DetachRenderContextFromWindow, const mRenderContextId renderContextId)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(renderContextId >= mRenderParams_RenderContextCount, mR_IndexOutOfBounds);
+
+  int result = 0;
+  mERROR_IF(0 != (result = SDL_GL_MakeCurrent(nullptr, mRenderParams_pRenderContexts[renderContextId].glContext)), mR_RenderingError);
+  mRenderParams_CurrentRenderContext = renderContextId;
 
   mRETURN_SUCCESS();
 }
@@ -173,8 +191,12 @@ mFUNCTION(mRenderParams_SetVsync, const bool vsync)
   mFUNCTION_SETUP();
 
 #if defined(mRENDERER_OPENGL)
-  int result = 0;
-  mERROR_IF(0 != (result = SDL_GL_SetSwapInterval(vsync ? 1 : 0)), mR_OperationNotSupported);
+  const int32_t result = SDL_GL_SetSwapInterval(vsync ? 1 : 0);
+
+  if (0 != result)
+    mPRINT_ERROR(SDL_GetError());
+
+  mERROR_IF(0 != result, mR_OperationNotSupported);
 #else
   mRETURN_RESULT(mR_NotImplemented);
 #endif
@@ -186,8 +208,12 @@ mFUNCTION(mRenderParams_SetDoubleBuffering, const bool doubleBuffering)
   mFUNCTION_SETUP();
 
 #if defined(mRENDERER_OPENGL)
-  int result = 0;
-  mERROR_IF(0 != (result = SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, doubleBuffering ? 1 : 0)), mR_OperationNotSupported);
+  const int32_t result = SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, doubleBuffering ? 1 : 0);
+
+  if (0 != result)
+    mPRINT_ERROR(SDL_GetError());
+
+  mERROR_IF(0 != result, mR_OperationNotSupported);
 #else
   mRETURN_RESULT(mR_NotImplemented);
 #endif
@@ -1163,7 +1189,18 @@ mFUNCTION(mRenderParams_SetOnErrorDebugCallback, const std::function<mResult(con
   {
     size_t count = 0;
 
-    while (GL_NO_ERROR != glGetError() && count++ < 128) { }
+    while (GL_NO_ERROR != glGetError())
+    {
+      if (count++ > 128)
+      {
+        mPRINT_ERROR("glGetError appears to be very sure that something is very very bad. Are we sure this is the OpenGL thread?");
+        mFlushOutput();
+
+        mFAIL_DEBUG("OH MY GOODNESS, OPENGL! SOMEONE IS PISSED...");
+
+        mRETURN_RESULT(mR_Failure);
+      }
+    }
   }
 
   mRETURN_SUCCESS();

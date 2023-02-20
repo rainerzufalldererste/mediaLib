@@ -13,7 +13,7 @@
   #define __M_FILE__ "59KY3lHCw9BWZQbqjoOuIQPyT5r5Q/6NZ5R5q8rzNPRYrJeHN9UgEBfosKbnLgkWUK/cTaMSAQH+KFtU"
 #endif
 
-extern GLuint mFrameBuffer_ActiveFrameBufferHandle;
+extern thread_local GLuint mFrameBuffer_ActiveFrameBufferHandle;
 #endif
 
 struct mFramebuffer
@@ -24,6 +24,7 @@ struct mFramebuffer
 #if defined(mRENDERER_OPENGL)
   GLuint frameBufferHandle;
   GLuint textureId;
+  bool isForeignTexture;
   GLuint rboDepthStencil;
 #endif
 
@@ -34,6 +35,11 @@ struct mFramebuffer
 
 mFUNCTION(mFramebuffer_Create, OUT mPtr<mFramebuffer> *pFramebuffer, IN mAllocator *pAllocator, const mVec2s &size, const mTexture2DParams &textureParams = mTexture2DParams(), const size_t sampleCount = 0);
 mFUNCTION(mFramebuffer_Create, OUT mPtr<mFramebuffer> *pFramebuffer, IN mAllocator *pAllocator, const mVec2s &size, const mPixelFormat pixelFormat, const mTexture2DParams &textureParams = mTexture2DParams(), const size_t sampleCount = 0);
+
+#if defined(mRENDERER_OPENGL)
+mFUNCTION(mFramebuffer_CreateFromForeignTextureId, OUT mPtr<mFramebuffer> *pFramebuffer, IN mAllocator *pAllocator, const GLuint textureId, const size_t sampleCount = 0);
+#endif
+
 mFUNCTION(mFramebuffer_Destroy, IN_OUT mPtr<mFramebuffer> *pFramebuffer);
 mFUNCTION(mFramebuffer_Bind, mPtr<mFramebuffer> &framebuffer);
 mFUNCTION(mFramebuffer_Unbind);

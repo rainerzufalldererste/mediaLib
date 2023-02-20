@@ -2138,14 +2138,31 @@ mFUNCTION(mFileWriter_Create, OUT mUniqueContainer<mFileWriter> *pWriter, const 
   mERROR_CHECK(mString_ToWideString(filename, filenameW, mARRAYSIZE(filenameW)));
 
   HANDLE file = CreateFileW(filenameW, GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+  DWORD error = GetLastError(); // Might be `ERROR_ALREADY_EXISTS` even if the `fileHandle` is valid.
 
-  if (file == INVALID_HANDLE_VALUE)
+  if (file == INVALID_HANDLE_VALUE && error == ERROR_PATH_NOT_FOUND)
   {
-    const DWORD error = GetLastError();
-    mUnused(error);
+    wchar_t parentDirectory[MAX_PATH];
+    mERROR_CHECK(mStringCopy(parentDirectory, mARRAYSIZE(parentDirectory), filenameW, mARRAYSIZE(filenameW)));
 
-    mRETURN_RESULT(mR_IOFailure);
+#if (NTDDI_VERSION >= NTDDI_WIN8)
+    HRESULT hr = S_OK;
+
+    // Requires `pathcch.h` && `Pathcch.lib`.
+    mERROR_IF(FAILED(hr = PathCchRemoveFileSpec(parentDirectory, mARRAYSIZE(parentDirectory))), mR_InternalError);
+    mERROR_IF(hr == S_FALSE, mR_InvalidParameter);
+#else
+    // deprecated since windows 8.
+    mERROR_IF(PathRemoveFileSpecW(parentDirectory), mR_InvalidParameter);
+#endif
+
+    mERROR_CHECK(mFile_CreateDirectoryRecursive_Internal(parentDirectory));
+
+    file = CreateFileW(filenameW, GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+    error = GetLastError(); // Might be `ERROR_ALREADY_EXISTS` even if the `fileHandle` is valid.
   }
+
+  mERROR_IF(file == INVALID_HANDLE_VALUE, mR_IOFailure);
 #else
   FILE *pFile = fopen(filename.c_str(), "wb");
 

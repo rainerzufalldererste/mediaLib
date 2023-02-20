@@ -67,4 +67,6 @@ mFUNCTION(mHardwareWindow_EnableDragAndDrop);
 mFUNCTION(mHardwareWindow_SetProcessMessageQueueOnSwap, mPtr<mHardwareWindow> &window, const bool processMessageQueueOnSwap); // this is enabled by default.
 mFUNCTION(mHardwareWindow_ProcessMessageQueue, mPtr<mHardwareWindow> &window); // only required if `mHardwareWindow_SetProcessMessageQueueOnSwap` has been called with `false`.
 
+mFUNCTION(mHardwareWindow_SetReactivateRenderTargetOnResize, mPtr<mHardwareWindow> &window, const bool reactivateRenderTargetOnResize); // this is enabled by default.
+
 #endif // mHardwareWindow_h__
