@@ -262,13 +262,20 @@ mFUNCTION(mFileTransaction_CopyFile, mPtr<mFileTransaction> &transaction, const 
       }
     }
 
-    mRETURN_RESULT(mR_IOFailure);
+    switch (error)
+    {
+    case ERROR_ACCESS_DENIED:
+      mRETURN_RESULT(mR_InsufficientPrivileges);
+
+    default:
+      mRETURN_RESULT(mR_IOFailure);
+    }
   }
 
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mFileTransaction_MoveFile, mPtr<mFileTransaction> &transaction, const mString &target, const mString &source, const bool replaceIfExistent)
+mFUNCTION(mFileTransaction_MoveFile, mPtr<mFileTransaction> &transaction, const mString &target, const mString &source, const bool replaceIfExistent, const bool delayUntilReboot /* = false */)
 {
   mFUNCTION_SETUP();
 
@@ -282,7 +289,12 @@ mFUNCTION(mFileTransaction_MoveFile, mPtr<mFileTransaction> &transaction, const 
   wchar_t wTarget[MAX_PATH];
   mERROR_CHECK(mString_ToWideString(target, wTarget, mARRAYSIZE(wSource)));
 
-  if (0 == MoveFileTransactedW(wSource, wTarget, nullptr, nullptr, MOVEFILE_COPY_ALLOWED | (replaceIfExistent ? MOVEFILE_REPLACE_EXISTING : 0), transaction->transactionHandle))
+  bool targetExists = false;
+  
+  if (replaceIfExistent)
+    mERROR_CHECK(mFile_Exists(wTarget, &targetExists));
+
+  if (0 == MoveFileTransactedW(wSource, wTarget, nullptr, nullptr, (delayUntilReboot ? MOVEFILE_DELAY_UNTIL_REBOOT : MOVEFILE_COPY_ALLOWED) | (targetExists ? MOVEFILE_REPLACE_EXISTING : 0), transaction->transactionHandle))
   {
     DWORD error = GetLastError();
 
@@ -320,7 +332,7 @@ mFUNCTION(mFileTransaction_MoveFile, mPtr<mFileTransaction> &transaction, const 
       mERROR_IF(fileHandle == INVALID_HANDLE_VALUE, mR_InternalError);
       CloseHandle(fileHandle);
 
-      if (0 == MoveFileTransactedW(wSource, wTarget, nullptr, nullptr, MOVEFILE_COPY_ALLOWED | MOVEFILE_REPLACE_EXISTING, transaction->transactionHandle))
+      if (0 == MoveFileTransactedW(wSource, wTarget, nullptr, nullptr, (delayUntilReboot ? MOVEFILE_DELAY_UNTIL_REBOOT : MOVEFILE_COPY_ALLOWED) | MOVEFILE_REPLACE_EXISTING, transaction->transactionHandle))
       {
         error = GetLastError();
 
@@ -332,7 +344,14 @@ mFUNCTION(mFileTransaction_MoveFile, mPtr<mFileTransaction> &transaction, const 
       }
     }
 
-    mRETURN_RESULT(mR_IOFailure);
+    switch (error)
+    {
+    case ERROR_ACCESS_DENIED:
+      mRETURN_RESULT(mR_InsufficientPrivileges);
+      
+    default:
+      mRETURN_RESULT(mR_IOFailure);
+    }
   }
 
   mRETURN_SUCCESS();
