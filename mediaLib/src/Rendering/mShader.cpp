@@ -424,11 +424,31 @@ mFUNCTION(mShader_ReloadFromFile, mPtr<mShader> &shader)
 
   mERROR_IF(shader == nullptr, mR_ArgumentNull);
   mERROR_IF(!shader->initialized, mR_NotInitialized);
-  mERROR_IF(!shader->loadedFromFile, mR_ResourceIncompatible);
 
-  mResult result = mShader_SetToFile(shader, shader->vertexShaderPath, shader->fragmentShaderPath);
+  if (shader->loadedFromFile)
+  {
+    mString fragmentShaderPath, vertexShaderPath;
+    mERROR_CHECK(mString_Create(&vertexShaderPath, shader->vertexShaderPath));
+    mERROR_CHECK(mString_Create(&fragmentShaderPath, shader->fragmentShaderPath));
 
-  mERROR_IF(mFAILED(result) && result != mR_ResourceNotFound, result);
+    const mResult result = mShader_SetToFile(shader, vertexShaderPath, fragmentShaderPath);
+
+    mERROR_IF(mFAILED(result) && result != mR_ResourceNotFound, result);
+  }
+  else
+  {
+    mERROR_IF(shader->fragmentShaderPath.bytes <= 1, mR_NotSupported);
+
+    mString fragmentShader, fragmentShaderPath, vertexShader;
+
+    mERROR_CHECK(mFile_ReadAllText(shader->fragmentShaderPath, &mDefaultAllocator, &fragmentShader));
+    mERROR_CHECK(mString_Create(&fragmentShaderPath, shader->fragmentShaderPath));
+    mERROR_CHECK(mString_Create(&vertexShader, shader->vertexShaderText));
+
+    mERROR_CHECK(mShader_SetTo(shader, vertexShader, fragmentShader));
+
+    shader->fragmentShaderPath = std::move(fragmentShaderPath);
+  }
 
   mRETURN_SUCCESS();
 }
@@ -450,6 +470,8 @@ mFUNCTION(mShader_SetToFile, mPtr<mShader> &shader, const mString &vertexShaderP
 #ifndef GIT_BUILD
   mERROR_CHECK(mString_Create(&shader->vertexShaderPath, vertexShaderPath));
   mERROR_CHECK(mString_Create(&shader->fragmentShaderPath, fragmentShaderPath));
+  mERROR_CHECK(mString_Create(&shader->vertexShaderText, vertexShader));
+  mERROR_CHECK(mString_Create(&shader->fragmentShaderText, fragmentShader));
   shader->loadedFromFile = true;
 #endif
 
@@ -536,7 +558,7 @@ mShaderAttributeIndex_t mShader_GetUniformIndex(mShader &shader, const char *uni
     const mShaderAttributeIndex_t index = glGetUniformLocation(shader.shaderProgram, uniformName);
 
 #ifndef GIT_BUILD
-    mASSERT(index != (size_t)-1, "This uniform name doesn't correspond to an index.");
+    mASSERT(index != (GLuint)-1, mFormat("Uniform name '", uniformName, "' name in '", shader.vertexShaderPath, "'/'", shader.fragmentShaderPath, "' doesn't correspond to an index."));
 #endif
 
     const size_t length = strlen(uniformName);
@@ -573,7 +595,7 @@ mShaderAttributeIndex_t mShader_GetAttributeIndex(mShader &shader, const char *a
     const mShaderAttributeIndex_t index = glGetAttribLocation(shader.shaderProgram, attributeName);
 
 #ifndef GIT_BUILD
-    mASSERT(index != (size_t)-1, "This attribute name doesn't correspond to an index.");
+    mASSERT(index != (GLuint)-1, mFormat("Attribute name '", attributeName, "' name in '", shader.vertexShaderPath, "'/'", shader.fragmentShaderPath, "' doesn't correspond to an index."));
 #endif
 
     const size_t length = strlen(attributeName);

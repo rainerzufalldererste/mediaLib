@@ -16,16 +16,34 @@
 extern thread_local GLuint mFrameBuffer_ActiveFrameBufferHandle;
 #endif
 
+enum mFramebufferFlags : uint32_t
+{
+  mFF_None = 0,
+  mFF_HasDepthStencil = 1 << 0,
+  mFF_DepthIsTexture = 1 << 1,
+  mFF_IsForeignTexture = 1 << 2,
+};
+
+typedef uint32_t mFramebufferFlags_;
+
 struct mFramebuffer
 {
   mVec2s size;
   mVec2s allocatedSize;
-  size_t textureUnit;
+  size_t textureUnit, depthTextureUnit;
+  mFramebufferFlags flags;
 #if defined(mRENDERER_OPENGL)
   GLuint frameBufferHandle;
   GLuint textureId;
-  bool isForeignTexture;
-  GLuint rboDepthStencil;
+
+#pragma warning(push)
+#pragma warning(disable: 4201)
+  union
+  {
+    GLuint depthStencilRBO; // if depth/stencil is a renderbuffer.
+    GLuint depthStencilTextureId; // if depth/stencil is a texture.
+  };
+#pragma warning(pop)
 #endif
 
   size_t sampleCount;
@@ -33,11 +51,11 @@ struct mFramebuffer
   mPixelFormat pixelFormat;
 };
 
-mFUNCTION(mFramebuffer_Create, OUT mPtr<mFramebuffer> *pFramebuffer, IN mAllocator *pAllocator, const mVec2s &size, const mTexture2DParams &textureParams = mTexture2DParams(), const size_t sampleCount = 0);
-mFUNCTION(mFramebuffer_Create, OUT mPtr<mFramebuffer> *pFramebuffer, IN mAllocator *pAllocator, const mVec2s &size, const mPixelFormat pixelFormat, const mTexture2DParams &textureParams = mTexture2DParams(), const size_t sampleCount = 0);
+mFUNCTION(mFramebuffer_Create, OUT mPtr<mFramebuffer> *pFramebuffer, IN mAllocator *pAllocator, const mVec2s &size, const mTexture2DParams &textureParams = mTexture2DParams(), const size_t sampleCount = 0, const mFramebufferFlags_ flags = mFF_HasDepthStencil);
+mFUNCTION(mFramebuffer_Create, OUT mPtr<mFramebuffer> *pFramebuffer, IN mAllocator *pAllocator, const mVec2s &size, const mPixelFormat pixelFormat, const mTexture2DParams &textureParams = mTexture2DParams(), const size_t sampleCount = 0, const mFramebufferFlags_ flags = mFF_HasDepthStencil);
 
 #if defined(mRENDERER_OPENGL)
-mFUNCTION(mFramebuffer_CreateFromForeignTextureId, OUT mPtr<mFramebuffer> *pFramebuffer, IN mAllocator *pAllocator, const GLuint textureId, const size_t sampleCount = 0);
+mFUNCTION(mFramebuffer_CreateFromForeignTextureId, OUT mPtr<mFramebuffer> *pFramebuffer, IN mAllocator *pAllocator, const GLuint textureId, const size_t sampleCount = 0, const mFramebufferFlags_ flags = mFF_HasDepthStencil);
 #endif
 
 mFUNCTION(mFramebuffer_Destroy, IN_OUT mPtr<mFramebuffer> *pFramebuffer);

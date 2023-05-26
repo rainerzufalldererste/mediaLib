@@ -64,7 +64,7 @@ struct mSpriteBatch
   mPtr<mQueue<mSpriteBatch_Internal_RenderObject<Args...>>> enqueuedRenderObjects;
   mSpriteBatch_ShaderParams shaderParams;
 #if defined (mRENDERER_OPENGL)
-  GLuint vbo;
+  GLuint vao, vbo;
 #endif
   bool lastWasMultisampleTexture;
 };

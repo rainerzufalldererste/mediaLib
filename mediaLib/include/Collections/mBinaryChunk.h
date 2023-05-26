@@ -44,6 +44,8 @@ mFUNCTION(mBinaryChunk_GetWriteBytes, const mPtr<mBinaryChunk> &binaryChunk, OUT
 // Retrieves the number of bytes read from the binary chunk.
 mFUNCTION(mBinaryChunk_GetReadBytes, const mPtr<mBinaryChunk> &binaryChunk, OUT size_t *pSize);
 
+mFUNCTION(mBinaryChunk_EraseFromWriteHead, mPtr<mBinaryChunk> &binaryChunk, const size_t size);
+
 //////////////////////////////////////////////////////////////////////////
 
 template<typename T>

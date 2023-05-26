@@ -175,15 +175,7 @@ mFUNCTION(mShader_SetUniform, mShader &shader, const char *uniformName, T pV[TCo
 {
   mFUNCTION_SETUP();
 
-  const mShaderAttributeIndex_t uniformLocation =
-#if defined (mRENDERER_OPENGL)
-    glGetUniformLocation(shader.shaderProgram, uniformName);
-#else
-    0;
-  mRETURN_RESULT(mR_NotImplemented);
-#endif
-
-  mERROR_CHECK(mShader_SetUniformAtIndex(shader, uniformLocation, pV, TCount));
+  mERROR_CHECK(mShader_SetUniformAtIndex(shader, mShader_GetUniformIndex(shader, uniformName), pV, TCount));
 
   mGL_DEBUG_ERROR_CHECK();
 
@@ -195,15 +187,7 @@ mFUNCTION(mShader_SetUniform, mPtr<mShader> &shader, const char *uniformName, T 
 {
   mFUNCTION_SETUP();
 
-  const mShaderAttributeIndex_t uniformLocation =
-#if defined (mRENDERER_OPENGL)
-    glGetUniformLocation(shader->shaderProgram, uniformName);
-#else
-    0;
-  mRETURN_RESULT(mR_NotImplemented);
-#endif
-
-  mERROR_CHECK(mShader_SetUniformAtIndex(*shader.GetPointer(), uniformLocation, pV, TCount));
+  mERROR_CHECK(mShader_SetUniformAtIndex(*shader.GetPointer(), mShader_GetUniformIndex(shader, uniformName), pV, TCount));
 
   mGL_DEBUG_ERROR_CHECK();
 
@@ -214,15 +198,7 @@ mFUNCTION(mShader_SetUniform, mShader &shader, const mString &uniformName, T pV[
 {
   mFUNCTION_SETUP();
 
-  const mShaderAttributeIndex_t uniformLocation =
-#if defined (mRENDERER_OPENGL)
-    glGetUniformLocation(shader.shaderProgram, uniformName.c_str());
-#else
-    0;
-  mRETURN_RESULT(mR_NotImplemented);
-#endif
-
-  mERROR_CHECK(mShader_SetUniformAtIndex(shader, uniformLocation, pV, TCount));
+  mERROR_CHECK(mShader_SetUniformAtIndex(shader, mShader_GetUniformIndex(shader, uniformName), pV, TCount));
 
   mGL_DEBUG_ERROR_CHECK();
 
@@ -234,15 +210,7 @@ mFUNCTION(mShader_SetUniform, mPtr<mShader> &shader, const mString &uniformName,
 {
   mFUNCTION_SETUP();
 
-  const mShaderAttributeIndex_t uniformLocation =
-#if defined (mRENDERER_OPENGL)
-    glGetUniformLocation(shader->shaderProgram, uniformName.c_str());
-#else
-    0;
-  mRETURN_RESULT(mR_NotImplemented);
-#endif
-
-  mERROR_CHECK(mShader_SetUniformAtIndex(*shader.GetPointer(), uniformLocation, pV, TCount));
+  mERROR_CHECK(mShader_SetUniformAtIndex(*shader.GetPointer(), mShader_GetUniformIndex(shader, uniformName), pV, TCount));
 
   mGL_DEBUG_ERROR_CHECK();
 
@@ -256,15 +224,7 @@ mFUNCTION(mShader_SetUniform, mShader &shader, const char *uniformName, T *pV, c
 {
   mFUNCTION_SETUP();
 
-  const mShaderAttributeIndex_t uniformLocation =
-#if defined (mRENDERER_OPENGL)
-    glGetUniformLocation(shader.shaderProgram, uniformName);
-#else
-    0;
-  mRETURN_RESULT(mR_NotImplemented);
-#endif
-
-  mERROR_CHECK(mShader_SetUniformAtIndex(shader, uniformLocation, pV, count));
+  mERROR_CHECK(mShader_SetUniformAtIndex(shader, mShader_GetUniformIndex(shader, uniformName), pV, count));
 
   mGL_DEBUG_ERROR_CHECK();
 
@@ -276,15 +236,7 @@ mFUNCTION(mShader_SetUniform, mPtr<mShader> &shader, const char *uniformName, T 
 {
   mFUNCTION_SETUP();
 
-  const mShaderAttributeIndex_t uniformLocation =
-#if defined (mRENDERER_OPENGL)
-    glGetUniformLocation(shader->shaderProgram, uniformName);
-#else
-    0;
-  mRETURN_RESULT(mR_NotImplemented);
-#endif
-
-  mERROR_CHECK(mShader_SetUniformAtIndex(*shader.GetPointer(), uniformLocation, pV, count));
+  mERROR_CHECK(mShader_SetUniformAtIndex(*shader.GetPointer(), mShader_GetUniformIndex(shader, uniformName), pV, count));
 
   mGL_DEBUG_ERROR_CHECK();
 
@@ -295,15 +247,7 @@ mFUNCTION(mShader_SetUniform, mShader &shader, const mString &uniformName, T *pV
 {
   mFUNCTION_SETUP();
 
-  const mShaderAttributeIndex_t uniformLocation =
-#if defined (mRENDERER_OPENGL)
-    glGetUniformLocation(shader.shaderProgram, uniformName.c_str());
-#else
-    0;
-  mRETURN_RESULT(mR_NotImplemented);
-#endif
-
-  mERROR_CHECK(mShader_SetUniformAtIndex(shader, uniformLocation, pV, count));
+  mERROR_CHECK(mShader_SetUniformAtIndex(shader, mShader_GetUniformIndex(shader, uniformName), pV, count));
 
   mGL_DEBUG_ERROR_CHECK();
 
@@ -315,15 +259,7 @@ mFUNCTION(mShader_SetUniform, mPtr<mShader> &shader, const mString &uniformName,
 {
   mFUNCTION_SETUP();
 
-  const mShaderAttributeIndex_t uniformLocation =
-#if defined (mRENDERER_OPENGL)
-    glGetUniformLocation(shader->shaderProgram, uniformName.c_str());
-#else
-    0;
-  mRETURN_RESULT(mR_NotImplemented);
-#endif
-
-  mERROR_CHECK(mShader_SetUniformAtIndex(*shader.GetPointer(), uniformLocation, pV, count));
+  mERROR_CHECK(mShader_SetUniformAtIndex(*shader.GetPointer(), mShader_GetUniformIndex(shader, uniformName), pV, count));
 
   mGL_DEBUG_ERROR_CHECK();
 

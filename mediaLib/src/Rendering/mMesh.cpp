@@ -116,6 +116,10 @@ mFUNCTION(mMesh_Create, OUT mPtr<mMesh> *pMesh, IN mAllocator *pAllocator, mPtr<
   (*pMesh)->textures = textures;
 
   (*pMesh)->hasVbo = true;
+
+  glGenVertexArrays(1, &(*pMesh)->vao);
+  glBindVertexArray((*pMesh)->vao);
+
   glGenBuffers(1, &(*pMesh)->vbo);
   mGL_ERROR_CHECK();
   mSTDRESULT = mR_Success;
@@ -188,6 +192,9 @@ mFUNCTION(mMesh_Create, OUT mPtr<mMesh> *pMesh, IN mAllocator *pAllocator, mPtr<
 
 #if defined (mRENDERER_OPENGL)
   (*pMesh)->hasVbo = true;
+
+  glGenVertexArrays(1, &(*pMesh)->vao);
+  glBindVertexArray((*pMesh)->vao);
 
   glGenBuffers(1, &(*pMesh)->vbo);
   glBindBuffer(GL_ARRAY_BUFFER, (*pMesh)->vbo);
@@ -299,7 +306,10 @@ mFUNCTION(mMesh_Render, mPtr<mMesh> &data)
   mGL_DEBUG_ERROR_CHECK();
 
   if (data->hasVbo)
+  {
+    glBindVertexArray(data->vao);
     glBindBuffer(GL_ARRAY_BUFFER, data->vbo);
+  }
 
   size_t informationCount;
   mERROR_CHECK(mQueue_GetCount(data->information, &informationCount));
@@ -399,6 +409,7 @@ mFUNCTION(mMesh_Destroy_Internal, mMesh *pMesh)
   if (pMesh->hasVbo)
   {
     glDeleteBuffers(1, &pMesh->vbo);
+    glDeleteVertexArrays(1, &pMesh->vao);
     pMesh->hasVbo = false;
   }
 

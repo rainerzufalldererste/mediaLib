@@ -2,7 +2,6 @@
 #define mPointRenderer_h__
 
 #include "mRenderParams.h"
-#include "mShader.h"
 
 #ifdef GIT_BUILD // Define __M_FILE__
   #ifdef __M_FILE__
@@ -11,14 +10,7 @@
   #define __M_FILE__ "4GwyxlJ2GfxXn5+dtpll92+2Fz9TB/Q6t5BMZy3t1QpS0F/qJ7EZSCC5cRQjnaHei42BzWx+SBHb8IGJ"
 #endif
 
-struct mPointRenderer
-{
-  mShader shader;
-
-#if defined(mRENDERER_OPENGL)
-  GLuint vbo;
-#endif
-};
+struct mPointRenderer;
 
 struct mColouredPoint
 {
@@ -26,8 +18,17 @@ struct mColouredPoint
   mVec4f colour;
   float_t size;
 
-  mColouredPoint();
-  mColouredPoint(const mVec2f position, const mVec4f colour, const float_t size);
+  inline mColouredPoint() :
+    position(),
+    colour(1),
+    size(1)
+  { }
+
+  inline mColouredPoint(const mVec2f position, const mVec4f colour, const float_t size) :
+    position(position),
+    colour(colour),
+    size(size)
+  { }
 };
 
 enum mColouredPointMode

@@ -34,7 +34,7 @@ struct mRDBAttributeQuery_Internal
 {
   static size_t GetSize();
 
-  static mFUNCTION(SetAttribute, IN mShader *pShader, const size_t totalSize, const size_t offset);
+  static mFUNCTION(SetAttribute, IN mShader *pShader, const size_t totalSize, const size_t offset, const bool instanced);
 };
 
 template <>
@@ -42,7 +42,7 @@ struct mRDBAttributeQuery_Internal<>
 {
   static size_t GetSize() { return 0; };
 
-  static mFUNCTION(SetAttribute, IN mShader * /* pShader */, const size_t /* totalSize */, const size_t /* offset */) { return mR_Success; };
+  static mFUNCTION(SetAttribute, IN mShader * /* pShader */, const size_t /* totalSize */, const size_t /* offset */, const bool /* instanced */) { return mR_Success; };
 };
 
 template <typename T>
@@ -50,7 +50,7 @@ struct mRDBAttributeQuery_Internal<T>
 {
   static size_t GetSize() { return T::DataSize(); };
 
-  static mFUNCTION(SetAttribute, IN mShader *pShader, const size_t totalSize, const size_t offset)
+  static mFUNCTION(SetAttribute, IN mShader *pShader, const size_t totalSize, const size_t offset, const bool instanced)
   {
     mFUNCTION_SETUP();
      
@@ -60,7 +60,11 @@ struct mRDBAttributeQuery_Internal<T>
 
     glEnableVertexAttribArray(attributeIndex);
     glVertexAttribPointer(attributeIndex, (GLint)sizeof(float_t), T::DataType(), GL_FALSE, (GLsizei)totalSize, (const void *)offset);
+
+    if (instanced)
+      glVertexAttribDivisor(attributeIndex, 1);
 #endif
+
     mGL_DEBUG_ERROR_CHECK();
 
     mRETURN_SUCCESS();
@@ -72,24 +76,24 @@ struct mRDBAttributeQuery_Internal <T, Args...>
 {
   static size_t GetSize() { return T::DataSize() + mRDBAttributeQuery_Internal<Args...>::GetSize(); };
 
-  static mFUNCTION(SetAttribute, IN mShader *pShader, const size_t totalSize, const size_t offset)
+  static mFUNCTION(SetAttribute, IN mShader *pShader, const size_t totalSize, const size_t offset, const bool instanced)
   {
     mFUNCTION_SETUP();
 
-    mERROR_CHECK(mRDBAttributeQuery_Internal<T>::SetAttribute(pShader, totalSize, offset));
-    mERROR_CHECK(mRDBAttributeQuery_Internal<Args...>::SetAttribute(pShader, totalSize, offset + T::DataSize()));
+    mERROR_CHECK(mRDBAttributeQuery_Internal<T>::SetAttribute(pShader, totalSize, offset, instanced));
+    mERROR_CHECK(mRDBAttributeQuery_Internal<Args...>::SetAttribute(pShader, totalSize, offset + T::DataSize(), instanced));
 
     mRETURN_SUCCESS();
   }
 };
 
 template <typename... Args>
-mFUNCTION(mIDBAttributeQuery_Internal_SetAttributes, IN mShader *pShader)
+mFUNCTION(mIDBAttributeQuery_Internal_SetAttributes, IN mShader *pShader, const bool instanced = false)
 {
   mFUNCTION_SETUP();
 
   const size_t totalSize = mRDBAttributeQuery_Internal<Args...>::GetSize();
-  mERROR_CHECK(mRDBAttributeQuery_Internal<Args...>::SetAttribute(pShader, totalSize, 0));
+  mERROR_CHECK(mRDBAttributeQuery_Internal<Args...>::SetAttribute(pShader, totalSize, 0, instanced));
 
   mRETURN_SUCCESS();
 }
@@ -105,7 +109,7 @@ struct mRenderDataBuffer
   bool validVBO;
 
 #if defined(mRENDERER_OPENGL)
-  GLuint vbo;
+  GLuint vao, vbo;
 #endif
 
   mPtr<mShader> shader;
@@ -130,6 +134,9 @@ mFUNCTION(mRenderDataBuffer_SetRenderCount, mRenderDataBuffer<Args...> &buffer, 
 template <typename... Args>
 mFUNCTION(mRenderDataBuffer_SetVertexRenderMode, mRenderDataBuffer<Args...> &buffer, const mRenderParams_VertexRenderMode renderMode);
 
+template<typename... Args>
+mFUNCTION(mRenderDataBuffer_BindAttributes, mRenderDataBuffer<Args...> &buffer);
+
 template <typename... Args>
 mFUNCTION(mRenderDataBuffer_Draw, mRenderDataBuffer<Args...> &buffer);
 
@@ -147,7 +154,11 @@ inline mFUNCTION(mRenderDataBuffer_Create, IN mRenderDataBuffer<Args...> *pBuffe
   pBuffer->constantlyChangedVertices = constantlyChangedVertices;
 
 #if defined(mRENDERER_OPENGL)
+  glGenVertexArrays(1, &pBuffer->vao);
+  glBindVertexArray(pBuffer->vao);
+
   glGenBuffers(1, &pBuffer->vbo);
+  glBindVertexArray(0);
 #endif
 
   pBuffer->vertexRenderMode = mRP_VRM_TriangleList;
@@ -173,7 +184,11 @@ inline mFUNCTION(mRenderDataBuffer_Create, IN mRenderDataBuffer<Args...> *pBuffe
   pBuffer->constantlyChangedVertices = constantlyChangedVertices;
 
 #if defined(mRENDERER_OPENGL)
+  glGenVertexArrays(1, &pBuffer->vao);
+  glBindVertexArray(pBuffer->vao);
+
   glGenBuffers(1, &pBuffer->vbo);
+  glBindVertexArray(0);
 #endif
 
   pBuffer->vertexRenderMode = mRP_VRM_TriangleList;
@@ -195,6 +210,12 @@ inline mFUNCTION(mRenderDataBuffer_Destroy, IN mRenderDataBuffer<Args...> *pBuff
   {
     glDeleteBuffers(1, &pBuffer->vbo);
     pBuffer->vbo = 0;
+  }
+
+  if (pBuffer->vao != 0)
+  {
+    glDeleteVertexArrays(1, &pBuffer->vao);
+    pBuffer->vao = 0;
   }
 
   mERROR_CHECK(mSharedPointer_Destroy(&pBuffer->shader));
@@ -258,23 +279,36 @@ inline mFUNCTION(mRenderDataBuffer_SetVertexRenderMode, mRenderDataBuffer<Args..
 }
 
 template<typename ...Args>
-inline mFUNCTION(mRenderDataBuffer_Draw, mRenderDataBuffer<Args...> &buffer)
+inline mFUNCTION(mRenderDataBuffer_BindAttributes, mRenderDataBuffer<Args...> &buffer)
 {
   mFUNCTION_SETUP();
 
   mERROR_IF(!buffer.validVBO && mRDBAttributeQuery_Internal<Args...>::GetSize() > 0, mR_ResourceStateInvalid);
 
-  mPROFILE_SCOPED("mRenderDataBuffer_Draw");
-
   mGL_DEBUG_ERROR_CHECK();
 
 #if defined(mRENDERER_OPENGL)
+  glBindVertexArray(buffer.vao);
   glBindBuffer(GL_ARRAY_BUFFER, buffer.vbo);
   mGL_DEBUG_ERROR_CHECK();
 #endif
 
   mERROR_CHECK(mShader_Bind(*buffer.shader));
   mERROR_CHECK((mIDBAttributeQuery_Internal_SetAttributes<Args...>(buffer.shader.GetPointer())));
+
+  mGL_DEBUG_ERROR_CHECK();
+
+  mRETURN_SUCCESS();
+}
+
+template<typename ...Args>
+inline mFUNCTION(mRenderDataBuffer_Draw, mRenderDataBuffer<Args...> &buffer)
+{
+  mFUNCTION_SETUP();
+
+  mPROFILE_SCOPED("mRenderDataBuffer_Draw");
+
+  mERROR_CHECK(mRenderDataBuffer_BindAttributes(buffer));
 
 #if defined(mRENDERER_OPENGL)
   glDrawArrays(buffer.vertexRenderMode, 0, (GLsizei)buffer.count);

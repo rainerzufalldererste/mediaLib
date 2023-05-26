@@ -681,7 +681,7 @@ mTEST(mQueue, TestPopAtCppClass)
         mTestCppClass dummy;
         mTEST_ASSERT_SUCCESS(mQueue_PopAt(queue, 5, &dummy)); // second last.
 
-        const size_t comparisonNumber = comparisonVector[5];
+        //const size_t comparisonNumber = comparisonVector[5];
         mTEST_ASSERT_SUCCESS(mDestruct(&dummy));
 
         comparisonVector.erase(comparisonVector.begin() + 5);

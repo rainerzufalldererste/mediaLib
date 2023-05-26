@@ -625,6 +625,18 @@ inline mFUNCTION(mSpriteBatch_Destroy_Internal, IN_OUT mSpriteBatch<Args...> *pS
 
   mERROR_IF(pSpriteBatch == nullptr, mR_ArgumentNull);
 
+  if (pSpriteBatch->vbo != 0)
+  {
+    glDeleteBuffers(1, &pSpriteBatch->vbo);
+    pSpriteBatch->vbo = 0;
+  }
+
+  if (pSpriteBatch->vao != 0)
+  {
+    glDeleteVertexArrays(1, &pSpriteBatch->vao);
+    pSpriteBatch->vao = 0;
+  }
+
   size_t queueSize = 0;
   mERROR_CHECK(mQueue_GetCount(pSpriteBatch->enqueuedRenderObjects, &queueSize));
 
@@ -741,6 +753,9 @@ inline mFUNCTION(mSpriteBatch_Internal_InitializeMesh, mPtr<mSpriteBatch<Args...
 
   mVec2f buffer[8] = { {-1, -1}, {1, 1}, {-1, 1}, {1, 0}, {1, -1}, {0, 1}, {1, 1}, {0, 0} };
 
+  glGenVertexArrays(1, &spriteBatch->vao);
+  glBindVertexArray(spriteBatch->vao);
+
   glGenBuffers(1, &spriteBatch->vbo);
   glBindBuffer(GL_ARRAY_BUFFER, spriteBatch->vbo);
   glBufferData(GL_ARRAY_BUFFER, sizeof(buffer), buffer, GL_STATIC_DRAW);
@@ -758,6 +773,7 @@ inline mFUNCTION(mSpriteBatch_Internal_BindMesh, mPtr<mSpriteBatch<Args...>> &sp
 
   mERROR_CHECK(mShader_Bind(shader));
 
+  glBindVertexArray(spriteBatch->vao);
   glBindBuffer(GL_ARRAY_BUFFER, spriteBatch->vbo);
 
   const mShaderAttributeIndex_t vertexPositiondAttributeIndex = mShader_GetAttributeIndex(shader, "position0");

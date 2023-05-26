@@ -159,6 +159,7 @@ void mSetConsoleColour(const mConsoleColour foregroundColour, const mConsoleColo
       mASSERT_DEBUG(mFormat_GetMaxRequiredBytes("\x1b[", (uint8_t)(fgColour < 0x8 ? (30 + fgColour) : (90 - 8 + fgColour)), ";", (uint8_t)(bgColour < 0x8 ? (40 + bgColour) : (100 - 8 + bgColour)), "m") <= mARRAYSIZE(sequence), "Insufficient VT Code Sequence Buffer. This may cause printing errors. Don't do whatever you're doing.");
       const mResult result = mFormatTo(sequence, mARRAYSIZE(sequence), "\x1b[", (uint8_t)(fgColour < 0x8 ? (30 + fgColour) : (90 - 8 + fgColour)), ";", (uint8_t)(bgColour < 0x8 ? (40 + bgColour) : (100 - 8 + bgColour)), "m");
       mASSERT_DEBUG(mSUCCEEDED(result), "Failed to mFormatTo the VT Code Sequence.");
+      mUnused(result);
 
       WriteConsoleA(mStdOutHandle, sequence, (DWORD)strnlen(sequence, mARRAYSIZE(sequence)), nullptr, nullptr);
     }

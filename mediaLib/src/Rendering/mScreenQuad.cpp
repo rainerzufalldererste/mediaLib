@@ -45,6 +45,9 @@ mFUNCTION(mScreenQuad_Create, OUT mPtr<mScreenQuad> *pScreenQuad, IN mAllocator 
   for (size_t i = 0; i < 4; ++i)
     positions[i] = mVec2f((float_t)(i & 1), (float_t)((i & 2) >> 1));
 
+  glGenVertexArrays(1, &(*pScreenQuad)->vao);
+  glBindVertexArray((*pScreenQuad)->vao);
+
   glGenBuffers(1, &(*pScreenQuad)->vbo);
   glBindBuffer(GL_ARRAY_BUFFER, (*pScreenQuad)->vbo);
   glBufferData(GL_ARRAY_BUFFER, sizeof(mVec2f) * 4, positions, GL_STATIC_DRAW);
@@ -121,6 +124,7 @@ mFUNCTION(mScreenQuad_Render, mPtr<mScreenQuad> &screenQuad)
   mERROR_CHECK(mShader_Bind(*screenQuad->shader));
 
 #if defined(mRENDERER_OPENGL)
+  glBindVertexArray(screenQuad->vao);
   glBindBuffer(GL_ARRAY_BUFFER, screenQuad->vbo);
 
   const mShaderAttributeIndex_t index = mShader_GetAttributeIndex(screenQuad->shader, "position0");
@@ -148,6 +152,9 @@ static mFUNCTION(mScreenQuad_Destroy_Internal, IN mScreenQuad *pScreenQuad)
 #if defined(mRENDERER_OPENGL)
   if (pScreenQuad->vbo)
     glDeleteBuffers(1, &pScreenQuad->vbo);
+
+  if (pScreenQuad->vao)
+    glDeleteVertexArrays(1, &pScreenQuad->vao);
 #endif
 
   mRETURN_SUCCESS();

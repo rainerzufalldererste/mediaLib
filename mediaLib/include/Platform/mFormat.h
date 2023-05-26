@@ -305,8 +305,6 @@ inline size_t mFormat_GetMaxBytes(const T &value, const mFormatState &fs)
       break;
     }
 
-    const T abs = value < 0 ? value : -value; // because otherwise the minimum value couldn't be converted to a valid signed equivalent.
-
     mIF_CONSTEXPR (sizeof(value) == 1)
       numberChars = 3;
     else mIF_CONSTEXPR (sizeof(value) == 2)

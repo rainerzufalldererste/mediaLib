@@ -311,4 +311,11 @@ namespace ImGui
     TextUnformatted(text);
     EndTooltip();
   }
+
+  bool IsItemHoveredManual(const mVec2f mousePosition)
+  {
+    ImGuiContext &g = *GImGui;
+    
+    return mRectangle2D<float_t>(g.LastItemData.Rect.Min, g.LastItemData.Rect.Max - g.LastItemData.Rect.Min).Contains(mousePosition);
+  }
 }

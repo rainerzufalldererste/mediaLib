@@ -361,7 +361,7 @@ struct mMesh
   size_t primitiveCount;
 #if defined (mRENDERER_OPENGL)
   bool hasVbo;
-  GLuint vbo;
+  GLuint vao, vbo;
 #endif
 };
 
@@ -620,6 +620,8 @@ inline mFUNCTION(mMeshFactory_CreateMesh, mPtr<mMeshFactory<Args...>> &factory, 
   }
 
   (*pMesh)->dataSize = factory->meshFactoryInternal.size;
+  glGenVertexArrays(1, &(*pMesh)->vao);
+  glBindVertexArray((*pMesh)->vao);
   glGenBuffers(1, &(*pMesh)->vbo);
   glBindBuffer(GL_ARRAY_BUFFER, (*pMesh)->vbo);
   glBufferData(GL_ARRAY_BUFFER, factory->values->writeBytes, factory->values->pData, GL_STATIC_DRAW);

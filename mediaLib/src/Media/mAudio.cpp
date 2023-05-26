@@ -2167,7 +2167,8 @@ static mFUNCTION(mMidSideStereoDecoder_GetBuffer_Internal, mPtr<mAudioSource> &a
     if (pDecoder->dataCapacity < pDecoder->channelCount * bufferLength)
     {
       const size_t newCapacity = pDecoder->channelCount * bufferLength;
-      mERROR_CHECK(mAllocator_Reallocate(pDecoder->pAllocator, &pDecoder->pData, bufferLength));
+      mERROR_CHECK(mAllocator_Reallocate(pDecoder->pAllocator, &pDecoder->pData, newCapacity));
+      pDecoder->dataCapacity = newCapacity;
     }
 
     for (size_t i = 0; i < pDecoder->channelCount; i++)
@@ -2323,7 +2324,8 @@ static mFUNCTION(mMidSideSideQuadroDecoder_GetBuffer_Internal, mPtr<mAudioSource
     if (pDecoder->dataCapacity < pDecoder->channelCount * bufferLength)
     {
       const size_t newCapacity = pDecoder->channelCount * bufferLength;
-      mERROR_CHECK(mAllocator_Reallocate(pDecoder->pAllocator, &pDecoder->pData, bufferLength));
+      mERROR_CHECK(mAllocator_Reallocate(pDecoder->pAllocator, &pDecoder->pData, newCapacity));
+      pDecoder->dataCapacity = newCapacity;
     }
 
     size_t midSampleCount, leftRightSampleCount, frontBackSampleCount, minimumSampleCount;
