@@ -1,6 +1,7 @@
 #include "mFile.h"
 
 #include "mProfiler.h"
+#include "mImageBuffer.h"
 
 #include <sys\stat.h>
 
@@ -18,6 +19,8 @@
 #pragma comment(lib, "Pathcch.lib")
 #endif
 
+#include "thumbcache.h"
+
 #ifdef GIT_BUILD // Define __M_FILE__
   #ifdef __M_FILE__
     #undef __M_FILE__
@@ -31,6 +34,18 @@ static mFUNCTION(mFileInfo_FromFindDataWStruct_Internal, IN_OUT mFileInfo *pFile
 static mFUNCTION(mFileInfo_FromByHandleFileInformationStruct_Internal, IN_OUT mFileInfo *pFileInfo, IN const BY_HANDLE_FILE_INFORMATION *pFileData);
 static mFUNCTION(mFile_CreateDirectoryRecursive_Internal, const wchar_t *directoryPath);
 mFUNCTION(mRegistry_FindKey_Internal, const mString &keyUrl, OUT HKEY *pParentKey, IN mAllocator *pAllocator, OUT wchar_t **pPathOrValue, OUT size_t *pPathOrValueCount, OUT wchar_t **pValueName, OUT size_t *pValueNameCount);
+
+//////////////////////////////////////////////////////////////////////////
+
+template <class T>
+inline static void mSafeRelease(T **ppT)
+{
+  if (*ppT)
+  {
+    (*ppT)->Release();
+    *ppT = nullptr;
+  }
+}
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -1641,7 +1656,7 @@ mFUNCTION(mFile_GetAbsoluteFilePath, OUT mString *pAbsolutePath, const mString &
     mRETURN_RESULT(mR_InternalError);
   }
 
-  mERROR_CHECK(mString_Create(pAbsolutePath, absolutePath, length + 1, filePath.pAllocator));
+  mERROR_CHECK(mString_Create(pAbsolutePath, absolutePath, length + 1, pAbsolutePath->pAllocator == nullptr ? filePath.pAllocator : pAbsolutePath->pAllocator));
 
   mRETURN_SUCCESS();
 }
@@ -2005,6 +2020,66 @@ mFUNCTION(mFile_GetFolderSize, const mString &directoryPath, OUT size_t *pFolder
 
   for (const auto &_file : fileInfo->Iterate())
     *pFolderSize += _file.size;
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mFile_GetThumbnail, const mString &filename, const size_t size, OUT mPtr<mImageBuffer> *pThumbnail, IN mAllocator *pAllocator)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pThumbnail == nullptr, mR_ArgumentNull);
+  mERROR_IF(filename.hasFailed || filename.bytes <= 1, mR_InvalidParameter);
+  mERROR_IF(size > UINT_MAX, mR_ArgumentOutOfBounds);
+
+  mPROFILE_SCOPED("mFile_GetThumbnail");
+
+  wchar_t wfilename[MAX_PATH];
+  mERROR_CHECK(mString_ToWideString(filename, wfilename, mARRAYSIZE(wfilename)));
+
+  HRESULT hr;
+
+  IShellItem *pItem = nullptr;
+  mERROR_IF(FAILED(hr = SHCreateItemFromParsingName(wfilename, nullptr, IID_PPV_ARGS(&pItem))) || pItem == nullptr, mR_InternalError);
+
+  IThumbnailCache *pCache = nullptr;
+  mDEFER_CALL(&pCache, mSafeRelease);
+  mERROR_IF(FAILED(hr = CoCreateInstance(CLSID_LocalThumbnailCache, nullptr, CLSCTX_INPROC, IID_PPV_ARGS(&pCache))) || pCache == nullptr, mR_InternalError);
+
+  ISharedBitmap *pSharedBitmap = nullptr;
+  mDEFER_CALL(&pSharedBitmap, mSafeRelease);
+  mERROR_IF(FAILED(hr = pCache->GetThumbnail(pItem, (UINT)size, WTS_EXTRACT, &pSharedBitmap, nullptr, nullptr)), mR_InternalError);
+
+  HBITMAP hbitmap = nullptr;
+  mDEFER_CALL(hbitmap, DeleteObject);
+  mERROR_IF(FAILED(hr = pSharedBitmap->GetSharedBitmap(&hbitmap)), mR_InternalError);
+
+  HDC dc = GetDC(nullptr);
+  mERROR_IF(dc == nullptr, mR_InternalError);
+
+  HDC compatibleDC = CreateCompatibleDC(dc);
+  mERROR_IF(compatibleDC == nullptr, mR_InternalError);
+  mDEFER(DeleteDC(compatibleDC));
+
+  BITMAPINFO bmi;
+  mZeroMemory(&bmi);
+  bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+  GetDIBits(compatibleDC, hbitmap, 0, 0, nullptr, &bmi, DIB_RGB_COLORS);
+
+  WTS_ALPHATYPE alphaType;
+  mERROR_IF(FAILED(hr = pSharedBitmap->GetFormat(&alphaType)), mR_InternalError);
+
+  bmi.bmiHeader.biBitCount = alphaType == WTSAT_RGB ? 24 : 32;
+  bmi.bmiHeader.biHeight = mAbs(bmi.bmiHeader.biHeight);
+  bmi.bmiHeader.biCompression = BI_RGB;
+
+  mPtr<mImageBuffer> imageBuffer;
+  mERROR_CHECK(mImageBuffer_Create(&imageBuffer, pAllocator, mVec2s((size_t)bmi.bmiHeader.biWidth, (size_t)bmi.bmiHeader.biHeight), alphaType == WTSAT_RGB ? mPF_B8G8R8 : mPF_B8G8R8A8));
+  mERROR_IF(0 == GetDIBits(compatibleDC, hbitmap, 0, bmi.bmiHeader.biHeight, imageBuffer->pPixels, &bmi, DIB_RGB_COLORS), mR_InternalError);
+
+  mERROR_CHECK(mImageBuffer_FlipY(imageBuffer));
+
+  *pThumbnail = imageBuffer;
 
   mRETURN_SUCCESS();
 }

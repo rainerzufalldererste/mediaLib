@@ -18,7 +18,7 @@ struct mScreenQuad
 {
   mPtr<mShader> shader;
 #if defined(mRENDERER_OPENGL)
-  GLuint vbo;
+  GLuint vao, vbo;
 #endif
 };
 

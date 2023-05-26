@@ -58,6 +58,8 @@ mFUNCTION(mRenderParams_CreateRenderContext, OUT mRenderContextId *pRenderContex
   currentRenderContext.referenceCount = 1;
 
 #if defined(mRENDERER_OPENGL)
+  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
+  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
 
   SDL_Window *pWindow;
   mERROR_CHECK(mHardwareWindow_GetSdlWindowPtr(window, &pWindow));
@@ -321,12 +323,17 @@ mFUNCTION(mRenderParams_ClearTargetColour, const mVector &colour)
 
   mPROFILE_SCOPED("mRenderParams_ClearTargetColour");
 
+  mGL_DEBUG_ERROR_CHECK();
+
 #if defined(mRENDERER_OPENGL)
   glClearColor(colour.x, colour.y, colour.z, colour.w);
   glClear(GL_COLOR_BUFFER_BIT);
 #else
   mRETURN_RESULT(mR_NotImplemented);
 #endif
+
+  mGL_DEBUG_ERROR_CHECK();
+
   mRETURN_SUCCESS();
 }
 
@@ -336,12 +343,16 @@ mFUNCTION(mRenderParams_ClearDepth)
 
   mPROFILE_SCOPED("mRenderParams_ClearDepth");
 
+  mGL_DEBUG_ERROR_CHECK();
+
 #if defined(mRENDERER_OPENGL)
   glDepthMask(GL_TRUE);
   glClear(GL_DEPTH_BUFFER_BIT);
 #else
   mRETURN_RESULT(mR_NotImplemented);
 #endif
+
+  mGL_DEBUG_ERROR_CHECK();
 
   mRETURN_SUCCESS();
 }
@@ -352,6 +363,8 @@ mFUNCTION(mRenderParams_ClearTargetDepthAndColour, const mVector &colour)
 
   mPROFILE_SCOPED("mRenderParams_ClearTargetDepthAndColour");
 
+  mGL_DEBUG_ERROR_CHECK();
+
 #if defined(mRENDERER_OPENGL)
   glDepthMask(GL_TRUE);
   glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
@@ -360,6 +373,8 @@ mFUNCTION(mRenderParams_ClearTargetDepthAndColour, const mVector &colour)
 #else
   mRETURN_RESULT(mR_NotImplemented);
 #endif
+
+  mGL_DEBUG_ERROR_CHECK();
 
   mRETURN_SUCCESS();
 }

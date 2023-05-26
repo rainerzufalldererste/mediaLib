@@ -221,6 +221,7 @@ static mFUNCTION(mAudioEngine_PrepareNextAudioBuffer_Internal, IN mAudioEngine *
       if (!ready)
       {
         const mResult result = mAudioEngine_ManagedAudioCallback_Internal(pAudioEngine, reinterpret_cast<float_t *>(pAudioEngine->buffer), pAudioEngine->bufferSize * pAudioEngine->channelCount);
+        mUnused(result);
 
         mASSERT_DEBUG(mSUCCEEDED(result), mFormat("Audio Engine Prepare Next Audio Buffer failed with error code ", mFUInt<mFHex>(result), "."));
 
@@ -239,6 +240,7 @@ static mFUNCTION(mAudioEngine_PrepareNextAudioBuffer_Internal, IN mAudioEngine *
         if ((*_item)->pBroadcastDelayFunc != nullptr)
         {
           const mResult result = (*_item)->pBroadcastDelayFunc((*_item), mAudioEngine_BufferSize);
+          mUnused(result);
 
           mASSERT_DEBUG(mSUCCEEDED(result), mFormat("Failed to broadcast audio delay to audio source with error code ", mFUInt<mFHex>(result), "."));
         }

@@ -3,14 +3,14 @@
 
 #include "mRenderDataBuffer.h"
 
-// Template Parameters should be `mDRBAttribute`s like `mRDB_FloatAttribute`.
 #ifdef GIT_BUILD // Define __M_FILE__
   #ifdef __M_FILE__
     #undef __M_FILE__
   #endif
-  #define __M_FILE__ "yHtqJ6HuV+9zl9900d7SUg8ypi41HzYFySTwZ4xypYFPPfLGwli9Adpj5totvTWNd3P82zhix6OdsWRQ"
+  #define __M_FILE__ "2HXrz0PQ89Q0a7uGkEErw0pfCzGh3IHGh5yUi6BIOHFy9h3uOr7Z+DBab5SoCeskjHZiWJMGhYIBaaiQ"
 #endif
 
+// Template Parameters should be `mDRBAttribute`s like `mRDB_FloatAttribute`.
 template <typename... Args>
 struct mIndexedRenderDataBuffer : mRenderDataBuffer<Args...>
 {
@@ -61,6 +61,9 @@ inline mFUNCTION(mIndexedRenderDataBuffer_Create, IN mIndexedRenderDataBuffer<Ar
   pBuffer->constantlyChangedIndices = constantlyChangedIndices;
 
 #if defined(mRENDERER_OPENGL)
+  glGenVertexArrays(1, &pBuffer->vao);
+  glBindVertexArray(pBuffer->vao);
+
   glGenBuffers(1, &pBuffer->ibo);
   glGenBuffers(1, &pBuffer->vbo);
 #endif
@@ -88,6 +91,9 @@ inline mFUNCTION(mIndexedRenderDataBuffer_Create, IN mIndexedRenderDataBuffer<Ar
   pBuffer->constantlyChangedIndices = constantlyChangedIndices;
 
 #if defined(mRENDERER_OPENGL)
+  glGenVertexArrays(1, &pBuffer->vao);
+  glBindVertexArray(pBuffer->vao);
+
   glGenBuffers(1, &pBuffer->ibo);
   glGenBuffers(1, &pBuffer->vbo);
 #endif
@@ -119,6 +125,12 @@ inline mFUNCTION(mIndexedRenderDataBuffer_Destroy, IN mIndexedRenderDataBuffer<A
     pBuffer->ibo = 0;
   }
 
+  if (pBuffer->vao != 0)
+  {
+    glDeleteVertexArrays(1, &pBuffer->vao);
+    pBuffer->vao = 0;
+  }
+
   mERROR_CHECK(mSharedPointer_Destroy(&pBuffer->shader));
 #endif
 
@@ -134,7 +146,7 @@ inline mFUNCTION(mIndexedRenderDataBuffer_SetVertexBuffer, mIndexedRenderDataBuf
 
   mERROR_IF(pData == nullptr, mR_ArgumentNull);
 
-  const size_t singleBlockSize = mRDBAttributeQuery_Internal<Args...>::GetSize();
+  //const size_t singleBlockSize = mRDBAttributeQuery_Internal<Args...>::GetSize();
 
   mPROFILE_SCOPED("mIndexedRenderDataBuffer_SetVertexBuffer");
 
@@ -208,6 +220,7 @@ inline mFUNCTION(mIndexedRenderDataBuffer_Draw, mIndexedRenderDataBuffer<Args...
   mPROFILE_SCOPED("mIndexedRenderDataBuffer_Draw");
 
 #if defined(mRENDERER_OPENGL)
+  glBindVertexArray(buffer.vao);
   glBindBuffer(GL_ARRAY_BUFFER, buffer.vbo);
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffer.ibo);
 #endif

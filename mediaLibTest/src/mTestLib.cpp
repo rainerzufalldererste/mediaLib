@@ -2,6 +2,8 @@
 
 #include <chrono>
 
+#include "mFile.h"
+#include "mSystemError.h"
 #include "mDebugSymbolInfo.h"
 
 bool IsInitialized = false;
@@ -40,6 +42,14 @@ void _HandleSignal(OPTIONAL IN _EXCEPTION_POINTERS *pExceptionInfo)
 {
   mUnused(pExceptionInfo);
 
+  BOOL isRemoteDebuggerPresent = false;
+
+  if (!CheckRemoteDebuggerPresent(GetCurrentProcess(), &isRemoteDebuggerPresent))
+    isRemoteDebuggerPresent = false;
+
+  if (IsDebuggerPresent() || isRemoteDebuggerPresent)
+    __debugbreak();
+
   char stackTrace[1024 * 16];
 
   if (mSUCCEEDED(mDebugSymbolInfo_GetStackTrace(stackTrace, mARRAYSIZE(stackTrace))))
@@ -48,6 +58,21 @@ void _HandleSignal(OPTIONAL IN _EXCEPTION_POINTERS *pExceptionInfo)
     puts("Failed to get stacktrace.");
 
   fflush(stdout);
+
+
+  FILETIME time;
+  GetSystemTimePreciseAsFileTime(&time);
+
+  const uint64_t timestamp = (uint64_t)time.dwLowDateTime | ((uint64_t)time.dwHighDateTime << 32);
+
+  mString minidumpFilename;
+
+  mPRINT("Attempting to write mini dump...\n");
+
+  if (mSUCCEEDED(mFile_GetCurrentApplicationFilePath(&minidumpFilename)) && mSUCCEEDED(mString_AppendUnsignedInteger(minidumpFilename, timestamp)) && mSUCCEEDED(mString_Append(minidumpFilename, ".dmp")))
+  {
+    /* Ignore Errors */(mSystemError_WriteMiniDump(minidumpFilename, pExceptionInfo, true));
+  }
 }
 
 BOOL WINAPI _SignalHandler(DWORD type)

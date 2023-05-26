@@ -135,6 +135,18 @@ mFUNCTION(mBinaryChunk_GetReadBytes, const mPtr<mBinaryChunk> &binaryChunk, OUT 
   mRETURN_SUCCESS();
 }
 
+mFUNCTION(mBinaryChunk_EraseFromWriteHead, mPtr<mBinaryChunk> &binaryChunk, const size_t size)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(binaryChunk == nullptr, mR_ArgumentNull);
+  mERROR_IF(binaryChunk->writeBytes < size, mR_ArgumentOutOfBounds);
+
+  binaryChunk->writeBytes -= size;
+
+  mRETURN_SUCCESS();
+}
+
 //////////////////////////////////////////////////////////////////////////
 
 static mFUNCTION(mBinaryChunk_Destroy_Internal, mBinaryChunk *pBinaryChunk)

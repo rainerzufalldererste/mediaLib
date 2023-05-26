@@ -554,7 +554,7 @@ mFUNCTION(mTasklessThreadPool_EnqueueTask, mPtr<mTasklessThreadPool> &threadPool
 
   threadPool->conditionVariable.notify_one();
 
-  mRETURN_SUCCESS();
+  mRETURN_RESULT(result);
 }
 
 mFUNCTION(mTasklessThreadPool_WaitForAll, mPtr<mTasklessThreadPool> &threadPool)

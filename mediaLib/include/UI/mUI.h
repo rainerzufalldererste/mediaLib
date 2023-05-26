@@ -56,6 +56,7 @@ namespace ImGui
   void ProgressBarRounded(float_t fraction, const ImVec2 &size_arg = ImVec2(-FLT_MIN, 0), const char *overlay = nullptr);
   void TextUnformattedWrapped(const char *text);
   void SetTooltipUnformatted(const char *text);
+  bool IsItemHoveredManual(const mVec2f mousePosition);
 }
 
 #endif // mUI_h__

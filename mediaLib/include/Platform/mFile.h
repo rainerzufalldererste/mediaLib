@@ -155,6 +155,8 @@ mFUNCTION(mFile_GetDriveFromFilePath, OUT mString *pDrivePath, const mString &fi
 mFUNCTION(mFile_GetDriveInfo, const mString &drivePath, OUT mDriveInfo *pDriveInfo, IN mAllocator *pAllocator);
 mFUNCTION(mFile_GetFolderSize, const mString &directoryPath, OUT size_t *pFolderSize);
 
+mFUNCTION(mFile_GetThumbnail, const mString &filename, const size_t size, OUT mPtr<struct mImageBuffer> *pThumbnail, IN mAllocator *pAllocator);
+
 struct mFileWriter
 {
 #ifdef mPLATFORM_WINDOWS

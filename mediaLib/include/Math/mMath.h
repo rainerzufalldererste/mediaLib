@@ -917,7 +917,18 @@ struct mRectangle2D
 template <typename T>
 struct mTriangle
 {
-  T position0, position1, position2;
+#pragma warning(push)
+#pragma warning(disable: 4201)
+  union
+  {
+    struct
+    {
+      T position0, position1, position2;
+    };
+
+    T position[3];
+  };
+#pragma warning(pop)
 
   inline mTriangle()
   { }
@@ -936,9 +947,38 @@ template <typename T>
 using mTriangle3D = mTriangle<mVec3t<T>>;
 
 template <typename T>
+inline bool mIntersects(const mTriangle2D<T> &t, const mVec2t<T> point)
+{
+  const mVec2t<T> _a = t.position[2] - t.position[1];
+  const mVec2t<T> _b = t.position[0] - t.position[2];
+  const mVec2t<T> _c = t.position[1] - t.position[0];
+
+  const mVec2t<T> ap = point - t.position[0];
+  const mVec2t<T> bp = point - t.position[1];
+  const mVec2t<T> cp = point - t.position[2];
+
+  const T aXbp = _a.x * bp.y - _a.y * bp.x;
+  const T cXap = _c.x * ap.y - _c.y * ap.x;
+  const T bXcp = _b.x * cp.y - _b.y * cp.x;
+
+  return aXbp >= (T)0 && bXcp >= (T)0 && cXap >= (T)0;
+};
+
+template <typename T>
 struct mLine
 {
-  T position0, position1;
+#pragma warning(push)
+#pragma warning(disable: 4201)
+  union
+  {
+    struct
+    {
+      T position0, position1;
+    };
+
+    T position[2];
+  };
+#pragma warning(pop)
 
   inline mLine()
   { }
@@ -979,17 +1019,114 @@ using mPlane3D = mPlane<mVec3t<T>>;
 
 struct mVector;
 
-mVec3f mColor_UnpackBgraToVec3f(const uint32_t bgraColor);
-mVec3d mColor_UnpackBgraToVec3d(const uint32_t bgraColor);
-mVec4f mColor_UnpackBgraToVec4f(const uint32_t bgraColor);
-mVec4d mColor_UnpackBgraToVec4d(const uint32_t bgraColor);
-mVector mColor_UnpackBgraToVector(const uint32_t bgraColor);
+__host__ __device__ inline constexpr mVec3f mColor_UnpackBgraToVec3f(const uint32_t bgraColor)
+{
+  constexpr float_t v(1.0f / 0xFF);
+  return mVec3f((float_t)((bgraColor & 0x00FF0000) >> 0x10), (float_t)((bgraColor & 0x0000FF00) >> 0x8), (float_t)(bgraColor & 0x000000FF)) * v;
+}
 
-uint32_t mColor_PackVec3fToBgra(const mVec3f rgbVector);
-uint32_t mColor_PackVec3dToBgra(const mVec3d rgbVector);
-uint32_t mColor_PackVec4fToBgra(const mVec4f rgbaVector);
-uint32_t mColor_PackVec4dToBgra(const mVec4d rgbaVector);
+__host__ __device__ inline constexpr mVec3d mColor_UnpackBgraToVec3d(const uint32_t bgraColor)
+{
+  constexpr double_t v(1.0 / 0xFF);
+  return mVec3d((double_t)((bgraColor & 0x00FF0000) >> 0x10), (double_t)((bgraColor & 0x0000FF00) >> 0x8), (double_t)(bgraColor & 0x000000FF)) * v;
+}
+
+__host__ __device__ inline constexpr mVec4f mColor_UnpackBgraToVec4f(const uint32_t bgraColor)
+{
+  constexpr const float_t v(1.0f / 0xFF);
+  return mVec4f((float_t)((bgraColor & 0x00FF0000) >> 0x10), (float_t)((bgraColor & 0x0000FF00) >> 0x8), (float_t)(bgraColor & 0x000000FF), (float_t)((bgraColor & 0xFF000000) >> 0x18)) * v;
+}
+
+__host__ __device__ inline constexpr mVec4d mColor_UnpackBgraToVec4d(const uint32_t bgraColor)
+{
+  constexpr double_t v(1.0 / 0xFF);
+  return mVec4d((double_t)((bgraColor & 0x00FF0000) >> 0x10), (double_t)((bgraColor & 0x0000FF00) >> 0x8), (double_t)(bgraColor & 0x000000FF), (double_t)((bgraColor & 0xFF000000) >> 0x18)) * v;
+}
+
+__host__ __device__ inline constexpr uint32_t mColor_PackVec3fToBgra(const mVec3f rgbVector)
+{
+  constexpr float_t v = (float_t)0xFF;
+  const mVec3f v0 = rgbVector * v;
+  return (mClamp((uint32_t)v0.x, 0u, 0xFFu) << 0x10) | (mClamp((uint32_t)v0.y, 0u, 0xFFu) << 0x8) | mClamp((uint32_t)v0.z, 0u, 0xFFu) | 0xFF000000;
+}
+
+__host__ __device__ inline constexpr uint32_t mColor_PackVec3dToBgra(const mVec3d rgbVector)
+{
+  constexpr double_t v = (double_t)0xFF;
+  const mVec3d v0 = rgbVector * v;
+  return (mClamp((uint32_t)v0.x, 0u, 0xFFu) << 0x10) | (mClamp((uint32_t)v0.y, 0u, 0xFFu) << 0x8) | mClamp((uint32_t)v0.z, 0u, 0xFFu) | 0xFF000000;
+}
+
+__host__ __device__ inline constexpr uint32_t mColor_PackVec4fToBgra(const mVec4f rgbaVector)
+{
+  constexpr float_t v = (float_t)0xFF;
+  const mVec4f v0 = rgbaVector * v;
+  return (mClamp((uint32_t)v0.x, 0u, 0xFFu) << 0x10) | (mClamp((uint32_t)v0.y, 0u, 0xFFu) << 0x8) | mClamp((uint32_t)v0.z, 0u, 0xFFu) | (mClamp((uint32_t)v0.w, 0u, 0xFFu) << 0x18);
+}
+
+__host__ __device__ inline constexpr uint32_t mColor_PackVec4dToBgra(const mVec4d rgbaVector)
+{
+  constexpr double_t v = (double_t)0xFF;
+  const mVec4d v0 = rgbaVector * v;
+  return (mClamp((uint32_t)v0.x, 0u, 0xFFu) << 0x10) | (mClamp((uint32_t)v0.y, 0u, 0xFFu) << 0x8) | mClamp((uint32_t)v0.z, 0u, 0xFFu) | (mClamp((uint32_t)v0.w, 0u, 0xFFu) << 0x18);
+}
+
+__host__ __device__ inline constexpr mVec3f mColor_UnpackRgbaToVec3f(const uint32_t rgbaColor)
+{
+  constexpr float_t v(1.0f / 0xFF);
+  return mVec3f((float_t)(rgbaColor & 0x000000FF), (float_t)((rgbaColor & 0x0000FF00) >> 0x8), (float_t)((rgbaColor & 0x00FF0000) >> 0x10)) * v;
+}
+
+__host__ __device__ inline constexpr mVec3d mColor_UnpackRgbaToVec3d(const uint32_t rgbaColor)
+{
+  constexpr double_t v(1.0 / 0xFF);
+  return mVec3d((double_t)(rgbaColor & 0x000000FF), (double_t)((rgbaColor & 0x0000FF00) >> 0x8), (double_t)((rgbaColor & 0x00FF0000) >> 0x10)) * v;
+}
+
+__host__ __device__ inline constexpr mVec4f mColor_UnpackRgbaToVec4f(const uint32_t rgbaColor)
+{
+  constexpr const float_t v(1.0f / 0xFF);
+  return mVec4f((float_t)(rgbaColor & 0x000000FF), (float_t)((rgbaColor & 0x0000FF00) >> 0x8), (float_t)((rgbaColor & 0x00FF0000) >> 0x10), (float_t)((rgbaColor & 0xFF000000) >> 0x18)) * v;
+}
+
+__host__ __device__ inline constexpr mVec4d mColor_UnpackRgbaToVec4d(const uint32_t rgbaColor)
+{
+  constexpr double_t v(1.0 / 0xFF);
+  return mVec4d((double_t)(rgbaColor & 0x000000FF), (double_t)((rgbaColor & 0x0000FF00) >> 0x8), (double_t)((rgbaColor & 0x00FF0000) >> 0x10), (double_t)((rgbaColor & 0xFF000000) >> 0x18)) * v;
+}
+
+__host__ __device__ inline constexpr uint32_t mColor_PackVec3fToRgba(const mVec3f rgbVector)
+{
+  constexpr float_t v = (float_t)0xFF;
+  const mVec3f v0 = rgbVector * v;
+  return (mClamp((uint32_t)v0.z, 0u, 0xFFu) << 0x10) | (mClamp((uint32_t)v0.y, 0u, 0xFFu) << 0x8) | mClamp((uint32_t)v0.x, 0u, 0xFFu) | 0xFF000000;
+}
+
+__host__ __device__ inline constexpr uint32_t mColor_PackVec3dToRgba(const mVec3d rgbVector)
+{
+  constexpr double_t v = (double_t)0xFF;
+  const mVec3d v0 = rgbVector * v;
+  return (mClamp((uint32_t)v0.z, 0u, 0xFFu) << 0x10) | (mClamp((uint32_t)v0.y, 0u, 0xFFu) << 0x8) | mClamp((uint32_t)v0.x, 0u, 0xFFu) | 0xFF000000;
+}
+
+__host__ __device__ inline constexpr uint32_t mColor_PackVec4fToRgba(const mVec4f rgbaVector)
+{
+  constexpr float_t v = (float_t)0xFF;
+  const mVec4f v0 = rgbaVector * v;
+  return (mClamp((uint32_t)v0.z, 0u, 0xFFu) << 0x10) | (mClamp((uint32_t)v0.y, 0u, 0xFFu) << 0x8) | mClamp((uint32_t)v0.x, 0u, 0xFFu) | (mClamp((uint32_t)v0.w, 0u, 0xFFu) << 0x18);
+}
+
+__host__ __device__ inline constexpr uint32_t mColor_PackVec4dToRgba(const mVec4d rgbaVector)
+{
+  constexpr double_t v = (double_t)0xFF;
+  const mVec4d v0 = rgbaVector * v;
+  return (mClamp((uint32_t)v0.z, 0u, 0xFFu) << 0x10) | (mClamp((uint32_t)v0.y, 0u, 0xFFu) << 0x8) | mClamp((uint32_t)v0.x, 0u, 0xFFu) | (mClamp((uint32_t)v0.w, 0u, 0xFFu) << 0x18);
+}
+
 uint32_t mColor_PackVectorToBgra(const mVector rgbaVector);
+mVector mColor_UnpackBgraToVector(const uint32_t bgraColor);
+uint32_t mColor_PackVectorToRgba(const mVector rgbaVector);
+mVector mColor_UnpackRgbaToVector(const uint32_t rgbaColor);
 
 __host__ __device__ inline mVec3f mColor_HueToVec3f(const float_t hue)
 {

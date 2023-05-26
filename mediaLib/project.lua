@@ -18,7 +18,7 @@ project(ProjectName)
     defines { "_CRT_SECURE_NO_WARNINGS", "SSE2", "GLEW_STATIC" }
   filter { }
 
-  filter { "system:windows", "action:vs2019" }
+  filter { "system:windows", "action:vs2019 or vs202*" }
     cppdialect "C++17"
   filter { }
 

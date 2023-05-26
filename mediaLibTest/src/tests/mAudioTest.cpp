@@ -700,7 +700,7 @@ mTEST(mAudio, AddWithVolumeFloat)
 mTEST(mAudio, ConvertFloatToInt16)
 {
   constexpr size_t sampleCount = 1023;
-  const float_t volume = 0.125f;
+  //const float_t volume = 0.125f;
 
   float_t src[sampleCount];
   int16_t dst[sampleCount];

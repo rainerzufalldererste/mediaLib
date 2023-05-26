@@ -14,7 +14,7 @@ project(ProjectName)
   ignoredefaultlibraries { "msvcrt" }
   disablewarnings  { '4127' } -- ignore conditional expression is constant
 
-  filter { "system:windows", "action:vs2019" }
+  filter { "system:windows", "action:vs2019 or vs202*" }
     cppdialect "C++17"
   filter { }
 
@@ -39,6 +39,9 @@ project(ProjectName)
     links { "3rdParty/gtest/lib/gtestd.lib" }
   
   filter { }
+
+  links { "../mediaLib/3rdParty/glew/lib/libglew32.lib" }
+  links { "opengl32.lib", "glu32.lib" }
   
   filter { "configurations:Debug", "system:Windows" }
     ignoredefaultlibraries { "libcmt" }

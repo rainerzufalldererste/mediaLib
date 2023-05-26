@@ -277,14 +277,14 @@ mFUNCTION(mPixelFormat_GetComponentCount, const mPixelFormat pixelFormat, OUT si
     break;
 
   case mPF_R8G8B8:
+  case mPF_B8G8R8:
   case mPF_R16G16B16:
   case mPF_Rf16Gf16Bf16:
   case mPF_Rf32Gf32Bf32:
-  case mPF_B8G8R8:
-  case mPF_B8G8R8A8:
     *pCount = 3;
     break;
 
+  case mPF_B8G8R8A8:
   case mPF_R8G8B8A8:
   case mPF_R16G16B16A16:
   case mPF_Rf16Gf16Bf16Af16:
@@ -1259,7 +1259,6 @@ namespace mPixelFormat_Transform
     for (size_t y = 0; y < height - 1; y += 2)
     {
       const size_t yline = y * bgraStride;
-      const size_t yhalf = y >> 1;
       const size_t ySourceLine0 = y * yStride;
       const size_t ySourceLine1 = (y >> 1) * uvStride;
 
@@ -1482,6 +1481,72 @@ namespace mPixelFormat_Transform
     mERROR_CHECK(mPixelFormat_Transform_RgbaToBgra(source, target, asyncTaskHandler));
 
     mRETURN_SUCCESS();
+  }
+
+  mFUNCTION(mPixelFormat_Transform_BgrToBgra, mPtr<mImageBuffer> &source, mPtr<mImageBuffer> &target, mPtr<mThreadPool> &asyncTaskHandler)
+  {
+    mFUNCTION_SETUP();
+
+    mUnused(asyncTaskHandler);
+
+    uint32_t *pTarget = (uint32_t *)target->pPixels;
+    uint8_t *pSource = (uint8_t *)source->pPixels;
+    const mVec2s size = source->currentSize;
+    const size_t targetStride = target->lineStride;
+    const size_t sourceStride = source->lineStride * 3;
+
+    for (size_t y = 0; y < size.y; y++)
+    {
+      for (size_t x = 0; x < size.x; x++)
+      {
+        *pTarget = 0xFF000000 | ((uint32_t)pSource[2] << 0x10) | ((uint32_t)pSource[1] << 0x8) | (uint32_t)pSource[0];
+        pTarget++;
+        pSource += 3;
+      }
+
+      pTarget += targetStride - size.x;
+      pSource += sourceStride - size.x * 3;
+    }
+
+    mRETURN_SUCCESS();
+  }
+
+  mFUNCTION(mPixelFormat_Transform_RgbToRgba, mPtr<mImageBuffer> &source, mPtr<mImageBuffer> &target, mPtr<mThreadPool> &asyncTaskHandler)
+  {
+    return mPixelFormat_Transform_BgrToBgra(source, target, asyncTaskHandler);
+  }
+
+  mFUNCTION(mPixelFormat_Transform_RgbToBgra, mPtr<mImageBuffer> &source, mPtr<mImageBuffer> &target, mPtr<mThreadPool> &asyncTaskHandler)
+  {
+    mFUNCTION_SETUP();
+
+    mUnused(asyncTaskHandler);
+
+    uint32_t *pTarget = (uint32_t *)target->pPixels;
+    uint8_t *pSource = (uint8_t *)source->pPixels;
+    const mVec2s size = source->currentSize;
+    const size_t targetStride = target->lineStride;
+    const size_t sourceStride = source->lineStride * 3;
+
+    for (size_t y = 0; y < size.y; y++)
+    {
+      for (size_t x = 0; x < size.x; x++)
+      {
+        *pTarget = 0xFF000000 | ((uint32_t)pSource[0] << 0x10) | ((uint32_t)pSource[1] << 0x8) | (uint32_t)pSource[2];
+        pTarget++;
+        pSource += 3;
+      }
+
+      pTarget += targetStride - size.x;
+      pSource += sourceStride - size.x * 3;
+    }
+
+    mRETURN_SUCCESS();
+  }
+
+  mFUNCTION(mPixelFormat_Transform_BgrToRgba, mPtr<mImageBuffer> &source, mPtr<mImageBuffer> &target, mPtr<mThreadPool> &asyncTaskHandler)
+  {
+    return mPixelFormat_Transform_RgbToBgra(source, target, asyncTaskHandler);
   }
 
   void mPixelFormat_Transform_RgbToBgrSameStrideSSSE3(const uint8_t *pSource, uint8_t *pTarget, const size_t index, OUT size_t *pIndex, const size_t size)
@@ -2022,6 +2087,18 @@ mFUNCTION(mPixelFormat_TransformBuffer, mPtr<mImageBuffer> &source, mPtr<mImageB
       break;
     }
 
+    case mPF_B8G8R8:
+    {
+      mERROR_CHECK(mPixelFormat_Transform_BgrToBgra(source, target, asyncTaskHandler));
+      break;
+    }
+
+    case mPF_R8G8B8:
+    {
+      mERROR_CHECK(mPixelFormat_Transform_RgbToBgra(source, target, asyncTaskHandler));
+      break;
+    }
+
     default:
     {
       mRETURN_RESULT(mR_NotImplemented);
@@ -2040,6 +2117,18 @@ mFUNCTION(mPixelFormat_TransformBuffer, mPtr<mImageBuffer> &source, mPtr<mImageB
     case mPF_B8G8R8A8:
     {
       mERROR_CHECK(mPixelFormat_Transform_BgraToRgba(source, target, asyncTaskHandler));
+      break;
+    }
+
+    case mPF_B8G8R8:
+    {
+      mERROR_CHECK(mPixelFormat_Transform_BgrToRgba(source, target, asyncTaskHandler));
+      break;
+    }
+
+    case mPF_R8G8B8:
+    {
+      mERROR_CHECK(mPixelFormat_Transform_RgbToRgba(source, target, asyncTaskHandler));
       break;
     }
 
