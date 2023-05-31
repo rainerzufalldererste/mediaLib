@@ -213,6 +213,8 @@ mFUNCTION(mSprintf, OUT char *buffer, const size_t bufferCount, const char *form
   mRETURN_SUCCESS();
 }
 
+#pragma warning(push)
+#pragma warning(disable: 5082)
 mFUNCTION(mSprintfWithCount, OUT char *buffer, const size_t bufferCount, const char *formatString, OUT size_t *pCount, ...)
 {
   mFUNCTION_SETUP();
@@ -232,6 +234,7 @@ mFUNCTION(mSprintfWithCount, OUT char *buffer, const size_t bufferCount, const c
 
   mRETURN_SUCCESS();
 }
+#pragma warning(pop)
 
 mFUNCTION(mStringCopy, OUT char *buffer, const size_t bufferCount, const char *source, const size_t sourceCount)
 {
@@ -310,6 +313,8 @@ mFUNCTION(mSprintf, OUT wchar_t *buffer, const size_t bufferCount, const wchar_t
   mRETURN_SUCCESS();
 }
 
+#pragma warning(push)
+#pragma warning(disable: 5082)
 mFUNCTION(mSprintfWithCount, OUT wchar_t *buffer, const size_t bufferCount, const wchar_t *formatString, OUT size_t *pCount, ...)
 {
   mFUNCTION_SETUP();
@@ -327,6 +332,7 @@ mFUNCTION(mSprintfWithCount, OUT wchar_t *buffer, const size_t bufferCount, cons
 
   mRETURN_SUCCESS();
 }
+#pragma warning(pop)
 
 mFUNCTION(mStringCopy, OUT wchar_t *buffer, const size_t bufferCount, const wchar_t *source, const size_t sourceCount)
 {
