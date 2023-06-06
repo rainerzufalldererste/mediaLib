@@ -661,7 +661,7 @@ double_t mParseFloat(IN const char *start, OPTIONAL OUT const char **pEnd /* = n
     if (_end - start < (ptrdiff_t)mARRAYSIZE(fracMult))
       ret = (ret + right * fracMult[_end - start]);
     else
-      ret = (ret + right * mPow(10, _end - start));
+      ret = (ret + right * mPow(10, start - _end));
 
     // Get Sign. (memcpy should get optimized away and is only there to prevent undefined behavior)
     {
@@ -1013,7 +1013,7 @@ double_t mParseFloat(IN const wchar_t *start, OPTIONAL OUT const wchar_t **pEnd 
     if (_end - start < (ptrdiff_t)mARRAYSIZE(fracMult))
       ret = (ret + right * fracMult[_end - start]);
     else
-      ret = (ret + right * mPow(10, _end - start));
+      ret = (ret + right * mPow(10, start - _end));
 
     // Get Sign. (memcpy should get optimized away and is only there to prevent undefined behavior)
     {
