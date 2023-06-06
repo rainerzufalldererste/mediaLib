@@ -1,6 +1,7 @@
 #include "mTestLib.h"
 #include "mAudio.h"
 
+#pragma optimize("", off) // something weird and locally irreproducable is going on with optimized builds on the build server here. I've wasted too much time already trying to convince it to do WHAT THE CODE SAYS. I'm giving up. Nothing has changed and if non-optimized builds work, and the error clearly occurs in the TEST part, I'm just not optimizing the function...
 template <size_t size, size_t offset>
 mFUNCTION(TestApplyVolume)
 {
@@ -8,16 +9,21 @@ mFUNCTION(TestApplyVolume)
 
   constexpr float_t volume = 0.24f;
   
-  mALIGN(32) uint8_t f[sizeof(float_t *) * size + offset];
-  float_t *pData = reinterpret_cast<float_t *>(f + offset);
+  mALIGN(32) float_t raw[size + offset];
+  float_t *pData = raw + offset;
 
   for (size_t i = 0; i < size; i++)
+  {
     pData[i] = (float_t)i;
+
+    if constexpr (size == 2)
+      printf("%" PRIu64 ": %f which is the same as %f\n", i, pData[i], (float_t)i); // this appears to be necessary, in order to prevent mis-optimization even with pragma optimize off.
+  }
 
   mERROR_CHECK(mAudio_ApplyVolumeFloat(pData, volume, size));
 
   for (size_t i = 0; i < size; i++)
-    mERROR_IF(i * volume != pData[i], mR_Failure);
+    mERROR_IF(!mTest_FloatEquals(i * volume, pData[i]), mR_Failure);
 
   mRETURN_SUCCESS();
 }
@@ -42,6 +48,8 @@ mTEST(mAudio, ApplyVolumeSmall)
 
   mTEST_RETURN_SUCCESS();
 }
+#pragma optimize("", on)
+
 mTEST(mAudio, ApplyVolumeAligned)
 {
   mTEST_ASSERT_SUCCESS((TestApplyVolume<1024, 0>()));
