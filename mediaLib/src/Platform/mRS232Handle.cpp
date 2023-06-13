@@ -266,7 +266,7 @@ mFUNCTION(mRS232Handle_GetPortsFromName, const char *name, OUT mPtr<mQueue<uint3
     }
   }
 
-  SetupDiDeleteDeviceInfo(devSet, &devInfo); // Comment from cutil/holo: cm, this line is problematic
+  SetupDiDeleteDeviceInfo(devSet, &devInfo);
   SetupDiDestroyDeviceInfoList(devSet);
 
   mRETURN_SUCCESS();
