@@ -1,11 +1,3 @@
-// Copyright 2018 Christoph Stiller
-// 
-// Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
-// 
-// The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-// 
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
 #include "mImageBuffer.h"
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -30,7 +22,7 @@ mFUNCTION(mImageBuffer_Create, OUT mPtr<mImageBuffer> *pImageBuffer, IN OPTIONAL
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mImageBuffer_CreateFromFile, OUT mPtr<mImageBuffer> *pImageBuffer, IN OPTIONAL mAllocator *pAllocator, const std::string &filename)
+mFUNCTION(mImageBuffer_CreateFromFile, OUT mPtr<mImageBuffer> *pImageBuffer, IN OPTIONAL mAllocator *pAllocator, const mString &filename)
 {
   mFUNCTION_SETUP();
 
@@ -43,7 +35,7 @@ mFUNCTION(mImageBuffer_CreateFromFile, OUT mPtr<mImageBuffer> *pImageBuffer, IN 
   if (pResult == nullptr)
     mRETURN_RESULT(mR_InternalError);
 
-  mDEFER_DESTRUCTION((void *)pResult, stbi_image_free);
+  mDEFER_CALL((void *)pResult, stbi_image_free);
 
   mERROR_CHECK(mImageBuffer_AllocateBuffer(*pImageBuffer, mVec2s((size_t)x, (size_t)y), mPF_R8G8B8A8));
 
@@ -293,7 +285,7 @@ mFUNCTION(mImageBuffer_CopyTo, mPtr<mImageBuffer> &source, mPtr<mImageBuffer> &t
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mImageBuffer_SaveAsPng, mPtr<mImageBuffer> &imageBuffer, const std::string &filename)
+mFUNCTION(mImageBuffer_SaveAsPng, mPtr<mImageBuffer> &imageBuffer, const mString &filename)
 {
   mFUNCTION_SETUP();
 
@@ -322,7 +314,7 @@ mFUNCTION(mImageBuffer_SaveAsPng, mPtr<mImageBuffer> &imageBuffer, const std::st
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mImageBuffer_SaveAsJpeg, mPtr<mImageBuffer> &imageBuffer, const std::string &filename)
+mFUNCTION(mImageBuffer_SaveAsJpeg, mPtr<mImageBuffer> &imageBuffer, const mString &filename)
 {
   mFUNCTION_SETUP();
 
@@ -352,7 +344,7 @@ mFUNCTION(mImageBuffer_SaveAsJpeg, mPtr<mImageBuffer> &imageBuffer, const std::s
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mImageBuffer_SaveAsBmp, mPtr<mImageBuffer> &imageBuffer, const std::string &filename)
+mFUNCTION(mImageBuffer_SaveAsBmp, mPtr<mImageBuffer> &imageBuffer, const mString &filename)
 {
   mFUNCTION_SETUP();
 
@@ -382,7 +374,7 @@ mFUNCTION(mImageBuffer_SaveAsBmp, mPtr<mImageBuffer> &imageBuffer, const std::st
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mImageBuffer_SaveAsTga, mPtr<mImageBuffer> &imageBuffer, const std::string &filename)
+mFUNCTION(mImageBuffer_SaveAsTga, mPtr<mImageBuffer> &imageBuffer, const mString &filename)
 {
   mFUNCTION_SETUP();
 
@@ -504,7 +496,7 @@ mFUNCTION(mImageBuffer_Create_Iternal, mPtr<mImageBuffer> *pImageBuffer, IN OPTI
   mDEFER_ON_ERROR(mAllocator_FreePtr(pAllocator, &pImageBufferRaw));
   mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &pImageBufferRaw, 1));
 
-  mDEFER_DESTRUCTION_ON_ERROR(pImageBuffer, mSharedPointer_Destroy);
+  mDEFER_CALL_ON_ERROR(pImageBuffer, mSharedPointer_Destroy);
   mERROR_CHECK(mSharedPointer_Create<mImageBuffer>(pImageBuffer, pImageBufferRaw, [](mImageBuffer *pData) { mImageBuffer_Destroy_Iternal(pData); }, pAllocator));
   pImageBufferRaw = nullptr; // to not be destroyed on error.
 

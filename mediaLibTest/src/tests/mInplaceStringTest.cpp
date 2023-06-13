@@ -1,11 +1,3 @@
-// Copyright 2018 Christoph Stiller
-// 
-// Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
-// 
-// The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-// 
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
 #include "mTestLib.h"
 #include "mString.h"
 
@@ -105,7 +97,7 @@ mTEST(mInplaceString, TestCastTo_mString)
   mTEST_ASSERT_SUCCESS(mInplaceString_Create(&string, (char *)text, mARRAYSIZE(text)));
 
   mString mstring;
-  mDEFER_DESTRUCTION(&mstring, mString_Destroy);
+  mDEFER_CALL(&mstring, mString_Destroy);
   mTEST_ASSERT_SUCCESS(mString_Create(&mstring, string));
 
   size_t count;
@@ -121,4 +113,38 @@ mTEST(mInplaceString, TestCastTo_mString)
   mTEST_ASSERT_EQUAL(size, mStringSize);
 
   mTEST_ALLOCATOR_ZERO_CHECK();
+}
+
+mTEST(mInplaceString, TestCreateTooLong)
+{
+  mInplaceString<5> string;
+  char text[] = "🌵🦎🎅testמⴲ";
+  mTEST_ASSERT_EQUAL(mR_ArgumentOutOfBounds, mInplaceString_CreateRaw(&string, (char *)text));
+  mTEST_ASSERT_EQUAL(mR_ArgumentOutOfBounds, mInplaceString_Create(&string, text));
+  mTEST_ASSERT_EQUAL(mR_ArgumentOutOfBounds, mInplaceString_Create(&string, (mString)text));
+  mTEST_ASSERT_EQUAL(mR_ArgumentOutOfBounds, mInplaceString_Create(&string, text, mARRAYSIZE(text)));
+}
+
+mTEST(mInplaceString, TestSet)
+{
+  mInplaceString<128> stringA;
+  mInplaceString<128> stringB;
+  mInplaceString<128> stringC;
+  
+  char text[] = "🌵🦎🎅testמⴲ";
+  mTEST_ASSERT_SUCCESS(mInplaceString_Create(&stringA, (char *)text, mARRAYSIZE(text)));
+  mTEST_ASSERT_SUCCESS(mInplaceString_Create(&stringC, (char *)text, mARRAYSIZE(text)));
+
+  stringB = stringA;
+  mTEST_ASSERT_EQUAL(stringA, stringB);
+  stringB = std::move(stringA);
+  mTEST_ASSERT_EQUAL(stringA, stringB);
+
+  mTEST_ASSERT_SUCCESS(mInplaceString_Create(&stringA, (char *)text, mARRAYSIZE(text)));
+
+  new (&stringB) mInplaceString<128>(stringA);
+  mTEST_ASSERT_EQUAL(stringC, stringB);
+
+  new (&stringB) mInplaceString<128>(std::move(stringA));
+  mTEST_ASSERT_EQUAL(stringC, stringB);
 }

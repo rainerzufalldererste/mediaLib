@@ -1,11 +1,3 @@
-// Copyright 2018 Christoph Stiller
-// 
-// Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
-// 
-// The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-// 
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
 #ifndef mShader_h__
 #define mShader_h__
 
@@ -16,8 +8,8 @@
 struct mShader
 {
   bool initialized = false;
-  std::wstring vertexShader;
-  std::wstring fragmentShader;
+  mString vertexShader;
+  mString fragmentShader;
 
 #if defined(mRENDERER_OPENGL)
   GLuint shaderProgram;
@@ -29,14 +21,14 @@ struct mShader
 #define mGLSL(src) "#version 150 core\n" #src
 #endif
 
-mFUNCTION(mShader_Create, OUT mShader *pShader, const std::string &vertexShader, const std::string &fragmentShader, IN OPTIONAL const char *fragDataLocation = nullptr);
-mFUNCTION(mShader_CreateFromFile, OUT mShader *pShader, const std::wstring &filename);
-mFUNCTION(mShader_CreateFromFile, OUT mShader *pShader, const std::wstring &vertexShaderPath, const std::wstring &fragmentShaderPath, IN OPTIONAL const char *fragDataLocation = nullptr);
+mFUNCTION(mShader_Create, OUT mShader *pShader, const mString &vertexShader, const mString &fragmentShader, IN OPTIONAL const char *fragDataLocation = nullptr);
+mFUNCTION(mShader_CreateFromFile, OUT mShader *pShader, const mString &filename);
+mFUNCTION(mShader_CreateFromFile, OUT mShader *pShader, const mString &vertexShaderPath, const mString &fragmentShaderPath, IN OPTIONAL const char *fragDataLocation = nullptr);
 mFUNCTION(mShader_Destroy, IN_OUT mShader *pShader);
 
-mFUNCTION(mShader_SetTo, mPtr<mShader> &shader, const std::string &vertexShader, const std::string &fragmentShader, IN OPTIONAL const char *fragDataLocation = nullptr);
-mFUNCTION(mShader_SetToFile, mPtr<mShader> &shader, const std::wstring &vertexShaderPath, const std::wstring &fragmentShaderPath, IN OPTIONAL const char *fragDataLocation = nullptr);
-mFUNCTION(mShader_SetToFile, mPtr<mShader> &shader, const std::wstring &filename);
+mFUNCTION(mShader_SetTo, mPtr<mShader> &shader, const mString &vertexShader, const mString &fragmentShader, IN OPTIONAL const char *fragDataLocation = nullptr);
+mFUNCTION(mShader_SetToFile, mPtr<mShader> &shader, const mString &vertexShaderPath, const mString &fragmentShaderPath, IN OPTIONAL const char *fragDataLocation = nullptr);
+mFUNCTION(mShader_SetToFile, mPtr<mShader> &shader, const mString &filename);
 
 mFUNCTION(mShader_ReloadFromFile, mPtr<mShader> &shader);
 
@@ -108,7 +100,7 @@ mFUNCTION(mShader_SetUniform, mPtr<mShader> &shader, const char *uniformName, T 
   mRETURN_SUCCESS();
 }
 template <typename T>
-mFUNCTION(mShader_SetUniform, mShader &shader, const std::string &uniformName, T v)
+mFUNCTION(mShader_SetUniform, mShader &shader, const mString &uniformName, T v)
 {
   mFUNCTION_SETUP();
 
@@ -128,7 +120,7 @@ mFUNCTION(mShader_SetUniform, mShader &shader, const std::string &uniformName, T
 }
 
 template <typename T>
-mFUNCTION(mShader_SetUniform, mPtr<mShader> &shader, const std::string &uniformName, T v)
+mFUNCTION(mShader_SetUniform, mPtr<mShader> &shader, const mString &uniformName, T v)
 {
   mFUNCTION_SETUP();
 
@@ -189,7 +181,7 @@ mFUNCTION(mShader_SetUniform, mPtr<mShader> &shader, const char *uniformName, T 
   mRETURN_SUCCESS();
 }
 template <typename T, size_t TCount>
-mFUNCTION(mShader_SetUniform, mShader &shader, const std::string &uniformName, T pV[TCount])
+mFUNCTION(mShader_SetUniform, mShader &shader, const mString &uniformName, T pV[TCount])
 {
   mFUNCTION_SETUP();
 
@@ -209,7 +201,7 @@ mFUNCTION(mShader_SetUniform, mShader &shader, const std::string &uniformName, T
 }
 
 template <typename T, size_t TCount>
-mFUNCTION(mShader_SetUniform, mPtr<mShader> &shader, const std::string &uniformName, T pV[TCount])
+mFUNCTION(mShader_SetUniform, mPtr<mShader> &shader, const mString &uniformName, T pV[TCount])
 {
   mFUNCTION_SETUP();
 
@@ -270,7 +262,7 @@ mFUNCTION(mShader_SetUniform, mPtr<mShader> &shader, const char *uniformName, T 
   mRETURN_SUCCESS();
 }
 template <typename T>
-mFUNCTION(mShader_SetUniform, mShader &shader, const std::string &uniformName, T *pV, const size_t count)
+mFUNCTION(mShader_SetUniform, mShader &shader, const mString &uniformName, T *pV, const size_t count)
 {
   mFUNCTION_SETUP();
 
@@ -290,7 +282,7 @@ mFUNCTION(mShader_SetUniform, mShader &shader, const std::string &uniformName, T
 }
 
 template <typename T>
-mFUNCTION(mShader_SetUniform, mPtr<mShader> &shader, const std::string &uniformName, T *pV, const size_t count)
+mFUNCTION(mShader_SetUniform, mPtr<mShader> &shader, const mString &uniformName, T *pV, const size_t count)
 {
   mFUNCTION_SETUP();
 

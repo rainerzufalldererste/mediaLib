@@ -1,11 +1,3 @@
-// Copyright 2018 Christoph Stiller
-// 
-// Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
-// 
-// The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-// 
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
 #include "mScreenQuad.h"
 #include "mFile.h"
 
@@ -13,7 +5,7 @@ mFUNCTION(mScreenQuad_Destroy_Internal, IN mScreenQuad *pScreenQuad);
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mScreenQuad_Create, OUT mPtr<mScreenQuad> *pScreenQuad, IN mAllocator *pAllocator, const std::string &fragmentShader, const size_t textureCount)
+mFUNCTION(mScreenQuad_Create, OUT mPtr<mScreenQuad> *pScreenQuad, IN mAllocator *pAllocator, const mString &fragmentShader, const size_t textureCount)
 {
   mFUNCTION_SETUP();
 
@@ -59,11 +51,22 @@ mFUNCTION(mScreenQuad_Create, OUT mPtr<mScreenQuad> *pScreenQuad, IN mAllocator 
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mScreenQuad_CreateFrom, OUT mPtr<mScreenQuad> *pScreenQuad, IN mAllocator *pAllocator, const std::wstring &fragmentShaderPath, const size_t textureCount /* = 1 */)
+mFUNCTION(mScreenQuad_Create, OUT mPtr<mScreenQuad> *pScreenQuad, IN mAllocator *pAllocator)
 {
   mFUNCTION_SETUP();
 
-  std::string fragmentShader;
+  const mString defaultShader = "#version 150 core\n\nout vec4 outColour0;\n\nuniform sampler2D _texture0;\nin vec2 _texCoord0;\nvoid main()\n{\n\toutColour0 = texture(_texture0, _texCoord0);\n}\n";
+
+  mERROR_CHECK(mScreenQuad_Create(pScreenQuad, pAllocator, defaultShader, 1));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mScreenQuad_CreateFrom, OUT mPtr<mScreenQuad> *pScreenQuad, IN mAllocator *pAllocator, const mString &fragmentShaderPath, const size_t textureCount /* = 1 */)
+{
+  mFUNCTION_SETUP();
+
+  mString fragmentShader;
   mERROR_CHECK(mFile_ReadAllText(fragmentShaderPath, pAllocator, &fragmentShader));
 
   mERROR_CHECK(mScreenQuad_Create(pScreenQuad, pAllocator, fragmentShader, textureCount));

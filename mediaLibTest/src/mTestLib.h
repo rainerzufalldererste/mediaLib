@@ -1,23 +1,19 @@
-// Copyright 2018 Christoph Stiller
-// 
-// Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
-// 
-// The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-// 
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
 #ifndef mTestLib_h__
 #define mTestLib_h__
 
-#include "default.h"
+#include "mediaLib.h"
 #include "gtest/gtest.h"
 
 //#define mDEBUG_TESTS
 
+#if defined(mDEBUG_TESTS) && defined(GIT_BUILD)
+static_assert(false, "mDEBUG_TESTS has to be turned off for Buildserver builds.");
+#endif
+
 #ifdef mDEBUG_TESTS
 #define mTEST_FAIL() \
   do \
-  { printf("Test Failed at " __FUNCTION__ " in File '" __FILE__ "' Line %" PRIi32 ".", __LINE__); \
+  { printf("Test Failed at " __FUNCTION__ " in File '" __FILE__ "' Line %" PRIi32 ".\n", __LINE__); \
     __debugbreak(); \
   } while(0)
 
@@ -27,7 +23,7 @@
     auto b_ = (b); \
     \
     if (!(a_ == b_)) \
-    { printf("Test Failed on '" #a " == " #b "' at " __FUNCTION__ " in File '" __FILE__ "' Line %" PRIi32 ".", __LINE__); \
+    { printf("Test Failed on '" #a " == " #b "' at " __FUNCTION__ " in File '" __FILE__ "' Line %" PRIi32 ".\n", __LINE__); \
       __debugbreak(); \
     } \
   } while(0)
@@ -41,7 +37,7 @@
     auto b_ = (b); \
     \
     if (!(a_ != b_)) \
-    { printf("Test Failed on '" #a " != " #b "' at " __FUNCTION__ " in File '" __FILE__ "' Line %" PRIi32 ".", __LINE__); \
+    { printf("Test Failed on '" #a " != " #b "' at " __FUNCTION__ " in File '" __FILE__ "' Line %" PRIi32 ".\n", __LINE__); \
       __debugbreak(); \
     } \
   } while(0)
@@ -53,9 +49,9 @@
     if (mFAILED(__result)) \
     { mString resultString; \
       if (mFAILED(mResult_ToString(__result, &resultString))) \
-        printf("Test Failed on 'mFAILED(" #functionCall ")' with invalid result [0x%" PRIx64 "] at " __FUNCTION__ " in File '" __FILE__ "' Line %" PRIi32 ".", (uint64_t)__result, __LINE__); \
+        printf("Test Failed on 'mFAILED(" #functionCall ")' with invalid result [0x%" PRIx64 "] at " __FUNCTION__ " in File '" __FILE__ "' Line %" PRIi32 ".\n", (uint64_t)__result, __LINE__); \
       else \
-        printf("Test Failed on 'mFAILED(" #functionCall ")' with Result '%s' [0x%" PRIx64 "] at " __FUNCTION__ " in File '" __FILE__ "' Line %" PRIi32 ".", resultString.c_str(), (uint64_t)__result, __LINE__); \
+        printf("Test Failed on 'mFAILED(" #functionCall ")' with Result '%s' [0x%" PRIx64 "] at " __FUNCTION__ " in File '" __FILE__ "' Line %" PRIi32 ".\n", resultString.c_str(), (uint64_t)__result, __LINE__); \
       __debugbreak(); \
     } \
   } while(0)
@@ -78,7 +74,7 @@ extern size_t mTestDestructible_Count;
   mTestDestructible_Count = 0; \
   mAllocator __testAllocator; \
   mTEST_ASSERT_SUCCESS(mTestAllocator_Create(&__testAllocator)); \
-  mDEFER_DESTRUCTION(&__testAllocator, mAllocator_Destroy); \
+  mDEFER_CALL(&__testAllocator, mAllocator_Destroy); \
   mAllocator *pAllocator = &__testAllocator; \
   mUnused(pAllocator); \
   { 

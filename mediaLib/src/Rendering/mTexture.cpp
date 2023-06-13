@@ -1,11 +1,3 @@
-// Copyright 2018 Christoph Stiller
-// 
-// Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
-// 
-// The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-// 
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
 #include "mRenderParams.h"
 #include "mTexture.h"
 
@@ -41,12 +33,12 @@ mFUNCTION(mTexture_Create, OUT mTexture * pTexture, mPtr<mImageBuffer>& imageBuf
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mTexture_Create, OUT mTexture *pTexture, const std::string &filename, const bool upload /* = true */, const size_t textureUnit /* = 0 */)
+mFUNCTION(mTexture_Create, OUT mTexture *pTexture, const mString &filename, const bool upload /* = true */, const size_t textureUnit /* = 0 */)
 {
   mFUNCTION_SETUP();
 
   mPtr<mImageBuffer> imageBuffer;
-  mDEFER_DESTRUCTION(&imageBuffer, mImageBuffer_Destroy);
+  mDEFER_CALL(&imageBuffer, mImageBuffer_Destroy);
   mERROR_CHECK(mImageBuffer_CreateFromFile(&imageBuffer, nullptr, filename));
 
   mERROR_CHECK(mTexture_Create(pTexture, imageBuffer, upload, textureUnit));
@@ -61,7 +53,7 @@ mFUNCTION(mTexture_Create, OUT mTexture *pTexture, const uint8_t *pData, const m
   mERROR_IF(pTexture == nullptr || pData == nullptr, mR_ArgumentNull);
 
   mPtr<mImageBuffer> imageBuffer;
-  mDEFER_DESTRUCTION(&imageBuffer, mImageBuffer_Destroy);
+  mDEFER_CALL(&imageBuffer, mImageBuffer_Destroy);
 
   if (upload)
   {
@@ -139,7 +131,7 @@ mFUNCTION(mTexture_Upload, mTexture &texture)
   else
   {
     mPtr<mImageBuffer> imageBuffer;
-    mDEFER_DESTRUCTION(&imageBuffer, mImageBuffer_Destroy);
+    mDEFER_CALL(&imageBuffer, mImageBuffer_Destroy);
     mERROR_CHECK(mImageBuffer_Create(&imageBuffer, nullptr, texture.imageBuffer->currentSize, mPF_R8G8B8A8));
     mERROR_CHECK(mPixelFormat_TransformBuffer(texture.imageBuffer, imageBuffer));
 
@@ -218,7 +210,7 @@ mFUNCTION(mTexture_SetTo, mTexture &texture, const uint8_t *pData, const mVec2s 
   mERROR_IF(pData == nullptr, mR_ArgumentNull);
 
   mPtr<mImageBuffer> imageBuffer;
-  mDEFER_DESTRUCTION(&imageBuffer, mImageBuffer_Destroy);
+  mDEFER_CALL(&imageBuffer, mImageBuffer_Destroy);
   mERROR_CHECK(mImageBuffer_Create(&imageBuffer, nullptr, (void *)pData, size, pixelFormat));
 
   mERROR_CHECK(mTexture_SetTo(texture, imageBuffer, upload));
@@ -226,7 +218,7 @@ mFUNCTION(mTexture_SetTo, mTexture &texture, const uint8_t *pData, const mVec2s 
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mCreateResource, OUT mTexture * pTexture, const std::string & filename)
+mFUNCTION(mCreateResource, OUT mTexture * pTexture, const mString & filename)
 {
   mFUNCTION_SETUP();
 

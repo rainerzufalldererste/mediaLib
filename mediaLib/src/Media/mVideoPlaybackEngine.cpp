@@ -1,11 +1,3 @@
-// Copyright 2018 Christoph Stiller
-// 
-// Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
-// 
-// The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-// 
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
 #include "mVideoPlaybackEngine.h"
 #include "mQueue.h"
 #include "mMediaFileInputHandler.h"
@@ -54,17 +46,17 @@ mFUNCTION(mVideoPlaybackEngine_PlaybackThread, mVideoPlaybackEngine *pPlaybackEn
     mVideoStreamType videoStreamType;
 
     mPtr<mImageBuffer> currentImageBuffer;
-    mDEFER_DESTRUCTION(&currentImageBuffer, mImageBuffer_Destroy);
+    mDEFER_CALL(&currentImageBuffer, mImageBuffer_Destroy);
 
     mPtr<mImageBuffer> rawImageBuffer;
-    mDEFER_DESTRUCTION(&rawImageBuffer, mImageBuffer_Destroy);
+    mDEFER_CALL(&rawImageBuffer, mImageBuffer_Destroy);
 
     // Get ImageBuffer.
     {
       // Try to reuse a buffer.
       {
         mERROR_CHECK(mMutex_Lock(pPlaybackEngine->pQueueMutex));
-        mDEFER_DESTRUCTION(pPlaybackEngine->pQueueMutex, mMutex_Unlock);
+        mDEFER_CALL(pPlaybackEngine->pQueueMutex, mMutex_Unlock);
 
         mERROR_CHECK(mQueue_GetCount(pPlaybackEngine->imageQueue, &queuedCount));
 
@@ -120,7 +112,7 @@ mFUNCTION(mVideoPlaybackEngine_PlaybackThread, mVideoPlaybackEngine *pPlaybackEn
     // Push ImageBuffer to queue.
     {
       mERROR_CHECK(mMutex_Lock(pPlaybackEngine->pQueueMutex));
-      mDEFER_DESTRUCTION(pPlaybackEngine->pQueueMutex, mMutex_Unlock);
+      mDEFER_CALL(pPlaybackEngine->pQueueMutex, mMutex_Unlock);
 
       mERROR_CHECK(mQueue_PushBack(pPlaybackEngine->imageQueue, &currentImageBuffer));
       pPlaybackEngine->updateTimeStamp = playbackTime;
@@ -175,7 +167,7 @@ mFUNCTION(mVideoPlaybackEngine_GetCurrentFrame, mPtr<mVideoPlaybackEngine> &play
     playbackEngine->isRunning = true;
     mDEFER_ON_ERROR(playbackEngine->isRunning = false);
 
-    mDEFER_DESTRUCTION_ON_ERROR(&playbackEngine->pPlaybackThread, mSetToNullptr);
+    mDEFER_CALL_ON_ERROR(&playbackEngine->pPlaybackThread, mSetToNullptr);
     mERROR_CHECK(mThread_Create(&playbackEngine->pPlaybackThread, playbackEngine->pAllocator, mVideoPlaybackEngine_PlaybackThread, playbackEngine.GetPointer()));
     
     mVec2s resolution;
@@ -192,7 +184,7 @@ mFUNCTION(mVideoPlaybackEngine_GetCurrentFrame, mPtr<mVideoPlaybackEngine> &play
   {
     {
       mERROR_CHECK(mMutex_Lock(playbackEngine->pQueueMutex));
-      mDEFER_DESTRUCTION(playbackEngine->pQueueMutex, mMutex_Unlock);
+      mDEFER_CALL(playbackEngine->pQueueMutex, mMutex_Unlock);
 
       mERROR_CHECK(mQueue_GetCount(playbackEngine->imageQueue, &count));
 
@@ -202,7 +194,7 @@ mFUNCTION(mVideoPlaybackEngine_GetCurrentFrame, mPtr<mVideoPlaybackEngine> &play
       mERROR_CHECK(mTimeStamp_Now(&now));
 
       mPtr<mImageBuffer> imageBuffer;
-      mDEFER_DESTRUCTION(&imageBuffer, mImageBuffer_Destroy);
+      mDEFER_CALL(&imageBuffer, mImageBuffer_Destroy);
 
       if (count > 1 && pIsNewFrame)
         *pIsNewFrame = true;

@@ -1,11 +1,3 @@
-// Copyright 2018 Christoph Stiller
-// 
-// Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
-// 
-// The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-// 
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
 #include "mJson.h"
 #include "mQueue.h"
 #include "mFile.h"
@@ -82,7 +74,7 @@ mFUNCTION(mJsonWriter_BeginUnnamed, mPtr<mJsonWriter> &jsonWriter)
   if (pJson == nullptr)
   {
     cJSON *pChild = cJSON_CreateObject();
-    mDEFER_DESTRUCTION_ON_ERROR(pChild, (std::function<void (cJSON *)>)cJSON_Delete);
+    mDEFER_CALL_ON_ERROR(pChild, (std::function<void (cJSON *)>)cJSON_Delete);
     mERROR_CHECK(mJson_CheckError_Internal(pChild));
 
     mERROR_CHECK(mJsonWriter_PushQueue_Internal(jsonWriter, pChild, Object));
@@ -90,7 +82,7 @@ mFUNCTION(mJsonWriter_BeginUnnamed, mPtr<mJsonWriter> &jsonWriter)
   else
   {
     cJSON *pChild = cJSON_CreateObject();
-    mDEFER_DESTRUCTION_ON_ERROR(pChild, (std::function<void(cJSON *)>)cJSON_Delete);
+    mDEFER_CALL_ON_ERROR(pChild, (std::function<void(cJSON *)>)cJSON_Delete);
     mERROR_CHECK(mJson_CheckError_Internal(pChild));
 
     mJsonWriterEntryType lastType;
@@ -136,7 +128,7 @@ mFUNCTION(mJsonWriter_BeginArray, mPtr<mJsonWriter> &jsonWriter, const char *nam
   mERROR_IF(pJson == nullptr, mR_NotInitialized);
 
   cJSON *pChild = cJSON_CreateArray();
-  mDEFER_DESTRUCTION_ON_ERROR(pChild, (std::function<void(cJSON *)>)cJSON_Delete);
+  mDEFER_CALL_ON_ERROR(pChild, (std::function<void(cJSON *)>)cJSON_Delete);
   mERROR_CHECK(mJson_CheckError_Internal(pChild));
 
   mJsonWriterEntryType lastType;
@@ -180,7 +172,7 @@ mFUNCTION(mJsonWriter_BeginNamed, mPtr<mJsonWriter> &jsonWriter, const char *nam
   mERROR_IF(pJson == nullptr, mR_NotInitialized);
 
   cJSON *pChild = cJSON_CreateObject();
-  mDEFER_DESTRUCTION_ON_ERROR(pChild, (std::function<void(cJSON *)>)cJSON_Delete);
+  mDEFER_CALL_ON_ERROR(pChild, (std::function<void(cJSON *)>)cJSON_Delete);
   mERROR_CHECK(mJson_CheckError_Internal(pChild));
 
   mJsonWriterEntryType lastType;

@@ -1,11 +1,3 @@
-// Copyright 2018 Christoph Stiller
-// 
-// Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
-// 
-// The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-// 
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
 #include "mSpriteBatch.h"
 #include "mForwardTuple.h"
 
@@ -241,7 +233,7 @@ inline mFUNCTION(mSpriteBatch_End, mPtr<mSpriteBatch<Args...>> &spriteBatch)
       {
         mSpriteBatch_Internal_RenderObject<Args...> renderObject;
         mERROR_CHECK(mQueue_PopFront(spriteBatch->enqueuedRenderObjects, &renderObject));
-        mDEFER_DESTRUCTION(&renderObject, mSpriteBatch_Internal_RenderObject_Destroy);
+        mDEFER_CALL(&renderObject, mSpriteBatch_Internal_RenderObject_Destroy);
         mERROR_CHECK(mSpriteBatch_Internal_RenderObject_Render(renderObject, spriteBatch));
       }
     }
@@ -251,7 +243,7 @@ inline mFUNCTION(mSpriteBatch_End, mPtr<mSpriteBatch<Args...>> &spriteBatch)
       {
         mSpriteBatch_Internal_RenderObject<Args...> renderObject;
         mERROR_CHECK(mQueue_PopBack(spriteBatch->enqueuedRenderObjects, &renderObject));
-        mDEFER_DESTRUCTION(&renderObject, mSpriteBatch_Internal_RenderObject_Destroy);
+        mDEFER_CALL(&renderObject, mSpriteBatch_Internal_RenderObject_Destroy);
         mERROR_CHECK(mSpriteBatch_Internal_RenderObject_Render(renderObject, spriteBatch));
       }
     }
@@ -387,7 +379,7 @@ inline mFUNCTION(mSpriteBatch_Create_Internal, IN_OUT mSpriteBatch<Args...>* pSp
   if (pSpriteBatch->shaderParams.matrixTransform)
     mERROR_IF(0 > sprintf_s(vertexShader, "%s\n\tposition *= " mSBEMatrixTransform_UniformName ";", vertexShader), mR_InternalError);
   
-  mERROR_IF(0 > sprintf_s(vertexShader, "%s\n\tposition.xy = position.xy * 2 - 1;\n\tposition.y = -position.y;\n\tposition.z = startOffset0.z;\n\n\tgl_Position = position;\n}\n", vertexShader), mR_InternalError);
+  mERROR_IF(0 > sprintf_s(vertexShader, "%s\n\tposition.xy = position.xy * 2 - 1;\n\tposition.z = startOffset0.z;\n\n\tgl_Position = position;\n}\n", vertexShader), mR_InternalError);
 
   // Fragment Shader.
   char fragmentShader[1024] = "";

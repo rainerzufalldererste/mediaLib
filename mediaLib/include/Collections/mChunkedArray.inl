@@ -1,11 +1,3 @@
-// Copyright 2018 Christoph Stiller
-// 
-// Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
-// 
-// The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-// 
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
 template <typename T>
 mFUNCTION(mChunkedArray_Destroy_Internal, IN mChunkedArray<T> *pChunkedArray);
 
@@ -111,7 +103,24 @@ mFUNCTION(mChunkedArray_PushBack, mPtr<mChunkedArray<T>> &chunkedArray, IN T *pI
   if (chunkedArray->pBlocks == nullptr || chunkedArray->pBlocks[chunkedArray->blockCount - 1].blockEndIndex >= chunkedArray->blockSize)
     mERROR_CHECK(mChunkedArray_Grow_Internal(chunkedArray));
 
-  new (&chunkedArray->pBlocks[chunkedArray->blockCount - 1].pData[chunkedArray->pBlocks[chunkedArray->blockCount - 1].blockEndIndex]) T (*pItem);
+  new (&chunkedArray->pBlocks[chunkedArray->blockCount - 1].pData[chunkedArray->pBlocks[chunkedArray->blockCount - 1].blockEndIndex]) T(*pItem);
+  ++chunkedArray->pBlocks[chunkedArray->blockCount - 1].blockEndIndex;
+  ++chunkedArray->itemCount;
+
+  mRETURN_SUCCESS();
+}
+
+template <typename T>
+mFUNCTION(mChunkedArray_PushBack, mPtr<mChunkedArray<T>> &chunkedArray, IN T &&item)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(chunkedArray == nullptr, mR_ArgumentNull);
+
+  if (chunkedArray->pBlocks == nullptr || chunkedArray->pBlocks[chunkedArray->blockCount - 1].blockEndIndex >= chunkedArray->blockSize)
+    mERROR_CHECK(mChunkedArray_Grow_Internal(chunkedArray));
+
+  new (&chunkedArray->pBlocks[chunkedArray->blockCount - 1].pData[chunkedArray->pBlocks[chunkedArray->blockCount - 1].blockEndIndex]) T(std::move(item));
   ++chunkedArray->pBlocks[chunkedArray->blockCount - 1].blockEndIndex;
   ++chunkedArray->itemCount;
 
@@ -167,21 +176,23 @@ mFUNCTION(mChunkedArray_PopAt, mPtr<mChunkedArray<T>> &chunkedArray, const size_
       continue;
     }
 
-    const size_t innerItemIndex = index - currentIndex;
+    size_t innerItemIndex = index - currentIndex;
 
     *pItem = std::move(pBlock->pData[pBlock->blockStartIndex + innerItemIndex]);
+
+    innerItemIndex += pBlock->blockStartIndex;
 
     if (innerItemIndex - pBlock->blockStartIndex <= pBlock->blockEndIndex - innerItemIndex)
     {
       if (innerItemIndex - pBlock->blockStartIndex > 0)
-        mERROR_CHECK(mAllocator_Move(chunkedArray->pAllocator, &pBlock->pData[pBlock->blockStartIndex], &pBlock->pData[pBlock->blockStartIndex + 1], innerItemIndex - pBlock->blockStartIndex));
+        mERROR_CHECK(mAllocator_Move(chunkedArray->pAllocator, &pBlock->pData[pBlock->blockStartIndex + 1], &pBlock->pData[pBlock->blockStartIndex], innerItemIndex - pBlock->blockStartIndex));
 
       ++pBlock->blockStartIndex;
     }
     else
     {
       if (pBlock->blockEndIndex - innerItemIndex - 1 > 0)
-        mERROR_CHECK(mAllocator_Move(chunkedArray->pAllocator, &pBlock->pData[innerItemIndex + 1], &pBlock->pData[innerItemIndex + 1], pBlock->blockEndIndex - innerItemIndex - 1));
+        mERROR_CHECK(mAllocator_Move(chunkedArray->pAllocator, &pBlock->pData[innerItemIndex], &pBlock->pData[innerItemIndex + 1], pBlock->blockEndIndex - innerItemIndex - 1));
 
       --pBlock->blockEndIndex;
     }

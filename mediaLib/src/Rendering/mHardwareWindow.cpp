@@ -1,11 +1,3 @@
-// Copyright 2018 Christoph Stiller
-// 
-// Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
-// 
-// The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-// 
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
 #include "mHardwareWindow.h"
 #include "mFramebuffer.h"
 #include "mChunkedArray.h"
@@ -95,7 +87,15 @@ mFUNCTION(mHardwareWindow_Swap, mPtr<mHardwareWindow>& window)
       std::function<mResult(IN SDL_Event *)> *pFunction = nullptr;
       mERROR_CHECK(mChunkedArray_PointerAt(window->onEventCallbacks, i, &pFunction));
 
-      mERROR_CHECK((*pFunction)(&_event));
+      mResult result = ((*pFunction)(&_event));
+
+      if (mFAILED(result))
+      {
+        if (result == mR_Break)
+          break;
+        else
+          mRETURN_RESULT(result);
+      }
     }
 
     if (_event.type == SDL_QUIT)
@@ -108,7 +108,15 @@ mFUNCTION(mHardwareWindow_Swap, mPtr<mHardwareWindow>& window)
         std::function<mResult(void)> *pFunction = nullptr;
         mERROR_CHECK(mChunkedArray_PointerAt(window->onExitCallbacks, i, &pFunction));
 
-        mERROR_CHECK((*pFunction)());
+        mResult result = ((*pFunction)());
+
+        if (mFAILED(result))
+        {
+          if (result == mR_Break)
+            break;
+          else
+            mRETURN_RESULT(result);
+        }
       }
     }
     else if (_event.type == SDL_WINDOWEVENT && (_event.window.event == SDL_WINDOWEVENT_MAXIMIZED || _event.window.event == SDL_WINDOWEVENT_RESIZED || _event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED || _event.window.event == SDL_WINDOWEVENT_RESTORED))
@@ -126,7 +134,15 @@ mFUNCTION(mHardwareWindow_Swap, mPtr<mHardwareWindow>& window)
         std::function<mResult(const mVec2s &)> *pFunction = nullptr;
         mERROR_CHECK(mChunkedArray_PointerAt(window->onResizeCallbacks, i, &pFunction));
 
-        mERROR_CHECK((*pFunction)(size));
+        mResult result = ((*pFunction)(size));
+
+        if (mFAILED(result))
+        {
+          if (result == mR_Break)
+            break;
+          else
+            mRETURN_RESULT(result);
+        }
       }
     }
   }

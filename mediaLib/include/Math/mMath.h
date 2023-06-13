@@ -1,15 +1,7 @@
-// Copyright 2018 Christoph Stiller
-// 
-// Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
-// 
-// The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-// 
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
 #ifndef mMath_h__
 #define mMath_h__
 
-#include "default.h"
+#include "mediaLib.h"
 
 #ifndef __CUDA_ARCH__
 #define __host__
@@ -240,6 +232,12 @@ struct mRectangle2D
   T x, y, w, h;
 
   __host__ __device__ inline mRectangle2D(const T x, const T y, const T w, const T h) : x(x), y(y), w(w), h(h) { }
+  __host__ __device__ inline mRectangle2D(const mVec2t<T> &position, const mVec2t<T> size) : x(position.x), y(position.y), w(size.x), h(size.y) { }
+
+  __host__ __device__ inline bool Contains(const mVec2t<T> &position)
+  {
+    return position.x >= x && position.y >= y && position.x - x < w && position.y - y < h;
+  }
 };
 
 struct mVector;

@@ -1,11 +1,3 @@
-// Copyright 2018 Christoph Stiller
-// 
-// Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
-// 
-// The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-// 
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
 #include "mThreadPool.h"
 #include "mQueue.h"
 
@@ -32,7 +24,7 @@ mFUNCTION(mTask_CreateWithLambda, OUT mTask **ppTask, IN OPTIONAL mAllocator *pA
   (*ppTask)->isAllocated = true;
   (*ppTask)->pAllocator = pAllocator;
 
-  mDEFER_DESTRUCTION_ON_ERROR(ppTask, mTask_Destroy);
+  mDEFER_CALL_ON_ERROR(ppTask, mTask_Destroy);
   mERROR_CHECK(mTask_CreateInplace(*ppTask, function));
 
   mRETURN_SUCCESS();
@@ -261,7 +253,7 @@ void mThreadPool_WorkerThread(mThreadPool *pThreadPool)
 
     {
       mASSERT(mSUCCEEDED(mSemaphore_Lock(pThreadPool->pSemaphore)), "Error in " __FUNCTION__ ": Semaphore error.");
-      mDEFER_DESTRUCTION(pThreadPool->pSemaphore, mSemaphore_Unlock);
+      mDEFER_CALL(pThreadPool->pSemaphore, mSemaphore_Unlock);
 
       size_t count = 0;
       mASSERT(mSUCCEEDED(mQueue_GetCount(pThreadPool->queue, &count)), "Error in " __FUNCTION__ ": Could not get task queue length.");
@@ -301,7 +293,7 @@ mFUNCTION(mThreadPool_Create, OUT mPtr<mThreadPool> *pThreadPool, IN OPTIONAL mA
   mDEFER_ON_ERROR(mAllocator_FreePtr(pAllocator, &pObject));
   mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &pObject, 1));
 
-  mDEFER_DESTRUCTION_ON_ERROR(pThreadPool, mSharedPointer_Destroy);
+  mDEFER_CALL_ON_ERROR(pThreadPool, mSharedPointer_Destroy);
   mERROR_CHECK(mSharedPointer_Create<mThreadPool>(pThreadPool, pObject, [](mThreadPool *pData) { mThreadPool_Destroy_Internal(pData); }, pAllocator));
   pObject = nullptr; // to not be destroyed on error.
 
@@ -332,7 +324,7 @@ mFUNCTION(mThreadPool_EnqueueTask, mPtr<mThreadPool> &threadPool, IN mTask *pTas
     ++pTask->referenceCount;
 
     mERROR_CHECK(mSemaphore_Lock(threadPool->pSemaphore));
-    mDEFER_DESTRUCTION(threadPool->pSemaphore, mSemaphore_Unlock);
+    mDEFER_CALL(threadPool->pSemaphore, mSemaphore_Unlock);
     mERROR_CHECK(mQueue_PushBack(threadPool->queue, pTask));
   }
 
@@ -359,10 +351,10 @@ mFUNCTION(mThreadPool_Create_Internal, mThreadPool *pThreadPool, IN OPTIONAL mAl
   pThreadPool->pAllocator = pAllocator;
   pThreadPool->isRunning = true;
 
-  mDEFER_DESTRUCTION_ON_ERROR(&pThreadPool->queue, mQueue_Destroy);
+  mDEFER_CALL_ON_ERROR(&pThreadPool->queue, mQueue_Destroy);
   mERROR_CHECK(mQueue_Create(&pThreadPool->queue, pThreadPool->pAllocator));
 
-  mDEFER_DESTRUCTION_ON_ERROR(&pThreadPool->pSemaphore, mSemaphore_Destroy);
+  mDEFER_CALL_ON_ERROR(&pThreadPool->pSemaphore, mSemaphore_Destroy);
   mERROR_CHECK(mSemaphore_Create(&pThreadPool->pSemaphore, pThreadPool->pAllocator));
 
   if (threads == mThreadPool_ThreadCount::mTP_TC_NumberOfLogicalCores)
@@ -403,7 +395,7 @@ mFUNCTION(mThreadPool_Destroy_Internal, mThreadPool *pThreadPool)
   // Remove all tasks.
   {
     mERROR_CHECK(mSemaphore_Lock(pThreadPool->pSemaphore));
-    mDEFER_DESTRUCTION(pThreadPool->pSemaphore, mSemaphore_Unlock);
+    mDEFER_CALL(pThreadPool->pSemaphore, mSemaphore_Unlock);
 
     size_t count = 0;
     mERROR_CHECK(mQueue_GetCount(pThreadPool->queue, &count));

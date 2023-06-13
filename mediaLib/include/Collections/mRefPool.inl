@@ -1,12 +1,5 @@
-// Copyright 2018 Christoph Stiller
-// 
-// Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
-// 
-// The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-// 
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
 #include "mRefPool.h"
+#include "mQueue.h"
 
 template <typename T>
 mFUNCTION(mRefPool_Destroy_Internal, IN mRefPool<T> *pRefPool);
@@ -68,7 +61,7 @@ inline mFUNCTION(mRefPool_AddEmpty, mPtr<mRefPool<T>> &refPool, OUT mPtr<T> *pIn
   mERROR_IF(refPool == nullptr || pIndex == nullptr, mR_ArgumentNull);
 
   mERROR_CHECK(mRecursiveMutex_Lock(refPool->pMutex));
-  mDEFER_DESTRUCTION(refPool->pMutex, mRecursiveMutex_Unlock);
+  mDEFER_CALL(refPool->pMutex, mRecursiveMutex_Unlock);
 
   size_t index;
   typename mRefPool<T>::refPoolPtrData empty;
@@ -99,12 +92,12 @@ inline mFUNCTION(mRefPool_AddEmpty, mPtr<mRefPool<T>> &refPool, OUT mPtr<T> *pIn
   const std::function<void(T *)> &destructionFunction = [pRefPool, index](T *pData)
   {
     mPtr<mRefPool<T>> _refPool;
-    mDEFER_DESTRUCTION(&_refPool, mSharedPointer_Destroy);
+    mDEFER_CALL(&_refPool, mSharedPointer_Destroy);
 
     mRefPool_Internal_ERROR_CHECK(mSharedPointer_Create(&_refPool, (mRefPool<T> *)pRefPool, mSHARED_POINTER_FOREIGN_RESOURCE));
 
     mRefPool_Internal_ERROR_CHECK(mRecursiveMutex_Lock(_refPool->pMutex));
-    mDEFER_DESTRUCTION(_refPool->pMutex, mRecursiveMutex_Unlock);
+    mDEFER_CALL(_refPool->pMutex, mRecursiveMutex_Unlock);
 
     typename mRefPool<T>::refPoolPtrData *_pPtrData = nullptr;
     mRefPool_Internal_ERROR_CHECK(mPool_PointerAt(_refPool->data, index, &_pPtrData));
@@ -144,10 +137,10 @@ inline mFUNCTION(mRefPool_Crush, mPtr<mRefPool<T>> &refPool)
   mERROR_IF(refPool == nullptr, mR_ArgumentNull);
 
   mERROR_CHECK(mRecursiveMutex_Lock(refPool->pMutex));
-  mDEFER_DESTRUCTION(refPool->pMutex, mRecursiveMutex_Unlock);
+  mDEFER_CALL(refPool->pMutex, mRecursiveMutex_Unlock);
 
   mPtr<mPool<typename mRefPool<T>::refPoolPtr>> crushedPtrs;
-  mDEFER_DESTRUCTION(&crushedPtrs, mPool_Destroy);
+  mDEFER_CALL(&crushedPtrs, mPool_Destroy);
   mERROR_CHECK(mPool_Create(&crushedPtrs, refPool->pAllocator));
 
   std::function<mResult(typename mRefPool<T>::refPoolPtr *, size_t)> addAllItems = 
@@ -190,6 +183,52 @@ inline mFUNCTION(mRefPool_ForEach, mPtr<mRefPool<T>> &refPool, const std::functi
 }
 
 template<typename T>
+inline mFUNCTION(mRefPool_KeepIfTrue, mPtr<mRefPool<T>>& refPool, const std::function<mResult(mPtr<T>&, OUT bool*)>& function)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(refPool == nullptr || function == nullptr, mR_ArgumentNull);
+  mERROR_IF(!refPool->keepForever, mR_ResourceStateInvalid);
+
+  mPtr<mQueue<size_t>> removeIndexes;
+  mDEFER_CALL(&removeIndexes, mQueue_Destroy);
+  mERROR_CHECK(mQueue_Create(&removeIndexes, &mDefaultTempAllocator));
+
+  const std::function<mResult(typename mRefPool<T>::refPoolPtr *, size_t)> fn = [&, function](typename mRefPool<T>::refPoolPtr *pData, size_t index)
+  {
+    mFUNCTION_SETUP();
+
+    bool keep = true;
+
+    mERROR_CHECK(function(pData->ptr, &keep));
+
+    if (!keep)
+      mERROR_CHECK(mQueue_PushBack(removeIndexes, index));
+
+    mRETURN_SUCCESS();
+  };
+
+  mERROR_CHECK(mPool_ForEach(refPool->ptrs, fn));
+
+  size_t removeCount = 0;
+  mERROR_CHECK(mQueue_GetCount(removeIndexes, &removeCount));
+  
+  for (size_t i = 0; i < removeCount; i++)
+  {
+    size_t index;
+    mERROR_CHECK(mQueue_PopFront(removeIndexes, &index));
+
+    typename mRefPool<T>::refPoolPtr *pData;
+    mERROR_CHECK(mPool_PointerAt(refPool->ptrs, index, &pData));
+
+    if (pData->ptr.m_pParams->referenceCount == 1)
+      mERROR_CHECK(mSharedPointer_Destroy(&pData->ptr));
+  }
+
+  mRETURN_SUCCESS();
+}
+
+template<typename T>
 inline mFUNCTION(mRefPool_PeekAt, mPtr<mRefPool<T>> &refPool, const size_t index, OUT mPtr<T> *pIndex)
 {
   mFUNCTION_SETUP();
@@ -197,7 +236,7 @@ inline mFUNCTION(mRefPool_PeekAt, mPtr<mRefPool<T>> &refPool, const size_t index
   mERROR_IF(refPool == nullptr || pIndex == nullptr, mR_ArgumentNull);
 
   mERROR_CHECK(mRecursiveMutex_Lock(refPool->pMutex));
-  mDEFER_DESTRUCTION(refPool->pMutex, mRecursiveMutex_Unlock);
+  mDEFER_CALL(refPool->pMutex, mRecursiveMutex_Unlock);
 
   mERROR_CHECK(mPool_PeekAt(refPool->ptrs, index, pIndex));
 
@@ -226,7 +265,7 @@ inline mFUNCTION(mRefPool_RemoveOwnReference, mPtr<mRefPool<T>> &refPool)
   refPool->keepForever = false;
 
   mERROR_CHECK(mRecursiveMutex_Lock(refPool->pMutex));
-  mDEFER_DESTRUCTION(refPool->pMutex, mRecursiveMutex_Unlock);
+  mDEFER_CALL(refPool->pMutex, mRecursiveMutex_Unlock);
 
   std::function<mResult(typename mRefPool<T>::refPoolPtr *, size_t)> removeOwnRef =
     [](typename mRefPool<T>::refPoolPtr *pItem, size_t)

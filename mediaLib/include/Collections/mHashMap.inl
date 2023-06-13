@@ -1,11 +1,3 @@
-// Copyright 2018 Christoph Stiller
-// 
-// Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
-// 
-// The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-// 
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
 #include "mHashMap.h"
 #include "mHash.h"
 
@@ -36,7 +28,7 @@ mFUNCTION(mHashMap_Create, OUT mPtr<mHashMap<TKey, TValue>> *pHashMap, IN mAlloc
   for (size_t i = 0; i < hashMapSize; ++i)
   {
     mPtr<mChunkedArray<mKeyValuePair<TKey, TValue>>> chunkedArray;
-    mDEFER_DESTRUCTION(&chunkedArray, mChunkedArray_Destroy);
+    mDEFER_CALL(&chunkedArray, mChunkedArray_Destroy);
     mERROR_CHECK(mChunkedArray_Create(&chunkedArray, pAllocator));
 
     mERROR_CHECK(mQueue_PushBack((*pHashMap)->data, &chunkedArray));
@@ -68,7 +60,7 @@ mFUNCTION(mHashMap_Contains, mPtr<mHashMap<TKey, TValue>> &hashMap, TKey key, OU
   mERROR_CHECK(mHashMap_Hash_Internal(hashMap, &key, &index));
 
   mPtr<mChunkedArray<mKeyValuePair<TKey, TValue>>> chunkedArray;
-  mDEFER_DESTRUCTION(&chunkedArray, mChunkedArray_Destroy);
+  mDEFER_CALL(&chunkedArray, mChunkedArray_Destroy);
   mERROR_CHECK(mQueue_PeekAt(hashMap->data, index, &chunkedArray));
 
   size_t count = 0;
@@ -103,7 +95,7 @@ mFUNCTION(mHashMap_ContainsGetPointer, mPtr<mHashMap<TKey, TValue>> &hashMap, TK
   mERROR_CHECK(mHashMap_Hash_Internal(hashMap, &key, &index));
 
   mPtr<mChunkedArray<mKeyValuePair<TKey, TValue>>> chunkedArray;
-  mDEFER_DESTRUCTION(&chunkedArray, mChunkedArray_Destroy);
+  mDEFER_CALL(&chunkedArray, mChunkedArray_Destroy);
   mERROR_CHECK(mQueue_PeekAt(hashMap->data, index, &chunkedArray));
 
   size_t count = 0;
@@ -139,11 +131,10 @@ mFUNCTION(mHashMap_Add, mPtr<mHashMap<TKey, TValue>> &hashMap, TKey key, IN TVal
   mERROR_CHECK(mHashMap_Hash_Internal(hashMap, &key, &index));
 
   mPtr<mChunkedArray<mKeyValuePair<TKey, TValue>>> chunkedArray;
-  mDEFER_DESTRUCTION(&chunkedArray, mChunkedArray_Destroy);
+  mDEFER_CALL(&chunkedArray, mChunkedArray_Destroy);
   mERROR_CHECK(mQueue_PeekAt(hashMap->data, index, &chunkedArray));
 
   mKeyValuePair<TKey, TValue> kvpair;
-  mDEFER_DESTRUCTION(&kvpair, mKeyValuePair_Destroy); // does nothing.
   mERROR_CHECK(mKeyValuePair_Create(&kvpair, key, *pValue));
 
   size_t chunkedArrayIndex = 0; // we don't care anyways.
@@ -178,7 +169,7 @@ mFUNCTION(mHashMap_Remove, mPtr<mHashMap<TKey, TValue>> &hashMap, TKey key, OUT 
   mERROR_CHECK(mHashMap_Hash_Internal(hashMap, &key, &index));
 
   mPtr<mChunkedArray<mKeyValuePair<TKey, TValue>>> chunkedArray;
-  mDEFER_DESTRUCTION(&chunkedArray, mChunkedArray_Destroy);
+  mDEFER_CALL(&chunkedArray, mChunkedArray_Destroy);
   mERROR_CHECK(mQueue_PeekAt(hashMap->data, index, &chunkedArray));
 
   size_t count = 0;
@@ -212,7 +203,7 @@ mFUNCTION(mHashMap_SetKeyValuePairDestructionFunction, mPtr<mHashMap<TKey, TValu
   for (size_t i = 0; i < hashMapSize; ++i)
   {
     mPtr<mChunkedArray<mKeyValuePair<TKey, TValue>>> chunkedArray;
-    mDEFER_DESTRUCTION(chunkedArray, mChunkedArray_Destroy);
+    mDEFER_CALL(chunkedArray, mChunkedArray_Destroy);
     mERROR_CHECK(mQueue_PeekAt(hashMap->data, i, &chunkedArray));
     mERROR_CHECK(mChunkedArray_SetDestructionFunction(chunkedArray, destructionFunction));
   }

@@ -1,15 +1,50 @@
-// Copyright 2018 Christoph Stiller
-// 
-// Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
-// 
-// The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-// 
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
 #include "mAllocator.h"
+
+#ifdef mDEBUG_MEMORY_ALLOCATIONS
+uint64_t mAllocatorDebugging_DebugMemoryAllocationCount = 0;
+std::recursive_mutex mAllocatorDebugging_DebugMemoryAllocationMutex;
+std::map<mAllocator *, std::map<size_t, std::string>> mAllocatorDebugging_DebugMemoryAllocationMap;
+
+void mAllocatorDebugging_PrintRemainingMemoryAllocations(mAllocator *pAllocator)
+{
+  mAllocatorDebugging_DebugMemoryAllocationMutex.lock();
+
+  auto item = mAllocatorDebugging_DebugMemoryAllocationMap.find(pAllocator);
+  
+  if (item == mAllocatorDebugging_DebugMemoryAllocationMap.end())
+  {
+    mAllocatorDebugging_DebugMemoryAllocationMutex.unlock();
+    return;
+  }
+
+  auto allocatedMemory = item->second;
+
+  for (const auto &allocation : allocatedMemory)
+    mPRINT("0x%" PRIx64 ": %s\n\n", (uint64_t)allocation.first, allocation.second.c_str());
+
+  mAllocatorDebugging_DebugMemoryAllocationMutex.unlock();
+}
+
+void mAllocatorDebugging_PrintAllRemainingMemoryAllocations()
+{
+  mAllocatorDebugging_DebugMemoryAllocationMutex.lock();
+
+  for (const auto &allocator : mAllocatorDebugging_DebugMemoryAllocationMap)
+  {
+    mPRINT("Allocator 0x%" PRIx64 ":\n");
+
+    mAllocatorDebugging_PrintRemainingMemoryAllocations(allocator.first);
+
+    mPRINT("\n\n\n");
+  }
+
+  mAllocatorDebugging_DebugMemoryAllocationMutex.unlock();
+}
+#endif
 
 #ifndef MEDIA_LIB_CUSTOM_DEFAULT_ALLOCATOR
 mAllocator mDefaultAllocator = mAllocator_StaticCreate(&mDefaultAllocator_Alloc, &mDefaultAllocator_Realloc, &mDefaultAllocator_Free, &mDefaultAllocator_Move, &mDefaultAllocator_Copy, &mDefaultAllocator_AllocZero);
+mAllocator mDefaultTempAllocator = mDefaultAllocator;
 
 mFUNCTION(mDefaultAllocator_Alloc, OUT uint8_t **ppData, const size_t size, const size_t count, IN void *)
 {
@@ -115,7 +150,7 @@ mFUNCTION(mAllocator_Destroy, IN_OUT mAllocator *pAllocator)
   mERROR_IF(pAllocator == nullptr, mR_ArgumentNull);
 
   pAllocator->initialized = false;
-  pAllocator->pDestroyAllocator(pAllocator->pUserData);
+  pAllocator->pDestroyAllocator(pAllocator, pAllocator->pUserData);
 
   mRETURN_SUCCESS();
 }

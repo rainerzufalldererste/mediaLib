@@ -1,11 +1,3 @@
-// Copyright 2018 Christoph Stiller
-// 
-// Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
-// 
-// The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-// 
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
 #include "mShader.h"
 #include "mFile.h"
 
@@ -13,7 +5,7 @@
 GLuint mShader_CurrentlyBoundShader = (GLuint)-1;
 #endif
 
-mFUNCTION(mShader_Create, OUT mShader *pShader, const std::string &vertexShader, const std::string &fragmentShader, IN OPTIONAL const char *fragDataLocation /* = nullptr */)
+mFUNCTION(mShader_Create, OUT mShader *pShader, const mString &vertexShader, const mString &fragmentShader, IN OPTIONAL const char *fragDataLocation /* = nullptr */)
 {
   mFUNCTION_SETUP();
 
@@ -26,13 +18,29 @@ mFUNCTION(mShader_Create, OUT mShader *pShader, const std::string &vertexShader,
 
   char *vertexSource = nullptr;
   mDEFER(mAllocator_FreePtr(nullptr, &vertexSource));
-  mERROR_CHECK(mAllocator_Allocate(nullptr, &vertexSource, vertexShader.length() + 1));
+  mERROR_CHECK(mAllocator_Allocate(nullptr, &vertexSource, vertexShader.bytes));
 
   size_t position = 0;
 
-  for (char c : vertexShader)
-    if (c != '\r')
-      vertexSource[position++] = c;
+  const mchar_t carriageReturn = mToChar<1>("\r");
+
+  mERROR_CHECK(mString_ForEachChar(vertexShader, 
+    [&](mchar_t c, const char *utf8char, size_t bytes) 
+  {
+    if (c != carriageReturn)
+    {
+      char *s = (char *)utf8char;
+
+      for (size_t i = 0; i < bytes; i++)
+      {
+        vertexSource[position] = *s;
+        position++;
+        s++;
+      }
+    }
+    
+    return mR_Success;
+  }));
 
   vertexSource[position] = '\0';
 
@@ -57,13 +65,27 @@ mFUNCTION(mShader_Create, OUT mShader *pShader, const std::string &vertexShader,
 
   char *fragmentSource = nullptr;
   mDEFER(mAllocator_FreePtr(nullptr, &fragmentSource));
-  mERROR_CHECK(mAllocator_Allocate(nullptr, &fragmentSource, fragmentShader.length() + 1));
+  mERROR_CHECK(mAllocator_Allocate(nullptr, &fragmentSource, fragmentShader.bytes));
 
   position = 0;
 
-  for (char c : fragmentShader)
-    if (c != '\r')
-      fragmentSource[position++] = c;
+  mERROR_CHECK(mString_ForEachChar(fragmentShader,
+    [&](mchar_t c, const char *utf8char, size_t bytes)
+  {
+    if (c != carriageReturn)
+    {
+      char *s = (char *)utf8char;
+
+      for (size_t i = 0; i < bytes; i++)
+      {
+        fragmentSource[position] = *s;
+        position++;
+        s++;
+      }
+    }
+
+    return mR_Success;
+  }));
 
   fragmentSource[position] = '\0';
 
@@ -108,7 +130,7 @@ mFUNCTION(mShader_Create, OUT mShader *pShader, const std::string &vertexShader,
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mShader_CreateFromFile, OUT mShader *pShader, const std::wstring & filename)
+mFUNCTION(mShader_CreateFromFile, OUT mShader *pShader, const mString & filename)
 {
   mFUNCTION_SETUP();
 
@@ -123,15 +145,15 @@ mFUNCTION(mShader_CreateFromFile, OUT mShader *pShader, const std::wstring & fil
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mShader_CreateFromFile, OUT mShader *pShader, const std::wstring & vertexShaderPath, const std::wstring & fragmentShaderPath, IN OPTIONAL const char *fragDataLocation /* = nullptr */)
+mFUNCTION(mShader_CreateFromFile, OUT mShader *pShader, const mString & vertexShaderPath, const mString & fragmentShaderPath, IN OPTIONAL const char *fragDataLocation /* = nullptr */)
 {
   mFUNCTION_SETUP();
 
   mERROR_IF(pShader == nullptr, mR_ArgumentNull);
 
 #if defined(mRENDERER_OPENGL)
-  std::string vert;
-  std::string frag;
+  mString vert;
+  mString frag;
 
   mERROR_CHECK(mFile_ReadAllText(vertexShaderPath, nullptr, &vert));
   mERROR_CHECK(mFile_ReadAllText(fragmentShaderPath, nullptr, &frag));
@@ -165,13 +187,13 @@ mFUNCTION(mShader_Destroy, IN_OUT mShader *pShader)
 
   pShader->initialized = false;
   pShader->loadedFromFile = false;
-  pShader->vertexShader.~basic_string();
-  pShader->fragmentShader.~basic_string();
+  mERROR_CHECK(mDestruct(&pShader->vertexShader));
+  mERROR_CHECK(mDestruct(&pShader->fragmentShader));
 
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mShader_SetTo, mPtr<mShader>& shader, const std::string & vertexShader, const std::string & fragmentShader, IN OPTIONAL const char *fragDataLocation)
+mFUNCTION(mShader_SetTo, mPtr<mShader>& shader, const mString & vertexShader, const mString & fragmentShader, IN OPTIONAL const char *fragDataLocation)
 {
   mFUNCTION_SETUP();
 
@@ -192,13 +214,29 @@ mFUNCTION(mShader_SetTo, mPtr<mShader>& shader, const std::string & vertexShader
 
   char *vertexSource = nullptr;
   mDEFER(mAllocator_FreePtr(nullptr, &vertexSource));
-  mERROR_CHECK(mAllocator_Allocate(nullptr, &vertexSource, vertexShader.length() + 1));
+  mERROR_CHECK(mAllocator_Allocate(nullptr, &vertexSource, vertexShader.bytes));
 
   size_t position = 0;
 
-  for (char c : vertexShader)
-    if(c != '\r')
-      vertexSource[position++] = c;
+  const mchar_t carriageReturn = mToChar<1>("\r");
+
+  mERROR_CHECK(mString_ForEachChar(vertexShader,
+    [&](mchar_t c, const char *utf8char, size_t bytes)
+  {
+    if (c != carriageReturn)
+    {
+      char *s = (char *)utf8char;
+
+      for (size_t i = 0; i < bytes; i++)
+      {
+        vertexSource[position] = *s;
+        position++;
+        s++;
+      }
+    }
+
+    return mR_Success;
+  }));
 
   vertexSource[position] = '\0';
 
@@ -223,13 +261,28 @@ mFUNCTION(mShader_SetTo, mPtr<mShader>& shader, const std::string & vertexShader
 
   char *fragmentSource = nullptr;
   mDEFER(mAllocator_FreePtr(nullptr, &fragmentSource));
-  mERROR_CHECK(mAllocator_Allocate(nullptr, &fragmentSource, fragmentShader.length() + 1));
+  mERROR_CHECK(mAllocator_Allocate(nullptr, &fragmentSource, fragmentShader.bytes));
 
   position = 0;
 
-  for (char c : fragmentShader)
-    if (c != '\r')
-      fragmentSource[position++] = c;
+
+  mERROR_CHECK(mString_ForEachChar(fragmentShader,
+    [&](mchar_t c, const char *utf8char, size_t bytes)
+  {
+    if (c != carriageReturn)
+    {
+      char *s = (char *)utf8char;
+
+      for (size_t i = 0; i < bytes; i++)
+      {
+        fragmentSource[position] = *s;
+        position++;
+        s++;
+      }
+    }
+
+    return mR_Success;
+  }));
 
   fragmentSource[position] = '\0';
 
@@ -273,7 +326,7 @@ mFUNCTION(mShader_SetTo, mPtr<mShader>& shader, const std::string & vertexShader
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mShader_SetToFile, mPtr<mShader> &shader, const std::wstring &filename)
+mFUNCTION(mShader_SetToFile, mPtr<mShader> &shader, const mString &filename)
 {
   mFUNCTION_SETUP();
 
@@ -290,8 +343,8 @@ mFUNCTION(mShader_ReloadFromFile, mPtr<mShader> &shader)
   mERROR_IF(!shader->initialized, mR_NotInitialized);
   mERROR_IF(!shader->loadedFromFile, mR_ResourceIncompatible);
 
-  std::wstring vertexShader = shader->vertexShader;
-  std::wstring fragmentShader = shader->fragmentShader;
+  mString vertexShader = shader->vertexShader;
+  mString fragmentShader = shader->fragmentShader;
 
   mResult result = mShader_SetToFile(shader, vertexShader, fragmentShader);
 
@@ -300,13 +353,13 @@ mFUNCTION(mShader_ReloadFromFile, mPtr<mShader> &shader)
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mShader_SetToFile, mPtr<mShader> &shader, const std::wstring &vertexShaderPath, const std::wstring &fragmentShaderPath, IN OPTIONAL const char *fragDataLocation /* = nullptr */)
+mFUNCTION(mShader_SetToFile, mPtr<mShader> &shader, const mString &vertexShaderPath, const mString &fragmentShaderPath, IN OPTIONAL const char *fragDataLocation /* = nullptr */)
 {
   mFUNCTION_SETUP();
 
   mERROR_IF(shader == nullptr, mR_ArgumentNull);
 
-  std::string vertexShader, fragmentShader;
+  mString vertexShader, fragmentShader;
 
   mERROR_CHECK(mFile_ReadAllText(vertexShaderPath, nullptr, &vertexShader));
   mERROR_CHECK(mFile_ReadAllText(fragmentShaderPath, nullptr, &fragmentShader));
@@ -546,7 +599,7 @@ mFUNCTION(mShader_SetUniformAtIndex, mShader &shader, const shaderAttributeIndex
 
 #if defined (mRENDERER_OPENGL)
   GLint *pValues;
-  mDEFER_DESTRUCTION(&pValues, mFreePtrStack);
+  mDEFER_CALL(&pValues, mFreePtrStack);
   mERROR_CHECK(mAllocStackZero(&pValues, count));
 
   for (size_t i = 0; i < count; ++i)
@@ -567,7 +620,7 @@ mFUNCTION(mShader_SetUniformAtIndex, mShader & shader, const shaderAttributeInde
 
 #if defined (mRENDERER_OPENGL)
   GLint *pValues;
-  mDEFER_DESTRUCTION(&pValues, mFreePtrStack);
+  mDEFER_CALL(&pValues, mFreePtrStack);
   mERROR_CHECK(mAllocStackZero(&pValues, count));
 
   for (size_t i = 0; i < count; ++i)

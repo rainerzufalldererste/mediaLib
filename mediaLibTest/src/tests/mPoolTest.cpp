@@ -1,11 +1,3 @@
-// Copyright 2018 Christoph Stiller
-// 
-// Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
-// 
-// The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-// 
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
 #include "mTestLib.h"
 #include "mPool.h"
 
@@ -16,7 +8,7 @@ mTEST(mPool, TestCreate)
   mTEST_ASSERT_EQUAL(mR_ArgumentNull, mPool_Create((mPtr<mPool<mDummyDestructible>> *)nullptr, pAllocator));
 
   mPtr<mPool<mDummyDestructible>> pool;
-  mDEFER_DESTRUCTION(&pool, mPool_Destroy);
+  mDEFER_CALL(&pool, mPool_Destroy);
   mTEST_ASSERT_SUCCESS(mPool_Create(&pool, pAllocator));
 
   mTEST_ASSERT_NOT_EQUAL(pool, nullptr);
@@ -29,7 +21,7 @@ mTEST(mPool, TestAdd)
   mTEST_ALLOCATOR_SETUP();
 
   mPtr<mPool<mDummyDestructible>> pool;
-  mDEFER_DESTRUCTION(&pool, mPool_Destroy);
+  mDEFER_CALL(&pool, mPool_Destroy);
   mTEST_ASSERT_SUCCESS(mPool_Create(&pool, pAllocator));
 
   size_t count = (size_t)-1;
@@ -64,7 +56,7 @@ mTEST(mPool, TestAddRemove)
   mTEST_ALLOCATOR_SETUP();
 
   mPtr<mPool<mDummyDestructible>> pool;
-  mDEFER_DESTRUCTION(&pool, mPool_Destroy);
+  mDEFER_CALL(&pool, mPool_Destroy);
   mTEST_ASSERT_SUCCESS(mPool_Create(&pool, pAllocator));
 
   mDummyDestructible dummy0;

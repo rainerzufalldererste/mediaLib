@@ -1,16 +1,10 @@
-// Copyright 2018 Christoph Stiller
-// 
-// Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
-// 
-// The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-// 
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
 #include "mFramebuffer.h"
 
 #if defined (mRENDERER_OPENGL)
 GLuint mFrameBuffer_ActiveFrameBufferHandle = 0;
 #endif
+
+mPtr<mQueue<mPtr<mFramebuffer>>> mFramebuffer_Queue = nullptr;
 
 mFUNCTION(mFramebuffer_Create_Internal, OUT mFramebuffer *pFramebuffer, const mVec2s &size);
 mFUNCTION(mFramebuffer_Destroy_Internal, IN mFramebuffer *pFramebuffer);
@@ -22,6 +16,9 @@ mFUNCTION(mFramebuffer_Create, OUT mPtr<mFramebuffer> *pFramebuffer, IN mAllocat
   mFUNCTION_SETUP();
 
   mERROR_IF(pFramebuffer == nullptr, mR_ArgumentNull);
+
+  if (mFramebuffer_Queue == nullptr)
+    mERROR_CHECK(mQueue_Create(&mFramebuffer_Queue, pAllocator));
 
   mERROR_CHECK(mSharedPointer_Allocate(pFramebuffer, pAllocator, (std::function<void (mFramebuffer *)>)[](mFramebuffer *pData) { mFramebuffer_Destroy_Internal(pData); }, 1));
 
@@ -64,6 +61,9 @@ mFUNCTION(mFramebuffer_Unbind)
 {
   mFUNCTION_SETUP();
 
+  if (mFramebuffer_Queue != nullptr)
+    mERROR_CHECK(mQueue_Clear(mFramebuffer_Queue));
+
 #if defined(mRENDERER_OPENGL)
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   mFrameBuffer_ActiveFrameBufferHandle = 0;
@@ -72,6 +72,56 @@ mFUNCTION(mFramebuffer_Unbind)
 #else
   mRETURN_RESULT(mR_NotImplemented);
 #endif
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mFramebuffer_Push, mPtr<mFramebuffer> &framebuffer)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(framebuffer == nullptr, mR_ArgumentNull);
+
+  mERROR_CHECK(mFramebuffer_Bind(framebuffer));
+
+  mERROR_CHECK(mQueue_PushBack(mFramebuffer_Queue, framebuffer));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mFramebuffer_Pop)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(mFramebuffer_Queue == nullptr, mR_Success);
+
+  size_t count = 0;
+  mERROR_CHECK(mQueue_GetCount(mFramebuffer_Queue, &count));
+
+  if (count <= 1)
+  {
+    if (count == 1)
+      mERROR_CHECK(mQueue_Clear(mFramebuffer_Queue));
+
+    mERROR_CHECK(mFramebuffer_Unbind());
+  }
+  else
+  {
+    // Remove last framebuffer.
+    {
+      mPtr<mFramebuffer> framebuffer;
+      mDEFER_CALL(&framebuffer, mFramebuffer_Destroy);
+      mERROR_CHECK(mQueue_PopBack(mFramebuffer_Queue, &framebuffer));
+    }
+
+    // bind the previous framebuffer.
+    {
+      mPtr<mFramebuffer> framebuffer;
+      mDEFER_CALL(&framebuffer, mFramebuffer_Destroy);
+      mERROR_CHECK(mQueue_PeekBack(mFramebuffer_Queue, &framebuffer));
+      mERROR_CHECK(mFramebuffer_Bind(framebuffer));
+    }
+  }
 
   mRETURN_SUCCESS();
 }

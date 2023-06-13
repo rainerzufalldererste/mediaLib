@@ -1,11 +1,3 @@
-// Copyright 2018 Christoph Stiller
-// 
-// Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
-// 
-// The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-// 
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
 #ifndef mMemory_h__
 #define mMemory_h__
 
@@ -39,7 +31,7 @@ template <typename T> mFUNCTION(mAlloc, OUT T **ppData, const size_t count)
   mFUNCTION_SETUP();
 
   mERROR_IF(ppData == nullptr, mR_ArgumentNull);
-  mDEFER_DESTRUCTION_ON_ERROR(ppData, mSetToNullptr);
+  mDEFER_CALL_ON_ERROR(ppData, mSetToNullptr);
 
   T *pData = (T *)malloc(sizeof(T) * count);
   mERROR_IF(pData == nullptr, mR_MemoryAllocationFailure);
@@ -53,7 +45,7 @@ template <typename T> mFUNCTION(mRealloc, OUT T **ppData, const size_t count)
   mFUNCTION_SETUP();
 
   mERROR_IF(ppData == nullptr, mR_ArgumentNull);
-  mDEFER_DESTRUCTION_ON_ERROR(ppData, mSetToNullptr);
+  mDEFER_CALL_ON_ERROR(ppData, mSetToNullptr);
 
   if (*ppData == nullptr)
   {
@@ -86,7 +78,7 @@ template <typename T> mFUNCTION(mAllocStack, OUT T **ppData, const size_t count)
   mFUNCTION_SETUP();
 
   mERROR_IF(ppData == nullptr, mR_ArgumentNull);
-  mDEFER_DESTRUCTION_ON_ERROR(ppData, mSetToNullptr);
+  mDEFER_CALL_ON_ERROR(ppData, mSetToNullptr);
 
   T *pData = (T *)_malloca(sizeof(T) * count);
   mERROR_IF(pData == nullptr, mR_MemoryAllocationFailure);
@@ -112,7 +104,7 @@ template <typename T> mFUNCTION(mFreePtr, IN_OUT T **ppData)
 
   if (ppData != nullptr)
   {
-    mDEFER_DESTRUCTION(ppData, mSetToNullptr);
+    mDEFER_CALL(ppData, mSetToNullptr);
 
     if (*ppData != nullptr)
       free(*ppData);
@@ -137,7 +129,7 @@ template <typename T> mFUNCTION(mFreePtrStack, IN_OUT T **ppData)
 
   if (ppData != nullptr)
   {
-    mDEFER_DESTRUCTION(ppData, mSetToNullptr);
+    mDEFER_CALL(ppData, mSetToNullptr);
 
     if (*ppData != nullptr)
       _freea(*ppData);
@@ -161,7 +153,7 @@ template <typename T> mFUNCTION(mAllocAlligned, OUT T **ppData, const size_t cou
   mFUNCTION_SETUP();
 
   mERROR_IF(ppData == nullptr, mR_ArgumentNull);
-  mDEFER_DESTRUCTION_ON_ERROR(ppData, mSetToNullptr);
+  mDEFER_CALL_ON_ERROR(ppData, mSetToNullptr);
 
   T *pData = (T *)_aligned_malloc(sizeof(T) * count);
   mERROR_IF(pData == nullptr, mR_MemoryAllocationFailure);
@@ -175,7 +167,7 @@ template <typename T> mFUNCTION(mReallocAlligned, OUT T **ppData, const size_t c
   mFUNCTION_SETUP();
 
   mERROR_IF(ppData == nullptr, mR_ArgumentNull);
-  mDEFER_DESTRUCTION_ON_ERROR(ppData, mSetToNullptr);
+  mDEFER_CALL_ON_ERROR(ppData, mSetToNullptr);
 
   if (*ppData == nullptr)
   {
@@ -209,7 +201,7 @@ template <typename T> mFUNCTION(mFreeAllignedPtr, IN_OUT T **ppData)
 
   if (ppData != nullptr)
   {
-    mDEFER_DESTRUCTION(ppData, mSetToNullptr);
+    mDEFER_CALL(ppData, mSetToNullptr);
 
     if (*ppData != nullptr)
       _aligned_free(*ppData);

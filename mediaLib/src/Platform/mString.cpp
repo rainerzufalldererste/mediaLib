@@ -1,11 +1,3 @@
-// Copyright 2018 Christoph Stiller
-// 
-// Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
-// 
-// The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-// 
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
 #include "mString.h"
 #include "utf8proc.h"
 
@@ -56,6 +48,9 @@ mString::mString(const char * text, const size_t size, IN OPTIONAL mAllocator * 
     mERROR_IF_GOTO(codePoint < 0, mR_InternalError, result, epilogue);
     offset += (size_t)characterSize;
     this->count++;
+
+    if (characterSize == 0)
+      break;
   }
 
   this->count += 1;
@@ -68,6 +63,18 @@ epilogue:
 }
 
 mString::mString(const char *text, IN OPTIONAL mAllocator *pAllocator) : mString(text, strlen(text) + 1, pAllocator)
+{ }
+
+mString::mString(const wchar_t *text, const size_t size, IN OPTIONAL mAllocator *pAllocator /* = nullptr */)
+{
+  if (mFAILED(mString_Create(this, text, size, pAllocator)))
+  {
+    this->~mString();
+    hasFailed = true;
+  }
+}
+
+mString::mString(const wchar_t *text, IN OPTIONAL mAllocator *pAllocator /* = nullptr */) : mString(text, wcslen(text), pAllocator)
 { }
 
 mString::~mString()
@@ -91,8 +98,11 @@ mString::mString(const mString &copy) :
   capacity(0),
   hasFailed(false)
 {
-  if (copy.hasFailed || copy.capacity == 0)
+  if (copy.hasFailed)
     goto epilogue;
+
+  if (copy.capacity == 0)
+    return;
 
   mResult result = mR_Success;
 
@@ -188,6 +198,9 @@ mchar_t mString::operator[](const size_t index) const
       return codePoint;
 
     offset += (size_t)characterSize;
+
+    if (characterSize == 0)
+      break;
   }
 
   return codePoint;
@@ -346,6 +359,9 @@ mString::operator std::wstring() const
     }
 
     offset += (size_t)characterSize;
+
+    if (characterSize == 0)
+      break;
   }
 
   wtext[wstrIndex] = (wchar_t)0;
@@ -413,6 +429,73 @@ mFUNCTION(mString_Create, OUT mString *pString, const char *text, const size_t s
     mERROR_IF(codePoint < 0, mR_InternalError);
     offset += (size_t)characterSize;
     pString->count++;
+
+    if (characterSize == 0)
+      break;
+  }
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mString_Create, OUT mString *pString, const wchar_t *text, IN OPTIONAL mAllocator *pAllocator /* = nullptr */)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_CHECK(mString_Create(pString, text, wcslen(text), pAllocator));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mString_Create, OUT mString *pString, const wchar_t *text, const size_t size, IN OPTIONAL mAllocator *pAllocator /* = nullptr */)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pString == nullptr, mR_ArgumentNull);
+
+  if (pString->pAllocator == pAllocator)
+  {
+    *pString = mString();
+    pString->pAllocator = pAllocator;
+
+    if (pString->capacity < size * sizeof(wchar_t))
+    {
+      mERROR_CHECK(mAllocator_Reallocate(pString->pAllocator, &pString->text, size * sizeof(wchar_t)));
+      pString->capacity = size * sizeof(wchar_t);
+    }
+  }
+  else
+  {
+    pString->~mString();
+    *pString = mString();
+
+    pString->pAllocator = pAllocator;
+
+    mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &pString->text, size * sizeof(wchar_t)));
+    pString->capacity = size * sizeof(wchar_t);
+  }
+  
+  if (0 == (pString->bytes = WideCharToMultiByte(CP_UTF8, 0, text, (int)size, pString->text, (int)pString->capacity, nullptr, false)))
+  {
+    DWORD error = GetLastError();
+    mUnused(error);
+
+    mERROR_IF(true, mR_InvalidParameter);
+  }
+
+  size_t offset = 0;
+  pString->count = 0;
+
+  while (offset < pString->bytes)
+  {
+    utf8proc_int32_t codePoint;
+    ptrdiff_t characterSize;
+    mERROR_IF((characterSize = utf8proc_iterate((uint8_t *)pString->text + offset, pString->bytes - offset, &codePoint)) < 0, mR_InternalError);
+    mERROR_IF(codePoint < 0, mR_InternalError);
+    offset += (size_t)characterSize;
+    pString->count++;
+
+    if (characterSize == 0)
+      break;
   }
 
   mRETURN_SUCCESS();
@@ -521,6 +604,9 @@ mFUNCTION(mString_ToWideString, const mString &string, std::wstring *pWideString
     }
 
     offset += (size_t)characterSize;
+
+    if (characterSize == 0)
+      break;
   }
 
   wtext[wstrIndex] = (wchar_t)0;
@@ -654,11 +740,59 @@ mFUNCTION(mString_Append, mString &text, const mString &appendedText)
   mRETURN_SUCCESS();
 }
 
+mFUNCTION(mString_AppendUnsignedInteger, mString &text, const uint64_t value)
+{
+  mFUNCTION_SETUP();
+
+  mString format;
+  mERROR_CHECK(mString_CreateFormat(&format, text.pAllocator, "%" PRIu64, value));
+  mERROR_CHECK(mString_Append(text, format));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mString_AppendInteger, mString &text, const int64_t value)
+{
+  mFUNCTION_SETUP();
+
+  mString format;
+  mERROR_CHECK(mString_CreateFormat(&format, text.pAllocator, "%" PRIi64, value));
+  mERROR_CHECK(mString_Append(text, format));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mString_AppendBool, mString &text, const bool value)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_CHECK(mString_Append(text, value ? "true" : "false"));
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mString_AppendDouble, mString &text, const double_t value)
+{
+  mFUNCTION_SETUP();
+
+  mString format;
+  mERROR_CHECK(mString_CreateFormat(&format, text.pAllocator, "%f", value));
+  mERROR_CHECK(mString_Append(text, format));
+
+  mRETURN_SUCCESS();
+}
+
 mFUNCTION(mString_ToDirectoryPath, OUT mString *pString, const mString &text)
 {
   mFUNCTION_SETUP();
 
   mERROR_IF(pString == nullptr, mR_ArgumentNull);
+
+  if (text.text == nullptr || text.bytes <= 1 || text.count <= 1)
+  {
+    *pString = "";
+    mRETURN_SUCCESS();
+  }
 
   if (pString->pAllocator != text.pAllocator && pString->capacity > 0)
   {
@@ -718,6 +852,9 @@ mFUNCTION(mString_ToDirectoryPath, OUT mString *pString, const mString &text)
     }
 
     offset += (size_t)characterSize;
+
+    if (characterSize == 0)
+      break;
   }
 
   if (!lastWasSlash)
@@ -736,6 +873,12 @@ mFUNCTION(mString_ToFilePath, OUT mString *pString, const mString &text)
   mFUNCTION_SETUP();
 
   mERROR_IF(pString == nullptr, mR_ArgumentNull);
+
+  if (text.text == nullptr || text.bytes <= 1 || text.count <= 1)
+  {
+    *pString = "";
+    mRETURN_SUCCESS();
+  }
 
   *pString = text;
   mERROR_IF(pString->hasFailed, mR_InternalError);
@@ -779,6 +922,9 @@ mFUNCTION(mString_ToFilePath, OUT mString *pString, const mString &text)
     }
 
     offset += (size_t)characterSize;
+
+    if (characterSize == 0)
+      break;
   }
 
   mRETURN_SUCCESS();
@@ -813,9 +959,47 @@ mFUNCTION(mString_Equals, const mString &stringA, const mString &stringB, bool *
     }
 
     offset += characterSizeA;
+
+    if (characterSizeA == 0)
+      break;
   }
 
   *pAreEqual = true;
+
+  mRETURN_SUCCESS();
+}
+
+mFUNCTION(mString_ForEachChar, const mString &string, const std::function<mResult(mchar_t, char *, size_t)> &function)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(string.hasFailed, mR_InvalidParameter);
+  mERROR_IF(function == nullptr, mR_ArgumentNull);
+
+  size_t offset = 0;
+
+  while (offset + 1 < string.bytes)
+  {
+    utf8proc_int32_t codePoint;
+    ptrdiff_t characterSize;
+    mERROR_IF((characterSize = utf8proc_iterate((uint8_t *)string.text + offset, string.bytes - offset, &codePoint)) < 0, mR_InternalError);
+    mERROR_IF(codePoint < 0, mR_InternalError);
+
+    if (characterSize == 0)
+      break;
+
+    const mResult result = function((mchar_t)codePoint, string.text + offset, (size_t)characterSize);
+    
+    if (mFAILED(result))
+    {
+      if (result == mR_Break)
+        break;
+      else
+        mERROR_IF(true, result);
+    }
+
+    offset += (size_t)characterSize;
+  }
 
   mRETURN_SUCCESS();
 }
@@ -835,10 +1019,39 @@ mFUNCTION(mInplaceString_GetCount_Internal, const char * text, const size_t maxS
     mERROR_IF(codePoint < 0, mR_InternalError);
     offset += (size_t)characterSize;
     count++;
+
+    if(characterSize == 0)
+      break;
   }
 
   *pCount = count + 1;
   *pSize = offset + 1;
 
   mRETURN_SUCCESS();
+}
+
+bool mInplaceString_StringsAreEqual_Internal(const char * textA, const char * textB, const size_t bytes, const size_t count)
+{
+  size_t offset = 0;
+
+  for (size_t i = 0; i < count; ++i)
+  {
+    utf8proc_int32_t codePointA;
+    ptrdiff_t characterSizeA = utf8proc_iterate((uint8_t *)textA + offset, bytes - offset, &codePointA);
+
+    utf8proc_int32_t codePointB;
+    utf8proc_iterate((uint8_t *)textB + offset, bytes - offset, &codePointB);
+
+    if (codePointA != codePointB)
+    {
+      return false;
+    }
+
+    offset += characterSizeA;
+
+    if (characterSizeA == 0)
+      break;
+  }
+
+  return true;
 }

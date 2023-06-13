@@ -1,11 +1,3 @@
-// Copyright 2018 Christoph Stiller
-// 
-// Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
-// 
-// The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-// 
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
 #include "mTestLib.h"
 #include "mString.h"
 
@@ -14,7 +6,7 @@ mTEST(mString, TestCreateEmpty)
   mTEST_ALLOCATOR_SETUP();
 
   mString string;
-  mDEFER_DESTRUCTION(&string, mString_Destroy);
+  mDEFER_CALL(&string, mString_Destroy);
   mTEST_ASSERT_SUCCESS(mString_Create(&string, "", pAllocator));
 
   size_t count;
@@ -33,7 +25,7 @@ mTEST(mString, TestCreateASCII)
   mTEST_ALLOCATOR_SETUP();
 
   mString string;
-  mDEFER_DESTRUCTION(&string, mString_Destroy);
+  mDEFER_CALL(&string, mString_Destroy);
   mTEST_ASSERT_SUCCESS(mString_Create(&string, "h", pAllocator));
 
   size_t count;
@@ -52,7 +44,7 @@ mTEST(mString, TestCreateMultipleASCII)
   mTEST_ALLOCATOR_SETUP();
 
   mString string;
-  mDEFER_DESTRUCTION(&string, mString_Destroy);
+  mDEFER_CALL(&string, mString_Destroy);
   mTEST_ASSERT_SUCCESS(mString_Create(&string, "a b c", pAllocator));
 
   size_t count;
@@ -71,7 +63,7 @@ mTEST(mString, TestCreateUTF8)
   mTEST_ALLOCATOR_SETUP();
 
   mString string;
-  mDEFER_DESTRUCTION(&string, mString_Destroy);
+  mDEFER_CALL(&string, mString_Destroy);
   mTEST_ASSERT_SUCCESS(mString_Create(&string, "🌵🦎🎅", pAllocator));
 
   size_t count;
@@ -90,8 +82,8 @@ mTEST(mString, TestCreateMixed)
   mTEST_ALLOCATOR_SETUP();
 
   mString string;
-  mDEFER_DESTRUCTION(&string, mString_Destroy);
-  mTEST_ASSERT_SUCCESS(mString_Create(&string, "🌵🦎🎅testÿⴲ", pAllocator));
+  mDEFER_CALL(&string, mString_Destroy);
+  mTEST_ASSERT_SUCCESS(mString_Create(&string, "🌵🦎🎅testמⴲ", pAllocator));
 
   size_t count;
   mTEST_ASSERT_SUCCESS(mString_GetCount(string, &count));
@@ -104,12 +96,27 @@ mTEST(mString, TestCreateMixed)
   mTEST_ALLOCATOR_ZERO_CHECK();
 }
 
+mTEST(mString, TestCreateFromWchar)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  mString string;
+  mDEFER_CALL(&string, mString_Destroy);
+  mTEST_ASSERT_SUCCESS(mString_Create(&string, L"Testמ", pAllocator));
+
+  size_t count;
+  mTEST_ASSERT_SUCCESS(mString_GetCount(string, &count));
+  mTEST_ASSERT_EQUAL(count, 4 + 1 + 1);
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}
+
 mTEST(mString, TestAt)
 {
   mTEST_ALLOCATOR_SETUP();
 
   mString string;
-  mDEFER_DESTRUCTION(&string, mString_Destroy);
+  mDEFER_CALL(&string, mString_Destroy);
   mTEST_ASSERT_SUCCESS(mString_Create(&string, "🌵🦎🎅testמⴲ", pAllocator));
 
   mchar_t c = mToChar<4>("🌵");
@@ -140,7 +147,7 @@ mTEST(mString, TestAppend)
   mTEST_ALLOCATOR_SETUP();
 
   mString string;
-  mDEFER_DESTRUCTION(&string, mString_Destroy);
+  mDEFER_CALL(&string, mString_Destroy);
   mTEST_ASSERT_SUCCESS(mString_Create(&string, "🌵🦎🎅test", pAllocator));
 
   mTEST_ASSERT_SUCCESS(mString_Append(string, mString("🦎T", pAllocator)));
@@ -161,7 +168,7 @@ mTEST(mString, TestAppendOperator)
   mTEST_ALLOCATOR_SETUP();
 
   mString string;
-  mDEFER_DESTRUCTION(&string, mString_Destroy);
+  mDEFER_CALL(&string, mString_Destroy);
   mTEST_ASSERT_SUCCESS(mString_Create(&string, "🌵🦎🎅test", pAllocator));
 
   string += mString("🦎T", pAllocator);
@@ -183,7 +190,7 @@ mTEST(mString, TestConcatOperator)
   mTEST_ALLOCATOR_SETUP();
 
   mString string;
-  mDEFER_DESTRUCTION(&string, mString_Destroy);
+  mDEFER_CALL(&string, mString_Destroy);
   mTEST_ASSERT_SUCCESS(mString_Create(&string, "🌵🦎🎅test", pAllocator));
 
   mString newString = string + mString("🦎T", pAllocator);
@@ -205,7 +212,7 @@ mTEST(mString, TestAppendEmpty)
   mTEST_ALLOCATOR_SETUP();
 
   mString string;
-  mDEFER_DESTRUCTION(&string, mString_Destroy);
+  mDEFER_CALL(&string, mString_Destroy);
   mTEST_ASSERT_SUCCESS(mString_Create(&string, "🌵🦎🎅test", pAllocator));
 
   mTEST_ASSERT_SUCCESS(mString_Append(string, mString()));
@@ -226,7 +233,7 @@ mTEST(mString, TestAppendOperatorEmpty)
   mTEST_ALLOCATOR_SETUP();
 
   mString string;
-  mDEFER_DESTRUCTION(&string, mString_Destroy);
+  mDEFER_CALL(&string, mString_Destroy);
   mTEST_ASSERT_SUCCESS(mString_Create(&string, "🌵🦎🎅test", pAllocator));
 
   string += mString();
@@ -248,7 +255,7 @@ mTEST(mString, TestConcatOperatorEmpty)
   mTEST_ALLOCATOR_SETUP();
 
   mString string;
-  mDEFER_DESTRUCTION(&string, mString_Destroy);
+  mDEFER_CALL(&string, mString_Destroy);
   mTEST_ASSERT_SUCCESS(mString_Create(&string, "🌵🦎🎅test", pAllocator));
 
   mString newString = string + mString();
@@ -270,7 +277,7 @@ mTEST(mString, TestAppendEmptyBase)
   mTEST_ALLOCATOR_SETUP();
 
   mString string;
-  mDEFER_DESTRUCTION(&string, mString_Destroy);
+  mDEFER_CALL(&string, mString_Destroy);
   mTEST_ASSERT_SUCCESS(mString_Create(&string, "🌵🦎🎅test", pAllocator));
 
   mString emptyString;
@@ -292,7 +299,7 @@ mTEST(mString, TestAppendOperatorEmptyBase)
   mTEST_ALLOCATOR_SETUP();
 
   mString string;
-  mDEFER_DESTRUCTION(&string, mString_Destroy);
+  mDEFER_CALL(&string, mString_Destroy);
   mTEST_ASSERT_SUCCESS(mString_Create(&string, "🌵🦎🎅test", pAllocator));
 
   mString emptyString;
@@ -315,7 +322,7 @@ mTEST(mString, TestConcatOperatorEmptyBase)
   mTEST_ALLOCATOR_SETUP();
 
   mString string;
-  mDEFER_DESTRUCTION(&string, mString_Destroy);
+  mDEFER_CALL(&string, mString_Destroy);
   mTEST_ASSERT_SUCCESS(mString_Create(&string, "🌵🦎🎅test", pAllocator));
 
   mString newString = mString() + string;
@@ -337,7 +344,7 @@ mTEST(mString, TestWstringCompare)
   mTEST_ALLOCATOR_SETUP();
 
   mString string;
-  mDEFER_DESTRUCTION(&string, mString_Destroy);
+  mDEFER_CALL(&string, mString_Destroy);
   mTEST_ASSERT_SUCCESS(mString_Create(&string, "🌵🦎🎅testמⴲx", pAllocator));
 
   std::wstring wstring0;
@@ -356,15 +363,15 @@ mTEST(mString, TestSubstring)
   mTEST_ALLOCATOR_SETUP();
 
   mString string;
-  mDEFER_DESTRUCTION(&string, mString_Destroy);
+  mDEFER_CALL(&string, mString_Destroy);
   mTEST_ASSERT_SUCCESS(mString_Create(&string, "🌵🦎🎅testמⴲx", pAllocator));
 
   mString subString;
-  mDEFER_DESTRUCTION(&subString, mString_Destroy);
+  mDEFER_CALL(&subString, mString_Destroy);
   mTEST_ASSERT_SUCCESS(mString_Substring(string, &subString, 2, 7));
 
   mString comparisonString;
-  mDEFER_DESTRUCTION(&comparisonString, mString_Destroy);
+  mDEFER_CALL(&comparisonString, mString_Destroy);
   mTEST_ASSERT_SUCCESS(mString_Create(&comparisonString, "🎅testמⴲ", pAllocator));
 
   mTEST_ASSERT_EQUAL(comparisonString.count, subString.count);
@@ -390,11 +397,11 @@ mTEST(mString, TestEquals)
   mTEST_ALLOCATOR_SETUP();
 
   mString stringA;
-  mDEFER_DESTRUCTION(&stringA, mString_Destroy);
+  mDEFER_CALL(&stringA, mString_Destroy);
   mTEST_ASSERT_SUCCESS(mString_Create(&stringA, "", pAllocator));
 
   mString stringB;
-  mDEFER_DESTRUCTION(&stringB, mString_Destroy);
+  mDEFER_CALL(&stringB, mString_Destroy);
   mTEST_ASSERT_SUCCESS(mString_Create(&stringB, "", pAllocator));
 
   mTEST_ASSERT_EQUAL(stringA, stringB);
@@ -473,11 +480,11 @@ mTEST(mString, TestToDirectoryPath)
   mTEST_ALLOCATOR_SETUP();
 
   mString string;
-  mDEFER_DESTRUCTION(&string, mString_Destroy);
+  mDEFER_CALL(&string, mString_Destroy);
   mTEST_ASSERT_SUCCESS(mString_Create(&string, "C:/Some Folder🌵//Path/\\p", pAllocator));
 
   mString path;
-  mDEFER_DESTRUCTION(&path, mString_Destroy);
+  mDEFER_CALL(&path, mString_Destroy);
   mTEST_ASSERT_SUCCESS(mString_ToDirectoryPath(&path, string));
 
   mTEST_ASSERT_EQUAL(path, "C:\\Some Folder🌵\\Path\\p\\");
@@ -505,11 +512,11 @@ mTEST(mString, TestToFilePath)
   mTEST_ALLOCATOR_SETUP();
 
   mString string;
-  mDEFER_DESTRUCTION(&string, mString_Destroy);
+  mDEFER_CALL(&string, mString_Destroy);
   mTEST_ASSERT_SUCCESS(mString_Create(&string, "C:/Some Folder//Path/\\p", pAllocator));
 
   mString path;
-  mDEFER_DESTRUCTION(&path, mString_Destroy);
+  mDEFER_CALL(&path, mString_Destroy);
   mTEST_ASSERT_SUCCESS(mString_ToFilePath(&path, string));
 
   mTEST_ASSERT_EQUAL(path, "C:\\Some Folder\\Path\\p");
@@ -528,6 +535,38 @@ mTEST(mString, TestToFilePath)
   mTEST_ASSERT_SUCCESS(mString_ToFilePath(&path, string));
 
   mTEST_ASSERT_EQUAL(path, "test");
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}
+
+mTEST(mString, TestToDirectoryPathEmpty)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  mString string;
+  mDEFER_CALL(&string, mString_Destroy);
+
+  mString path;
+  mDEFER_CALL(&path, mString_Destroy);
+  mTEST_ASSERT_SUCCESS(mString_ToDirectoryPath(&path, string));
+
+  mTEST_ASSERT_EQUAL(path, "");
+
+  mTEST_ALLOCATOR_ZERO_CHECK();
+}
+
+mTEST(mString, TestToFilePathEmpty)
+{
+  mTEST_ALLOCATOR_SETUP();
+
+  mString string;
+  mDEFER_CALL(&string, mString_Destroy);
+
+  mString path;
+  mDEFER_CALL(&path, mString_Destroy);
+  mTEST_ASSERT_SUCCESS(mString_ToFilePath(&path, string));
+
+  mTEST_ASSERT_EQUAL(path, "");
 
   mTEST_ALLOCATOR_ZERO_CHECK();
 }

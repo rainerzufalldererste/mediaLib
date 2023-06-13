@@ -1,11 +1,3 @@
-// Copyright 2018 Christoph Stiller
-// 
-// Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
-// 
-// The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-// 
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
 #ifndef mMesh_h__
 #define mMesh_h__
 
@@ -464,7 +456,7 @@ struct mMeshFactory_Internal_TextureParameterUnpacker <mPtr<mImageBuffer>&>
     mFUNCTION_SETUP();
 
     mPtr<mTexture> texture;
-    mDEFER_DESTRUCTION(&texture, mSharedPointer_Destroy);
+    mDEFER_CALL(&texture, mSharedPointer_Destroy);
     mERROR_CHECK(mSharedPointer_Allocate(&texture, nullptr, (std::function<void(mTexture *)>)[](mTexture *pData) {mTexture_Destroy(pData); }, 1));
     mERROR_CHECK(mTexture_Create(texture.GetPointer(), imageBuffer, false, index));
 
@@ -501,7 +493,7 @@ struct mMeshFactory_Internal_TextureParameterUnpacker <mPtr<mImageBuffer>>
     mFUNCTION_SETUP();
 
     mPtr<mTexture> texture;
-    mDEFER_DESTRUCTION(&texture, mSharedPointer_Destroy);
+    mDEFER_CALL(&texture, mSharedPointer_Destroy);
     mERROR_CHECK(mSharedPointer_Allocate(&texture, nullptr, (std::function<void(mTexture *)>)[](mTexture *pData) {mTexture_Destroy(pData); }, 1));
     mERROR_CHECK(mTexture_Create(texture.GetPointer(), imageBuffer, false, index));
 
@@ -552,7 +544,7 @@ inline mFUNCTION(mMeshFactory_CreateMesh, mPtr<mMeshFactory<Args...>> &factory, 
   mERROR_IF(factory == nullptr || pMesh == nullptr, mR_ArgumentNull);
 
   mPtr<mShader> shader;
-  mDEFER_DESTRUCTION(&shader, mSharedPointer_Destroy);
+  mDEFER_CALL(&shader, mSharedPointer_Destroy);
   mERROR_CHECK(mSharedPointer_Allocate(&shader, pAllocator, (std::function<void(mShader *)>)[](mShader *pShader) { mShader_Destroy(pShader); }, 1));
   mERROR_CHECK(mShader_Create(shader.GetPointer(), factory->meshFactoryInternal.vertShader, factory->meshFactoryInternal.fragShader));
   mERROR_CHECK(mShader_Bind(*shader.GetPointer()));

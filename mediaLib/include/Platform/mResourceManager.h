@@ -1,15 +1,7 @@
-// Copyright 2018 Christoph Stiller
-// 
-// Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
-// 
-// The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-// 
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
 #ifndef mResourceManager_h__
 #define mResourceManager_h__
 
-#include "default.h"
+#include "mediaLib.h"
 #include "mHashMap.h"
 #include "mPool.h"
 #include "mMutex.h"
@@ -35,6 +27,33 @@ struct mResourceManager
     TValue resource;
     typename mSharedPointer<TValue>::PointerParams pointerParams;
     mPtr<TValue> sharedPointer;
+
+    ResourceData() {}
+
+    ResourceData(ResourceData &&move) :
+      pointerParams(std::move(move.pointerParams)),
+      sharedPointer(std::move(move.sharedPointer)),
+      resource(std::move(move.resource))
+    {
+      if(sharedPointer != nullptr && sharedPointer.m_pParams != nullptr)
+        sharedPointer.m_pParams = &pointerParams;
+
+      move.~ResourceData();
+    }
+
+    ResourceData &operator =(ResourceData &&move)
+    {
+      pointerParams = std::move(move.pointerParams);
+      sharedPointer = std::move(move.sharedPointer);
+      resource = std::move(move.resource);
+
+      if (sharedPointer != nullptr && sharedPointer.m_pParams != nullptr)
+        sharedPointer.m_pParams = &pointerParams;
+
+      move.~ResourceData();
+
+      return *this;
+    }
   };
 
   mPtr<mHashMap<TKey, size_t>> keys;
@@ -94,11 +113,11 @@ inline mFUNCTION(mResourceManager_GetResource, OUT mPtr<TValue> *pValue, TKey ke
   {
     mAllocator *pAllocator;
     mERROR_CHECK((mResourceGetPreferredAllocator<TValue>)(&pAllocator));
-    mERROR_CHECK((mResourceManager_CreateRessourceManager_Explicit<TKey, TValue>(pAllocator)));
+    mERROR_CHECK((mResourceManager_CreateResourceManager_Explicit<TKey, TValue>(pAllocator)));
   }
 
   mERROR_CHECK(mMutex_Lock(CurrentResourceManagerType::Instance()->pMutex));
-  mDEFER_DESTRUCTION(CurrentResourceManagerType::Instance()->pMutex, mMutex_Unlock);
+  mDEFER_CALL(CurrentResourceManagerType::Instance()->pMutex, mMutex_Unlock);
 
   bool contains = false;
   size_t resourceIndex = 0;
@@ -115,30 +134,41 @@ inline mFUNCTION(mResourceManager_GetResource, OUT mPtr<TValue> *pValue, TKey ke
   resourceIndex = 0;
   CurrentResourceManagerType::ResourceData resourceData;
   mERROR_CHECK(mMemset(&resourceData, 1));
-  mERROR_CHECK(mPool_Add(CurrentResourceManagerType::Instance()->data, &resourceData, &resourceIndex));
+  mERROR_CHECK(mPool_Add(CurrentResourceManagerType::Instance()->data, std::forward<CurrentResourceManagerType::ResourceData>(resourceData), &resourceIndex));
   mERROR_CHECK(mHashMap_Add(CurrentResourceManagerType::Instance()->keys, key, &resourceIndex));
 
   CurrentResourceManagerType::ResourceData *pRetrievedResourceData = nullptr;
   mERROR_CHECK(mPool_PointerAt(CurrentResourceManagerType::Instance()->data, resourceIndex, &pRetrievedResourceData));
+
+  std::function<void(TValue *)> cleanupFunc = [=](TValue *pData)
+  {
+    //mPRINT("Destroying Resource %" PRIu64 " of type %s.\n", resourceIndex, typeid(TValue *).name());
+    mDestroyResource(pData);
+
+    size_t resourceIndex0 = 0;
+    mResult result = mHashMap_Remove(CurrentResourceManagerType::Instance()->keys, key, &resourceIndex0);
+
+    if (mFAILED(result))
+      return;
+
+    mASSERT(resourceIndex == resourceIndex0, "Corrupted ResourceManager data.");
+
+    CurrentResourceManagerType::ResourceData resourceData0;
+    result = mPool_RemoveAt(CurrentResourceManagerType::Instance()->data, resourceIndex, &resourceData0);
+
+    if (mFAILED(result))
+      return;
+
+    mDestroyResource(&resourceData0.resource);
+    mDestruct(&resourceData0);
+  };
 
   mERROR_CHECK(mSharedPointer_CreateInplace(
     &pRetrievedResourceData->sharedPointer,
     &pRetrievedResourceData->pointerParams,
     &pRetrievedResourceData->resource,
     mSHARED_POINTER_FOREIGN_RESOURCE, 
-    (std::function<void (TValue *)>)[=](TValue *pData)
-      {
-        //mPRINT("Destroying Resource %" PRIu64 " of type %s.\n", resourceIndex, typeid(TValue *).name());
-        mDestroyResource(pData);
-        
-        size_t resourceIndex0 = 0;
-        mResult result = mHashMap_Remove(CurrentResourceManagerType::Instance()->keys, key, &resourceIndex0);
-
-        mASSERT_DEBUG(resourceIndex == resourceIndex0, "Corrupted ResourceManager data.");
-
-        CurrentResourceManagerType::ResourceData resourceData0; // we don't care.
-        result = mPool_RemoveAt(CurrentResourceManagerType::Instance()->data, resourceIndex, &resourceData0);
-      }));
+    cleanupFunc));
 
   mERROR_CHECK(mCreateResource(&pRetrievedResourceData->resource, key));
   *pValue = pRetrievedResourceData->sharedPointer;
@@ -150,7 +180,7 @@ inline mFUNCTION(mResourceManager_GetResource, OUT mPtr<TValue> *pValue, TKey ke
 }
 
 template<typename TKey, typename TValue>
-inline mFUNCTION(mResourceManager_CreateRessourceManager_Explicit, IN mAllocator *pAllocator)
+inline mFUNCTION(mResourceManager_CreateResourceManager_Explicit, IN mAllocator *pAllocator)
 {
   mFUNCTION_SETUP();
 
@@ -166,8 +196,8 @@ inline mFUNCTION(mResourceManager_CreateRessourceManager_Explicit, IN mAllocator
     nullptr, 
     (std::function<void(CurrentResourceManagerType *)>)[](CurrentResourceManagerType *pData) 
       {
-        mHashMap_Destroy(&pData->keys);
         mPool_Destroy(&pData->data);
+        mHashMap_Destroy(&pData->keys);
         mMutex_Destroy(&pData->pMutex); 
       }, 
     1));
@@ -185,6 +215,20 @@ inline mPtr<mResourceManager<TValue, TKey>>& mResourceManager<TValue, TKey>::Ins
 {
   static mPtr<mResourceManager<TValue, TKey>> singletonInstance;
   return singletonInstance;
+}
+
+template<typename TValue, typename TKey>
+mFUNCTION(mDestruct, struct mResourceManager<TValue, TKey>::ResourceData *pResourceData)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pResourceData == nullptr, mR_Success);
+
+  mSharedPointer_Destroy(&pResourceData->sharedPointer);
+  pResourceData->pointerParams.cleanupFunction.~function();
+  mDestruct(&pResourceData->resource);
+
+  mRETURN_SUCCESS();
 }
 
 #endif // mResourceManager_h__

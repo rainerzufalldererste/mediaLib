@@ -1,11 +1,3 @@
-// Copyright 2018 Christoph Stiller
-// 
-// Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
-// 
-// The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-// 
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
 #include "mMediaFileWriter.h"
 #include <mfapi.h>
 #include <mfidl.h>
@@ -54,7 +46,7 @@ mFUNCTION(mMediaFileWriter_Create, OUT mPtr<mMediaFileWriter> *pMediaFileWriter,
   mDEFER_ON_ERROR(mAllocator_FreePtr(pAllocator, &pMediaFileWriterRaw));
   mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &pMediaFileWriterRaw, 1));
 
-  mDEFER_DESTRUCTION_ON_ERROR(pMediaFileWriter, mSharedPointer_Destroy);
+  mDEFER_CALL_ON_ERROR(pMediaFileWriter, mSharedPointer_Destroy);
   mERROR_CHECK(mSharedPointer_Create<mMediaFileWriter>(pMediaFileWriter, pMediaFileWriterRaw, [](mMediaFileWriter *pData) { mMediaFileWriter_Destroy_Internal(pData); }, pAllocator));
   pMediaFileWriterRaw = nullptr; // to not be destroyed on error.
 
@@ -87,7 +79,7 @@ mFUNCTION(mMediaFileWriter_AppendVideoFrame, mPtr<mMediaFileWriter> &mediaFileWr
   mERROR_CHECK(mPixelFormat_GetSize(imageBuffer->pixelFormat, imageBuffer->currentSize, &bufferPixels));
 
   IMFMediaBuffer *pBuffer = nullptr;
-  mDEFER_DESTRUCTION(&pBuffer, _ReleaseReference);
+  mDEFER_CALL(&pBuffer, _ReleaseReference);
   mERROR_IF(FAILED(hr = MFCreateMemoryBuffer((DWORD)bufferPixels, &pBuffer)), mR_InternalError);
 
   BYTE *pData;
@@ -113,7 +105,7 @@ mFUNCTION(mMediaFileWriter_AppendVideoFrame, mPtr<mMediaFileWriter> &mediaFileWr
   mERROR_IF(FAILED(hr = pBuffer->SetCurrentLength((DWORD)bufferPixels)), mR_InternalError);
 
   IMFSample *pSample = nullptr;
-  mDEFER_DESTRUCTION(&pSample, _ReleaseReference);
+  mDEFER_CALL(&pSample, _ReleaseReference);
   mERROR_IF(FAILED(hr = MFCreateSample(&pSample)), mR_InternalError);
   mERROR_IF(FAILED(hr = pSample->AddBuffer(pBuffer)), mR_InternalError);
   mERROR_IF(FAILED(hr = pSample->SetSampleTime(mediaFileWriter->lastFrameTimestamp)), mR_InternalError);
@@ -172,7 +164,7 @@ mFUNCTION(mMediaFileWriter_Create_Internal, OUT mMediaFileWriter *pMediaFileWrit
   mERROR_IF(FAILED(hr = MFCreateSinkWriterFromURL(filename.c_str(), nullptr, nullptr, &pMediaFileWriter->pSinkWriter)), mR_InternalError);
 
   IMFMediaType *pVideoOutputMediaType;
-  mDEFER_DESTRUCTION(&pVideoOutputMediaType, _ReleaseReference);
+  mDEFER_CALL(&pVideoOutputMediaType, _ReleaseReference);
   mERROR_IF(FAILED(hr = MFCreateMediaType(&pVideoOutputMediaType)), mR_InternalError);
 
   GUID subtype = MFVideoFormat_H264;
@@ -235,7 +227,7 @@ mFUNCTION(mMediaFileWriter_Create_Internal, OUT mMediaFileWriter *pMediaFileWrit
   mERROR_IF(FAILED(hr = pMediaFileWriter->pSinkWriter->AddStream(pVideoOutputMediaType, &pMediaFileWriter->videoStreamIndex)), mR_InternalError);
 
   IMFMediaType *pVideoInputMediaType;
-  mDEFER_DESTRUCTION(&pVideoInputMediaType, _ReleaseReference);
+  mDEFER_CALL(&pVideoInputMediaType, _ReleaseReference);
   mERROR_IF(FAILED(hr = MFCreateMediaType(&pVideoInputMediaType)), mR_InternalError);
 
   mERROR_IF(FAILED(hr = pVideoInputMediaType->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Video)), mR_InternalError);

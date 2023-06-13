@@ -1,11 +1,3 @@
-// Copyright 2018 Christoph Stiller
-// 
-// Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
-// 
-// The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-// 
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
 #include "mTestLib.h"
 #include "mQueue.h"
 
@@ -16,7 +8,7 @@ mTEST(mQueue, TestCreate)
   mTEST_ASSERT_EQUAL(mR_ArgumentNull, mQueue_Create((mPtr<mQueue<size_t>> *)nullptr, pAllocator));
 
   mPtr<mQueue<size_t>> numberQueue = nullptr;
-  mDEFER_DESTRUCTION(&numberQueue, mQueue_Destroy);
+  mDEFER_CALL(&numberQueue, mQueue_Destroy);
   mTEST_ASSERT_SUCCESS(mQueue_Create(&numberQueue, pAllocator));
 
   mTEST_ASSERT_NOT_EQUAL(numberQueue, nullptr);
@@ -34,7 +26,7 @@ mTEST(mQueue, TestPushBackPopFront)
   size_t count = (size_t)-1;
   size_t value;
   mPtr<mQueue<size_t>> numberQueue = nullptr;
-  mDEFER_DESTRUCTION(&numberQueue, mQueue_Destroy);
+  mDEFER_CALL(&numberQueue, mQueue_Destroy);
 
   mTEST_ASSERT_EQUAL(mR_ArgumentNull, mQueue_PopFront(numberQueue, &value));
   mTEST_ASSERT_EQUAL(mR_ArgumentNull, mQueue_PushBack(numberQueue, 1LLU));
@@ -82,7 +74,7 @@ mTEST(mQueue, TestPushFrontPopBack)
   size_t count = (size_t)-1;
   size_t value;
   mPtr<mQueue<size_t>> numberQueue = nullptr;
-  mDEFER_DESTRUCTION(&numberQueue, mQueue_Destroy);
+  mDEFER_CALL(&numberQueue, mQueue_Destroy);
 
   mTEST_ASSERT_EQUAL(mR_ArgumentNull, mQueue_PushFront(numberQueue, 1LLU));
   mTEST_ASSERT_EQUAL(mR_ArgumentNull, mQueue_PopBack(numberQueue, &value));
@@ -129,7 +121,7 @@ mTEST(mQueue, TestPushPop)
 
   std::vector<size_t> comparisonVector;
   mPtr<mQueue<size_t>> numberQueue = nullptr;
-  mDEFER_DESTRUCTION(&numberQueue, mQueue_Destroy);
+  mDEFER_CALL(&numberQueue, mQueue_Destroy);
   mTEST_ASSERT_SUCCESS(mQueue_Create(&numberQueue, pAllocator));
 
   size_t count = (size_t)-1;
@@ -207,7 +199,7 @@ mTEST(mQueue, TestClear)
   mTEST_ALLOCATOR_SETUP();
 
   mPtr<mQueue<mDummyDestructible>> queue;
-  mDEFER_DESTRUCTION(&queue, mQueue_Destroy);
+  mDEFER_CALL(&queue, mQueue_Destroy);
   mTEST_ASSERT_SUCCESS(mQueue_Create(&queue, pAllocator));
 
   for (size_t i = 0; i < 1024; i++)

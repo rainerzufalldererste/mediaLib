@@ -1,11 +1,3 @@
-// Copyright 2018 Christoph Stiller
-// 
-// Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
-// 
-// The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-// 
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
 #include <mfapi.h>
 #include <mfidl.h>
 #include <Mferror.h>
@@ -91,7 +83,7 @@ mFUNCTION(mMediaFileInputHandler_Create, OUT mPtr<mMediaFileInputHandler> *pPtr,
   mDEFER_ON_ERROR(mAllocator_FreePtr(pAllocator, &pInputHandler));
   mERROR_CHECK(mAllocator_AllocateZero(pAllocator, &pInputHandler, 1));
 
-  mDEFER_DESTRUCTION_ON_ERROR(pPtr, mSharedPointer_Destroy);
+  mDEFER_CALL_ON_ERROR(pPtr, mSharedPointer_Destroy);
   mERROR_CHECK(mSharedPointer_Create<mMediaFileInputHandler>(pPtr, pInputHandler, [](mMediaFileInputHandler *pData) { mMediaFileInputHandler_Destroy_Internal(pData); }, pAllocator));
   pInputHandler = nullptr; // to not be destroyed on error.
 
@@ -263,7 +255,7 @@ mFUNCTION(mMediaFileInputIterator_GetNextVideoFrame, mPtr<mMediaFileInputIterato
   mERROR_IF(iterator->hasFinished, mR_EndOfStream);
 
   IMFSample *pSample = nullptr;
-  mDEFER_DESTRUCTION(&pSample, _ReleaseReference);
+  mDEFER_CALL(&pSample, _ReleaseReference);
 
   LONGLONG timestamp;
 
@@ -274,7 +266,7 @@ mFUNCTION(mMediaFileInputIterator_GetNextVideoFrame, mPtr<mMediaFileInputIterato
     mUnused(hr);
 
     IMFMediaBuffer *pMediaBuffer = nullptr;
-    mDEFER_DESTRUCTION(&pMediaBuffer, _ReleaseReference);
+    mDEFER_CALL(&pMediaBuffer, _ReleaseReference);
     mERROR_IF(FAILED(hr = pSample->ConvertToContiguousBuffer(&pMediaBuffer)), mR_InternalError);
 
     mERROR_IF(iterator->wmf_streamIndex >= iterator->mediaFileInputHandler->streamCount, mR_IndexOutOfBounds);
@@ -299,7 +291,7 @@ mFUNCTION(mMediaFileInputIterator_GetNextVideoFrame, mPtr<mMediaFileInputIterato
       mERROR_CHECK(mTimeStamp_FromSeconds(&videoStreamType.timePoint, timestamp / (double_t)(10 * 1000 * 1000)));
 
       mPtr<mImageBuffer> sourceBuffer;
-      mDEFER_DESTRUCTION(&sourceBuffer, mImageBuffer_Destroy);
+      mDEFER_CALL(&sourceBuffer, mImageBuffer_Destroy);
       mERROR_CHECK(mImageBuffer_Create(&sourceBuffer, &mDefaultAllocator, pSampleData, videoStreamType.resolution, videoStreamType.pixelFormat));
 
       mERROR_CHECK(mImageBuffer_Create(pImageBuffer, &mDefaultAllocator, videoStreamType.resolution, videoStreamType.pixelFormat));
@@ -328,7 +320,7 @@ mFUNCTION(mMediaFileInputIterator_GetNextAudioFrame, mPtr<mMediaFileInputIterato
   mERROR_IF(iterator->hasFinished, mR_EndOfStream);
 
   IMFSample *pSample = nullptr;
-  mDEFER_DESTRUCTION(&pSample, _ReleaseReference);
+  mDEFER_CALL(&pSample, _ReleaseReference);
 
   LONGLONG timestamp;
 
@@ -339,7 +331,7 @@ mFUNCTION(mMediaFileInputIterator_GetNextAudioFrame, mPtr<mMediaFileInputIterato
     mUnused(hr);
 
     IMFMediaBuffer *pMediaBuffer = nullptr;
-    mDEFER_DESTRUCTION(&pMediaBuffer, _ReleaseReference);
+    mDEFER_CALL(&pMediaBuffer, _ReleaseReference);
     mERROR_IF(FAILED(hr = pSample->ConvertToContiguousBuffer(&pMediaBuffer)), mR_InternalError);
 
     mERROR_IF(iterator->wmf_streamIndex >= iterator->mediaFileInputHandler->streamCount, mR_IndexOutOfBounds);
@@ -365,7 +357,7 @@ mFUNCTION(mMediaFileInputIterator_GetNextAudioFrame, mPtr<mMediaFileInputIterato
       mERROR_CHECK(mTimeStamp_FromSeconds(&audioStreamType.timePoint, timestamp / (double_t)(10 * 1000 * 1000)));
 
       mPtr<uint8_t> buffer;
-      mDEFER_DESTRUCTION(&buffer, mSharedPointer_Destroy);
+      mDEFER_CALL(&buffer, mSharedPointer_Destroy);
       mERROR_CHECK(mSharedPointer_Allocate(&buffer, iterator->mediaFileInputHandler->pAllocator, sampleDataCurrentLength));
       mERROR_CHECK(mMemcpy(buffer.GetPointer(), pSampleData, sampleDataCurrentLength));
 
@@ -393,7 +385,7 @@ mFUNCTION(mMediaFileInputIterator_SkipFrame, mPtr<mMediaFileInputIterator> &iter
   mERROR_IF(iterator->hasFinished, mR_EndOfStream);
 
   IMFSample *pSample = nullptr;
-  mDEFER_DESTRUCTION(&pSample, _ReleaseReference);
+  mDEFER_CALL(&pSample, _ReleaseReference);
 
   LONGLONG timestamp;
 
@@ -492,15 +484,15 @@ mFUNCTION(mMediaFileInputHandler_Create_Internal, IN mMediaFileInputHandler *pIn
   mERROR_CHECK(mMediaFoundation_AddReference());
 
   IMFAttributes *pAttributes = nullptr;
-  mDEFER_DESTRUCTION(&pAttributes, _ReleaseReference);
+  mDEFER_CALL(&pAttributes, _ReleaseReference);
   mERROR_IF(FAILED(MFCreateAttributes(&pAttributes, 1)), mR_InternalError);
   //mERROR_IF(FAILED(pAttributes->SetUINT32(MF_SOURCE_READER_ENABLE_VIDEO_PROCESSING, TRUE)), mR_InternalError);
 
   IMFMediaType *pVideoMediaTypeYUV = nullptr;
-  mDEFER_DESTRUCTION(&pVideoMediaTypeYUV, _ReleaseReference);
+  mDEFER_CALL(&pVideoMediaTypeYUV, _ReleaseReference);
 
   IMFMediaType *pVideoMediaTypeRGB = nullptr;
-  mDEFER_DESTRUCTION(&pVideoMediaTypeRGB, _ReleaseReference);
+  mDEFER_CALL(&pVideoMediaTypeRGB, _ReleaseReference);
 
   if (enableVideoProcessing)
   {
@@ -514,7 +506,7 @@ mFUNCTION(mMediaFileInputHandler_Create_Internal, IN mMediaFileInputHandler *pIn
   }
 
   IMFMediaType *pAudioMediaType = nullptr;
-  mDEFER_DESTRUCTION(&pAudioMediaType, _ReleaseReference);
+  mDEFER_CALL(&pAudioMediaType, _ReleaseReference);
 
   if (enableAudioProcessing)
   {
@@ -541,7 +533,7 @@ mFUNCTION(mMediaFileInputHandler_Create_Internal, IN mMediaFileInputHandler *pIn
     while (true)
     {
       IMFMediaType *pType = nullptr;
-      mDEFER_DESTRUCTION(&pType, _ReleaseReference);
+      mDEFER_CALL(&pType, _ReleaseReference);
       hr = pInputHandler->pSourceReader->GetNativeMediaType(streamIndex, mediaTypeIndex, &pType);
 
       if (hr == MF_E_NO_MORE_TYPES)
@@ -691,7 +683,7 @@ mFUNCTION(mMediaFileInputHandler_RunSession_Internal, IN mMediaFileInputHandler 
   mUnused(hr);
 
   IMFSample *pSample = nullptr;
-  mDEFER_DESTRUCTION(&pSample, _ReleaseReference);
+  mDEFER_CALL(&pSample, _ReleaseReference);
 
   bool quit = false;
 
@@ -700,7 +692,7 @@ mFUNCTION(mMediaFileInputHandler_RunSession_Internal, IN mMediaFileInputHandler 
     DWORD streamIndex, flags;
     LONGLONG timeStamp;
 
-    mDEFER_DESTRUCTION(&pSample, _ReleaseReference);
+    mDEFER_CALL(&pSample, _ReleaseReference);
     mERROR_IF(FAILED(hr = pData->pSourceReader->ReadSample((DWORD)MF_SOURCE_READER_ANY_STREAM, 0, &streamIndex, &flags, &timeStamp, &pSample)), mR_InternalError);
     
     if (flags & MF_SOURCE_READERF_ENDOFSTREAM)
@@ -717,7 +709,7 @@ mFUNCTION(mMediaFileInputHandler_RunSession_Internal, IN mMediaFileInputHandler 
       mMediaTypeLookup *pMediaTypeLookup = &pData->pStreamTypeLookup[streamIndex];
 
       IMFMediaType *pMediaType;
-      mDEFER_DESTRUCTION(&pMediaType, _ReleaseReference);
+      mDEFER_CALL(&pMediaType, _ReleaseReference);
       mERROR_IF(FAILED(pData->pSourceReader->GetCurrentMediaType(streamIndex, &pMediaType)), mR_InternalError);
 
       GUID majorType;
@@ -771,7 +763,7 @@ mFUNCTION(mMediaFileInputHandler_RunSession_Internal, IN mMediaFileInputHandler 
       ++sampleCount;
 
       IMFMediaBuffer *pMediaBuffer = nullptr;
-      mDEFER_DESTRUCTION(&pMediaBuffer, _ReleaseReference);
+      mDEFER_CALL(&pMediaBuffer, _ReleaseReference);
       mERROR_IF(FAILED(hr = pSample->ConvertToContiguousBuffer(&pMediaBuffer)), mR_InternalError);
 
       mERROR_IF(streamIndex >= pData->streamCount, mR_IndexOutOfBounds);
@@ -798,7 +790,7 @@ mFUNCTION(mMediaFileInputHandler_RunSession_Internal, IN mMediaFileInputHandler 
           mERROR_CHECK(mTimeStamp_FromSeconds(&videoStreamType.timePoint, timeStamp / (double_t)(10 * 1000 * 1000)));
 
           mPtr<mImageBuffer> imageBuffer;
-          mDEFER_DESTRUCTION(&imageBuffer, mImageBuffer_Destroy);
+          mDEFER_CALL(&imageBuffer, mImageBuffer_Destroy);
           mERROR_CHECK(mImageBuffer_Create(&imageBuffer, &mDefaultAllocator, pSampleData, videoStreamType.resolution, videoStreamType.pixelFormat));
           mERROR_CHECK((*pData->pProcessVideoDataCallback)(imageBuffer, videoStreamType));
         }
@@ -826,7 +818,7 @@ mFUNCTION(mMediaFileInputHandler_RunSession_Internal, IN mMediaFileInputHandler 
       }
 
       //IMF2DBuffer2 *p2DBuffer = nullptr;
-      //mDEFER_DESTRUCTION(&p2DBuffer, _ReleaseReference);
+      //mDEFER_CALL(&p2DBuffer, _ReleaseReference);
       //mERROR_IF(FAILED(hr = pMediaBuffer->QueryInterface(__uuidof(IMF2DBuffer2), (void **)&p2DBuffer)), mR_InternalError);
     }
   }
@@ -911,7 +903,7 @@ mFUNCTION(mMediaFileInputIterator_Create, OUT mPtr<mMediaFileInputIterator> *pIt
   mDEFER_ON_ERROR(mAllocator_FreePtr(mediaFileInputHandlerRef->pAllocator, &pIteratorRaw));
   mERROR_CHECK(mAllocator_AllocateZero(mediaFileInputHandlerRef->pAllocator, &pIteratorRaw, 1));
 
-  mDEFER_DESTRUCTION_ON_ERROR(pIterator, mSharedPointer_Destroy);
+  mDEFER_CALL_ON_ERROR(pIterator, mSharedPointer_Destroy);
   mERROR_CHECK(mSharedPointer_Create<mMediaFileInputIterator>(pIterator, pIteratorRaw, [](mMediaFileInputIterator *pData) { mMediaFileInputIterator_Destroy_Internal(pData); }, mediaFileInputHandlerRef->pAllocator));
   pIteratorRaw = nullptr; // to not be destroyed on error.
 
@@ -986,7 +978,7 @@ mFUNCTION(mMediaFileInputIterator_IterateToStreamIndex, mPtr<mMediaFileInputIter
       mMediaTypeLookup *pMediaTypeLookup = &iterator->mediaFileInputHandler->pStreamTypeLookup[streamIndex];
 
       IMFMediaType *pMediaType;
-      mDEFER_DESTRUCTION(&pMediaType, _ReleaseReference);
+      mDEFER_CALL(&pMediaType, _ReleaseReference);
       mERROR_IF(FAILED(iterator->mediaFileInputHandler->pSourceReader->GetCurrentMediaType(streamIndex, &pMediaType)), mR_InternalError);
 
       GUID majorType;

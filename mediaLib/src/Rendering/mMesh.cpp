@@ -1,11 +1,3 @@
-// Copyright 2018 Christoph Stiller
-// 
-// Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files(the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions :
-// 
-// The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-// 
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
 #include "mMesh.h"
 
 mFUNCTION(mMeshAttributeContainer_Destroy, IN_OUT mPtr<mMeshAttributeContainer> *pMeshAttributeContainer)
@@ -35,7 +27,7 @@ mFUNCTION(mMesh_Create, OUT mPtr<mMesh>* pMesh, IN mAllocator * pAllocator, cons
   mFUNCTION_SETUP();
 
   mPtr<mQueue<mPtr<mMeshAttributeContainer>>> queue;
-  mDEFER_DESTRUCTION(&queue, mQueue_Destroy);
+  mDEFER_CALL(&queue, mQueue_Destroy);
   mERROR_CHECK(mQueue_Create(&queue, pAllocator));
   mERROR_CHECK(mQueue_Reserve(queue, attributeInformation.size()));
 
@@ -59,7 +51,7 @@ mFUNCTION(mMesh_Create, OUT mPtr<mMesh> *pMesh, IN mAllocator *pAllocator, mPtr<
   mERROR_CHECK(mQueue_GetCount(attributeInformation, &attributeCount));
 
   mPtr<mQueue<mMeshAttribute>> info;
-  mDEFER_DESTRUCTION(&info, mQueue_Destroy);
+  mDEFER_CALL(&info, mQueue_Destroy);
   mERROR_CHECK(mQueue_Create(&info, pAllocator));
 
 #if defined (mRENDERER_OPENGL)
@@ -72,7 +64,7 @@ mFUNCTION(mMesh_Create, OUT mPtr<mMesh> *pMesh, IN mAllocator *pAllocator, mPtr<
   for (size_t i = 0; i < attributeCount; ++i)
   {
     mPtr<mMeshAttributeContainer> meshAttrib;
-    mDEFER_DESTRUCTION(&meshAttrib, mMeshAttributeContainer_Destroy);
+    mDEFER_CALL(&meshAttrib, mMeshAttributeContainer_Destroy);
     mERROR_CHECK(mQueue_PeekAt(attributeInformation, i, &meshAttrib));
 
     if (i == 0)
@@ -88,7 +80,7 @@ mFUNCTION(mMesh_Create, OUT mPtr<mMesh> *pMesh, IN mAllocator *pAllocator, mPtr<
   }
 
   mPtr<mBinaryChunk> data;
-  mDEFER_DESTRUCTION(&data, mBinaryChunk_Destroy);
+  mDEFER_CALL(&data, mBinaryChunk_Destroy);
   mERROR_CHECK(mBinaryChunk_Create(&data, pAllocator));
 
   for (size_t i = 0; i < count; ++i)
@@ -96,7 +88,7 @@ mFUNCTION(mMesh_Create, OUT mPtr<mMesh> *pMesh, IN mAllocator *pAllocator, mPtr<
     for (size_t j = 0; j < attributeCount; ++j)
     {
       mPtr<mMeshAttributeContainer> meshAttrib;
-      mDEFER_DESTRUCTION(&meshAttrib, mMeshAttributeContainer_Destroy);
+      mDEFER_CALL(&meshAttrib, mMeshAttributeContainer_Destroy);
       mERROR_CHECK(mQueue_PeekAt(attributeInformation, j, &meshAttrib));
       
       mERROR_CHECK(mBinaryChunk_WriteBytes(data, meshAttrib->attributes->pData + meshAttrib->size * i, meshAttrib->size));
