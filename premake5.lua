@@ -9,6 +9,3 @@ solution "mediaLib"
 
   dofile "mediaLibTest/project.lua"
     location("mediaLibTest")
-
-  dofile "TestApp/project.lua"
-    location("TestApp")
