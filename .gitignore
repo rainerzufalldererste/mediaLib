@@ -264,6 +264,14 @@ __pycache__/
 *.sln
 *.vcxpro*
 
+# Makefile
+Makefile
+*.make
+
 # Additional Files
 mediaLib/lib/*.lib
+mediaLib/lib/*.idb
 enc_temp_folder/*
+*.lastcode*
+* Advisor Results */
+*/.opencppcov/*

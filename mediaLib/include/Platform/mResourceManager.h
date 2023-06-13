@@ -6,6 +6,15 @@
 #include "mPool.h"
 #include "mMutex.h"
 
+//#define mPRINT_RESOURCE_MANAGER_LOG
+
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "L+mccbLatVeA9C0qozCjFQpeksOPalBEVg5BZlw3jv6uL28XBH5dLeP6t40Ch0OvhhvpBhoIVIItnMR7"
+#endif
+
 template <typename TValue, typename TKey>
 mFUNCTION(mCreateResource, OUT TValue *pResource, TKey param);
 
@@ -65,25 +74,25 @@ struct mResourceManager
 //////////////////////////////////////////////////////////////////////////
 
 // To be available for the resource manager, expose two functions: 
-//  'mResult mCreateResource(OUT TValue* pResource, TKey param);'
+//  'mResult mCreateResource(OUT TValue *pResource, TKey param);'
 //  and
 //  'mResult mDestroyResource(IN_OUT TValue *pResource);'
 
 template <typename TValue, typename TKey>
 mFUNCTION(mCreateResource, OUT TValue *pResource, TKey param)
 {
-  static_assert(false, "This type does not support resource creation yet.");
+  mSTATIC_ASSERT(false, "This type does not support resource creation yet.");
 }
 
 // To be available for the resource manager, expose two functions: 
-//  'mResult mCreateResource(OUT TValue* pResource, TKey param);'
+//  'mResult mCreateResource(OUT TValue *pResource, TKey param);'
 //  and
 //  'mResult mDestroyResource(IN_OUT TValue *pResource);'
 
 template <typename TValue>
 mFUNCTION(mDestroyResource, IN_OUT TValue *pResource)
 {
-  static_assert(false, "This type does not support resource destruction yet.");
+  mSTATIC_ASSERT(false, "This type does not support resource destruction yet.");
 }
 
 template <typename TValue>
@@ -113,7 +122,7 @@ inline mFUNCTION(mResourceManager_GetResource, OUT mPtr<TValue> *pValue, TKey ke
   {
     mAllocator *pAllocator;
     mERROR_CHECK((mResourceGetPreferredAllocator<TValue>)(&pAllocator));
-    mERROR_CHECK((mResourceManager_CreateResourceManager_Explicit<TKey, TValue>(pAllocator)));
+    mERROR_CHECK((mResourceManager_CreateResourceManager_Explicit<TKey, TValue>(pAllocator)));
   }
 
   mERROR_CHECK(mMutex_Lock(CurrentResourceManagerType::Instance()->pMutex));
@@ -133,18 +142,19 @@ inline mFUNCTION(mResourceManager_GetResource, OUT mPtr<TValue> *pValue, TKey ke
 
   resourceIndex = 0;
   CurrentResourceManagerType::ResourceData resourceData;
-  mERROR_CHECK(mMemset(&resourceData, 1));
+  mERROR_CHECK(mZeroMemory(&resourceData, 1));
   mERROR_CHECK(mPool_Add(CurrentResourceManagerType::Instance()->data, std::forward<CurrentResourceManagerType::ResourceData>(resourceData), &resourceIndex));
   mERROR_CHECK(mHashMap_Add(CurrentResourceManagerType::Instance()->keys, key, &resourceIndex));
+
+#if defined(mPRINT_RESOURCE_MANAGER_LOG)
+  mPRINT("Creating Resource ", resourceIndex, " of type ", typeid(TValue *).name(), " at index ", resourceIndex, ".\n");
+#endif
 
   CurrentResourceManagerType::ResourceData *pRetrievedResourceData = nullptr;
   mERROR_CHECK(mPool_PointerAt(CurrentResourceManagerType::Instance()->data, resourceIndex, &pRetrievedResourceData));
 
-  std::function<void(TValue *)> cleanupFunc = [=](TValue *pData)
+  std::function<void(TValue *)> cleanupFunc = [resourceIndex, key](TValue * /*pData*/)
   {
-    //mPRINT("Destroying Resource %" PRIu64 " of type %s.\n", resourceIndex, typeid(TValue *).name());
-    mDestroyResource(pData);
-
     size_t resourceIndex0 = 0;
     mResult result = mHashMap_Remove(CurrentResourceManagerType::Instance()->keys, key, &resourceIndex0);
 
@@ -159,7 +169,13 @@ inline mFUNCTION(mResourceManager_GetResource, OUT mPtr<TValue> *pValue, TKey ke
     if (mFAILED(result))
       return;
 
-    mDestroyResource(&resourceData0.resource);
+    resourceData0.sharedPointer.m_pData = nullptr;
+    resourceData0.sharedPointer.m_pParams = nullptr;
+
+#if defined(mPRINT_RESOURCE_MANAGER_LOG)
+    mPRINT("Destroying Resource ", resourceIndex, " of type ", typeid(TValue *).name(), " at index ", resourceIndex, ".\n");
+#endif
+
     mDestruct(&resourceData0);
   };
 
@@ -191,16 +207,15 @@ inline mFUNCTION(mResourceManager_CreateResourceManager_Explicit, IN mAllocator 
   if (CurrentResourceManagerType::Instance() != nullptr)
     mRETURN_RESULT(mR_ResourceStateInvalid);
 
-  mERROR_CHECK(mSharedPointer_Allocate(
-    &CurrentResourceManagerType::Instance(), 
-    nullptr, 
-    (std::function<void(CurrentResourceManagerType *)>)[](CurrentResourceManagerType *pData) 
-      {
-        mPool_Destroy(&pData->data);
-        mHashMap_Destroy(&pData->keys);
-        mMutex_Destroy(&pData->pMutex); 
-      }, 
-    1));
+  std::function<void(CurrentResourceManagerType *)> destructionFunc = 
+    [](CurrentResourceManagerType *pData)
+  {
+    mPool_Destroy(&pData->data);
+    mHashMap_Destroy(&pData->keys);
+    mMutex_Destroy(&pData->pMutex);
+  };
+
+  mERROR_CHECK(mSharedPointer_Allocate(&CurrentResourceManagerType::Instance(), nullptr, destructionFunc, 1));
 
   mERROR_CHECK(mMutex_Create(&CurrentResourceManagerType::Instance()->pMutex, nullptr));
   mERROR_CHECK(mHashMap_Create(&CurrentResourceManagerType::Instance()->keys, pAllocator, 64));
@@ -226,7 +241,8 @@ mFUNCTION(mDestruct, struct mResourceManager<TValue, TKey>::ResourceData *pResou
 
   mSharedPointer_Destroy(&pResourceData->sharedPointer);
   pResourceData->pointerParams.cleanupFunction.~function();
-  mDestruct(&pResourceData->resource);
+  mDestroyResource(&pResourceData->resource);
+  mERROR_CHECK(mMemset(pResourceData, 1));
 
   mRETURN_SUCCESS();
 }

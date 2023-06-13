@@ -1,5 +1,12 @@
 #include "mMesh.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "/CBF/D8lFrLrm9/RVC0gtajh+bAXvLQfRpUUyzYnnEMme1rJwnplOmFFpOTWoNpyYCX+32ySNlD04zCq"
+#endif
+
 mFUNCTION(mMeshAttributeContainer_Destroy, IN_OUT mPtr<mMeshAttributeContainer> *pMeshAttributeContainer)
 {
   mFUNCTION_SETUP();
@@ -10,6 +17,8 @@ mFUNCTION(mMeshAttributeContainer_Destroy, IN_OUT mPtr<mMeshAttributeContainer> 
 
   mRETURN_SUCCESS();
 }
+
+//////////////////////////////////////////////////////////////////////////
 
 mFUNCTION(mMeshAttributeContainer_Destroy_Internal, IN mMeshAttributeContainer *pMeshAttributeContainer)
 {
@@ -22,7 +31,9 @@ mFUNCTION(mMeshAttributeContainer_Destroy_Internal, IN mMeshAttributeContainer *
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mMesh_Create, OUT mPtr<mMesh>* pMesh, IN mAllocator * pAllocator, const std::initializer_list<mPtr<mMeshAttributeContainer>>& attributeInformation, mPtr<mShader>& shader, mPtr<mQueue<mKeyValuePair<mString, mPtr<mTexture>>>>& textures, const mRenderParams_VertexRenderMode triangleRenderMode /* = mRP_VRM_TriangleList */)
+//////////////////////////////////////////////////////////////////////////
+
+mFUNCTION(mMesh_Create, OUT mPtr<mMesh> *pMesh, IN mAllocator *pAllocator, const std::initializer_list<mPtr<mMeshAttributeContainer>> &attributeInformation, mPtr<mShader> &shader, mPtr<mQueue<mKeyValuePair<mString, mPtr<mTexture>>>> &textures, const mRenderParams_VertexRenderMode triangleRenderMode /* = mRP_VRM_TriangleList */)
 {
   mFUNCTION_SETUP();
 
@@ -45,6 +56,7 @@ mFUNCTION(mMesh_Create, OUT mPtr<mMesh> *pMesh, IN mAllocator *pAllocator, mPtr<
 
   mERROR_IF(pMesh == nullptr || attributeInformation == nullptr || shader == nullptr || textures == nullptr, mR_ArgumentNull);
 
+  mDEFER_CALL_ON_ERROR(pMesh, mSharedPointer_Destroy);
   mERROR_CHECK(mSharedPointer_Allocate(pMesh, pAllocator, (std::function<void(mMesh *)>)[](mMesh *pData) { mMesh_Destroy_Internal(pData); }, 1));
 
   size_t attributeCount = 0;
@@ -72,7 +84,7 @@ mFUNCTION(mMesh_Create, OUT mPtr<mMesh> *pMesh, IN mAllocator *pAllocator, mPtr<
     else
       mERROR_IF(count != meshAttrib->attributeCount, mR_InvalidParameter);
 
-    const GLint location = glGetAttribLocation(shader->shaderProgram, meshAttrib->attributeName);
+    const mShaderAttributeIndex_t location = mShader_GetAttributeIndex(shader, meshAttrib->attributeName);
 
     mERROR_CHECK(mQueue_PushBack(info, mMeshAttribute(location, meshAttrib->size, meshAttrib->subComponentSize, meshAttrib->attributeCount, offset, meshAttrib->dataType)));
 
@@ -104,13 +116,15 @@ mFUNCTION(mMesh_Create, OUT mPtr<mMesh> *pMesh, IN mAllocator *pAllocator, mPtr<
   (*pMesh)->textures = textures;
 
   (*pMesh)->hasVbo = true;
+
+  glGenVertexArrays(1, &(*pMesh)->vao);
+  glBindVertexArray((*pMesh)->vao);
+
   glGenBuffers(1, &(*pMesh)->vbo);
   mGL_ERROR_CHECK();
   mSTDRESULT = mR_Success;
   glBindBuffer(GL_ARRAY_BUFFER, (*pMesh)->vbo);
   glBufferData(GL_ARRAY_BUFFER, data->writeBytes, data->pData, GL_STATIC_DRAW);
-
-  GLuint index = 0;
 
   for (size_t i = 0; i < attributeCount; ++i)
   {
@@ -120,8 +134,7 @@ mFUNCTION(mMesh_Create, OUT mPtr<mMesh> *pMesh, IN mAllocator *pAllocator, mPtr<
     if (attrInfo.dataEntrySize > 0)
     {
       glEnableVertexAttribArray((GLuint)attrInfo.attributeIndex);
-      glVertexAttribPointer((GLuint)index, (GLint)(attrInfo.dataEntrySize / attrInfo.dataEntrySubComponentSize), attrInfo.dataType, GL_FALSE, (GLsizei)(*pMesh)->dataSize, (const void *)attrInfo.offset);
-      ++index;
+      glVertexAttribPointer((GLuint)attrInfo.attributeIndex, (GLint)(attrInfo.dataEntrySize / attrInfo.dataEntrySubComponentSize), attrInfo.dataType, GL_FALSE, (GLsizei)(*pMesh)->dataSize, (const void *)attrInfo.offset);
     }
 
     mGL_DEBUG_ERROR_CHECK();
@@ -142,12 +155,13 @@ mFUNCTION(mMesh_Create, OUT mPtr<mMesh> *pMesh, IN mAllocator *pAllocator, mPtr<
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mMesh_Create, OUT mPtr<mMesh> *pMesh, IN mAllocator *pAllocator, mPtr<mQueue<mMeshAttribute>> &attributeInformation, mPtr<mShader> &shader, mPtr<mBinaryChunk>& data, mPtr<mQueue<mKeyValuePair<mString, mPtr<mTexture>>>> &textures, const mRenderParams_VertexRenderMode triangleRenderMode /* = mRP_VRM_TriangleList */)
+mFUNCTION(mMesh_Create, OUT mPtr<mMesh> *pMesh, IN mAllocator *pAllocator, mPtr<mQueue<mMeshAttribute>> &attributeInformation, mPtr<mShader> &shader, mPtr<mBinaryChunk> &data, mPtr<mQueue<mKeyValuePair<mString, mPtr<mTexture>>>> &textures, const mRenderParams_VertexRenderMode triangleRenderMode /* = mRP_VRM_TriangleList */)
 {
   mFUNCTION_SETUP();
 
   mERROR_IF(pMesh == nullptr || attributeInformation == nullptr || shader == nullptr || data == nullptr || textures == nullptr, mR_ArgumentNull);
 
+  mDEFER_CALL_ON_ERROR(pMesh, mSharedPointer_Destroy);
   mERROR_CHECK(mSharedPointer_Allocate(pMesh, pAllocator, (std::function<void(mMesh *)>)[](mMesh *pData) { mMesh_Destroy_Internal(pData); }, 1));
 
   (*pMesh)->dataSize = 0;
@@ -179,11 +193,12 @@ mFUNCTION(mMesh_Create, OUT mPtr<mMesh> *pMesh, IN mAllocator *pAllocator, mPtr<
 #if defined (mRENDERER_OPENGL)
   (*pMesh)->hasVbo = true;
 
+  glGenVertexArrays(1, &(*pMesh)->vao);
+  glBindVertexArray((*pMesh)->vao);
+
   glGenBuffers(1, &(*pMesh)->vbo);
   glBindBuffer(GL_ARRAY_BUFFER, (*pMesh)->vbo);
   glBufferData(GL_ARRAY_BUFFER, data->writeBytes, data->pData, GL_STATIC_DRAW);
-
-  GLuint index = 0;
 
   for (size_t i = 0; i < attributeCount; ++i)
   {
@@ -193,8 +208,7 @@ mFUNCTION(mMesh_Create, OUT mPtr<mMesh> *pMesh, IN mAllocator *pAllocator, mPtr<
     if (info.dataEntrySize > 0)
     {
       glEnableVertexAttribArray((GLuint)info.attributeIndex);
-      glVertexAttribPointer((GLuint)index, (GLint)(info.dataEntrySize / info.dataEntrySubComponentSize), info.dataType, GL_FALSE, (GLsizei)(*pMesh)->dataSize, (const void *)info.offset);
-      ++index;
+      glVertexAttribPointer((GLuint)info.attributeIndex, (GLint)(info.dataEntrySize / info.dataEntrySubComponentSize), info.dataType, GL_FALSE, (GLsizei)(*pMesh)->dataSize, (const void *)info.offset);
     }
 
     mGL_DEBUG_ERROR_CHECK();
@@ -221,36 +235,6 @@ mFUNCTION(mMesh_Destroy, IN_OUT mPtr<mMesh> *pMesh)
 
   mERROR_IF(pMesh == nullptr, mR_ArgumentNull);
   mERROR_CHECK(mSharedPointer_Destroy(pMesh));
-
-  mRETURN_SUCCESS();
-}
-
-mFUNCTION(mMesh_Destroy_Internal, mMesh * pMesh)
-{
-  mFUNCTION_SETUP();
-
-  mERROR_IF(pMesh == nullptr, mR_ArgumentNull);
-
-#if defined (mRENDERER_OPENGL)
-  if (pMesh->hasVbo)
-  {
-    glDeleteBuffers(1, &pMesh->vbo);
-    pMesh->hasVbo = false;
-  }
-
-  size_t textureCount;
-  mERROR_CHECK(mQueue_GetCount(pMesh->textures, &textureCount));
-
-  for (size_t i = 0; i < textureCount; ++i)
-  {
-    mKeyValuePair<mString, mPtr<mTexture>> texture;
-    mERROR_CHECK(mQueue_PopFront(pMesh->textures, &texture));
-    mERROR_CHECK(mDestruct(&texture));
-  }
-
-  mERROR_CHECK(mQueue_Destroy(&pMesh->textures));
-  mERROR_CHECK(mQueue_Destroy(&pMesh->information));
-#endif
 
   mRETURN_SUCCESS();
 }
@@ -284,7 +268,7 @@ mFUNCTION(mMesh_Upload, mPtr<mMesh> &data)
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mMesh_GetUploadState, mPtr<mMesh>& data, OUT mRenderParams_UploadState * pUploadState)
+mFUNCTION(mMesh_GetUploadState, mPtr<mMesh> &data, OUT mRenderParams_UploadState *pUploadState)
 {
   mFUNCTION_SETUP();
 
@@ -295,7 +279,7 @@ mFUNCTION(mMesh_GetUploadState, mPtr<mMesh>& data, OUT mRenderParams_UploadState
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mMesh_Render, mPtr<mMesh>& data)
+mFUNCTION(mMesh_Render, mPtr<mMesh> &data)
 {
   mFUNCTION_SETUP();
 
@@ -317,17 +301,18 @@ mFUNCTION(mMesh_Render, mPtr<mMesh>& data)
     mERROR_CHECK(mShader_SetUniform(*data->shader, pTexture->key.c_str(), *pTexture->value));
   }
 
-  mERROR_CHECK(mShader_Bind(*data->shader.GetPointer()));
+  mERROR_CHECK(mShader_Bind(*data->shader));
 
   mGL_DEBUG_ERROR_CHECK();
 
   if (data->hasVbo)
+  {
+    glBindVertexArray(data->vao);
     glBindBuffer(GL_ARRAY_BUFFER, data->vbo);
+  }
 
   size_t informationCount;
   mERROR_CHECK(mQueue_GetCount(data->information, &informationCount));
-
-  GLuint index = 0;
 
   for (size_t i = 0; i < informationCount; ++i)
   {
@@ -337,8 +322,7 @@ mFUNCTION(mMesh_Render, mPtr<mMesh>& data)
     if (info.dataEntrySize > 0)
     {
       glEnableVertexAttribArray((GLuint)info.attributeIndex);
-      glVertexAttribPointer((GLuint)index, (GLint)(info.dataEntrySize / info.dataEntrySubComponentSize), info.dataType, GL_FALSE, (GLsizei)data->dataSize, (const void *)info.offset);
-      ++index;
+      glVertexAttribPointer((GLuint)info.attributeIndex, (GLint)(info.dataEntrySize / info.dataEntrySubComponentSize), info.dataType, GL_FALSE, (GLsizei)data->dataSize, (const void *)info.offset);
     }
 
     mGL_DEBUG_ERROR_CHECK();
@@ -400,7 +384,7 @@ mFUNCTION(mMesh_Render, mPtr<mMesh>& data)
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mMesh_Render, mPtr<mMesh>& data, mMatrix & matrix)
+mFUNCTION(mMesh_Render, mPtr<mMesh> &data, mMatrix &matrix)
 {
   mFUNCTION_SETUP();
 
@@ -409,6 +393,39 @@ mFUNCTION(mMesh_Render, mPtr<mMesh>& data, mMatrix & matrix)
   mERROR_CHECK(mShader_SetUniform(data->shader, "matrix0", matrix));
 
   mERROR_CHECK(mMesh_Render(data));
+
+  mRETURN_SUCCESS();
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+mFUNCTION(mMesh_Destroy_Internal, mMesh *pMesh)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(pMesh == nullptr, mR_ArgumentNull);
+
+#if defined (mRENDERER_OPENGL)
+  if (pMesh->hasVbo)
+  {
+    glDeleteBuffers(1, &pMesh->vbo);
+    glDeleteVertexArrays(1, &pMesh->vao);
+    pMesh->hasVbo = false;
+  }
+
+  size_t textureCount;
+  mERROR_CHECK(mQueue_GetCount(pMesh->textures, &textureCount));
+
+  for (size_t i = 0; i < textureCount; ++i)
+  {
+    mKeyValuePair<mString, mPtr<mTexture>> texture;
+    mERROR_CHECK(mQueue_PopFront(pMesh->textures, &texture));
+    mERROR_CHECK(mDestruct(&texture));
+  }
+
+  mERROR_CHECK(mQueue_Destroy(&pMesh->textures));
+  mERROR_CHECK(mQueue_Destroy(&pMesh->information));
+#endif
 
   mRETURN_SUCCESS();
 }

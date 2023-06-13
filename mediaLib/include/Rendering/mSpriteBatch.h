@@ -4,6 +4,13 @@
 #include "mRenderParams.h"
 #include "mMesh.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "AVd5S+d+Oyft5sOd0wK/BNtj6HFPRc5qRj2AANJ562uCnn+Zdk8tYaw13v+S7caQur1u1RBFWwoLGE6W"
+#endif
+
 enum mSpriteBatch_SpriteSortMode
 {
   mSB_SSM_None,
@@ -53,18 +60,23 @@ struct mSpriteBatch
   mSpriteBatch_TextureSampleMode textureSampleMode;
   bool isStarted;
   mPtr<mShader> shader;
+  mPtr<mShader> multisampleShader;
   mPtr<mQueue<mSpriteBatch_Internal_RenderObject<Args...>>> enqueuedRenderObjects;
   mSpriteBatch_ShaderParams shaderParams;
 #if defined (mRENDERER_OPENGL)
-  GLuint vbo;
+  GLuint vao, vbo;
 #endif
+  bool lastWasMultisampleTexture;
 };
 
 template <typename ...Args>
-mFUNCTION(mSpriteBatch_Internal_RenderObject_Create, OUT mSpriteBatch_Internal_RenderObject<Args...> *pRenderObject, const mPtr<mTexture> &texture, const mVec2f position, const mVec2f size, const float_t depth, Args&& ...args);
+mFUNCTION(mSpriteBatch_Internal_RenderObject_Create, OUT mSpriteBatch_Internal_RenderObject<Args...> *pRenderObject, const mPtr<mTexture> &texture, const mVec2f position, const mVec2f size, const float_t depth, Args &&...args);
 
 template <typename ...Args>
 mFUNCTION(mSpriteBatch_Internal_RenderObject_Destroy, IN_OUT mSpriteBatch_Internal_RenderObject<Args...> *pRenderObject);
+
+template <typename ...Args>
+mFUNCTION(mSpriteBatch_Internal_RenderObject_Render_Raw, mSpriteBatch_Internal_RenderObject<Args...> &renderObject, mPtr<mSpriteBatch<Args...>> &spriteBatch, mTexture &texture, mPtr<mShader> &shader);
 
 template <typename ...Args>
 mFUNCTION(mSpriteBatch_Internal_RenderObject_Render, mSpriteBatch_Internal_RenderObject<Args...> &renderObject, mPtr<mSpriteBatch<Args...>> &spriteBatch);
@@ -89,11 +101,39 @@ template <typename ...Args>
 mFUNCTION(mSpriteBatch_DrawWithDepth, mPtr<mSpriteBatch<Args...>> &spriteBatch, mPtr<mTexture> &texture, const mRectangle2D<float_t> &rect, const float_t depth, Args&&... args);
 
 template <typename ...Args>
+mFUNCTION(mSpriteBatch_DrawWithDepth, mPtr<mSpriteBatch<Args...>> &spriteBatch, mPtr<mFramebuffer> &texture, const mVec2f &position, const float_t depth, Args&&... args);
+
+// @param `rect`: x, y, width, height
+template <typename ...Args>
+mFUNCTION(mSpriteBatch_DrawWithDepth, mPtr<mSpriteBatch<Args...>> &spriteBatch, mPtr<mFramebuffer> &texture, const mRectangle2D<float_t> &rect, const float_t depth, Args&&... args);
+
+template <typename ...Args>
+mFUNCTION(mSpriteBatch_DrawWithDepth, mPtr<mSpriteBatch<Args...>> &spriteBatch, mTexture *pTexture, const mVec2f &position, const float_t depth, Args&&... args);
+
+// @param `rect`: x, y, width, height
+template <typename ...Args>
+mFUNCTION(mSpriteBatch_DrawWithDepth, mPtr<mSpriteBatch<Args...>> &spriteBatch, mTexture *pTexture, const mRectangle2D<float_t> &rect, const float_t depth, Args&&... args);
+
+template <typename ...Args>
 mFUNCTION(mSpriteBatch_Draw, mPtr<mSpriteBatch<Args...>> &spriteBatch, mPtr<mTexture> &texture, const mVec2f &position, Args&&... args);
 
 // @param `rect`: x, y, width, height
 template <typename ...Args>
 mFUNCTION(mSpriteBatch_Draw, mPtr<mSpriteBatch<Args...>> &spriteBatch, mPtr<mTexture> &texture, const mRectangle2D<float_t> &rect, Args&&... args);
+
+template <typename ...Args>
+mFUNCTION(mSpriteBatch_Draw, mPtr<mSpriteBatch<Args...>> &spriteBatch, mPtr<mFramebuffer> &texture, const mVec2f &position, Args&&... args);
+
+// @param `rect`: x, y, width, height
+template <typename ...Args>
+mFUNCTION(mSpriteBatch_Draw, mPtr<mSpriteBatch<Args...>> &spriteBatch, mPtr<mFramebuffer> &texture, const mRectangle2D<float_t> &rect, Args&&... args);
+
+template <typename ...Args>
+mFUNCTION(mSpriteBatch_Draw, mPtr<mSpriteBatch<Args...>> &spriteBatch, mTexture *pTexture, const mVec2f &position, Args&&... args);
+
+// @param `rect`: x, y, width, height
+template <typename ...Args>
+mFUNCTION(mSpriteBatch_Draw, mPtr<mSpriteBatch<Args...>> &spriteBatch, mTexture *pTexture, const mRectangle2D<float_t> &rect, Args&&... args);
 
 template <typename ...Args>
 mFUNCTION(mSpriteBatch_End, mPtr<mSpriteBatch<Args...>> &spriteBatch);
@@ -133,7 +173,7 @@ struct mSBETextureCrop : mSpriteBatchExtention
 
 struct mSBEColour : mSpriteBatchExtention
 {
-  mVec4f colour;
+  mVec4f colour = mVec4f(1, 1, 1, 1);
 
   mSBEColour() = default;
   explicit mSBEColour(const float_t r, const float_t g, const float_t b);

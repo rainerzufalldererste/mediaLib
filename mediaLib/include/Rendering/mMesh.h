@@ -9,6 +9,13 @@
 #include <initializer_list>
 #include "mKeyValuePair.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "/+Me+ot7sZez8oj9vEmsK0z1uqgYT2gM1wZwbj9kgHBUVaJO3PVWMJo2qdFhWw5DTOYZCgOXHyVusQPQ"
+#endif
+
 enum mRenderObjectParamType
 {
   mROPT_Position,
@@ -74,11 +81,11 @@ struct mMesh2dPosition : mRenderObjectParam
   static const size_t size = sizeof(mVec2f);
   static const mMeshFactory_AttributeInformationType attributeInformationType = mMF_AIT_Attribute;
 
-  static inline const std::string attributeName(const size_t index = 0) 
+  static inline const mString attributeName(const size_t index = 0) 
   {
     char text[1024];
     sprintf_s(text, "%s%" PRIu64, mRenderObjectParam_Position_AttributeName, index);
-    return std::string(text);
+    return mString(text);
   };
 };
 
@@ -94,11 +101,11 @@ struct mMesh3dPosition : mRenderObjectParam
   static const size_t size = sizeof(mVec3f);
   static const mMeshFactory_AttributeInformationType attributeInformationType = mMF_AIT_Attribute;
 
-  static inline const std::string attributeName(const size_t index = 0)
+  static inline const mString attributeName(const size_t index = 0)
   {
     char text[1024];
     sprintf_s(text, "%s%" PRIu64, mRenderObjectParam_Position_AttributeName, index);
-    return std::string(text);
+    return mString(text);
   };
 };
 
@@ -114,11 +121,11 @@ struct mMeshTexcoord : mRenderObjectParam
   static const size_t size = sizeof(mVec2f);
   static const mMeshFactory_AttributeInformationType attributeInformationType = mMF_AIT_Attribute;
 
-  static inline const std::string attributeName(const size_t index = 0)
+  static inline const mString attributeName(const size_t index = 0)
   {
     char text[1024];
     sprintf_s(text, "%s%" PRIu64, mMeshTexcoord_AttributeName, index);
-    return std::string(text);
+    return mString(text);
   };
 };
 
@@ -134,11 +141,11 @@ struct mMeshColour : mRenderObjectParam
   static const size_t size = sizeof(mVec3f);
   static const mMeshFactory_AttributeInformationType attributeInformationType = mMF_AIT_Attribute;
 
-  static inline const std::string attributeName(const size_t index = 0)
+  static inline const mString attributeName(const size_t index = 0)
   {
     char text[1024];
     sprintf_s(text, "%s%" PRIu64, mMeshColour_AttributeName, index);
-    return std::string(text);
+    return mString(text);
   };
 };
 
@@ -153,11 +160,11 @@ struct mMeshTextureBlendFactor : mRenderObjectParam
   static const size_t size = sizeof(float_t);
   static const mMeshFactory_AttributeInformationType attributeInformationType = mMF_AIT_Attribute;
 
-  static inline const std::string attributeName(const size_t index = 0)
+  static inline const mString attributeName(const size_t index = 0)
   {
     char text[1024];
     sprintf_s(text, "%s%" PRIu64, mMeshTextureBlendFactor_AttributeName, index);
-    return std::string(text);
+    return mString(text);
   };
 };
 
@@ -173,11 +180,11 @@ struct mMeshNormalPosition : mRenderObjectParam
   static const size_t size = sizeof(mVec3f);
   static const mMeshFactory_AttributeInformationType attributeInformationType = mMF_AIT_Attribute;
 
-  static inline const std::string attributeName(const size_t index = 0)
+  static inline const mString attributeName(const size_t index = 0)
   {
     char text[1024];
     sprintf_s(text, "%s%" PRIu64, mMeshNormalPosition_AttributeName, index);
-    return std::string(text);
+    return mString(text);
   };
 };
 
@@ -192,11 +199,11 @@ struct mMeshAlphaChannel : mRenderObjectParam
   static const size_t size = sizeof(float_t);
   static const mMeshFactory_AttributeInformationType attributeInformationType = mMF_AIT_Attribute;
 
-  static inline const std::string attributeName(const size_t index = 0)
+  static inline const mString attributeName(const size_t index = 0)
   {
     char text[1024];
     sprintf_s(text, "%s%" PRIu64, mMeshAlphaChannel_AttributeName, index);
-    return std::string(text);
+    return mString(text);
   };
 };
 
@@ -210,11 +217,11 @@ struct mMeshScaleUniform : mRenderObjectParam
   static const size_t size = 0;
   static const mMeshFactory_AttributeInformationType attributeInformationType = mMF_AIT_Uniform;
 
-  static inline const std::string uniformName(const size_t index = 0)
+  static inline const mString uniformName(const size_t index = 0)
   {
     char text[1024];
     sprintf_s(text, "%s%" PRIu64, mMeshScaleUniform_AttributeName, index);
-    return std::string(text);
+    return mString(text);
   };
 };
 
@@ -228,11 +235,11 @@ struct mMeshScale2dUniform : mRenderObjectParam
   static const size_t size = 0;
   static const mMeshFactory_AttributeInformationType attributeInformationType = mMF_AIT_Uniform;
 
-  static inline const std::string uniformName(const size_t index = 0)
+  static inline const mString uniformName(const size_t index = 0)
   {
     char text[1024];
     sprintf_s(text, "%s%" PRIu64, mMeshScale2dUniform_AttributeName, index);
-    return std::string(text);
+    return mString(text);
   };
 };
 
@@ -330,7 +337,14 @@ struct mMeshAttribute
 #if defined(mRENDERER_OPENGL)
   GLenum dataType;
 
-  inline mMeshAttribute(const size_t attributeIndex, const size_t dataEntrySize, const size_t dataEntrySubComponentSize, const size_t count, const size_t offset, const GLenum dataType) : attributeIndex(attributeIndex), dataEntrySize(dataEntrySize), dataEntrySubComponentSize(dataEntrySubComponentSize), count(count), offset(offset), dataType(dataType) {}
+  inline mMeshAttribute(const size_t attributeIndex, const size_t dataEntrySize, const size_t dataEntrySubComponentSize, const size_t count, const size_t offset, const GLenum dataType) :
+    attributeIndex(attributeIndex),
+    dataEntrySize(dataEntrySize),
+    dataEntrySubComponentSize(dataEntrySubComponentSize),
+    count(count),
+    offset(offset),
+    dataType(dataType)
+  {}
 #endif
 
   inline mMeshAttribute() = default;
@@ -347,7 +361,7 @@ struct mMesh
   size_t primitiveCount;
 #if defined (mRENDERER_OPENGL)
   bool hasVbo;
-  GLuint vbo;
+  GLuint vao, vbo;
 #endif
 };
 
@@ -549,6 +563,7 @@ inline mFUNCTION(mMeshFactory_CreateMesh, mPtr<mMeshFactory<Args...>> &factory, 
   mERROR_CHECK(mShader_Create(shader.GetPointer(), factory->meshFactoryInternal.vertShader, factory->meshFactoryInternal.fragShader));
   mERROR_CHECK(mShader_Bind(*shader.GetPointer()));
 
+  mDEFER_CALL_ON_ERROR(pMesh, mSharedPointer_Destroy);
   mERROR_CHECK(mSharedPointer_Allocate(pMesh, pAllocator, (std::function<void(mMesh *)>)[](mMesh *pData) { mMesh_Destroy_Internal(pData); }, 1));
 
   (*pMesh)->uploadState = mRP_US_NotInitialized;
@@ -598,18 +613,18 @@ inline mFUNCTION(mMeshFactory_CreateMesh, mPtr<mMeshFactory<Args...>> &factory, 
 
     ++attributeInformationCount;
 
-    const GLint index = glGetAttribLocation(shader->shaderProgram, pItem->name);
+    const mShaderAttributeIndex_t index = mShader_GetAttributeIndex(shader, pItem->name);
     mERROR_IF(index < 0, mR_InternalError);
 
     mERROR_CHECK(mQueue_PushBack((*pMesh)->information, mMeshAttribute(index, pItem->size, pItem->individualSubTypeSize, 0, pItem->offset, pItem->dataType)));
   }
 
   (*pMesh)->dataSize = factory->meshFactoryInternal.size;
+  glGenVertexArrays(1, &(*pMesh)->vao);
+  glBindVertexArray((*pMesh)->vao);
   glGenBuffers(1, &(*pMesh)->vbo);
   glBindBuffer(GL_ARRAY_BUFFER, (*pMesh)->vbo);
   glBufferData(GL_ARRAY_BUFFER, factory->values->writeBytes, factory->values->pData, GL_STATIC_DRAW);
-
-  GLuint index = 0;
 
   for (size_t i = 0; i < attributeInformationCount; ++i)
   {
@@ -619,8 +634,7 @@ inline mFUNCTION(mMeshFactory_CreateMesh, mPtr<mMeshFactory<Args...>> &factory, 
     if (info.dataEntrySize > 0)
     {
       glEnableVertexAttribArray((GLuint)info.attributeIndex);
-      glVertexAttribPointer((GLuint)index, (GLint)(info.dataEntrySize / info.dataEntrySubComponentSize), info.dataType, GL_FALSE, (GLsizei)(*pMesh)->dataSize, (const void *)info.offset);
-      ++index;
+      glVertexAttribPointer((GLuint)info.attributeIndex, (GLint)(info.dataEntrySize / info.dataEntrySubComponentSize), info.dataType, GL_FALSE, (GLsizei)(*pMesh)->dataSize, (const void *)info.offset);
     }
 
     mGL_DEBUG_ERROR_CHECK();
@@ -657,7 +671,7 @@ inline mFUNCTION(mMeshFactory_Destroy_Internal, mMeshFactory<Args...> *pFactory)
 }
 
 template <typename ...Args, typename T>
-mFUNCTION(mMeshFactory_Append_Internal_Unpack, mPtr<mMeshFactory<Args...>> &factory, const size_t index, const size_t offset, T param)
+mFUNCTION(mMeshFactory_Append_Internal_Unpack, mPtr<mMeshFactory<Args...>> &factory, const size_t /*index*/, const size_t /*offset*/, T param)
 {
   mFUNCTION_SETUP();
 
@@ -666,8 +680,6 @@ mFUNCTION(mMeshFactory_Append_Internal_Unpack, mPtr<mMeshFactory<Args...>> &fact
   if (T::size == 0)
     mRETURN_SUCCESS();
 #pragma warning(pop)
-
-  mUnused(index, offset);
 
   mERROR_CHECK(mBinaryChunk_WriteData(factory->values, param));
 
@@ -696,7 +708,7 @@ mFUNCTION(mMeshFactory_AppendData, mPtr<mMeshFactory<Args...>> &factory, Args&&.
 }
 
 template<typename ...Args>
-inline mFUNCTION(mMeshFactory_GrowBack, mPtr<mMeshFactory<Args...>>& factory, const size_t items)
+inline mFUNCTION(mMeshFactory_GrowBack, mPtr<mMeshFactory<Args...>> &factory, const size_t items)
 {
   mFUNCTION_SETUP();
 
@@ -706,7 +718,7 @@ inline mFUNCTION(mMeshFactory_GrowBack, mPtr<mMeshFactory<Args...>>& factory, co
 }
 
 template<typename ...Args>
-inline mFUNCTION(mMeshFactory_Clear, mPtr<mMeshFactory<Args...>>& factory)
+inline mFUNCTION(mMeshFactory_Clear, mPtr<mMeshFactory<Args...>> &factory)
 {
   mFUNCTION_SETUP();
 
@@ -723,6 +735,7 @@ inline mFUNCTION(mMeshAttributeContainer_Create, OUT mPtr<mMeshAttributeContaine
   mERROR_IF(pMeshAttributeContainer == nullptr, mR_ArgumentNull);
   mERROR_IF(items.size() == 0, mR_InvalidParameter);
 
+  mDEFER_CALL_ON_ERROR(pMeshAttributeContainer, mSharedPointer_Destroy);
   mERROR_CHECK(mSharedPointer_Allocate(pMeshAttributeContainer, pAllocator, (std::function<void(mMeshAttributeContainer *)>)[](mMeshAttributeContainer *pData) {mMeshAttributeContainer_Destroy_Internal(pData); }, 1));
 
   mERROR_CHECK(mBinaryChunk_Create(&(*pMeshAttributeContainer)->attributes, pAllocator));
@@ -740,7 +753,7 @@ inline mFUNCTION(mMeshAttributeContainer_Create, OUT mPtr<mMeshAttributeContaine
 }
 
 template<typename T>
-inline mFUNCTION(mMeshAttributeContainer_Create, OUT mPtr<mMeshAttributeContainer> *pMeshAttributeContainer, IN mAllocator *pAllocator, char attributeName[64], mPtr<mQueue<T>>& items)
+inline mFUNCTION(mMeshAttributeContainer_Create, OUT mPtr<mMeshAttributeContainer> *pMeshAttributeContainer, IN mAllocator *pAllocator, char attributeName[64], mPtr<mQueue<T>> &items)
 {
   mFUNCTION_SETUP();
 
@@ -751,6 +764,7 @@ inline mFUNCTION(mMeshAttributeContainer_Create, OUT mPtr<mMeshAttributeContaine
 
   mERROR_IF(queueCount == 0, mR_InvalidParameter);
 
+  mDEFER_CALL_ON_ERROR(pMeshAttributeContainer, mSharedPointer_Destroy);
   mERROR_CHECK(mSharedPointer_Allocate(pMeshAttributeContainer, pAllocator, (std::function<void(mMeshAttributeContainer *)>)[](mMeshAttributeContainer *pData) {mMeshAttributeContainer_Destroy_Internal(pData); }, 1));
 
   mERROR_CHECK(mBinaryChunk_Create(&(*pMeshAttributeContainer)->attributes, pAllocator));

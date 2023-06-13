@@ -1,6 +1,15 @@
 #include "mBinaryChunk.h"
 
-mFUNCTION(mBinaryChunk_Destroy_Internal, mBinaryChunk *pBinaryChunk);
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "sFhKy5lOa3kejJouLspA0hEKRaJC3MjigM8ThoUO+aVIfM/UalYLAD37kAevPzxxncRJ7+tO2I2WpDby"
+#endif
+
+static mFUNCTION(mBinaryChunk_Destroy_Internal, mBinaryChunk *pBinaryChunk);
+
+//////////////////////////////////////////////////////////////////////////
 
 mFUNCTION(mBinaryChunk_Create, OUT mPtr<mBinaryChunk> *pBinaryChunk, IN mAllocator *pAllocator)
 {
@@ -8,6 +17,7 @@ mFUNCTION(mBinaryChunk_Create, OUT mPtr<mBinaryChunk> *pBinaryChunk, IN mAllocat
 
   mERROR_IF(pBinaryChunk == nullptr, mR_ArgumentNull);
 
+  mDEFER_CALL_ON_ERROR(pBinaryChunk, mSharedPointer_Destroy);
   mERROR_CHECK(mSharedPointer_Allocate(pBinaryChunk, pAllocator, (std::function<void(mBinaryChunk *)>)[](mBinaryChunk *pData) { mBinaryChunk_Destroy_Internal(pData); }, 1));
   (*pBinaryChunk)->pAllocator = pAllocator;
 
@@ -54,7 +64,7 @@ mFUNCTION(mBinaryChunk_GrowBack, mPtr<mBinaryChunk> &binaryChunk, const size_t s
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mBinaryChunk_WriteBytes, mPtr<mBinaryChunk>& binaryChunk, IN const uint8_t * pItems, const size_t bytes)
+mFUNCTION(mBinaryChunk_WriteBytes, mPtr<mBinaryChunk> &binaryChunk, IN const uint8_t *pItems, const size_t bytes)
 {
   mFUNCTION_SETUP();
 
@@ -62,82 +72,26 @@ mFUNCTION(mBinaryChunk_WriteBytes, mPtr<mBinaryChunk>& binaryChunk, IN const uin
 
   mERROR_CHECK(mBinaryChunk_GrowBack(binaryChunk, bytes));
 
-  uint8_t *pData = &binaryChunk->pData[binaryChunk->writeBytes];
-  size_t writtenSize = 0;
-
-#if defined(SSE2)
-  while (writtenSize + sizeof(__m128i) <= bytes)
-  {
-    *((__m128i *)pData) = *(__m128i *)pItems;
-    writtenSize += sizeof(__m128i);
-    pData += sizeof(__m128i);
-    pItems += sizeof(__m128i);
-  }
-#else
-  while (writtenSize + sizeof(size_t) <= bytes)
-  {
-    *((size_t *)pData) = *(size_t *)pItems;
-    writtenSize += sizeof(size_t);
-    pData += sizeof(size_t);
-    pItems += sizeof(size_t);
-  }
-#endif
-
-  while (writtenSize < bytes)
-  {
-    *pData = *pItems;
-    ++writtenSize;
-    ++pData;
-    ++pItems;
-  }
-
+  mMemcpy(&binaryChunk->pData[binaryChunk->writeBytes], pItems, bytes);
   binaryChunk->writeBytes += bytes;
 
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mBinaryChunk_ReadBytes, mPtr<mBinaryChunk>& binaryChunk, OUT uint8_t * pItems, const size_t bytes)
+mFUNCTION(mBinaryChunk_ReadBytes, mPtr<mBinaryChunk> &binaryChunk, OUT uint8_t *pItems, const size_t bytes)
 {
   mFUNCTION_SETUP();
 
   mERROR_IF(binaryChunk == nullptr || pItems == nullptr, mR_ArgumentNull);
   mERROR_IF(binaryChunk->readBytes + bytes > binaryChunk->writeBytes, mR_IndexOutOfBounds);
 
-  uint8_t *pData = &binaryChunk->pData[binaryChunk->writeBytes];
-  size_t writtenSize = 0;
-
-#if defined(SSE2)
-  while (writtenSize + sizeof(__m128i) <= bytes)
-  {
-    *(__m128i *)pItems = *((__m128i *)pData);
-    writtenSize += sizeof(__m128i);
-    pData += sizeof(__m128i);
-    pItems += sizeof(__m128i);
-  }
-#else
-  while (writtenSize + sizeof(size_t) <= bytes)
-  {
-    *(size_t *)pItems = *((size_t *)pData);
-    writtenSize += sizeof(size_t);
-    pData += sizeof(size_t);
-    pItems += sizeof(size_t);
-  }
-#endif
-
-  while (writtenSize < bytes)
-  {
-    *pItems = *pData;
-    ++writtenSize;
-    ++pData;
-    ++pItems;
-  }
-
+  mMemcpy(pItems, &binaryChunk->pData[binaryChunk->writeBytes], bytes);
   binaryChunk->readBytes += bytes;
 
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mBinaryChunk_ResetWrite, mPtr<mBinaryChunk>& binaryChunk)
+mFUNCTION(mBinaryChunk_ResetWrite, mPtr<mBinaryChunk> &binaryChunk)
 {
   mFUNCTION_SETUP();
 
@@ -148,7 +102,7 @@ mFUNCTION(mBinaryChunk_ResetWrite, mPtr<mBinaryChunk>& binaryChunk)
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mBinaryChunk_ResetRead, mPtr<mBinaryChunk>& binaryChunk)
+mFUNCTION(mBinaryChunk_ResetRead, mPtr<mBinaryChunk> &binaryChunk)
 {
   mFUNCTION_SETUP();
 
@@ -159,7 +113,7 @@ mFUNCTION(mBinaryChunk_ResetRead, mPtr<mBinaryChunk>& binaryChunk)
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mBinaryChunk_GetWriteBytes, mPtr<mBinaryChunk>& binaryChunk, OUT size_t * pSize)
+mFUNCTION(mBinaryChunk_GetWriteBytes, const mPtr<mBinaryChunk> &binaryChunk, OUT size_t *pSize)
 {
   mFUNCTION_SETUP();
 
@@ -170,7 +124,7 @@ mFUNCTION(mBinaryChunk_GetWriteBytes, mPtr<mBinaryChunk>& binaryChunk, OUT size_
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mBinaryChunk_GetReadBytes, mPtr<mBinaryChunk>& binaryChunk, OUT size_t * pSize)
+mFUNCTION(mBinaryChunk_GetReadBytes, const mPtr<mBinaryChunk> &binaryChunk, OUT size_t *pSize)
 {
   mFUNCTION_SETUP();
 
@@ -181,9 +135,21 @@ mFUNCTION(mBinaryChunk_GetReadBytes, mPtr<mBinaryChunk>& binaryChunk, OUT size_t
   mRETURN_SUCCESS();
 }
 
+mFUNCTION(mBinaryChunk_EraseFromWriteHead, mPtr<mBinaryChunk> &binaryChunk, const size_t size)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(binaryChunk == nullptr, mR_ArgumentNull);
+  mERROR_IF(binaryChunk->writeBytes < size, mR_ArgumentOutOfBounds);
+
+  binaryChunk->writeBytes -= size;
+
+  mRETURN_SUCCESS();
+}
+
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mBinaryChunk_Destroy_Internal, mBinaryChunk *pBinaryChunk)
+static mFUNCTION(mBinaryChunk_Destroy_Internal, mBinaryChunk *pBinaryChunk)
 {
   mFUNCTION_SETUP();
 

@@ -4,15 +4,19 @@ project(ProjectName)
   --Settings
   kind "ConsoleApp"
   language "C++"
-  flags { "StaticRuntime", "FatalWarnings" }
+  flags { "FatalWarnings" }
   dependson { "mediaLib" }
+
+  staticruntime "On"
 
   buildoptions { '/Gm-' }
   buildoptions { '/MP' }
   ignoredefaultlibraries { "msvcrt" }
+  disablewarnings  { '4127' } -- ignore conditional expression is constant
 
-  filter { "configurations:Release" }
-    flags { "LinkTimeOptimization" }
+  filter { "system:windows", "action:vs2019 or vs202*" }
+    cppdialect "C++17"
+  filter { }
 
   filter {}
   defines { "_CRT_SECURE_NO_WARNINGS", "SSE2" }
@@ -35,6 +39,9 @@ project(ProjectName)
     links { "3rdParty/gtest/lib/gtestd.lib" }
   
   filter { }
+
+  links { "../mediaLib/3rdParty/glew/lib/libglew32.lib" }
+  links { "opengl32.lib", "glu32.lib" }
   
   filter { "configurations:Debug", "system:Windows" }
     ignoredefaultlibraries { "libcmt" }
@@ -49,13 +56,29 @@ project(ProjectName)
 filter {}
 configuration {}
 
+-- Strings
+if os.getenv("CI_BUILD_REF_NAME") then
+  defines { "GIT_BRANCH=\"" .. os.getenv("CI_BUILD_REF_NAME") .. "\"" }
+end
+if os.getenv("CI_COMMIT_SHA") then
+  defines { "GIT_REF=\"" .. os.getenv("CI_COMMIT_SHA") .. "\"" }
+end
+
+-- Numbers
+if os.getenv("CI_PIPELINE_ID") then
+  defines { "GIT_BUILD=" .. os.getenv("CI_PIPELINE_ID") }
+else
+  defines { "DEV_BUILD" }
+end
+if os.getenv("UNIXTIME") then
+  defines { "BUILD_TIME=" .. os.getenv("UNIXTIME") }
+end
 
 warnings "Extra"
 
 targetname "%{prj.name}"
 
 flags { "NoMinimalRebuild", "NoPCH" }
-exceptionhandling "Off"
 rtti "Off"
 floatingpoint "Fast"
 
@@ -67,21 +90,15 @@ filter { "configurations:Debug*" }
 filter { "configurations:Release" }
   defines { "NDEBUG" }
   optimize "Full"
-  flags { "NoFramePointer", "NoBufferSecurityCheck" }
+  flags { "NoBufferSecurityCheck" }
+  omitframepointer "On"
   symbols "On"
+  editandcontinue "Off"
+  exceptionhandling "Off"
 
 filter { "system:windows" }
-	defines { "WIN32", "_WINDOWS" }
-	links { "kernel32.lib", "user32.lib", "gdi32.lib", "winspool.lib", "comdlg32.lib", "advapi32.lib", "shell32.lib", "ole32.lib", "oleaut32.lib", "uuid.lib", "odbc32.lib", "odbccp32.lib" }
-
-filter { "system:windows", "configurations:Release", "action:vs2012" }
-	buildoptions { "/d2Zi+" }
-
-filter { "system:windows", "configurations:Release", "action:vs2013" }
-	buildoptions { "/Zo" }
+  defines { "WIN32", "_WINDOWS" }
+  links { "kernel32.lib", "user32.lib", "gdi32.lib", "winspool.lib", "comdlg32.lib", "advapi32.lib", "shell32.lib", "ole32.lib", "oleaut32.lib", "uuid.lib", "odbc32.lib", "odbccp32.lib", "winmm.lib", "setupapi.lib", "version.lib", "Imm32.lib", "Ws2_32.lib", "Wldap32.lib", "Crypt32.lib" }
 
 filter { "system:windows", "configurations:Release" }
-	flags { "NoIncrementalLink" }
-
-filter {}
-  flags { "NoFramePointer", "NoBufferSecurityCheck" }
+  flags { "NoIncrementalLink" }

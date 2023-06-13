@@ -1,140 +1,82 @@
-#include "mResult.h"
-#include "mString.h"
+#include "mediaLib.h"
 
-const char *g_mResult_lastErrorFile = nullptr;
-size_t g_mResult_lastErrorLine = 0;
-mResult g_mResult_lastErrorResult = mR_Success;
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "NqGDAw59sUxsxOtY8VxR3PAuvRnWsQlV14qGs1hgUIRrTgNYkHCuoCq6wS2qUoOeNxV5pf82Lnu7HMpr"
+#endif
 
-bool g_mResult_breakOnError = false;
+thread_local const char *g_mResult_lastErrorFile = "<>";
+thread_local size_t g_mResult_lastErrorLine = 0;
+thread_local mResult g_mResult_lastErrorResult = mR_Success;
 
-void mDebugOut(const char *format, ...)
+#if !defined(GIT_BUILD)
+bool g_mResult_breakOnError_default = false;
+bool g_mResult_breakOnIndirectError_default = false;
+thread_local bool g_mResult_breakOnError = g_mResult_breakOnError_default;
+thread_local bool g_mResult_breakOnIndirectError = g_mResult_breakOnIndirectError_default;
+#endif
+
+bool g_mResult_silent_default = false;
+thread_local bool g_mResult_silent = g_mResult_silent_default;
+
+extern "C" OnErrorFunc *g_mResult_onError = nullptr;
+extern "C" OnErrorFunc *g_mResult_onIndirectError = nullptr;
+
+void mDebugOut(const char *text)
 {
-#if !defined(FINAL)
-  char buffer[1024 * 2];
-
-  mMemset(buffer, mARRAYSIZE(buffer), 0);
-
-  va_list args;
-  va_start(args, format);
-  vsprintf_s(buffer, format, args);
-  va_end(args);
-
-  buffer[mARRAYSIZE(buffer) - 1] = 0;
-
-  mTRACE(buffer);
-  OutputDebugStringA(buffer);
+#if !defined(GIT_BUILD)
+  if (text != nullptr && text[0] != '\0')
+    OutputDebugStringA(text);
 #else
-  mUnused(format);
+  mUnused(text);
 #endif
 }
 
 void mPrintError(char *function, char *file, const int32_t line, const mResult error, const char *expression)
 {
-  mString errorName;
+  if (g_mResult_silent)
+    return;
 
+#ifdef GIT_BUILD
+  mUnused(function, expression);
+  mPRINT_ERROR("Error 0x", mFUInt<mFHex>(error), " in File '", file, "' Line ", line, ".");
+#else
   const char *expr = "";
 
   if (expression)
     expr = expression;
 
-  if (mFAILED(mResult_ToString(error, &errorName)))
-    mDebugOut("Error in '%s' (File '%s'; Line % " PRIi32 ") [0x%" PRIx32 "].\nExpression: '%s'.\n\n", function, file, line, error, expr);
+  mPRINT_ERROR("Error ", mResult_ToString(error), " in '", function, "' (File '", file, "'; Line ", line, ") [0x", mFUInt<mFHex>(error), "].\nExpression: '", expr, "'.");
+#endif
+}
+
+const char * mResult_ToString(const mResult result)
+{
+#if defined(GIT_BUILD) && !defined(_DEBUG)
+  mUnused(result);
+  return "!";
+#else
+#define mRESULT_STRINGIFY_COMMA_SEPARATED(A) #A ,
+
+  static const char * mResultAsString[] = { mRESULT_X_MACRO(mRESULT_STRINGIFY_COMMA_SEPARATED) };
+
+  if (result >= mResult_Count || result < mR_Success)
+    return "<Unknown mResult>";
   else
-    mDebugOut("Error %s in '%s' (File '%s'; Line % " PRIi32 ") [0x%" PRIx32 "].\nExpression: '%s'.\n\n", errorName.c_str(), function, file, line, error, expr);
+    return mResultAsString[result];
+#endif
 }
 
-mFUNCTION(mResult_ToString, const mResult result, OUT mString *pString)
+extern "C" void mOnError(const mResult error)
 {
-  mFUNCTION_SETUP();
-
-  mERROR_IF(pString == nullptr, mR_InternalError);
-
-  switch (result)
-  {
-  case mR_Success:
-    *pString = "mR_Success";
-    break;
-
-  case mR_InvalidParameter:
-    *pString = "mR_InvalidParameter";
-    break;
-
-  case mR_ArgumentNull:
-    *pString = "mR_ArgumentNull";
-    break;
-
-  case mR_InternalError:
-    *pString = "mR_InternalError";
-    break;
-
-  case mR_MemoryAllocationFailure:
-    *pString = "mR_MemoryAllocationFailure";
-    break;
-
-  case mR_NotImplemented:
-    *pString = "mR_NotImplemented";
-    break;
-
-  case mR_NotInitialized:
-    *pString = "mR_NotInitialized";
-    break;
-
-  case mR_IndexOutOfBounds:
-    *pString = "mR_IndexOutOfBounds";
-    break;
-
-  case mR_ArgumentOutOfBounds:
-    *pString = "mR_ArgumentOutOfBounds";
-    break;
-
-  case mR_Timeout:
-    *pString = "mR_Timeout";
-    break;
-
-  case mR_OperationNotSupported:
-    *pString = "mR_OperationNotSupported";
-    break;
-
-  case mR_ResourceNotFound:
-    *pString = "mR_ResourceNotFound";
-    break;
-
-  case mR_ResourceInvalid:
-    *pString = "mR_ResourceInvalid";
-    break;
-
-  case mR_ResourceStateInvalid:
-    *pString = "mR_ResourceStateInvalid";
-    break;
-
-  case mR_ResourceIncompatible:
-    *pString = "mR_ResourceIncompatible";
-    break;
-
-  case mR_EndOfStream:
-    *pString = "mR_EndOfStream";
-    break;
-
-  case mR_RenderingError:
-    *pString = "mR_RenderingError";
-    break;
-
-  case mR_Failure:
-    *pString = "mR_Failure";
-    break;
-
-  default:
-    *pString = "<Unknown mResult>";
-    break;
-  }
-
-  mRETURN_SUCCESS();
+  if (g_mResult_onError != nullptr)
+    g_mResult_onError(error);
 }
 
-void mDeinit() { }
-
-void mDeinit(const std::function<void(void)> &param)
+extern "C" void mOnIndirectError(const mResult error)
 {
-  if (param)
-    param();
+  if (g_mResult_onIndirectError != nullptr)
+    g_mResult_onIndirectError(error);
 }

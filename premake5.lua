@@ -1,5 +1,26 @@
+
+newoption {
+  trigger     = "buildtype",
+  description = "Enables build specific Macros for automated builds.",
+  allowed     = {{ "GIT_BUILD", "defines GIT_BUILD" }, {"DEV_BUILD", "defines DEV_BUILD"}}
+}
+
+newoption {
+  trigger     = "avx2",
+  description = "Build with AVX2 code generation"
+}
+
+newoption {
+  trigger     = "asan",
+  description = "Enable the AddressSanitizer"
+}
+
 solution "mediaLib"
-  
+
+if not _OPTIONS["buildtype"] then
+  _OPTIONS["buildtype"] = "DEV_BUILD"
+end
+
   editorintegration "On"
   configurations { "Debug", "Release" }
   platforms { "x64" }

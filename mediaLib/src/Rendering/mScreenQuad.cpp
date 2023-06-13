@@ -1,7 +1,16 @@
 #include "mScreenQuad.h"
-#include "mFile.h"
 
-mFUNCTION(mScreenQuad_Destroy_Internal, IN mScreenQuad *pScreenQuad);
+#include "mFile.h"
+#include "mProfiler.h"
+
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "5d1lnZ43s32zNe4MCnudH9RQKWEIA4qdtHyil0o/LYyKKA0s6f7pRXWASgAmdq9IVNcsWmf8pmNHWIyU"
+#endif
+
+static mFUNCTION(mScreenQuad_Destroy_Internal, IN mScreenQuad *pScreenQuad);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -9,9 +18,12 @@ mFUNCTION(mScreenQuad_Create, OUT mPtr<mScreenQuad> *pScreenQuad, IN mAllocator 
 {
   mFUNCTION_SETUP();
 
+  mDEFER_CALL_ON_ERROR(pScreenQuad, mSharedPointer_Destroy);
   mERROR_CHECK(mSharedPointer_Allocate(pScreenQuad, pAllocator, (std::function<void(mScreenQuad *)>)[](mScreenQuad *pData) {mScreenQuad_Destroy_Internal(pData);}, 1));
 
 #if defined(mRENDERER_OPENGL)
+  mGL_ERROR_CHECK();
+
   char vertexShader[2048] = "#version 150 core\n\nin vec2 position0;";
 
   for (size_t i = 0; i < textureCount; ++i)
@@ -33,11 +45,14 @@ mFUNCTION(mScreenQuad_Create, OUT mPtr<mScreenQuad> *pScreenQuad, IN mAllocator 
   for (size_t i = 0; i < 4; ++i)
     positions[i] = mVec2f((float_t)(i & 1), (float_t)((i & 2) >> 1));
 
+  glGenVertexArrays(1, &(*pScreenQuad)->vao);
+  glBindVertexArray((*pScreenQuad)->vao);
+
   glGenBuffers(1, &(*pScreenQuad)->vbo);
   glBindBuffer(GL_ARRAY_BUFFER, (*pScreenQuad)->vbo);
   glBufferData(GL_ARRAY_BUFFER, sizeof(mVec2f) * 4, positions, GL_STATIC_DRAW);
 
-  const GLint index = glGetAttribLocation((*pScreenQuad)->shader->shaderProgram, "position0");
+  const mShaderAttributeIndex_t index = mShader_GetAttributeIndex((*pScreenQuad)->shader, "position0");
   mERROR_IF(index < 0, mR_InternalError);
 
   glEnableVertexAttribArray(index);
@@ -62,6 +77,17 @@ mFUNCTION(mScreenQuad_Create, OUT mPtr<mScreenQuad> *pScreenQuad, IN mAllocator 
   mRETURN_SUCCESS();
 }
 
+mFUNCTION(mScreenQuad_CreateForMultisampleTexture, OUT mPtr<mScreenQuad> *pScreenQuad, IN mAllocator *pAllocator)
+{
+  mFUNCTION_SETUP();
+
+  const mString defaultShader = "#version 150 core\n\nout vec4 outColour0;\n\nuniform sampler2DMS _texture0;\nuniform int _texture0sampleCount;\nin vec2 _texCoord0;\n\nvoid main()\n{\n\toutColour0 = vec4(0);\n\tivec2 position = ivec2(_texCoord0 * textureSize(_texture0));\n\t\n\tfor (int i = 0; i < _texture0sampleCount; i++)\n\t\toutColour0 += texelFetch(_texture0, position, i);\n\t\n\toutColour0 /= float(_texture0sampleCount);\n}\n";
+
+  mERROR_CHECK(mScreenQuad_Create(pScreenQuad, pAllocator, defaultShader, 1));
+
+  mRETURN_SUCCESS();
+}
+
 mFUNCTION(mScreenQuad_CreateFrom, OUT mPtr<mScreenQuad> *pScreenQuad, IN mAllocator *pAllocator, const mString &fragmentShaderPath, const size_t textureCount /* = 1 */)
 {
   mFUNCTION_SETUP();
@@ -71,7 +97,9 @@ mFUNCTION(mScreenQuad_CreateFrom, OUT mPtr<mScreenQuad> *pScreenQuad, IN mAlloca
 
   mERROR_CHECK(mScreenQuad_Create(pScreenQuad, pAllocator, fragmentShader, textureCount));
 
-  (*pScreenQuad)->shader->fragmentShader = fragmentShaderPath;
+#ifndef GIT_BUILD
+  (*pScreenQuad)->shader->fragmentShaderPath = fragmentShaderPath;
+#endif
 
   mRETURN_SUCCESS();
 }
@@ -87,16 +115,19 @@ mFUNCTION(mScreenQuad_Destroy, IN_OUT mPtr<mScreenQuad> *pScreenQuad)
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mScreenQuad_Render, mPtr<mScreenQuad>& screenQuad)
+mFUNCTION(mScreenQuad_Render, mPtr<mScreenQuad> &screenQuad)
 {
   mFUNCTION_SETUP();
+
+  mPROFILE_SCOPED("mScreenQuad_Render");
 
   mERROR_CHECK(mShader_Bind(*screenQuad->shader));
 
 #if defined(mRENDERER_OPENGL)
+  glBindVertexArray(screenQuad->vao);
   glBindBuffer(GL_ARRAY_BUFFER, screenQuad->vbo);
 
-  const GLuint index = glGetAttribLocation(screenQuad->shader->shaderProgram, "position0");
+  const mShaderAttributeIndex_t index = mShader_GetAttributeIndex(screenQuad->shader, "position0");
   glEnableVertexAttribArray(index);
   glVertexAttribPointer((GLuint)0, (GLint)2, GL_FLOAT, GL_FALSE, (GLsizei)sizeof(mVec2f), (const void *)0);
 
@@ -110,15 +141,20 @@ mFUNCTION(mScreenQuad_Render, mPtr<mScreenQuad>& screenQuad)
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mScreenQuad_Destroy_Internal, IN mScreenQuad *pScreenQuad)
+static mFUNCTION(mScreenQuad_Destroy_Internal, IN mScreenQuad *pScreenQuad)
 {
   mFUNCTION_SETUP();
 
   mERROR_IF(pScreenQuad == nullptr, mR_ArgumentNull);
 
+  mERROR_CHECK(mSharedPointer_Destroy(&pScreenQuad->shader));
+
 #if defined(mRENDERER_OPENGL)
   if (pScreenQuad->vbo)
     glDeleteBuffers(1, &pScreenQuad->vbo);
+
+  if (pScreenQuad->vao)
+    glDeleteVertexArrays(1, &pScreenQuad->vao);
 #endif
 
   mRETURN_SUCCESS();

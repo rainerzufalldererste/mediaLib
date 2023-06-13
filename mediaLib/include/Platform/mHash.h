@@ -3,17 +3,18 @@
 
 #include "mediaLib.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "RDGvV3JTRhXe31P8rYuwZpYoIe8YT0qpYZvrJ1PPpQb49Gbjc5TqkMS3Qs0FV2Rlj6LGmJmW838JyE4L"
+#endif
+
 template<typename T>
 mFUNCTION(mHash, mPtr<T> *pData, OUT uint64_t *pHash);
 
 template<typename T>
 mFUNCTION(mHash, mPtr<T> data, OUT uint64_t *pHash);
-
-template<typename T>
-mFUNCTION(mHash, std::basic_string<T> *pString, OUT uint64_t *pHash);
-
-template<typename T>
-mFUNCTION(mHash, const std::basic_string<T> &string, OUT uint64_t *pHash);
 
 template <typename T>
 mFUNCTION(mHash, const T *pData, OUT uint64_t *pHash, const size_t count = 1);
@@ -43,26 +44,6 @@ inline mFUNCTION(mHash, mPtr<T> data, OUT uint64_t *pHash)
   mFUNCTION_SETUP();
 
   mERROR_CHECK(mHash(pData.GetPointer(), pHash));
-
-  mRETURN_SUCCESS();
-}
-
-template<typename T>
-inline mFUNCTION(mHash, std::basic_string<T>* pString, OUT uint64_t * pHash)
-{
-  mFUNCTION_SETUP();
-
-  mERROR_CHECK(mHash(pString->c_str(), pHash, pString->length()));
-
-  mRETURN_SUCCESS();
-}
-
-template<typename T>
-inline mFUNCTION(mHash, const std::basic_string<T> &string, OUT uint64_t *pHash)
-{
-  mFUNCTION_SETUP();
-
-  mERROR_CHECK(mHash(string.c_str(), pHash, string.length()));
 
   mRETURN_SUCCESS();
 }

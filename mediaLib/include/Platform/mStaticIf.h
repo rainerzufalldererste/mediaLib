@@ -3,10 +3,17 @@
 #ifndef mStaticIf_h__
 #define mStaticIf_h__
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "rRgedX5yIhMrCMBGJQKVIk+bNpsqwY/VN3Zl8Fa15AtCyYB9EBQCLGniofw8xEx2dsLUUQZsLCQspLKJ"
+#endif
+
 struct mStaticIfIdentity 
 {
   template<typename T>
-  inline T operator()(T&& x) const 
+  inline T operator()(T &&x) const 
   {
     return std::forward<T>(x);
   }
@@ -16,7 +23,7 @@ template<bool conditional>
 struct mStaticIfStatement 
 {
   template<typename TFunction>
-  inline void Then(const TFunction& f)
+  inline void Then(const TFunction &f)
   {
     f(mStaticIfIdentity());
   }
@@ -35,14 +42,14 @@ struct mStaticIfStatement<false> {
   }
 
   template<typename TFunction>
-  inline void Else(const TFunction& f)
+  inline void Else(const TFunction &f)
   {
     f(mStaticIfIdentity());
   }
 };
 
 template<bool conditional, typename TFunction>
-inline mStaticIfStatement<conditional> mStaticIf(TFunction const& f)
+inline mStaticIfStatement<conditional> mStaticIf(const TFunction &f)
 {
   mStaticIfStatement<conditional> if_;
   if_.Then(f);

@@ -3,20 +3,25 @@
 
 #include "mediaLib.h"
 #include "mQueue.h"
+#include "mPixelFormat.h"
 
 #define mRENDERER_OPENGL
 
 #if defined(mRENDERER_OPENGL)
 #include "GL/glew.h"
+#define DECLSPEC
 #include "SDL.h"
 #include "SDL_opengl.h"
+#undef DECLSPEC
 #endif
 
 extern mVec2s mRenderParams_CurrentRenderResolution;
 extern mVec2f mRenderParams_CurrentRenderResolutionF;
+extern mVec2s mRenderParams_BackBufferResolution;
+extern mVec2f mRenderParams_BackBufferResolutionF;
 
 typedef size_t mRenderContextId;
-extern mRenderContextId mRenderParams_CurrentRenderContext;
+extern thread_local mRenderContextId mRenderParams_CurrentRenderContext;
 
 struct mRenderContext
 {
@@ -29,19 +34,23 @@ struct mRenderContext
 
 extern mRenderContext *mRenderParams_pRenderContexts;
 extern size_t mRenderParams_RenderContextCount;
+extern size_t mRenderParams_InitializedRenderContextCount;
 
 #if defined(mRENDERER_OPENGL)
-extern GLenum mRenderParams_GLError;
+extern thread_local GLenum mRenderParams_GLError;
 
 #define mOPENGL_ERROR_CHECK() \
   do { \
-    mRenderParams_GLError = glGetError(); \
-    if(mRenderParams_GLError != GL_NO_ERROR) { \
-      mDebugOut("Rendering Error in '" __FUNCTION__ "': GLError Code %" PRIi32 " (%s) (File '" __FILE__ "'; Line %" PRIi32 ")\n", mRenderParams_GLError, gluErrorString(mRenderParams_GLError), __LINE__); \
-      mERROR_IF(mRenderParams_GLError != GL_NO_ERROR, mR_RenderingError); \
+    if (mRenderParams_InitializedRenderContextCount > 0) { \
+      mRenderParams_GLError = glGetError(); \
+      if (mRenderParams_GLError != GL_NO_ERROR) { \
+        mPRINT_ERROR("Rendering Error in '" mRESULT_PRINT_FUNCTION_TITLE "': GLError Code ", mRenderParams_GLError, " (", reinterpret_cast<const char *>(gluErrorString(mRenderParams_GLError)), ") (File '" __M_FILE__ "'; Line " mSTRINGIFY_VALUE(__LINE__) ")"); \
+        mRenderParams_PrintRenderState(false); \
+        mERROR_IF(mRenderParams_GLError != GL_NO_ERROR, mR_RenderingError); \
+      } \
     } \
   } \
-  while (0);
+  while (0)
 
 #define mGL_ERROR_CHECK() mOPENGL_ERROR_CHECK()
 
@@ -63,6 +72,7 @@ mFUNCTION(mRenderParams_InitializeToDefault);
 mFUNCTION(mRenderParams_CreateRenderContext, OUT mRenderContextId *pRenderContextId, mPtr<mHardwareWindow> &window);
 mFUNCTION(mRenderParams_ActivateRenderContext, mPtr<mHardwareWindow> &window, const mRenderContextId renderContextId);
 mFUNCTION(mRenderParams_DestroyRenderContext, IN_OUT mRenderContextId *pRenderContextId);
+mFUNCTION(mRenderParams_DetachRenderContextFromWindow, const mRenderContextId renderContextId);
 
 #if defined(mRENDERER_OPENGL)
 mFUNCTION(mRenderParams_GetRenderContext, mPtr<mHardwareWindow> &window, OUT SDL_GLContext *pContext);
@@ -90,6 +100,44 @@ mFUNCTION(mRenderParams_ClearDepth);
 mFUNCTION(mRenderParams_ClearTargetDepthAndColour, const mVector &colour = mVector(0, 0, 0, 1));
 
 mFUNCTION(mRenderParams_SetBlendingEnabled, const bool enabled = true);
+mFUNCTION(mRenderParams_SetDepthTestEnabled, const bool enabled = true);
+mFUNCTION(mRenderParams_SetDepthMaskEnabled, const bool enabled = true);
+mFUNCTION(mRenderParams_SetScissorTestEnabled, const bool enabled = true);
+
+mFUNCTION(mRenderParams_GetMaxDepthPrecisionBits, OUT size_t *pDepth);
+mFUNCTION(mRenderParams_SetDepthPrecisionBits, const size_t bits);
+
+enum mRenderParam_BlendFunc
+{
+  mRP_BF_NoAlpha,
+  mRP_BF_Additive,
+  mRP_BF_AlphaBlend,
+  mRP_BF_Premultiplied,
+  mRP_BF_Override,
+  mRP_BF_AlphaMask
+};
+
+mFUNCTION(mRenderParams_SetBlendFunc, const mRenderParam_BlendFunc blendFunc);
+
+enum mRenderParams_DepthFunc
+{
+  mRP_DF_Less,
+  mRP_DF_Greater,
+  mRP_DF_Equal,
+  mRP_DF_LessOrEqual,
+  mRP_DF_GreaterOrEqual,
+  mRP_DF_NotEqual,
+  mRP_DF_Always,
+  mRP_DF_NoDepth,
+};
+
+mFUNCTION(mRenderParams_SetDepthFunc, const mRenderParams_DepthFunc depthFunc);
+
+#if defined(mRENDERER_OPENGL) && defined(_WIN32)
+mFUNCTION(mRenderParams_GetCurrentGLContext_HGLRC, HGLRC *pGLContext);
+mFUNCTION(mRenderParams_GetCurrentGLContext_HDC, HDC *pGLDrawable);
+mFUNCTION(mRenderParams_GetCurrentGLContext_HWND, HWND *pGLWindow);
+#endif
 
 enum mRenderParams_UploadState
 {
@@ -101,16 +149,70 @@ enum mRenderParams_UploadState
 
 enum mRenderParams_VertexRenderMode
 {
-  mRP_VRM_Points,
-  mRP_VRM_LineList,
-  mRP_VRM_LineStrip,
-  mRP_VRM_LineLoop,
-  mRP_VRM_TriangleList,
-  mRP_VRM_TriangleStrip,
-  mRP_VRM_TriangleFan,
-  mRP_VRM_QuadList,
-  mRP_VRM_QuadStrip,
-  mRP_VRM_Polygon,
+  mRP_VRM_Points = GL_POINTS,
+  mRP_VRM_LineList = GL_LINES,
+  mRP_VRM_LineStrip = GL_LINE_STRIP,
+  mRP_VRM_LineLoop = GL_LINE_LOOP,
+  mRP_VRM_TriangleList = GL_TRIANGLES,
+  mRP_VRM_TriangleStrip = GL_TRIANGLE_STRIP,
+  mRP_VRM_TriangleFan = GL_TRIANGLE_FAN,
+  mRP_VRM_QuadList = GL_QUADS,
+  mRP_VRM_QuadStrip = GL_QUAD_STRIP,
+  mRP_VRM_Polygon = GL_POLYGON,
 };
+
+enum mRenderParams_TextureWrapMode
+{
+  mRP_TWM_None = 0, // Not available for OpenGL.
+  mRP_TWM_ClampToEdge = GL_CLAMP_TO_EDGE,
+  mRP_TWM_ClampToBorder = GL_CLAMP_TO_BORDER,
+  mRP_TWM_MirroredRepeat = GL_MIRRORED_REPEAT,
+  mRP_TWM_Repeat = GL_REPEAT,
+  mRP_TWM_MirroredClampToEdge = GL_MIRROR_CLAMP_TO_EDGE,
+};
+
+enum mRenderParams_TextureMagnificationFilteringMode
+{
+  mRP_TMagFM_NearestNeighbor = GL_NEAREST,
+  mRP_TMagFM_BilinearInterpolation = GL_LINEAR,
+};
+
+enum mRenderParams_TextureMinificationFilteringMode
+{
+  mRP_TMinFM_NearestNeighbor = GL_NEAREST,
+  mRP_TMinFM_BilinearInterpolation = GL_LINEAR,
+  mRP_TMinFM_NearestNeighborNearestMipMap = GL_NEAREST_MIPMAP_NEAREST,
+  mRP_TMinFM_BilinearInterpolationNearestMipMap = GL_LINEAR_MIPMAP_NEAREST,
+  mRP_TMinFM_NearestNeighborBlendMipMap = GL_NEAREST_MIPMAP_LINEAR,
+  mRP_TMinFM_BilinearInterpolationBlendMipMap = GL_LINEAR_MIPMAP_LINEAR,
+};
+
+struct mTexture2DParams
+{
+  mRenderParams_TextureWrapMode wrapModeX = mRP_TWM_ClampToEdge, wrapModeY = mRP_TWM_ClampToEdge;
+  mRenderParams_TextureMagnificationFilteringMode magFilter = mRP_TMagFM_BilinearInterpolation;
+  mRenderParams_TextureMinificationFilteringMode minFilter = mRP_TMinFM_BilinearInterpolation;
+};
+
+mFUNCTION(mTexture2DParams_ApplyToBoundTexture, const mTexture2DParams &params, const bool isMultisampleTexture = false);
+
+struct mTexture3DParams
+{
+  mRenderParams_TextureWrapMode wrapModeX = mRP_TWM_ClampToEdge, wrapModeY = mRP_TWM_ClampToEdge, wrapModeZ = mRP_TWM_ClampToEdge;
+  mRenderParams_TextureMagnificationFilteringMode magFilter = mRP_TMagFM_BilinearInterpolation;
+  mRenderParams_TextureMinificationFilteringMode minFilter = mRP_TMinFM_BilinearInterpolation;
+};
+
+mFUNCTION(mTexture3DParams_ApplyToBoundTexture, const mTexture3DParams &params, const bool isMultisampleTexture = false);
+
+mFUNCTION(mRenderParams_PrintRenderState, const bool onlyNewValues = false, const bool onlyUpdateValues = false);
+
+#if defined(mRENDERER_OPENGL)
+mFUNCTION(mRenderParams_SetOnErrorDebugCallback, const std::function<mResult (const GLenum source, const GLenum type, const GLuint id, const GLenum severity, const GLsizei length, const char *msg)> &callback);
+
+mFUNCTION(mRenderParams_PixelFormatToGLenumChannels, const mPixelFormat pixelFormat, OUT GLenum *pValue);
+mFUNCTION(mRenderParams_PixelFormatToGLenumDataType, const mPixelFormatMapping pixelFormat, OUT GLenum *pValue);
+mFUNCTION(mRenderParams_PixelFormatToGLenumInternalFormat, const mPixelFormatMapping pixelFormat, OUT GLenum *pValue);
+#endif
 
 #endif // mRenderParams_h__

@@ -6,6 +6,13 @@
 #include <intsafe.h>
 #include "mMediaFoundation.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "NyI9wWp+Jn9NVNBDYME58LnmaxvEyB1Gm+pkdCERpBgV4shUcT2xcUm+uVzq/rwh72FSUdDCpPeKknQZ"
+#endif
+
 struct mMediaFileWriter
 {
   IMFSinkWriter *pSinkWriter;
@@ -25,12 +32,12 @@ static mINLINE void _ReleaseReference(T **pData)
   }
 }
 
-mFUNCTION(mMediaFileWriter_Create_Internal, OUT mMediaFileWriter *pMediaFileWriter, IN mAllocator *pAllocator, const std::wstring &filename, IN mMediaFileInformation *pMediaFileInformation);
-mFUNCTION(mMediaFileWriter_Destroy_Internal, IN_OUT mMediaFileWriter *pMediaFileWriter);
+static mFUNCTION(mMediaFileWriter_Create_Internal, OUT mMediaFileWriter *pMediaFileWriter, IN mAllocator *pAllocator, IN const wchar_t *filename, IN mMediaFileInformation *pMediaFileInformation);
+static mFUNCTION(mMediaFileWriter_Destroy_Internal, IN_OUT mMediaFileWriter *pMediaFileWriter);
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mMediaFileWriter_Create, OUT mPtr<mMediaFileWriter> *pMediaFileWriter, IN mAllocator *pAllocator, const std::wstring &filename, IN mMediaFileInformation *pMediaFileInformation)
+mFUNCTION(mMediaFileWriter_Create, OUT mPtr<mMediaFileWriter> *pMediaFileWriter, IN mAllocator *pAllocator, IN const wchar_t *filename, IN mMediaFileInformation *pMediaFileInformation)
 {
   mFUNCTION_SETUP();
 
@@ -96,9 +103,9 @@ mFUNCTION(mMediaFileWriter_AppendVideoFrame, mPtr<mMediaFileWriter> &mediaFileWr
   for (size_t y = 0; y < imageBuffer->currentSize.y; y++)
   {
     if (mediaFileWriter->mediaFileInformation.videoFormat == mMediaFileVideoFormat::mMFVF_H264 || mediaFileWriter->mediaFileInformation.videoFormat == mMediaFileVideoFormat::mMFVF_H264_ES || mediaFileWriter->mediaFileInformation.videoFormat == mMediaFileVideoFormat::mMFVF_H263 || mediaFileWriter->mediaFileInformation.videoFormat == mMediaFileVideoFormat::mMFVF_HEVC || mediaFileWriter->mediaFileInformation.videoFormat == mMediaFileVideoFormat::mMFVF_HEVC_ES) // Just h.264 is tested to be upside down.
-    mERROR_CHECK(mAllocator_Move(imageBuffer->pAllocator, &((uint32_t *)pData)[y * targetStride], &((uint32_t *)imageBuffer->pPixels)[(imageBuffer->currentSize.y - y - 1) * sourceStride], imageBuffer->currentSize.x));
+      mERROR_CHECK(mMemmove(&((uint32_t *)pData)[y * targetStride], &((uint32_t *)imageBuffer->pPixels)[(imageBuffer->currentSize.y - y - 1) * sourceStride], imageBuffer->currentSize.x));
     else
-      mERROR_CHECK(mAllocator_Move(imageBuffer->pAllocator, &((uint32_t *)pData)[y * targetStride], &((uint32_t *)imageBuffer->pPixels)[y * sourceStride], imageBuffer->currentSize.x));
+      mERROR_CHECK(mMemmove(&((uint32_t *)pData)[y * targetStride], &((uint32_t *)imageBuffer->pPixels)[y * sourceStride], imageBuffer->currentSize.x));
   }
 
   mERROR_IF(FAILED(hr = pBuffer->Unlock()), mR_InternalError);
@@ -135,7 +142,7 @@ mFUNCTION(mMediaFileWriter_Finalize, mPtr<mMediaFileWriter> &mediaFileWriter)
   }
   else
   {
-    mERROR_IF(true, mR_ResourceStateInvalid);
+    mRETURN_RESULT(mR_ResourceStateInvalid);
   }
 
   mRETURN_SUCCESS();
@@ -143,7 +150,7 @@ mFUNCTION(mMediaFileWriter_Finalize, mPtr<mMediaFileWriter> &mediaFileWriter)
 
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mMediaFileWriter_Create_Internal, OUT mMediaFileWriter *pMediaFileWriter, IN mAllocator *pAllocator, const std::wstring &filename, IN mMediaFileInformation *pMediaFileInformation)
+static mFUNCTION(mMediaFileWriter_Create_Internal, OUT mMediaFileWriter *pMediaFileWriter, IN mAllocator *pAllocator, IN const wchar_t *filename, IN mMediaFileInformation *pMediaFileInformation)
 {
   mFUNCTION_SETUP();
 
@@ -161,7 +168,7 @@ mFUNCTION(mMediaFileWriter_Create_Internal, OUT mMediaFileWriter *pMediaFileWrit
   HRESULT hr = S_OK;
   mUnused(hr);
 
-  mERROR_IF(FAILED(hr = MFCreateSinkWriterFromURL(filename.c_str(), nullptr, nullptr, &pMediaFileWriter->pSinkWriter)), mR_InternalError);
+  mERROR_IF(FAILED(hr = MFCreateSinkWriterFromURL(filename, nullptr, nullptr, &pMediaFileWriter->pSinkWriter)), mR_InternalError);
 
   IMFMediaType *pVideoOutputMediaType;
   mDEFER_CALL(&pVideoOutputMediaType, _ReleaseReference);
@@ -244,7 +251,7 @@ mFUNCTION(mMediaFileWriter_Create_Internal, OUT mMediaFileWriter *pMediaFileWrit
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mMediaFileWriter_Destroy_Internal, IN_OUT mMediaFileWriter *pMediaFileWriter)
+static mFUNCTION(mMediaFileWriter_Destroy_Internal, IN_OUT mMediaFileWriter *pMediaFileWriter)
 {
   mFUNCTION_SETUP();
 

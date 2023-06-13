@@ -2,10 +2,17 @@
 #define mMediaFileInputHandler_h__
 
 #include "mediaLib.h"
-#include <string>
+
 #include "mPixelFormat.h"
 #include "mImageBuffer.h"
 #include "mTimeStamp.h"
+
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "Oqz0dYQf9ugdrGOuwy0jG0JTAoq/Z8vFNH5D2vNZJixIy3RoW5QlQYKQY5fBlci7gciX7HxD8l0lKb4R"
+#endif
 
 struct mMediaFileInputHandler;
 
@@ -53,21 +60,21 @@ enum mMediaFileInputHandler_CreateFlags
 typedef mFUNCTION(ProcessVideoBufferFunction, mPtr<mImageBuffer> &, const mVideoStreamType &);
 typedef mFUNCTION(ProcessAudioBufferFunction, IN uint8_t *, const mAudioStreamType &);
 
-mFUNCTION(mMediaFileInputHandler_Create, OUT mPtr<mMediaFileInputHandler> *pPtr, IN OPTIONAL mAllocator *pAllocator, const std::wstring &fileName, const mMediaFileInputHandler_CreateFlags createFlags);
-mFUNCTION(mMediaFileInputHandler_Destroy, IN_OUT mPtr<mMediaFileInputHandler> *pPtr);
-mFUNCTION(mMediaFileInputHandler_Play, mPtr<mMediaFileInputHandler> &ptr);
-mFUNCTION(mMediaFileInputHandler_GetVideoStreamResolution, mPtr<mMediaFileInputHandler> &ptr, OUT mVec2s *pResolution, const size_t videoStreamIndex = 0);
-mFUNCTION(mMediaFileInputHandler_SetVideoCallback, mPtr<mMediaFileInputHandler> &ptr, IN ProcessVideoBufferFunction *pCallback);
-mFUNCTION(mMediaFileInputHandler_SetAudioCallback, mPtr<mMediaFileInputHandler> &ptr, IN ProcessAudioBufferFunction *pCallback);
+mFUNCTION(mMediaFileInputHandler_Create, OUT mPtr<mMediaFileInputHandler> *pInputHandler, IN OPTIONAL mAllocator *pAllocator, const mString &filename, const mMediaFileInputHandler_CreateFlags createFlags);
+mFUNCTION(mMediaFileInputHandler_Destroy, IN_OUT mPtr<mMediaFileInputHandler> *pInputHandler);
+mFUNCTION(mMediaFileInputHandler_Play, mPtr<mMediaFileInputHandler> &inputHandler);
+mFUNCTION(mMediaFileInputHandler_GetVideoStreamResolution, mPtr<mMediaFileInputHandler> &inputHandler, OUT mVec2s *pResolution, const size_t videoStreamIndex = 0);
+mFUNCTION(mMediaFileInputHandler_SetVideoCallback, mPtr<mMediaFileInputHandler> &inputHandler, IN ProcessVideoBufferFunction *pCallback);
+mFUNCTION(mMediaFileInputHandler_SetAudioCallback, mPtr<mMediaFileInputHandler> &inputHandler, IN ProcessAudioBufferFunction *pCallback);
 
-mFUNCTION(mMediaFileInputHandler_GetVideoStreamCount, mPtr<mMediaFileInputHandler> &ptr, OUT size_t *pCount);
-mFUNCTION(mMediaFileInputHandler_GetAudioStreamCount, mPtr<mMediaFileInputHandler> &ptr, OUT size_t *pCount);
-mFUNCTION(mMediaFileInputHandler_GetVideoStreamType, mPtr<mMediaFileInputHandler> &ptr, const size_t index, OUT mVideoStreamType *pStreamType);
-mFUNCTION(mMediaFileInputHandler_GetAudioStreamType, mPtr<mMediaFileInputHandler> &ptr, const size_t index, OUT mAudioStreamType *pStreamType);
+mFUNCTION(mMediaFileInputHandler_GetVideoStreamCount, mPtr<mMediaFileInputHandler> &inputHandler, OUT size_t *pCount);
+mFUNCTION(mMediaFileInputHandler_GetAudioStreamCount, mPtr<mMediaFileInputHandler> &inputHandler, OUT size_t *pCount);
+mFUNCTION(mMediaFileInputHandler_GetVideoStreamType, mPtr<mMediaFileInputHandler> &inputHandler, const size_t index, OUT mVideoStreamType *pStreamType);
+mFUNCTION(mMediaFileInputHandler_GetAudioStreamType, mPtr<mMediaFileInputHandler> &inputHandler, const size_t index, OUT mAudioStreamType *pStreamType);
 
 struct mMediaFileInputIterator;
 
-mFUNCTION(mMediaFileInputHandler_GetIterator, mPtr<mMediaFileInputHandler> &ptr, OUT mPtr<mMediaFileInputIterator> *pIterator, const mMediaMajorType mediaType, const size_t streamIndex = 0);
+mFUNCTION(mMediaFileInputHandler_GetIterator, mPtr<mMediaFileInputHandler> &inputHandler, OUT mPtr<mMediaFileInputIterator> *pIterator, const mMediaMajorType mediaType, const size_t streamIndex = 0);
 
 mFUNCTION(mMediaFileInputIterator_Destroy, IN_OUT mPtr<mMediaFileInputIterator> *pIterator);
 
@@ -81,5 +88,9 @@ mFUNCTION(mMediaFileInputIterator_SeekTo, mPtr<mMediaFileInputIterator> &iterato
 
 // Returns 'mR_EndOfStream' on end of stream.
 mFUNCTION(mMediaFileInputIterator_SkipFrame, mPtr<mMediaFileInputIterator> &iterator);
+
+struct mAudioSource;
+
+mFUNCTION(mMediaFileInputHandler_GetAudioSource, mPtr<mMediaFileInputHandler> &inputHandler, OUT mPtr<mAudioSource> *pAudioSource, const size_t streamIndex = 0);
 
 #endif // mMediaFileInputHandler_h__

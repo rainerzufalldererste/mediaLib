@@ -3,6 +3,13 @@
 
 #include "mediaLib.h"
 
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "38LlZaK67nGjK8C3zG2FSFwK33Bkf27LvLeKNe4NdP93egxNwyROpaEyw4DxtjcizpNMXQ0A8sG0WN7C"
+#endif
+
 template <typename T>
 struct mChunkedArray
 {
@@ -50,6 +57,12 @@ mFUNCTION(mChunkedArray_PopAt, mPtr<mChunkedArray<T>> &chunkedArray, const size_
 
 template <typename T>
 mFUNCTION(mChunkedArray_PointerAt, mPtr<mChunkedArray<T>> &chunkedArray, const size_t index, OUT T **ppItem);
+
+template <typename T>
+mFUNCTION(mChunkedArray_PointerAt, const mPtr<mChunkedArray<T>> &chunkedArray, const size_t index, OUT T * const *ppItem);
+
+template <typename T>
+mFUNCTION(mChunkedArray_Clear, mPtr<mChunkedArray<T>> &chunkedArray);
 
 template <typename T>
 mFUNCTION(mChunkedArray_SetDestructionFunction, mPtr<mChunkedArray<T>> &chunkedArray, const std::function<mResult(T *)> &destructionFunction);

@@ -1,10 +1,26 @@
 #include "mSystemError.h"
+
 #include "mHardwareWindow.h"
 #include "mSoftwareWindow.h"
-#include "SDL_syswm.h"
 
-mFUNCTION(mSystemError_ShowMessageBoxSDL_Internal, const mSystemError_Type type, SDL_Window *pWindow, const mString &title, const mString &text, const mSystemError_MessageBoxButton buttons, mSystemError_MessageBoxResponse *pResponse, const size_t defaultButtonIndex, const mSystemError_Authority authority);
-mFUNCTION(mSystemError_ShowMessageBox_Internal, const mSystemError_Type type, HWND window, const mString &title, const mString &text, const mSystemError_MessageBoxButton buttons, mSystemError_MessageBoxResponse *pResponse, const size_t defaultButtonIndex, const mSystemError_Authority authority);
+#pragma warning(push)
+#pragma warning(disable: 4091)
+#include <Dbghelp.h>
+#pragma warning(pop)
+
+#define DECLSPEC
+#include "SDL_syswm.h"
+#undef DECLSPEC
+
+#ifdef GIT_BUILD // Define __M_FILE__
+  #ifdef __M_FILE__
+    #undef __M_FILE__
+  #endif
+  #define __M_FILE__ "dSmsh41iIK8M/CXud4z0yVSoFUlmF6ZctuIje439Cd12D27ToM+PzlsWgMoAOdkxZAUYkLAPyj78goqK"
+#endif
+
+static mFUNCTION(mSystemError_ShowMessageBoxSDL_Internal, const mSystemError_Type type, SDL_Window *pWindow, const mString &title, const mString &text, const mSystemError_MessageBoxButton buttons, OUT OPTIONAL mSystemError_MessageBoxResponse *pResponse, const size_t defaultButtonIndex, const mSystemError_Authority authority);
+static mFUNCTION(mSystemError_ShowMessageBox_Internal, const mSystemError_Type type, HWND window, const mString &title, const mString &text, const mSystemError_MessageBoxButton buttons, OUT OPTIONAL mSystemError_MessageBoxResponse *pResponse, const size_t defaultButtonIndex, const mSystemError_Authority authority);
 
 mFUNCTION(mSystemError_PlaySound, const mSystemError_Type type)
 {
@@ -33,7 +49,7 @@ mFUNCTION(mSystemError_PlaySound, const mSystemError_Type type)
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mSystemError_ShowMessageBox, const mSystemError_Type type, const mString & title, const mString & text, const mSystemError_MessageBoxButton buttons, mSystemError_MessageBoxResponse *pResponse, const size_t defaultButtonIndex /* = 0 */, const mSystemError_Authority authority /* = mSE_A_Task */)
+mFUNCTION(mSystemError_ShowMessageBox, const mSystemError_Type type, const mString &title, const mString &text, const mSystemError_MessageBoxButton buttons /* = mSE_MBB_Ok */, OUT OPTIONAL mSystemError_MessageBoxResponse *pResponse /* = nullptr */, const size_t defaultButtonIndex /* = 0 */, const mSystemError_Authority authority /* = mSE_A_Task */)
 {
   mFUNCTION_SETUP();
 
@@ -42,7 +58,7 @@ mFUNCTION(mSystemError_ShowMessageBox, const mSystemError_Type type, const mStri
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mSystemError_ShowMessageBox, mPtr<mHardwareWindow> &window, const mSystemError_Type type, const mString & title, const mString & text, const mSystemError_MessageBoxButton buttons, mSystemError_MessageBoxResponse *pResponse, const size_t defaultButtonIndex /* = 0 */, const mSystemError_Authority authority /* = mSE_A_Window */)
+mFUNCTION(mSystemError_ShowMessageBox, mPtr<mHardwareWindow> &window, const mSystemError_Type type, const mString &title, const mString &text, const mSystemError_MessageBoxButton buttons /* = mSE_MBB_Ok */, OUT OPTIONAL mSystemError_MessageBoxResponse *pResponse /* = nullptr */, const size_t defaultButtonIndex /* = 0 */, const mSystemError_Authority authority /* = mSE_A_Window */)
 {
   mFUNCTION_SETUP();
 
@@ -56,7 +72,7 @@ mFUNCTION(mSystemError_ShowMessageBox, mPtr<mHardwareWindow> &window, const mSys
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mSystemError_ShowMessageBox, mPtr<mSoftwareWindow> &window, const mSystemError_Type type, const mString & title, const mString & text, const mSystemError_MessageBoxButton buttons, mSystemError_MessageBoxResponse *pResponse, const size_t defaultButtonIndex /* = 0 */, const mSystemError_Authority authority /* = mSE_A_Window */)
+mFUNCTION(mSystemError_ShowMessageBox, mPtr<mSoftwareWindow> &window, const mSystemError_Type type, const mString &title, const mString &text, const mSystemError_MessageBoxButton buttons /* = mSE_MBB_Ok */, OUT OPTIONAL mSystemError_MessageBoxResponse *pResponse /* = nullptr */, const size_t defaultButtonIndex /* = 0 */, const mSystemError_Authority authority /* = mSE_A_Window */)
 {
   mFUNCTION_SETUP();
 
@@ -70,9 +86,44 @@ mFUNCTION(mSystemError_ShowMessageBox, mPtr<mSoftwareWindow> &window, const mSys
   mRETURN_SUCCESS();
 }
 
+mFUNCTION(mSystemError_WriteMiniDump, const mString &filename, IN OPTIONAL struct _EXCEPTION_POINTERS *pExceptionInfo, const bool includeHeap /* = false */)
+{
+  mFUNCTION_SETUP();
+
+  mERROR_IF(filename.hasFailed || filename.c_str() == nullptr, mR_ArgumentNull);
+
+  HMODULE library = LoadLibraryW(L"Dbghelp.dll");
+  mERROR_IF(library == nullptr, mR_InternalError);
+  mDEFER_CALL(library, FreeLibrary);
+
+  typedef BOOL(WINAPI WriteMiniDumpFunc)(HANDLE hProcess, DWORD dwPid, HANDLE fileHandle, MINIDUMP_TYPE DumpType, CONST PMINIDUMP_EXCEPTION_INFORMATION ExceptionParam, CONST PMINIDUMP_USER_STREAM_INFORMATION UserStreamParam, CONST PMINIDUMP_CALLBACK_INFORMATION CallbackParam);
+
+  WriteMiniDumpFunc *pWriteMiniDumpFunc = (WriteMiniDumpFunc *)GetProcAddress(library, "MiniDumpWriteDump");
+
+  mERROR_IF(pWriteMiniDumpFunc == nullptr, mR_InternalError);
+
+  wchar_t wfilename[MAX_PATH];
+  mERROR_CHECK(mString_ToWideString(filename, wfilename, mARRAYSIZE(wfilename)));
+
+  HANDLE fileHandle = CreateFileW(wfilename, GENERIC_WRITE, FILE_SHARE_WRITE, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+  mERROR_IF(fileHandle == INVALID_HANDLE_VALUE, mR_InternalError);
+  mDEFER_CALL(fileHandle, CloseHandle);
+
+  _MINIDUMP_EXCEPTION_INFORMATION exceptionInfo;
+  mERROR_CHECK(mZeroMemory(&exceptionInfo));
+
+  exceptionInfo.ThreadId = GetCurrentThreadId();
+  exceptionInfo.ExceptionPointers = pExceptionInfo;
+  exceptionInfo.ClientPointers = FALSE;
+
+  mERROR_IF(TRUE != pWriteMiniDumpFunc(GetCurrentProcess(), GetCurrentProcessId(), fileHandle, includeHeap ? MiniDumpWithFullMemory : MiniDumpNormal, pExceptionInfo == nullptr ? NULL : &exceptionInfo, NULL, NULL), mR_InternalError);
+
+  mRETURN_SUCCESS();
+}
+
 //////////////////////////////////////////////////////////////////////////
 
-mFUNCTION(mSystemError_ShowMessageBoxSDL_Internal, const mSystemError_Type type, SDL_Window *pWindow, const mString & title, const mString & text, const mSystemError_MessageBoxButton buttons, mSystemError_MessageBoxResponse * pResponse, const size_t defaultButtonIndex, const mSystemError_Authority authority)
+static mFUNCTION(mSystemError_ShowMessageBoxSDL_Internal, const mSystemError_Type type, SDL_Window *pWindow, const mString &title, const mString & text, const mSystemError_MessageBoxButton buttons, OUT OPTIONAL mSystemError_MessageBoxResponse *pResponse, const size_t defaultButtonIndex, const mSystemError_Authority authority)
 {
   mFUNCTION_SETUP();
 
@@ -88,7 +139,7 @@ mFUNCTION(mSystemError_ShowMessageBoxSDL_Internal, const mSystemError_Type type,
   mRETURN_SUCCESS();
 }
 
-mFUNCTION(mSystemError_ShowMessageBox_Internal, const mSystemError_Type type, HWND window, const mString &title, const mString &text, const mSystemError_MessageBoxButton buttons, mSystemError_MessageBoxResponse *pResponse, const size_t defaultButtonIndex, const mSystemError_Authority authority)
+static mFUNCTION(mSystemError_ShowMessageBox_Internal, const mSystemError_Type type, HWND window, const mString &title, const mString &text, const mSystemError_MessageBoxButton buttons, OUT OPTIONAL mSystemError_MessageBoxResponse *pResponse, const size_t defaultButtonIndex, const mSystemError_Authority authority)
 {
   mFUNCTION_SETUP();
 
@@ -131,7 +182,7 @@ mFUNCTION(mSystemError_ShowMessageBox_Internal, const mSystemError_Type type, HW
     mbmode |= MB_HELP;
     break;
 
-  case mSE_MBB_OK_Cancel:
+  case mSE_MBB_Ok_Cancel:
     mbmode |= MB_OKCANCEL;
     break;
 
@@ -147,7 +198,7 @@ mFUNCTION(mSystemError_ShowMessageBox_Internal, const mSystemError_Type type, HW
     mbmode |= MB_YESNOCANCEL;
     break;
 
-  case mSE_MBB_OK:
+  case mSE_MBB_Ok:
   default:
     mbmode |= MB_OK;
     break;
@@ -194,7 +245,13 @@ mFUNCTION(mSystemError_ShowMessageBox_Internal, const mSystemError_Type type, HW
     break;
   }
 
-  const int result = MessageBoxExW(window, ((std::wstring)text).c_str(), ((std::wstring)title).c_str(), mbmode, MAKELANGID(LANG_NEUTRAL, SUBLANG_NEUTRAL));
+  wchar_t wtext[1024 * 4];
+  mERROR_CHECK(mString_ToWideString(text, wtext, mARRAYSIZE(wtext)));
+
+  wchar_t wtitle[1024 * 4];
+  mERROR_CHECK(mString_ToWideString(title, wtitle, mARRAYSIZE(wtitle)));
+
+  const int32_t result = MessageBoxExW(window, wtext, wtitle, mbmode, MAKELANGID(LANG_NEUTRAL, SUBLANG_NEUTRAL));
 
   if (pResponse != nullptr)
   {
@@ -209,7 +266,7 @@ mFUNCTION(mSystemError_ShowMessageBox_Internal, const mSystemError_Type type, HW
       break;
 
     case IDYES:
-      *pResponse = mSE_MBR_Ok;
+      *pResponse = mSE_MBR_Yes;
       break;
 
     case IDNO:
